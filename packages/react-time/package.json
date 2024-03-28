@@ -1,0 +1,72 @@
+{
+  "name": "@tanstack/react-time",
+  "author": "Tanner Linsley",
+  "version": "0.0.1",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TanStack/time.git",
+    "directory": "packages/react-time"
+  },
+  "homepage": "https://tanstack.com/",
+  "description": "",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
+  "keywords": [
+    "time",
+    "react",
+    "typescript"
+  ],
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/tannerlinsley"
+  },
+  "scripts": {
+    "clean": "rimraf ./dist && rimraf ./coverage",
+    "test:eslint": "eslint --ext .ts,.tsx ./src",
+    "test:types:versions49": "node ../../node_modules/typescript49/lib/tsc.js --project tsconfig.legacy.json",
+    "test:types:versions50": "node ../../node_modules/typescript50/lib/tsc.js",
+    "test:types:versions51": "node ../../node_modules/typescript51/lib/tsc.js",
+    "test:types:versions52": "tsc",
+    "test:types": "pnpm run \"/^test:types:versions.*/\"",
+    "test:lib": "vitest",
+    "test:lib:dev": "pnpm run test:lib --watch",
+    "test:build": "publint --strict",
+    "build": "vite build"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "type": "module",
+  "types": "dist/esm/index.d.ts",
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/esm/index.js",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.cts",
+        "default": "./dist/cjs/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "peerDependencies": {
+    "react": "^17.0.0 || ^18.0.0",
+    "react-dom": "^17.0.0 || ^18.0.0"
+  },
+  "dependencies": {
+    "@tanstack/time": "workspace:*",
+    "use-sync-external-store": "^1.2.0"
+  },
+  "devDependencies": {
+    "@types/use-sync-external-store": "^0.0.3",
+    "@vitejs/plugin-react": "^4.2.1"
+  }
+}

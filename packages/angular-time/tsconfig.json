@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "moduleResolution": "Bundler",
+    "paths": {
+      "@tanstack/time": ["../time/src"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", ".eslintrc.cjs", "vite.config.ts"]
+}

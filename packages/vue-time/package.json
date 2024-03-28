@@ -1,0 +1,79 @@
+{
+  "name": "@tanstack/vue-time",
+  "version": "0.0.1",
+  "author": "Tanner Linsley",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TanStack/time.git",
+    "directory": "packages/vue-time"
+  },
+  "homepage": "https://tanstack.com/",
+  "description": "",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/tannerlinsley"
+  },
+  "type": "module",
+  "types": "dist/esm/index.d.ts",
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/esm/index.js",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.cts",
+        "default": "./dist/cjs/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "test:lib": "pnpm run test:3",
+    "test:2": "vue-demi-switch 2 vue2 && vitest",
+    "test:2.7": "vue-demi-switch 2.7 vue2.7 && vitest",
+    "test:3": "vue-demi-switch 3 && vitest",
+    "clean": "rimraf ./dist && rimraf ./coverage",
+    "test:eslint": "eslint --ext .ts,.tsx ./src",
+    "test:types:versions49": "node ../../node_modules/typescript49/lib/tsc.js --project tsconfig.legacy.json",
+    "test:types:versions50": "node ../../node_modules/typescript50/lib/tsc.js",
+    "test:types:versions51": "node ../../node_modules/typescript51/lib/tsc.js",
+    "test:types:versions52": "tsc",
+    "test:types": "pnpm run \"/^test:types:versions.*/\"",
+    "fixme:test:lib": "pnpm run test:2 && pnpm run test:2.7 && pnpm run test:3",
+    "test:lib:dev": "pnpm run test:lib --watch",
+    "test:build": "publint --strict",
+    "build": "vite build"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "dependencies": {
+    "@tanstack/time": "workspace:*",
+    "vue-demi": "^0.14.6"
+  },
+  "devDependencies": {
+    "@vue/composition-api": "^1.7.2",
+    "vue": "^3.3.4",
+    "vue2": "npm:vue@2.6",
+    "vue2.7": "npm:vue@2.7",
+    "@vitejs/plugin-vue": "^5.0.2"
+  },
+  "peerDependencies": {
+    "@vue/composition-api": "^1.2.1",
+    "vue": "^2.5.0 || ^3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@vue/composition-api": {
+      "optional": true
+    }
+  }
+}
