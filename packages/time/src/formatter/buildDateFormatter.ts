@@ -1,9 +1,9 @@
 import { getDefaultLocale } from "../utils/dateDefaults";
 import { extractLocaleOptions } from "./extractLocaleOptions";
-import type { IDateFormatterBuildParams } from "./shared";
+import type { DateFormatterBuildParams } from "./shared";
 
 /**
- * @typedef {Object} IDateFormatterOptions
+ * @typedef {Object} DateFormatterOptions
  * @property {string} [localeMatcher]
  * @property {string} [calendar]
  * @property {string} [numberingSystem]
@@ -20,9 +20,9 @@ import type { IDateFormatterBuildParams } from "./shared";
  * 
  * @typedef {string | Intl.Locale | string[] | Intl.Locale[]} Locale
  * 
- * @typedef {Object} IDateFormatterBuildParams
+ * @typedef {Object} DateFormatterBuildParams
  * @property {Locale} [locale]
- * @property {string | IDateFormatterOptions} [options]
+ * @property {string | DateFormatterOptions} [options]
  */
 
 /**
@@ -43,13 +43,13 @@ import type { IDateFormatterBuildParams } from "./shared";
  * When using UTC date strings, it is suggested that you use the 'options' object
  * to set the 'timeZone' when building the formatter. The 'timeZone' is defaulted
  * to the user's browser timezone.
- * @param {IDateFormatterBuildParams} [param0]
+ * @param {DateFormatterBuildParams} [param0]
  * @returns Intl.DateTimeFormat
  */
 export function buildDateFormatter({
   locale = getDefaultLocale(), 
   options
-}: IDateFormatterBuildParams = {}): Intl.DateTimeFormat {
+}: DateFormatterBuildParams = {}): Intl.DateTimeFormat {
   const opts = (typeof options === 'string') ? { dateStyle: options } : options ?? {};
   const {formatOptions = {}, ...localeOptions} = extractLocaleOptions(opts);
   const { dateStyle, ...rest } = formatOptions;

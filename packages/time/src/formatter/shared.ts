@@ -1,4 +1,4 @@
-export interface ILocaleFormatterOptions {
+export interface LocaleFormatterOptions {
   localeMatcher?: 'lookup' | 'best fit';
   calendar?: string;
   numberingSystem?: string;
@@ -9,7 +9,7 @@ export interface ILocaleFormatterOptions {
 
 type FormatStyle = 'full' | 'long' | 'medium' | 'short';
 
-export interface IDateFormatterOptions extends ILocaleFormatterOptions {
+export interface DateFormatterOptions extends LocaleFormatterOptions {
   formatMatcher?: 'basic' | 'best fit';
   weekday?: 'narrow' | 'short' | 'long';
   era?: 'narrow' | 'short' | 'long';
@@ -20,7 +20,7 @@ export interface IDateFormatterOptions extends ILocaleFormatterOptions {
   dateStyle?: FormatStyle;
 }
 
-export interface ITimeFormatterOptions extends ILocaleFormatterOptions {
+export interface TimeFormatterOptions extends LocaleFormatterOptions {
   formatMatcher?: 'basic' | 'best fit';
   dayPeriod?: 'narrow' | 'short' | 'long';
   hour?: '2-digit' | 'numeric';
@@ -32,20 +32,17 @@ export interface ITimeFormatterOptions extends ILocaleFormatterOptions {
   timeStyle?: FormatStyle;
 }
 
-export interface IDateTimeFormatterOptions extends IDateFormatterOptions, ITimeFormatterOptions {
+export type DateTimeFormatterOptions = DateFormatterOptions & TimeFormatterOptions
+
+interface FormatterBuildParams<TOptions extends LocaleFormatterOptions> {
+  locale?: string | Intl.Locale | Array<string | Intl.Locale>;
+  options?: FormatStyle | TOptions;
 }
 
-export interface IDateFormatterBuildParams {
-  locale?: string | Intl.Locale | Array<string|Intl.Locale>;
-  options?: FormatStyle | IDateFormatterOptions;
-}
+export type DateFormatterBuildParams = FormatterBuildParams<DateFormatterOptions>;
+export type TimeFormatterBuildParams = FormatterBuildParams<TimeFormatterOptions>;
+export type DateTimeFormatterBuildParams = FormatterBuildParams<DateTimeFormatterOptions>;
 
-export interface ITimeFormatterBuildParams {
-  locale?: string | Intl.Locale | Array<string|Intl.Locale>;
-  options?: FormatStyle | ITimeFormatterOptions;
-}
-
-export interface IDateTimeFormatterBuildParams {
-  locale?: string | Intl.Locale | Array<string|Intl.Locale>;
-  options?: FormatStyle | IDateTimeFormatterOptions;
-}
+export type UnionKeys<T> = T extends T ? keyof T : never;
+export type StrictUnionHelper<T, TAll> = T extends any ? T & Partial<Record<Exclude<UnionKeys<TAll>, keyof T>, never>> : never;
+export type StrictUnion<T> = StrictUnionHelper<T, T>

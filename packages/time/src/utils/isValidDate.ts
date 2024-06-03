@@ -4,9 +4,6 @@
  * @param date Date
  * @returns boolean
  */
-export function isValidDate(date: any): boolean {
-  if (Object.prototype.toString.call(date) !== '[object Date]') {
-    return false;
-  }
-  return date.getTime() === date.getTime();
+export function isValidDate(date: unknown): date is Date {
+  return date instanceof Date && !isNaN(date.getTime());
 }

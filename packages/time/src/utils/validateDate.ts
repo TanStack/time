@@ -19,5 +19,5 @@ export function validateDate({date, parse = parser, errorMessage = `Invalid Date
   if (!isValidDate(d)) {
     throw new Error(`${errorMessage}: "${date}"`);
   }
-  return d as Date;
+  return d;
 }

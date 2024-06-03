@@ -1,9 +1,9 @@
 import { getDefaultLocale } from "../utils/dateDefaults";
 import { extractLocaleOptions } from "./extractLocaleOptions";
-import type { IDateTimeFormatterBuildParams } from "./shared";
+import type { DateTimeFormatterBuildParams } from "./shared";
 
 /**
- * @typedef {Object} IDateTimeFormatterOptions
+ * @typedef {Object} DateTimeFormatterOptions
  * @property {string} [localeMatcher]
  * @property {string} [calendar]
  * @property {string} [numberingSystem]
@@ -27,9 +27,9 @@ import type { IDateTimeFormatterBuildParams } from "./shared";
  * 
  * @typedef {string | Intl.Locale | string[] | Intl.Locale[]} Locale
  * 
- * @typedef {Object} IDateTimeFormatterOptions
+ * @typedef {Object} DateTimeFormatterOptions
  * @property {Locale} [locale]
- * @property {string | IDateFormatterOptions} [options]
+ * @property {string | DateFormatterOptions} [options]
  */
 
 /**
@@ -56,7 +56,7 @@ import type { IDateTimeFormatterBuildParams } from "./shared";
 export function buildDateTimeFormatter({
   locale = getDefaultLocale(), 
   options
-}: IDateTimeFormatterBuildParams): Intl.DateTimeFormat {
+}: DateTimeFormatterBuildParams): Intl.DateTimeFormat {
   const opts = (typeof options === 'string') ? { dateStyle: options, timeStyle: options } : options ?? {};
   const {formatOptions = {}, ...localeOptions} = extractLocaleOptions(opts);
   const { dateStyle, timeStyle, ...rest } = formatOptions;
