@@ -4,7 +4,7 @@ import { tanstackViteConfig } from '@tanstack/config/vite'
 const config = defineConfig({
   test: {
     name: 'time',
-    dir: './src',
+    dir: './tests',
     watch: false,
     environment: 'jsdom',
     coverage: { enabled: true, provider: 'istanbul', include: ['src/**/*'] },
@@ -17,6 +17,5 @@ export default mergeConfig(
   tanstackViteConfig({
     entry: './src/index.ts',
     srcDir: './src',
-    exclude: ['./src/tests'],
   }),
 )

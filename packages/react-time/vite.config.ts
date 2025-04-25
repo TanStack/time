@@ -6,10 +6,10 @@ const config = defineConfig({
   plugins: [react()],
   test: {
     name: 'react-time',
-    dir: './src',
+    dir: './tests',
     watch: false,
     environment: 'jsdom',
-    setupFiles: ['test-setup.ts'],
+    setupFiles: ['./tests/test-setup.ts'],
     coverage: { enabled: true, provider: 'istanbul', include: ['src/**/*'] },
     typecheck: { enabled: true },
   },
@@ -20,6 +20,5 @@ export default mergeConfig(
   tanstackViteConfig({
     entry: './src/index.ts',
     srcDir: './src',
-    exclude: ['./src/tests'],
   }),
 )

@@ -1,14 +1,16 @@
+import { Locale } from '../formatter/shared'
+
 export interface IDateDefaults {
-  calendar: string;
-  locale: string;
-  timeZone: string;
+  calendar: string
+  locale: string
+  timeZone: string
 }
 
 const {
-  calendar: defaultCalendar, 
-  locale: defaultLocale, 
-  timeZone: defaultTimeZone
-} = new Intl.DateTimeFormat().resolvedOptions();
+  calendar: defaultCalendar,
+  locale: defaultLocale,
+  timeZone: defaultTimeZone,
+} = new Intl.DateTimeFormat().resolvedOptions()
 
 /**
  * getDateDefaults
@@ -19,7 +21,7 @@ export function getDateDefaults(): IDateDefaults {
     calendar: defaultCalendar,
     locale: defaultLocale,
     timeZone: defaultTimeZone,
-  };
+  }
 }
 
 /**
@@ -27,15 +29,15 @@ export function getDateDefaults(): IDateDefaults {
  * @returns string - default calendar
  */
 export function getDefaultCalendar(): string {
-  return defaultCalendar;
+  return defaultCalendar
 }
 
 /**
  * getDefaultLocale
  * @returns string - default locale
  */
-export function getDefaultLocale(): string {
-  return defaultLocale;
+export function getDefaultLocale(): Locale {
+  return defaultLocale
 }
 
 /**
@@ -43,5 +45,13 @@ export function getDefaultLocale(): string {
  * @returns string - default time zone
  */
 export function getDefaultTimeZone(): string {
-  return defaultTimeZone;
+  return defaultTimeZone
+}
+
+export function normalizeLocale(locale: Locale): string | string[] {
+  return Array.isArray(locale)
+    ? locale.map((loc) => (typeof loc === 'string' ? loc : loc.toString()))
+    : typeof locale === 'string'
+      ? locale
+      : locale.toString()
 }

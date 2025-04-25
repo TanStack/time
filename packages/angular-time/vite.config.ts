@@ -4,10 +4,10 @@ import { tanstackViteConfig } from '@tanstack/config/vite'
 const config = defineConfig({
   test: {
     name: 'angular-time',
-    dir: './src',
+    dir: './tests',
     watch: false,
     environment: 'jsdom',
-    setupFiles: ['src/tests/test-setup.ts'],
+    setupFiles: ['./tests/test-setup.ts'],
     coverage: { enabled: true, provider: 'istanbul', include: ['src/**/*'] },
     typecheck: { enabled: true },
     globals: true,
@@ -19,6 +19,5 @@ export default mergeConfig(
   tanstackViteConfig({
     entry: './src/index.ts',
     srcDir: './src',
-    exclude: ['./src/tests'],
   }),
 )
