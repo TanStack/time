@@ -1,14 +1,14 @@
 export interface IDateDefaults {
-  calendar: string;
-  locale: string;
-  timeZone: string;
+  calendar: string
+  locale: string
+  timeZone: string
 }
 
 const {
-  calendar: defaultCalendar, 
-  locale: defaultLocale, 
-  timeZone: defaultTimeZone
-} = new Intl.DateTimeFormat().resolvedOptions();
+  calendar: defaultCalendar,
+  locale: defaultLocale,
+  timeZone: defaultTimeZone,
+} = new Intl.DateTimeFormat().resolvedOptions()
 
 /**
  * getDateDefaults
@@ -19,7 +19,7 @@ export function getDateDefaults(): IDateDefaults {
     calendar: defaultCalendar,
     locale: defaultLocale,
     timeZone: defaultTimeZone,
-  };
+  }
 }
 
 /**
@@ -27,7 +27,7 @@ export function getDateDefaults(): IDateDefaults {
  * @returns string - default calendar
  */
 export function getDefaultCalendar(): string {
-  return defaultCalendar;
+  return defaultCalendar
 }
 
 /**
@@ -35,7 +35,7 @@ export function getDefaultCalendar(): string {
  * @returns string - default locale
  */
 export function getDefaultLocale(): string {
-  return defaultLocale;
+  return defaultLocale
 }
 
 /**
@@ -43,5 +43,5 @@ export function getDefaultLocale(): string {
  * @returns string - default time zone
  */
 export function getDefaultTimeZone(): string {
-  return defaultTimeZone;
+  return defaultTimeZone
 }

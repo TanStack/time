@@ -7,3 +7,5 @@
 **/docs
 **/codemods/**/__testfixtures__
 pnpm-lock.yaml
+
+/.nx/workspace-data

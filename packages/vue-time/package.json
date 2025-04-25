@@ -18,9 +18,6 @@
     "url": "https://github.com/sponsors/tannerlinsley"
   },
   "type": "module",
-  "types": "dist/esm/index.d.ts",
-  "main": "dist/cjs/index.cjs",
-  "module": "dist/esm/index.js",
   "exports": {
     ".": {
       "import": {
@@ -41,7 +38,7 @@
     "test:2.7": "vue-demi-switch 2.7 vue2.7 && vitest",
     "test:3": "vue-demi-switch 3 && vitest",
     "clean": "rimraf ./dist && rimraf ./coverage",
-    "test:eslint": "eslint --ext .ts,.tsx ./src",
+    "test:eslint": "eslint './src/**/*.ts?(x)'",
     "test:types:versions49": "node ../../node_modules/typescript49/lib/tsc.js --project tsconfig.legacy.json",
     "test:types:versions50": "node ../../node_modules/typescript50/lib/tsc.js",
     "test:types:versions51": "node ../../node_modules/typescript51/lib/tsc.js",
