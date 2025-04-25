@@ -9,6 +9,8 @@ export interface ILocaleFormatterOptions {
 
 type FormatStyle = 'full' | 'long' | 'medium' | 'short'
 
+export type Locale = string | Intl.Locale | string[] | Intl.Locale[]
+
 export interface IDateFormatterOptions extends ILocaleFormatterOptions {
   formatMatcher?: 'basic' | 'best fit'
   weekday?: 'narrow' | 'short' | 'long'
@@ -43,16 +45,16 @@ export interface IDateTimeFormatterOptions
     ITimeFormatterOptions {}
 
 export interface IDateFormatterBuildParams {
-  locale?: string | Intl.Locale | Array<string | Intl.Locale>
+  locale?: Locale
   options?: FormatStyle | IDateFormatterOptions
 }
 
 export interface ITimeFormatterBuildParams {
-  locale?: string | Intl.Locale | Array<string | Intl.Locale>
+  locale?: Locale
   options?: FormatStyle | ITimeFormatterOptions
 }
 
 export interface IDateTimeFormatterBuildParams {
-  locale?: string | Intl.Locale | Array<string | Intl.Locale>
+  locale?: Locale
   options?: FormatStyle | IDateTimeFormatterOptions
 }

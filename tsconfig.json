@@ -12,7 +12,7 @@
     "isolatedModules": true,
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "module": "ES2022",
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "noEmit": true,
     "noImplicitReturns": true,
     "noUncheckedIndexedAccess": true,

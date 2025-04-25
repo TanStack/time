@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "moduleResolution": "Bundler"
+    "moduleResolution": "bundler"
   },
   "include": ["src", "tests", ".eslintrc.cjs", "vite.config.ts"]
 }

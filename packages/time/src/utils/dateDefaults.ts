@@ -1,3 +1,5 @@
+import { Locale } from '../formatter/shared'
+
 export interface IDateDefaults {
   calendar: string
   locale: string
@@ -34,7 +36,7 @@ export function getDefaultCalendar(): string {
  * getDefaultLocale
  * @returns string - default locale
  */
-export function getDefaultLocale(): string {
+export function getDefaultLocale(): Locale {
   return defaultLocale
 }
 
@@ -44,4 +46,12 @@ export function getDefaultLocale(): string {
  */
 export function getDefaultTimeZone(): string {
   return defaultTimeZone
+}
+
+export function normalizeLocale(locale: Locale): string | string[] {
+  return Array.isArray(locale)
+    ? locale.map((loc) => (typeof loc === 'string' ? loc : loc.toString()))
+    : typeof locale === 'string'
+      ? locale
+      : locale.toString()
 }

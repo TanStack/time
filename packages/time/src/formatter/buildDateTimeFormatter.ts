@@ -1,4 +1,4 @@
-import { getDefaultLocale } from '../utils/dateDefaults'
+import { getDefaultLocale, normalizeLocale } from '../utils/dateDefaults'
 import { extractLocaleOptions } from './extractLocaleOptions'
 import type {
   IDateTimeFormatterBuildParams,
@@ -38,6 +38,7 @@ export function buildDateTimeFormatter({
   locale = getDefaultLocale(),
   options,
 }: IDateTimeFormatterBuildParams): Intl.DateTimeFormat {
+  const normalizedLocale = normalizeLocale(locale)
   const opts =
     typeof options === 'string'
       ? { dateStyle: options, timeStyle: options }
@@ -49,5 +50,5 @@ export function buildDateTimeFormatter({
     ...localeOptions,
     ...(dateStyle && timeStyle ? { dateStyle, timeStyle } : rest),
   }
-  return new Intl.DateTimeFormat(locale, newOptions)
+  return new Intl.DateTimeFormat(normalizedLocale, newOptions)
 }
