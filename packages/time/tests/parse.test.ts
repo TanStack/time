@@ -1,141 +1,136 @@
-import { describe, expect, test } from 'vitest'
-import { parse } from '../src/utils/parse'
+import { describe, expect, it } from 'vitest'
+import { parseDate } from '../src/utils/parseDate'
 
-const dateTimeFormat = new Intl.DateTimeFormat('en-US', {
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  timeZoneName: 'short',
-  timeZone: 'America/New_York',
-})
+describe('parseDate', () => {
+  describe('Date input', () => {
+    it('should parse valid Date object', () => {
+      const date = new Date('2023-01-01T00:00:00Z')
+      const result = parseDate(date)
+      expect(result.success).toBe(true)
 
-const timeOnlyFormat = new Intl.DateTimeFormat('en-US', {
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  // timeZoneName: 'short',
-  timeZone: 'America/New_York',
-})
+      expect(result.data).toBeInstanceOf(Date)
+      expect(result.data!.toISOString()).toBe('2023-01-01T00:00:00.000Z')
+    })
 
-describe('parse', () => {
-  test('should parse a valid year only date string', () => {
-    const date = parse('2021')
-    expect(dateTimeFormat.format(date)).toBe('01/01/2021, 12:00:00 AM EST')
+    it('should return error for invalid Date object', () => {
+      const invalidDate = new Date('invalid')
+      const result = parseDate(invalidDate)
+      expect(result.success).toBe(false)
+      expect(result.error).toBeDefined()
+    })
   })
 
-  test('should parse a valid year and month only date string', () => {
-    const date = parse('2021-03')
-    expect(dateTimeFormat.format(date)).toBe('03/01/2021, 12:00:00 AM EST')
+  describe('number input', () => {
+    it('should parse valid timestamp', () => {
+      const timestamp = new Date('2023-01-01T00:00:00Z').getTime()
+      const result = parseDate(timestamp)
+      expect(result.success).toBe(true)
+      expect(result.data).toBeInstanceOf(Date)
+      expect(result.data!.toISOString()).toBe('2023-01-01T00:00:00.000Z')
+    })
+
+    it('should parse timestamp with milliseconds', () => {
+      const timestamp = new Date('2023-06-15T14:30:45.123Z').getTime()
+      const result = parseDate(timestamp)
+      expect(result.success).toBe(true)
+      expect(result.data).toBeInstanceOf(Date)
+      expect(result.data!.toISOString()).toBe('2023-06-15T14:30:45.123Z')
+    })
+
+    it('should return error for invalid timestamp', () => {
+      const result = parseDate(NaN)
+      expect(result.success).toBe(false)
+      expect(result.error).toBeDefined()
+    })
   })
 
-  test('should parse a valid year, month and day only date string', () => {
-    const date = parse('2021-03-12')
-    expect(dateTimeFormat.format(date)).toBe('03/12/2021, 12:00:00 AM EST')
-  })
+  describe('string input', () => {
+    it('should parse ISO 8601 datetime with Z timezone', () => {
+      const result = parseDate('2020-01-01T00:00:00Z')
+      expect(result.success).toBe(true)
+      expect(result.data).toBeInstanceOf(Date)
+      expect(result.data!.toISOString()).toBe('2020-01-01T00:00:00.000Z')
+    })
 
-  test('should cast date only string to UTC', () => {
-    const date = parse('2021-03-12TZ')
-    expect(dateTimeFormat.format(date)).toBe('03/11/2021, 07:00:00 PM EST')
-  })
+    it('should parse datetime with milliseconds', () => {
+      const result = parseDate('2020-01-01T00:00:00.123Z')
+      expect(result.success).toBe(true)
+      expect(result.data).toBeInstanceOf(Date)
+      expect(result.data!.getMilliseconds()).toBe(123)
+    })
 
-  test('should cast date only string to offset', () => {
-    const date = parse('2021-03-12T-07:00')
-    expect(dateTimeFormat.format(date)).toBe('03/12/2021, 02:00:00 AM EST')
-  })
+    it('should parse datetime with arbitrary precision', () => {
+      const result = parseDate('2020-01-01T00:00:00.123456Z')
+      expect(result.success).toBe(true)
+      expect(result.data).toBeInstanceOf(Date)
+    })
 
-  test('should parse a valid year, month, day and hour only date/time string with separator', () => {
-    const date = parse('2021-03-12T14')
-    expect(dateTimeFormat.format(date)).toBe('03/12/2021, 02:00:00 PM EST')
-  })
+    it('should parse datetime without seconds', () => {
+      const result = parseDate('2020-01-01T00:00Z')
+      expect(result.success).toBe(true)
+      expect(result.data).toBeInstanceOf(Date)
+      expect(result.data!.toISOString()).toBe('2020-01-01T00:00:00.000Z')
+    })
 
-  test('should parse a valid year, month, day and hour only date/time string without separator', () => {
-    const date = parse('2021-03-12 16')
-    expect(dateTimeFormat.format(date)).toBe('03/12/2021, 04:00:00 PM EST')
-  })
+    it('should parse datetime with positive timezone offset', () => {
+      const result = parseDate('2020-01-01T00:00:00+02:00')
+      expect(result.success).toBe(true)
+      expect(result.data).toBeInstanceOf(Date)
+      expect(result.data!.toISOString()).toBe('2019-12-31T22:00:00.000Z')
+    })
 
-  test('should parse a valid year, month, day, hour and minute only date/time string', () => {
-    const date = parse('2021-03-12T14:42')
-    expect(dateTimeFormat.format(date)).toBe('03/12/2021, 02:42:00 PM EST')
-  })
+    it('should parse datetime with negative timezone offset', () => {
+      const result = parseDate('2020-01-01T12:00:00-05:00')
+      expect(result.success).toBe(true)
+      expect(result.data).toBeInstanceOf(Date)
+      expect(result.data!.toISOString()).toBe('2020-01-01T17:00:00.000Z')
+    })
 
-  test('should parse a valid year, month, day, hour, minute and seconds only date/time string', () => {
-    const date = parse('2021-03-12T14:42:12')
-    expect(dateTimeFormat.format(date)).toBe('03/12/2021, 02:42:12 PM EST')
-  })
+    it('should parse datetime with short timezone offset format', () => {
+      const result = parseDate('2020-01-01T00:00:00.123+0200')
+      expect(result.success).toBe(true)
+      expect(result.data).toBeInstanceOf(Date)
+    })
 
-  test('should parse a valid UTC date/time string', () => {
-    const date = parse('2021-03-12T14:42:12Z')
-    expect(dateTimeFormat.format(date)).toBe('03/12/2021, 09:42:12 AM EST')
-  })
+    it('should parse datetime without minutes', () => {
+      const result = parseDate('2020-01-01T00:00+02:00')
+      expect(result.success).toBe(true)
+      expect(result.data).toBeInstanceOf(Date)
+    })
 
-  test('should parse a valid UTC date/time string with lower case separator and zulu', () => {
-    const date = parse('2021-03-12t14:42:12z')
-    expect(dateTimeFormat.format(date)).toBe('03/12/2021, 09:42:12 AM EST')
-  })
+    it('should parse string representation of timestamp', () => {
+      const timestamp = new Date('2023-01-01T00:00:00Z').getTime()
+      const result = parseDate(String(timestamp))
+      expect(result.success).toBe(true)
+      expect(result.data).toBeInstanceOf(Date)
+      expect(result.data!.toISOString()).toBe('2023-01-01T00:00:00.000Z')
+    })
 
-  test('should parse a valid date/time string with offset', () => {
-    const date = parse('2021-03-12T14:42:12+09:00')
-    expect(dateTimeFormat.format(date)).toBe('03/12/2021, 12:42:12 AM EST')
-  })
+    it('should parse numeric timestamp string', () => {
+      const timestamp = 1762259739191
+      const result = parseDate(String(timestamp))
+      expect(result.success).toBe(true)
+      expect(result.data).toBeInstanceOf(Date)
+      expect(result.data!.getTime()).toBe(timestamp)
+    })
 
-  test('should parse a valid epoch date/time', () => {
-    const date = parse(1711639239717)
-    expect(dateTimeFormat.format(date)).toBe('03/28/2024, 11:20:39 AM EDT')
-  })
-
-  test('should parse a valid hour and minute time string', () => {
-    const date = parse('14:00')
-    expect(timeOnlyFormat.format(date)).toBe('02:00:00 PM')
-  })
-
-  test('should parse a valid hour, minute and second time string', () => {
-    const date = parse('14:14:34')
-    expect(timeOnlyFormat.format(date)).toBe('02:14:34 PM')
-  })
-
-  test('should parse a valid hour, minute and second time string with meridiem', () => {
-    const date = parse('08:14:34 PM')
-    expect(timeOnlyFormat.format(date)).toBe('08:14:34 PM')
-  })
-
-  test('should throw an error for an invalid date string', () => {
-    expect(() => parse('2021-15-37')).toThrowError(
-      '"2021-15-37" is an invalid RFC339 Internet Date Time string',
+    it.each(['invalid-date', '14:30:00', 'not-a-date'])(
+      'should return error for %s input',
+      (input) => {
+        const result = parseDate(input)
+        expect(result.success).toBe(false)
+        expect(result.error).toBeDefined()
+      },
     )
   })
 
-  test('should throw an error for an invalid time string', () => {
-    expect(() => parse('27:62')).toThrowError(
-      '"27:62" is an invalid RFC339 Internet Date Time string',
-    )
-  })
-
-  test('should throw an error for an invalid time string', () => {
-    expect(() => parse('14:12 PM')).toThrowError(
-      '"14:12 PM" is an invalid time string',
-    )
-  })
-
-  test('should throw an error for an invalid epoch', () => {
-    // eslint-disable-next-line no-loss-of-precision
-    expect(() => parse(9274309587123413)).toThrowError(
-      '"9274309587123412" is an invalid epoch date value',
-    )
-  })
-
-  /* test('should parse a valid time string', () => {
-    const date = parse('00:00:00.000Z');
-    expect(dateTimeFormat.format(date)).toBe('12/31/2020, 7:00:00 PM EST');
-  });
-
-  test('should throw an error for an invalid date string', () => {
-    expect(() => parse('2021-01-01T00:00:00.000')).toThrowError('"2021-01-01T00:00:00.000" is an invalid RFC339 Internet Date Time string');
-  });
-
-  test('should throw an error for an invalid time string', () => {
-    expect(() => parse('00:00:00.000')).toThrowError('"00:00:00.000" is an invalid time string');
-  }); */
+  it.each([null, undefined, true, {}, [], 'not-a-date'])(
+    'should return error for %s input',
+    (input) => {
+      // @ts-expect-error - intentionally passing invalid input
+      const result = parseDate(input)
+      expect(result.success).toBe(false)
+      expect(result.error).toBeDefined()
+    },
+  )
 })
