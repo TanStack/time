@@ -7,6 +7,7 @@ const config = defineConfig({
     dir: './tests',
     watch: false,
     environment: 'jsdom',
+    setupFiles: ['./vitest-setup.js'],
     coverage: { enabled: true, provider: 'istanbul', include: ['src/**/*'] },
     typecheck: { enabled: true },
   },
