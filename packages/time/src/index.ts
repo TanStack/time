@@ -1,4 +1,4 @@
 /**
  *  TanStack Time
  */
-export * from './utils/parse';
+export * from './utils/parse'

@@ -17,7 +17,7 @@ Parsing a date from a string is a bit more complex. The RFC3339 Internet Date/Ti
 
 The RFC3339 standard allows for the following date/time parts:
 
-> [4 digit year[-2 digit month[-2 digit day]]][separator (t|t|" ")][2 digit hour[:2 digit minute[:2 digit second[.3 digit millisecond]]]][timezone/offset(z|Z|[(+|-)2 digit hour[:2 digit minute]])]
+> [4 digit year[-2 digit month[-2 digit day]]][separator (t|T|" ")][2 digit hour[:2 digit minute[:2 digit second[.3 digit millisecond]]]][timezone/offset(z|Z|[(+|-)2 digit hour[:2 digit minute]])]
 
 In accordance with the standard, if 'T' is used as a separator it may be in upper or lower case. If 'Z' is used as a timezone/offset, it may be in upper or lower case. The 'Z' timezone/offset is often referred to as 'Zulu' time, and represents UTC.
 
