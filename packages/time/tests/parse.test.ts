@@ -92,7 +92,7 @@ describe('parseDate', () => {
       expect(result.data).toBeInstanceOf(Date)
     })
 
-    it('should parse datetime without minutes', () => {
+    it('should parse datetime without seconds', () => {
       const result = parseDate('2020-01-01T00:00+02:00')
       expect(result.success).toBe(true)
       expect(result.data).toBeInstanceOf(Date)
