@@ -9,8 +9,12 @@ export const splitMultiDayEvents = <
   event: TEvent,
   timeZone: Temporal.TimeZoneLike,
 ): TEvent[] => {
-  const startDate = Temporal.PlainDateTime.from(event.start).toZonedDateTime(timeZone)
-  const endDate = Temporal.PlainDateTime.from(event.end).toZonedDateTime(timeZone)
+  const startDate = Temporal.PlainDateTime.from(event.start).toZonedDateTime(
+    timeZone,
+  )
+  const endDate = Temporal.PlainDateTime.from(event.end).toZonedDateTime(
+    timeZone,
+  )
   const events: TEvent[] = []
 
   let currentDay = startDate
@@ -20,7 +24,10 @@ export const splitMultiDayEvents = <
         ? startDate
         : startOf({ date: currentDay, unit: 'day' })
     const eventEnd =
-      Temporal.ZonedDateTime.compare(endDate, endOf({ date: currentDay, unit: 'day' })) < 0
+      Temporal.ZonedDateTime.compare(
+        endDate,
+        endOf({ date: currentDay, unit: 'day' }),
+      ) < 0
         ? endDate
         : endOf({ date: currentDay, unit: 'day' })
 

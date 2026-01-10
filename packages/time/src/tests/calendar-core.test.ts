@@ -13,27 +13,17 @@ describe('CalendarCore', () => {
   beforeEach(() => {
     vi.spyOn(Temporal.Now, 'plainDateISO').mockReturnValue(mockDate)
     vi.spyOn(Temporal.Now, 'plainDateTimeISO').mockReturnValue(mockDateTime)
-    vi.spyOn(Temporal.Now, 'zonedDateTime').mockReturnValue(
-      Temporal.ZonedDateTime.from({
-        timeZone: mockTimeZone,
-        year: 2024,
-        month: 6,
-        day: 15,
-        hour: 10,
-        minute: 0,
-        second: 0,
-      }),
-    )
+    const mockZonedDateTime = Temporal.ZonedDateTime.from({
+      timeZone: mockTimeZone,
+      year: 2024,
+      month: 6,
+      day: 15,
+      hour: 10,
+      minute: 0,
+      second: 0,
+    })
     vi.spyOn(Temporal.Now, 'zonedDateTimeISO').mockReturnValue(
-      Temporal.ZonedDateTime.from({
-        timeZone: mockTimeZone,
-        year: 2024,
-        month: 6,
-        day: 15,
-        hour: 10,
-        minute: 0,
-        second: 0,
-      }),
+      mockZonedDateTime,
     )
 
     options = {
@@ -128,13 +118,12 @@ describe('CalendarCore', () => {
         overlappingEvents: [
           {
             ...options.events![2],
-            start:
-              Temporal.PlainDateTime.from('2024-06-12T11:00').toZonedDateTime(
-                mockTimeZone,
-              ).toString(),
-            end: Temporal.PlainDateTime.from(
-              '2024-06-12T13:00',
-            ).toZonedDateTime(mockTimeZone).toString(),
+            start: Temporal.PlainDateTime.from('2024-06-12T11:00')
+              .toZonedDateTime(mockTimeZone)
+              .toString(),
+            end: Temporal.PlainDateTime.from('2024-06-12T13:00')
+              .toZonedDateTime(mockTimeZone)
+              .toString(),
           },
         ],
       })
@@ -144,13 +133,12 @@ describe('CalendarCore', () => {
         overlappingEvents: [
           {
             ...options.events![1],
-            start:
-              Temporal.PlainDateTime.from('2024-06-12T11:00').toZonedDateTime(
-                mockTimeZone,
-              ).toString(),
-            end: Temporal.PlainDateTime.from(
-              '2024-06-12T12:00',
-            ).toZonedDateTime(mockTimeZone).toString(),
+            start: Temporal.PlainDateTime.from('2024-06-12T11:00')
+              .toZonedDateTime(mockTimeZone)
+              .toString(),
+            end: Temporal.PlainDateTime.from('2024-06-12T12:00')
+              .toZonedDateTime(mockTimeZone)
+              .toString(),
           },
         ],
       })

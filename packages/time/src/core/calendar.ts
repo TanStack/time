@@ -134,7 +134,6 @@ export class CalendarCore<
     })
   }
 
-
   private getFirstDayOfMonth() {
     return getFirstDayOfMonth(
       this.store.state.currentPeriod

@@ -16,7 +16,7 @@ interface StartOfParams {
 export function startOf({
   date,
   unit,
-  firstDayOfWeek = 1
+  firstDayOfWeek = 1,
 }: StartOfParams): Temporal.ZonedDateTime {
   let startDate: Temporal.ZonedDateTime
 
@@ -28,7 +28,7 @@ export function startOf({
         second: 0,
         millisecond: 0,
         microsecond: 0,
-        nanosecond: 0
+        nanosecond: 0,
       })
       break
     case 'week': {
@@ -39,7 +39,7 @@ export function startOf({
         second: 0,
         millisecond: 0,
         microsecond: 0,
-        nanosecond: 0
+        nanosecond: 0,
       })
       break
     }
@@ -51,7 +51,7 @@ export function startOf({
         second: 0,
         millisecond: 0,
         microsecond: 0,
-        nanosecond: 0
+        nanosecond: 0,
       })
       break
     case 'year':
@@ -63,7 +63,7 @@ export function startOf({
         second: 0,
         millisecond: 0,
         microsecond: 0,
-        nanosecond: 0
+        nanosecond: 0,
       })
       break
     case 'workWeek': {
@@ -74,7 +74,7 @@ export function startOf({
         second: 0,
         millisecond: 0,
         microsecond: 0,
-        nanosecond: 0
+        nanosecond: 0,
       })
       break
     }
@@ -88,7 +88,7 @@ export function startOf({
         second: 0,
         millisecond: 0,
         microsecond: 0,
-        nanosecond: 0
+        nanosecond: 0,
       })
       break
     default:

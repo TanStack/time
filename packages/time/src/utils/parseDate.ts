@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import type { ZodSafeParseResult } from 'zod'
+import type { SafeParseReturnType } from 'zod'
 
-type ParseDateResult = ZodSafeParseResult<Date>
+type ParseDateResult = SafeParseReturnType<unknown, Date>
 
 export type PossibleDate = string | number | Date
 

@@ -1,4 +1,5 @@
 import type { Temporal } from '@js-temporal/polyfill'
+import { Locale } from '../formatter/shared'
 
 export interface IDateDefaults {
   calendar: Temporal.CalendarLike
