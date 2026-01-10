@@ -1,2 +1,5 @@
 packages:
   - 'packages/**'
+
+catalog:
+  '@js-temporal/polyfill': 0.5.1

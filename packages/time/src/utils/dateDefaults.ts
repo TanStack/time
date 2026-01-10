@@ -1,18 +1,9 @@
-<<<<<<< HEAD
-import type { Temporal } from "@js-temporal/polyfill";
+import type { Temporal } from '@js-temporal/polyfill'
 
 export interface IDateDefaults {
-  calendar: Temporal.CalendarLike;
-  locale: Intl.UnicodeBCP47LocaleIdentifier;
-  timeZone: Temporal.TimeZoneLike;
-=======
-import { Locale } from '../formatter/shared'
-
-export interface IDateDefaults {
-  calendar: string
-  locale: string
-  timeZone: string
->>>>>>> v0-1-0
+  calendar: Temporal.CalendarLike
+  locale: Intl.UnicodeBCP47LocaleIdentifier
+  timeZone: Temporal.TimeZoneLike
 }
 
 const {

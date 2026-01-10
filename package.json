@@ -2,7 +2,7 @@
   "name": "time",
   "private": true,
   "repository": "https://github.com/tanstack/time.git",
-  "packageManager": "pnpm@8.12.1",
+  "packageManager": "pnpm@9.6.0",
   "type": "module",
   "scripts": {
     "clean": "pnpm --filter \"./packages/**\" run clean",
@@ -79,6 +79,6 @@
     "vue": "^3.3.4"
   },
   "dependencies": {
-    "@js-temporal/polyfill": "^0.5.1"
+    "@js-temporal/polyfill": "catalog:"
   }
 }

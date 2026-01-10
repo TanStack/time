@@ -60,7 +60,7 @@
     "react-dom": "^17.0.0 || ^18.0.0"
   },
   "dependencies": {
-    "@js-temporal/polyfill": "^0.4.4",
+    "@js-temporal/polyfill": "catalog:",
     "@tanstack/react-store": "^0.4.1",
     "@tanstack/time": "workspace:*",
     "typesafe-actions": "^5.1.0",

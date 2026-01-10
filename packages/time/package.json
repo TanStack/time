@@ -56,7 +56,7 @@
   ],
   "dependencies": {
     "@bart-krakowski/get-week-info-polyfill": "^1.0.6",
-    "@js-temporal/polyfill": "^0.4.4",
+    "@js-temporal/polyfill": "catalog:",
     "@tanstack/store": "^0.4.1"
   },
   "devDependencies": {
