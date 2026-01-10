@@ -47,6 +47,21 @@ export default function App() {
 
   const daysNames = calendar.getDaysNames('short')
 
+  const groupedWeeks =
+    calendar.viewMode.unit === 'month'
+      ? calendar.groupDaysBy({
+          days: calendar.days,
+          unit: 'week',
+          fillMissingDays: true,
+        })
+      : calendar.viewMode.unit === 'week'
+        ? calendar.groupDaysBy({
+            days: calendar.days,
+            unit: 'week',
+            fillMissingDays: true,
+          })
+        : [[...calendar.days]]
+
   return (
     <div className="p-5 font-sans">
       <h1 className="text-2xl font-bold mb-5">
@@ -121,63 +136,91 @@ export default function App() {
         </div>
       </div>
 
-      <div
-        className="grid gap-px bg-gray-300 border border-gray-300"
-        style={{
-          gridTemplateColumns: `repeat(${daysNames.length}, 1fr)`,
-        }}
-      >
-        {daysNames.map((dayName: string) => (
-          <div
-            key={dayName}
-            className="p-2.5 bg-white text-center font-bold text-xs"
-          >
-            {dayName}
-          </div>
-        ))}
-
-        {calendar.days.map((day: (typeof calendar.days)[0]) => {
-          const dateStr = day.date.toString()
-          const isToday = day.isToday
-          const isInCurrentPeriod = day.isInCurrentPeriod
-
-          return (
+      <div className="grid gap-px bg-gray-300 border border-gray-300">
+        <div
+          className="grid gap-px"
+          style={{
+            gridTemplateColumns: `repeat(${daysNames.length}, 1fr)`,
+          }}
+        >
+          {daysNames.map((dayName: string) => (
             <div
-              key={dateStr}
-              className={`min-h-[100px] p-2 ${
-                isToday
-                  ? 'bg-blue-50 border-2 border-blue-500'
-                  : isInCurrentPeriod
-                    ? 'bg-white border border-gray-200'
-                    : 'bg-gray-100 border border-gray-200 opacity-50'
-              }`}
+              key={dayName}
+              className="p-2.5 bg-white text-center font-bold text-xs"
             >
-              <div
-                className={`text-sm mb-1 ${isToday ? 'font-bold' : 'font-normal'}`}
-              >
-                {day.date.day}
-              </div>
-              <div className="flex flex-col gap-0.5">
-                {day.events.map((event: Event) => {
-                  const eventProps = calendar.getEventProps(event.id)
-                  const hasOverlappingEvents =
-                    (eventProps?.overlappingEvents.length ?? 0) > 0
+              {dayName}
+            </div>
+          ))}
+        </div>
+
+        {groupedWeeks.map(
+          (
+            week: Array<(typeof calendar.days)[0] | null>,
+            weekIndex: number,
+          ) => (
+            <div
+              key={weekIndex}
+              className="grid gap-px"
+              style={{
+                gridTemplateColumns: `repeat(${daysNames.length}, 1fr)`,
+              }}
+            >
+              {week.map((day: (typeof calendar.days)[0] | null) => {
+                if (!day) {
                   return (
                     <div
-                      key={event.id}
-                      className={`text-[11px] px-1.5 py-1 rounded cursor-pointer text-white ${
-                        hasOverlappingEvents ? 'bg-red-500' : 'bg-blue-500'
-                      } ${eventProps?.isSplitEvent ? 'opacity-70' : 'opacity-100'}`}
-                      title={event.title}
-                    >
-                      {event.title}
-                    </div>
+                      key={`empty-${weekIndex}`}
+                      className="min-h-[100px] p-2 bg-gray-50 border border-gray-200"
+                    />
                   )
-                })}
-              </div>
+                }
+
+                const dateStr = day.date.toString()
+                const isToday = day.isToday
+                const isInCurrentPeriod = day.isInCurrentPeriod
+
+                return (
+                  <div
+                    key={dateStr}
+                    className={`min-h-[100px] p-2 ${
+                      isToday
+                        ? 'bg-blue-50 border-2 border-blue-500'
+                        : isInCurrentPeriod
+                          ? 'bg-white border border-gray-200'
+                          : 'bg-gray-100 border border-gray-200 opacity-50'
+                    }`}
+                  >
+                    <div
+                      className={`text-sm mb-1 ${isToday ? 'font-bold' : 'font-normal'}`}
+                    >
+                      {day.date.day}
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      {day.events.map((event: Event) => {
+                        const eventProps = calendar.getEventProps(event.id)
+                        const hasOverlappingEvents =
+                          (eventProps?.overlappingEvents.length ?? 0) > 0
+                        return (
+                          <div
+                            key={event.id}
+                            className={`text-[11px] px-1.5 py-1 rounded cursor-pointer text-white ${
+                              hasOverlappingEvents
+                                ? 'bg-red-500'
+                                : 'bg-blue-500'
+                            } ${eventProps?.isSplitEvent ? 'opacity-70' : 'opacity-100'}`}
+                            title={event.title}
+                          >
+                            {event.title}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
-          )
-        })}
+          ),
+        )}
       </div>
 
       {calendar.isPending && (
