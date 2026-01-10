@@ -6,7 +6,7 @@
  */
 export function isValidDate(date: any): boolean {
   if (Object.prototype.toString.call(date) !== '[object Date]') {
-    return false;
+    return false
   }
-  return date.getTime() === date.getTime();
+  return date.getTime() === date.getTime()
 }
