@@ -20,7 +20,7 @@ vi.mock('@tanstack/react-store', () => {
 })
 
 describe('useCalendar', () => {
-  const events: Event<string>[] = [
+  const events: Array<Event<string>> = [
     {
       id: '1',
       start: '2024-06-01T10:00:00',
