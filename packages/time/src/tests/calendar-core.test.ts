@@ -1,11 +1,11 @@
 import { Temporal } from '@js-temporal/polyfill'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { CalendarCore } from '../core/calendar'
-import type { CalendarCoreOptions, Event } from '../core/calendar'
+import type { CalendarCoreOptions, Event, Resource } from '../core/calendar'
 
 describe('CalendarCore', () => {
-  let options: CalendarCoreOptions<string, Event<string>>
-  let calendarCore: CalendarCore<string, Event<string>>
+  let options: CalendarCoreOptions<Resource, Event>
+  let calendarCore: CalendarCore<Resource, Event>
   const mockDate = Temporal.PlainDate.from('2024-06-15')
   const mockDateTime = Temporal.PlainDateTime.from('2024-06-15T10:00')
   const mockTimeZone = 'America/New_York'
@@ -189,12 +189,14 @@ describe('CalendarCore', () => {
     test('should go to specific period correctly', () => {
       const specificDate = '2024-07-01'
       calendarCore.goToSpecificPeriod(specificDate)
-      expect(calendarCore.store.state.currentPeriod.toString()).toEqual(
-        specificDate,
-      )
-      expect(calendarCore.store.state.activeDate.toString()).toEqual(
-        specificDate,
-      )
+      expect(
+        calendarCore.store.state.currentPeriod.toString({
+          calendarName: 'never',
+        }),
+      ).toEqual(specificDate)
+      expect(
+        calendarCore.store.state.activeDate.toString({ calendarName: 'never' }),
+      ).toEqual(specificDate)
     })
 
     test('should go to previous workWeek correctly', () => {
@@ -219,6 +221,227 @@ describe('CalendarCore', () => {
         expectedNextWorkWeek,
       )
       expect(calendarCore.store.state.activeDate).toEqual(expectedNextWorkWeek)
+    })
+  })
+
+  describe('Navigation range checks', () => {
+    test('canGoPreviousPeriod should return true when no range is specified', () => {
+      expect(calendarCore.canGoPreviousPeriod()).toBe(true)
+    })
+
+    test('canGoNextPeriod should return true when no range is specified', () => {
+      expect(calendarCore.canGoNextPeriod()).toBe(true)
+    })
+
+    test('canGoPreviousPeriod should return true when previous period is within range', () => {
+      calendarCore = new CalendarCore({
+        ...options,
+        range: {
+          start: '2024-05-01',
+          end: '2024-08-31',
+        },
+      })
+      expect(calendarCore.canGoPreviousPeriod()).toBe(true)
+    })
+
+    test('canGoNextPeriod should return true when next period is within range', () => {
+      calendarCore = new CalendarCore({
+        ...options,
+        range: {
+          start: '2024-05-01',
+          end: '2024-08-31',
+        },
+      })
+      expect(calendarCore.canGoNextPeriod()).toBe(true)
+    })
+
+    test('canGoPreviousPeriod should return false when previous period is before range start', () => {
+      calendarCore = new CalendarCore({
+        ...options,
+        range: {
+          start: '2024-06-15',
+          end: '2024-08-31',
+        },
+      })
+      expect(calendarCore.canGoPreviousPeriod()).toBe(false)
+    })
+
+    test('canGoNextPeriod should return false when next period is after range end', () => {
+      calendarCore = new CalendarCore({
+        ...options,
+        range: {
+          start: '2024-05-01',
+          end: '2024-06-15',
+        },
+      })
+      expect(calendarCore.canGoNextPeriod()).toBe(false)
+    })
+
+    test('canGoPreviousPeriod should work correctly with week view mode', () => {
+      calendarCore = new CalendarCore({
+        ...options,
+        viewMode: { value: 1, unit: 'week' },
+        range: {
+          start: '2024-06-01',
+          end: '2024-08-31',
+        },
+      })
+      calendarCore.goToSpecificPeriod('2024-06-15')
+      expect(calendarCore.canGoPreviousPeriod()).toBe(true)
+
+      calendarCore.goToSpecificPeriod('2024-06-01')
+      expect(calendarCore.canGoPreviousPeriod()).toBe(false)
+    })
+
+    test('canGoNextPeriod should work correctly with week view mode', () => {
+      calendarCore = new CalendarCore({
+        ...options,
+        viewMode: { value: 1, unit: 'week' },
+        range: {
+          start: '2024-05-01',
+          end: '2024-06-30',
+        },
+      })
+      calendarCore.goToSpecificPeriod('2024-06-15')
+      expect(calendarCore.canGoNextPeriod()).toBe(true)
+
+      calendarCore.goToSpecificPeriod('2024-06-30')
+      expect(calendarCore.canGoNextPeriod()).toBe(false)
+    })
+
+    test('canGoPreviousPeriod should work correctly with day view mode', () => {
+      calendarCore = new CalendarCore({
+        ...options,
+        viewMode: { value: 1, unit: 'day' },
+        range: {
+          start: '2024-06-10',
+          end: '2024-08-31',
+        },
+      })
+      expect(calendarCore.canGoPreviousPeriod()).toBe(true)
+
+      calendarCore.goToSpecificPeriod('2024-06-10')
+      expect(calendarCore.canGoPreviousPeriod()).toBe(false)
+    })
+
+    test('canGoNextPeriod should work correctly with day view mode', () => {
+      calendarCore = new CalendarCore({
+        ...options,
+        viewMode: { value: 1, unit: 'day' },
+        range: {
+          start: '2024-05-01',
+          end: '2024-06-20',
+        },
+      })
+      expect(calendarCore.canGoNextPeriod()).toBe(true)
+
+      calendarCore.goToSpecificPeriod('2024-06-20')
+      expect(calendarCore.canGoNextPeriod()).toBe(false)
+    })
+
+    test('canGoPreviousPeriod should work correctly with workWeek view mode', () => {
+      calendarCore = new CalendarCore({
+        ...options,
+        viewMode: { value: 1, unit: 'workWeek' },
+        range: {
+          start: '2024-06-10',
+          end: '2024-08-31',
+        },
+      })
+      expect(calendarCore.canGoPreviousPeriod()).toBe(true)
+
+      calendarCore.goToSpecificPeriod('2024-06-10')
+      expect(calendarCore.canGoPreviousPeriod()).toBe(false)
+    })
+
+    test('canGoNextPeriod should work correctly with workWeek view mode', () => {
+      calendarCore = new CalendarCore({
+        ...options,
+        viewMode: { value: 1, unit: 'workWeek' },
+        range: {
+          start: '2024-05-01',
+          end: '2024-06-20',
+        },
+      })
+      expect(calendarCore.canGoNextPeriod()).toBe(true)
+
+      calendarCore.goToSpecificPeriod('2024-06-20')
+      expect(calendarCore.canGoNextPeriod()).toBe(false)
+    })
+
+    test('canGoPreviousPeriod should work correctly with multiple month view mode', () => {
+      calendarCore = new CalendarCore({
+        ...options,
+        viewMode: { value: 2, unit: 'month' },
+        range: {
+          start: '2024-05-01',
+          end: '2024-08-31',
+        },
+      })
+      calendarCore.goToSpecificPeriod('2024-07-15')
+      expect(calendarCore.canGoPreviousPeriod()).toBe(true)
+
+      calendarCore.goToSpecificPeriod('2024-05-01')
+      expect(calendarCore.canGoPreviousPeriod()).toBe(false)
+    })
+
+    test('canGoNextPeriod should work correctly with multiple month view mode', () => {
+      calendarCore = new CalendarCore({
+        ...options,
+        viewMode: { value: 2, unit: 'month' },
+        range: {
+          start: '2024-05-01',
+          end: '2024-08-31',
+        },
+      })
+      expect(calendarCore.canGoNextPeriod()).toBe(true)
+
+      calendarCore.goToSpecificPeriod('2024-08-31')
+      expect(calendarCore.canGoNextPeriod()).toBe(false)
+    })
+
+    test('canGoPreviousPeriod should return true when only range end is specified', () => {
+      calendarCore = new CalendarCore({
+        ...options,
+        range: {
+          start: null,
+          end: '2024-08-31',
+        },
+      })
+      expect(calendarCore.canGoPreviousPeriod()).toBe(true)
+    })
+
+    test('canGoNextPeriod should return true when only range start is specified', () => {
+      calendarCore = new CalendarCore({
+        ...options,
+        range: {
+          start: '2024-05-01',
+          end: null,
+        },
+      })
+      expect(calendarCore.canGoNextPeriod()).toBe(true)
+    })
+
+    test('canGoPreviousPeriod should return false when previous period is before range start with only start specified', () => {
+      calendarCore = new CalendarCore({
+        ...options,
+        range: {
+          start: '2024-06-15',
+          end: null,
+        },
+      })
+      expect(calendarCore.canGoPreviousPeriod()).toBe(false)
+    })
+
+    test('canGoNextPeriod should return false when next period is after range end with only end specified', () => {
+      calendarCore = new CalendarCore({
+        ...options,
+        range: {
+          start: null,
+          end: '2024-06-15',
+        },
+      })
+      expect(calendarCore.canGoNextPeriod()).toBe(false)
     })
   })
 
