@@ -1,4 +1,1 @@
-/**
- *  TanStack Time
- */
-export const foo = 'foo'
+export { useCalendar } from './useCalendar'
