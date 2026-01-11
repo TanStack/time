@@ -3,7 +3,7 @@ title: Use Calendar
 id: useCalendar
 ---
 
-### `useCalendar`
+## `useCalendar`
 
 ```tsx
 export function useCalendar({
@@ -17,8 +17,7 @@ export function useCalendar({
 
 `useCalendar` is a hook that provides a comprehensive set of functionalities for managing calendar events, view modes, and period navigation.
 
-
-#### Parameters
+### Parameters
 
 - `events?: TEvent[] | null`
 An optional array of events to be handled by the calendar.
@@ -30,40 +29,45 @@ Optional locale for date formatting. Uses a BCP 47 language tag.
 Optional time zone specification for the calendar.
 - `calendar?: Temporal.CalendarLike`
 Optional calendar system to be used.
+- `resources?: TResource[] | null`
+Optional resources to be used in the calendar.
+- `range?: DateRange`
+Optional range of dates to be used in the calendar.
 
+### Returns
 
-#### Returns
-
-`firstDayOfPeriod: Temporal.PlainDate`
+- `firstDayOfPeriod: Temporal.PlainDate`
 This value represents the first day of the current period displayed by the calendar.
-`currentPeriod: string`
+- `currentPeriod: string`
 This value represents a string that describes the current period displayed by the calendar.
-`goToPreviousPeriod: () => void`
+- `goToPreviousPeriod: () => void`
 This function navigates to the previous period.
-`goToNextPeriod: () => void`
+- `goToNextPeriod: () => void`
 This function navigates to the next period.
 - `goToCurrentPeriod: () => void`
 This function navigates to the current period.
-- `goToSpecificPeriod: (date: Temporal.PlainDate) => void`
+- `goToSpecificPeriod: (date: string) => void`
 This function navigates to a specific period based on the provided date.
-- `days: Day[]`
+- `days: Day<TResource, TEvent>[]`
 This value represents an array of days in the current period displayed by the calendar.
-- `daysNames: string[]`
-This value represents an array of strings that contain the names of the days of the week.
+- `getDaysNames: (weekday?: 'long' | 'short') => string[]`
+This function is used to retrieve the names of the days of the week, based on the current locale.
 - `viewMode: CalendarStore['viewMode']`
 This value represents the current view mode of the calendar.
 - `changeViewMode: (newViewMode: CalendarStore['viewMode']) => void`
 This function is used to change the view mode of the calendar.
-- `getEventProps: (id: string) => { style: CSSProperties } | null`
-This function is used to retrieve the style properties for a specific event based on its ID.
-- `getCurrentTimeMarkerProps: () => { style: CSSProperties, currentTime: string | undefined }`
-This function is used to retrieve the style properties and current time for the current time marker.
+- `getEventProps: (id: Event['id']) => { isSplitEvent: boolean, overlappingEvents: TEvent[] } | null`
+This function is used to retrieve the properties for a specific event based on its ID.
+- `groupDaysBy: (props: Omit<GroupDaysByProps<TResource, TEvent>, 'weekStartsOn' | 'locale'>) => (Day<TResource, TEvent> | null)[][]`
+This function is used to group the days in the current period by a specified unit. The fillMissingDays parameter can be used to fill in missing days with previous or next month's days.
+- `canGoPreviousPeriod: () => boolean`
+This function is used to check if the previous period is available.
+- `canGoNextPeriod: () => boolean`
+This function is used to check if the next period is available.
 - `isPending: boolean`
 This value represents whether the calendar is in a pending state.
-- `groupDaysBy: (props: Omit<GroupDaysByProps<TEvent>, 'weekStartsOn'>) => (Day<TEvent> | null)[][]`
-This function is used to group the days in the current period by a specified unit. The fillMissingDays parameter can be used to fill in missing days with previous or next month's days.
 
-#### Example Usage
+### Example Usage
 
 ```tsx
 const CalendarComponent = ({ events }) => {

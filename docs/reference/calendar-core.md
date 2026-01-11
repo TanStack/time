@@ -3,7 +3,7 @@ title: Calendar Core
 id: calendar-core
 ---
 
-### `CalendarCore`
+## `CalendarCore`
 
 ```tsx
 export class CalendarCore<TEvent extends Event> {
@@ -13,8 +13,7 @@ export class CalendarCore<TEvent extends Event> {
 
 The `CalendarCore` class provides a set of functionalities for managing calendar events, view modes, and period navigation. This class is designed to be used in various calendar applications where precise date management and event handling are required.
 
-
-#### Parameters
+### Parameters
 
 - `weekStartsOn?: number`
 An optional number that specifies the day of the week that the calendar should start on. It defaults to 1 (Monday).
@@ -28,9 +27,12 @@ An optional string that specifies the locale to use for formatting dates and tim
 Optional time zone specification for the calendar.
 - `calendar?: Temporal.CalendarLike`
 Optional calendar system to be used.
+- `resources?: TResource[]`
+Optional resources to be used in the calendar.
+- `range?: DateRange`
+Optional range of dates to be used in the calendar.
 
-
-#### Returns
+### Returns
 
 - `getDaysWithEvents(): Array<Day<TEvent>>`
 Returns an array of days in the current period with their associated events.
@@ -55,8 +57,7 @@ Retrieves the style properties and current time for the current time marker.
 - `groupDaysBy(props: Omit<GroupDaysByProps<TEvent>, 'weekStartsOn'>): (Day<TEvent> | null)[][]`
 Groups the days in the current period by a specified unit. The fillMissingDays parameter can be used to fill in missing days with previous or next month's days.
 
-
-#### Example Usage
+### Example Usage
 
 ```ts
 import { CalendarCore, Event } from '@tanstack/time';
