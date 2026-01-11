@@ -79,6 +79,10 @@ interface CalendarActions<
   goToCurrentPeriod: () => void
   /** Navigates to a specific date. */
   goToSpecificPeriod: (date: string) => void
+  /** Checks if navigation to the previous period is allowed within the range. */
+  canGoPreviousPeriod: () => boolean
+  /** Checks if navigation to the next period is allowed within the range. */
+  canGoNextPeriod: () => boolean
   /** Changes the current view mode of the calendar. */
   changeViewMode: (newViewMode: CalendarStore['viewMode']) => void
   /** Retrieves styling properties for a specific event, identified by ID. */
@@ -435,6 +439,68 @@ export class CalendarCore<
       activeDate: constrainedDate,
       currentPeriod: constrainedDate,
     }))
+  }
+
+  canGoPreviousPeriod(): boolean {
+    let previousDate: Temporal.PlainDate
+
+    switch (this.store.state.viewMode.unit) {
+      case 'month': {
+        previousDate = this.store.state.activeDate.subtract({
+          months: this.store.state.viewMode.value,
+        })
+        break
+      }
+      case 'week': {
+        previousDate = this.store.state.activeDate.subtract({
+          weeks: this.store.state.viewMode.value,
+        })
+        break
+      }
+      case 'day': {
+        previousDate = this.store.state.activeDate.subtract({
+          days: this.store.state.viewMode.value,
+        })
+        break
+      }
+      case 'workWeek': {
+        previousDate = this.store.state.activeDate.subtract({ days: 5 })
+        break
+      }
+    }
+
+    return isDateInRange({ date: previousDate, range: this.options.range })
+  }
+
+  canGoNextPeriod(): boolean {
+    let nextDate: Temporal.PlainDate
+
+    switch (this.store.state.viewMode.unit) {
+      case 'month': {
+        nextDate = this.store.state.activeDate.add({
+          months: this.store.state.viewMode.value,
+        })
+        break
+      }
+      case 'week': {
+        nextDate = this.store.state.activeDate.add({
+          weeks: this.store.state.viewMode.value,
+        })
+        break
+      }
+      case 'day': {
+        nextDate = this.store.state.activeDate.add({
+          days: this.store.state.viewMode.value,
+        })
+        break
+      }
+      case 'workWeek': {
+        nextDate = this.store.state.activeDate.add({ days: 5 })
+        break
+      }
+    }
+
+    return isDateInRange({ date: nextDate, range: this.options.range })
   }
 
   getEventProps(id: Event['id']) {

@@ -77,6 +77,15 @@ export const useCalendar = <
     [calendarCore],
   )
 
+  const canGoPreviousPeriod = useCallback<
+    typeof calendarCore.canGoPreviousPeriod
+  >(() => calendarCore.canGoPreviousPeriod(), [calendarCore])
+
+  const canGoNextPeriod = useCallback<typeof calendarCore.canGoNextPeriod>(
+    () => calendarCore.canGoNextPeriod(),
+    [calendarCore],
+  )
+
   return {
     activeDate: state.activeDate.toString(),
     currentPeriod: state.currentPeriod.toString(),
@@ -87,6 +96,8 @@ export const useCalendar = <
     goToNextPeriod,
     goToCurrentPeriod,
     goToSpecificPeriod,
+    canGoPreviousPeriod,
+    canGoNextPeriod,
     changeViewMode,
     getEventProps,
     isPending,
