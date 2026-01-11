@@ -1,55 +1,82 @@
-import { Temporal } from "@js-temporal/polyfill";
-import type { Day, Event } from "./types";
+import { Temporal } from '@js-temporal/polyfill'
+import type { Day, Event, Resource } from './types'
 
-interface GroupDaysByBaseProps<TEvent extends Event = Event> {
-  days: (Day<TEvent> | null)[];
-  weekStartsOn: number;
+interface GroupDaysByBaseProps<
+  TResource extends Resource,
+  TEvent extends Event<TResource> = Event<TResource>,
+> {
+  days: (Day<TResource, TEvent> | null)[]
+  weekStartsOn: number
+  locale: string
 }
 
-type GroupDaysByMonthProps<TEvent extends Event = Event> = GroupDaysByBaseProps<TEvent> & {
-  unit: 'month';
-  fillMissingDays?: never;
-};
+type GroupDaysByMonthProps<
+  TResource extends Resource,
+  TEvent extends Event<TResource> = Event<TResource>,
+> = GroupDaysByBaseProps<TResource, TEvent> & {
+  unit: 'month'
+  fillMissingDays?: never
+}
 
-type GroupDaysByWeekProps<TEvent extends Event = Event> = GroupDaysByBaseProps<TEvent> & {
-  unit: 'week';
-  fillMissingDays?: boolean;
-};
+type GroupDaysByWeekProps<
+  TResource extends Resource,
+  TEvent extends Event<TResource> = Event<TResource>,
+> = GroupDaysByBaseProps<TResource, TEvent> & {
+  unit: 'week' | 'workWeek'
+  fillMissingDays?: boolean
+}
 
-export type GroupDaysByProps<TEvent extends Event = Event> = GroupDaysByMonthProps<TEvent> | GroupDaysByWeekProps<TEvent>;
+export type GroupDaysByProps<
+  TResource extends Resource,
+  TEvent extends Event<TResource> = Event<TResource>,
+> =
+  | GroupDaysByMonthProps<TResource, TEvent>
+  | GroupDaysByWeekProps<TResource, TEvent>
 
-export const groupDaysBy = <TEvent extends Event>({
+export const groupDaysBy = <
+  TResource extends Resource,
+  TEvent extends Event<TResource> = Event<TResource>,
+>({
   days,
   unit,
   fillMissingDays = true,
   weekStartsOn,
-}: GroupDaysByProps<TEvent>): (Day<TEvent> | null)[][] => {
-  const groups: (Day<TEvent> | null)[][] = [];
+  locale,
+}: GroupDaysByProps<TResource, TEvent>): (Day<
+  TResource,
+  TEvent
+> | null)[][] => {
+  const groups: (Day<TResource, TEvent> | null)[][] = []
+  const loc = new Intl.Locale(locale)
+  const { weekend } = loc.getWeekInfo()
 
   switch (unit) {
     case 'month': {
-      let currentMonth: (Day<TEvent> | null)[] = [];
+      let currentMonth: (Day<TResource, TEvent> | null)[] = []
       days.forEach((day) => {
-        if (currentMonth.length > 0 && day?.date.month !== currentMonth[0]?.date.month) {
-          groups.push(currentMonth);
-          currentMonth = [];
+        if (
+          currentMonth.length > 0 &&
+          day?.date.month !== currentMonth[0]?.date.month
+        ) {
+          groups.push(currentMonth)
+          currentMonth = []
         }
-        currentMonth.push(day);
-      });
+        currentMonth.push(day)
+      })
       if (currentMonth.length > 0) {
-        groups.push(currentMonth);
+        groups.push(currentMonth)
       }
-      break;
+      break
     }
 
     case 'week': {
-      const weeks: (Day<TEvent> | null)[][] = [];
-      let currentWeek: (Day<TEvent> | null)[] = [];
+      const weeks: (Day<TResource, TEvent> | null)[][] = []
+      let currentWeek: (Day<TResource, TEvent> | null)[] = []
 
       days.forEach((day) => {
         if (currentWeek.length === 0 && day?.date.dayOfWeek !== weekStartsOn) {
           if (day) {
-            const dayOfWeek = (day.date.dayOfWeek - weekStartsOn + 7) % 7;
+            const dayOfWeek = (day.date.dayOfWeek - weekStartsOn + 7) % 7
             for (let i = 0; i < dayOfWeek; i++) {
               currentWeek.push(
                 fillMissingDays
@@ -59,21 +86,23 @@ export const groupDaysBy = <TEvent extends Event>({
                       isToday: false,
                       isInCurrentPeriod: false,
                     }
-                  : null
-              );
+                  : null,
+              )
             }
           }
         }
-        currentWeek.push(day);
+        currentWeek.push(day)
         if (currentWeek.length === 7) {
-          weeks.push(currentWeek);
-          currentWeek = [];
+          weeks.push(currentWeek)
+          currentWeek = []
         }
-      });
+      })
 
       if (currentWeek.length > 0) {
         while (currentWeek.length < 7) {
-          const lastDate = currentWeek[currentWeek.length - 1]?.date ?? Temporal.PlainDate.from('2024-01-01');
+          const lastDate =
+            currentWeek[currentWeek.length - 1]?.date ??
+            Temporal.PlainDate.from('2024-01-01')
           currentWeek.push(
             fillMissingDays
               ? {
@@ -82,16 +111,79 @@ export const groupDaysBy = <TEvent extends Event>({
                   isToday: false,
                   isInCurrentPeriod: false,
                 }
-              : null
-          );
+              : null,
+          )
         }
-        weeks.push(currentWeek);
+        weeks.push(currentWeek)
       }
 
-      return weeks;
+      return weeks
     }
+
+    case 'workWeek': {
+      const workWeeks: (Day<TResource, TEvent> | null)[][] = []
+      let currentWorkWeek: (Day<TResource, TEvent> | null)[] = []
+
+      days.forEach((day) => {
+        if (
+          currentWorkWeek.length === 0 &&
+          day?.date.dayOfWeek !== weekStartsOn
+        ) {
+          if (day) {
+            const dayOfWeek = (day.date.dayOfWeek - weekStartsOn + 7) % 7
+            for (let i = 0; i < dayOfWeek; i++) {
+              const newDay = day.date.subtract({ days: dayOfWeek - i })
+              if (!weekend.includes(newDay.dayOfWeek)) {
+                currentWorkWeek.push(
+                  fillMissingDays
+                    ? {
+                        date: newDay,
+                        events: [],
+                        isToday: false,
+                        isInCurrentPeriod: false,
+                      }
+                    : null,
+                )
+              }
+            }
+          }
+        }
+        if (day && !weekend.includes(day.date.dayOfWeek)) {
+          currentWorkWeek.push(day)
+        }
+        if (currentWorkWeek.length === 5) {
+          workWeeks.push(currentWorkWeek)
+          currentWorkWeek = []
+        }
+      })
+
+      if (currentWorkWeek.length > 0) {
+        while (currentWorkWeek.length < 5) {
+          const lastDate =
+            currentWorkWeek[currentWorkWeek.length - 1]?.date ??
+            Temporal.PlainDate.from('2024-01-01')
+          const nextDate = lastDate.add({ days: 1 })
+          if (!weekend.includes(nextDate.dayOfWeek)) {
+            currentWorkWeek.push(
+              fillMissingDays
+                ? {
+                    date: nextDate,
+                    events: [],
+                    isToday: false,
+                    isInCurrentPeriod: false,
+                  }
+                : null,
+            )
+          }
+        }
+        workWeeks.push(currentWorkWeek)
+      }
+
+      return workWeeks
+    }
+
     default:
-      break;
+      break
   }
-  return groups;
-};
+  return groups
+}

@@ -1,24 +1,39 @@
-import type { Temporal } from "@js-temporal/polyfill"
+import type { Temporal } from '@js-temporal/polyfill'
+import { PossibleDate } from '../utils/parseDate'
 
-export interface Event {
-  id: string;
-  startDate: Temporal.PlainDateTime | Temporal.ZonedDateTime;
-  endDate: Temporal.PlainDateTime | Temporal.ZonedDateTime;
-  title: string;
+export interface Resource {
+  id: string
+  label: string
+}
+
+export interface Event<TResource extends Resource = Resource> {
+  id: string
+  start: string
+  end: string
+  title: string
+  resources?: TResource[]
 }
 
 export interface CalendarStore {
   currentPeriod: Temporal.PlainDate
+  activeDate: Temporal.PlainDate
   viewMode: {
     value: number
-    unit: 'month' | 'week' | 'day'
+    unit: 'month' | 'week' | 'workWeek' | 'day'
   }
-  currentTime: Temporal.PlainDateTime
 }
 
-export type Day<TEvent extends Event = Event> = {
+export type Day<
+  TResource extends Resource = Resource,
+  TEvent extends Event<TResource> = Event<TResource>,
+> = {
   date: Temporal.PlainDate
   events: TEvent[]
   isToday: boolean
   isInCurrentPeriod: boolean
+}
+
+export interface DateRange {
+  start: PossibleDate | null
+  end: PossibleDate | null
 }

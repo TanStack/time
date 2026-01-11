@@ -1,23 +1,44 @@
-import { Temporal } from '@js-temporal/polyfill';
-import type { Event } from './types';
+import { Temporal } from '@js-temporal/polyfill'
+import { endOf, startOf } from '../utils'
+import type { Event, Resource } from './types'
 
-export const splitMultiDayEvents = <TEvent extends Event>(event: TEvent, timeZone: Temporal.TimeZoneLike): TEvent[] => {
-  const startDate = event.startDate instanceof Temporal.PlainDateTime ? event.startDate.toZonedDateTime(timeZone) : event.startDate;
-  const endDate = event.endDate instanceof Temporal.PlainDateTime ? event.endDate.toZonedDateTime(timeZone) : event.endDate;
-  const events: TEvent[] = [];
+export const splitMultiDayEvents = <
+  TResource extends Resource = Resource,
+  TEvent extends Event<TResource> = Event<TResource>,
+>(
+  event: TEvent,
+  timeZone: Temporal.TimeZoneLike,
+): TEvent[] => {
+  const startDate = Temporal.PlainDateTime.from(event.start).toZonedDateTime(
+    timeZone,
+  )
+  const endDate = Temporal.PlainDateTime.from(event.end).toZonedDateTime(
+    timeZone,
+  )
+  const events: TEvent[] = []
 
-  let currentDay = startDate;
+  let currentDay = startDate
   while (Temporal.ZonedDateTime.compare(currentDay, endDate) < 0) {
-    const startOfCurrentDay = currentDay.with({ hour: 0, minute: 0, second: 0, millisecond: 0 });
-    const endOfCurrentDay = currentDay.with({ hour: 23, minute: 59, second: 59, millisecond: 999 });
+    const eventStart =
+      Temporal.ZonedDateTime.compare(currentDay, startDate) === 0
+        ? startDate
+        : startOf({ date: currentDay, unit: 'day' })
+    const eventEnd =
+      Temporal.ZonedDateTime.compare(
+        endDate,
+        endOf({ date: currentDay, unit: 'day' }),
+      ) < 0
+        ? endDate
+        : endOf({ date: currentDay, unit: 'day' })
 
-    const eventStart = Temporal.PlainDateTime.compare(currentDay, startDate) === 0 ? startDate : startOfCurrentDay;
-    const eventEnd = Temporal.PlainDateTime.compare(endDate, endOfCurrentDay) <= 0 ? endDate : endOfCurrentDay;
+    events.push({
+      ...event,
+      start: eventStart.toString(),
+      end: eventEnd.toString(),
+    })
 
-    events.push({ ...event, startDate: eventStart, endDate: eventEnd });
-
-    currentDay = startOfCurrentDay.add({ days: 1 });
+    currentDay = startOf({ date: currentDay, unit: 'day' }).add({ days: 1 })
   }
 
-  return events;
-};
+  return events
+}

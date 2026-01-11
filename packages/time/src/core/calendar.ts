@@ -1,18 +1,30 @@
 import { Store } from '@tanstack/store'
 import { Temporal } from '@js-temporal/polyfill'
-import { getFirstDayOfMonth, getFirstDayOfWeek } from '../utils'
+import {
+  getFirstDayOfMonth,
+  getFirstDayOfWeek,
+  parseDateRange,
+  constrainDateToRange,
+  isDateInRange,
+} from '../utils'
 import { generateDateRange } from '../calendar/generateDateRange'
 import { splitMultiDayEvents } from '../calendar/splitMultiDayEvents'
 import { getEventProps } from '../calendar/getEventProps'
 import { groupDaysBy } from '../calendar/groupDaysBy'
 import { getDateDefaults } from '../utils/dateDefaults'
-import type { Properties as CSSProperties } from 'csstype'
 import type { GroupDaysByProps } from '../calendar/groupDaysBy'
-import type { CalendarStore, Day, Event } from '../calendar/types'
+import type {
+  CalendarStore,
+  DateRange,
+  Day,
+  Event,
+  Resource,
+} from '../calendar/types'
+import type { ParsedDateRange } from '../utils/dateRange'
 
-import './weekInfoPolyfill'
+import '@bart-krakowski/get-week-info-polyfill'
 
-export type { CalendarStore, Event, Day } from '../calendar/types'
+export type * from '../calendar/types'
 
 /**
  * Represents the configuration for the current viewing mode of a calendar,
@@ -21,8 +33,8 @@ export type { CalendarStore, Event, Day } from '../calendar/types'
 export interface ViewMode {
   /** The number of units for the view mode. */
   value: number
-  /** The unit of time that the calendar view should display (month, week, or day). */
-  unit: 'month' | 'week' | 'day'
+  /** The unit of time that the calendar view should display (month, week, workWeek or day). */
+  unit: 'month' | 'week' | 'day' | 'workWeek'
 }
 
 /**
@@ -30,7 +42,10 @@ export interface ViewMode {
  * of events, locale, time zone, and the calendar system.
  * @template TEvent - Specifies the event type, extending a base Event type.
  */
-export interface CalendarCoreOptions<TEvent extends Event = Event> {
+export interface CalendarCoreOptions<
+  TResource extends Resource,
+  TEvent extends Event<TResource>,
+> {
   /** An optional array of events to be handled by the calendar. */
   events?: TEvent[] | null
   /** The initial view mode configuration of the calendar. */
@@ -41,6 +56,10 @@ export interface CalendarCoreOptions<TEvent extends Event = Event> {
   timeZone?: Temporal.TimeZoneLike
   /** Optional calendar system to be used. */
   calendar?: Temporal.CalendarLike
+  /** Optional resources to be used in the calendar. */
+  resources?: TResource[] | null
+  /** Optional range of dates to be used in the calendar. */
+  range?: DateRange
 }
 
 /**
@@ -48,7 +67,10 @@ export interface CalendarCoreOptions<TEvent extends Event = Event> {
  * and manipulation of its settings and data.
  * @template TEvent - The type of events handled by the calendar.
  */
-interface CalendarActions<TEvent extends Event> {
+interface CalendarActions<
+  TResource extends Resource,
+  TEvent extends Event<TResource>,
+> {
   /** Navigates to the previous period according to the current view mode. */
   goToPreviousPeriod: () => void
   /** Navigates to the next period according to the current view mode. */
@@ -56,66 +78,95 @@ interface CalendarActions<TEvent extends Event> {
   /** Resets the view to the current period based on today's date. */
   goToCurrentPeriod: () => void
   /** Navigates to a specific date. */
-  goToSpecificPeriod: (date: Temporal.PlainDate) => void
+  goToSpecificPeriod: (date: string) => void
+  /** Checks if navigation to the previous period is allowed within the range. */
+  canGoPreviousPeriod: () => boolean
+  /** Checks if navigation to the next period is allowed within the range. */
+  canGoNextPeriod: () => boolean
   /** Changes the current view mode of the calendar. */
   changeViewMode: (newViewMode: CalendarStore['viewMode']) => void
   /** Retrieves styling properties for a specific event, identified by ID. */
-  getEventProps: (id: Event['id']) => { style: CSSProperties } | null
-  /** Provides properties for the marker indicating the current time. */
-  getCurrentTimeMarkerProps: () => {
-    style: CSSProperties
-    currentTime: string | undefined
-  }
+  getEventProps: (id: Event['id']) => {
+    isSplitEvent: boolean
+    overlappingEvents: TEvent[]
+  } | null
+  /** Retrieves the names of the days of the week, based on the current locale. */
+  getDaysNames: (weekday?: 'long' | 'short') => string[]
   /** Groups days by a specified unit. */
   groupDaysBy: (
-    props: Omit<GroupDaysByProps<TEvent>, 'weekStartsOn'>,
-  ) => (Day<TEvent> | null)[][]
+    props: Omit<GroupDaysByProps<TResource, TEvent>, 'weekStartsOn' | 'locale'>,
+  ) => (Day<TResource, TEvent> | null)[][]
 }
 
-interface CalendarState<TEvent extends Event> {
+interface CalendarState<
+  TResource extends Resource,
+  TEvent extends Event<TResource>,
+> {
   /** The currently focused date period in the calendar. */
   currentPeriod: CalendarStore['currentPeriod']
   /** The current view mode of the calendar. */
   viewMode: CalendarStore['viewMode']
-  /** The current date and time according to the calendar's time zone. */
-  currentTime: CalendarStore['currentTime']
   /** An array of days, each potentially containing events. */
-  days: Array<Day<TEvent>>
-  /** An array of names for the days of the week, localized to the calendar's locale. */
-  daysNames: string[]
+  days: Array<Day<TResource, TEvent>>
+  /** The currently active date in the calendar. */
+  activeDate: CalendarStore['activeDate']
 }
 
-export interface CalendarApi<TEvent extends Event>
-  extends CalendarActions<TEvent>,
-    CalendarState<TEvent> {}
+type ConvertTemporalToString<T> = {
+  [K in keyof T]: T[K] extends Temporal.PlainDate ? string : T[K]
+}
+
+export interface CalendarApi<
+  TResource extends Resource,
+  TEvent extends Event<TResource>,
+> extends CalendarActions<TResource, TEvent>,
+    ConvertTemporalToString<CalendarState<TResource, TEvent>> {}
 
 /**
  * Core functionality for a calendar system, managing the state and operations of the calendar,
  * such as navigating through time periods, handling events, and adjusting settings.
  * @template TEvent - The type of events managed by the calendar.
  */
-export class CalendarCore<TEvent extends Event = Event>
-  implements CalendarActions<TEvent>
+interface ParsedCalendarCoreOptions<
+  TResource extends Resource,
+  TEvent extends Event<TResource>,
+> extends Omit<Required<CalendarCoreOptions<TResource, TEvent>>, 'range'> {
+  range: ParsedDateRange
+}
+
+export class CalendarCore<
+  TResource extends Resource,
+  TEvent extends Event<TResource>,
+> implements CalendarActions<TResource, TEvent>
 {
   store: Store<CalendarStore>
-  options: Required<CalendarCoreOptions<TEvent>>
+  options: ParsedCalendarCoreOptions<TResource, TEvent>
 
-  constructor(options: CalendarCoreOptions<TEvent>) {
+  constructor(options: CalendarCoreOptions<TResource, TEvent>) {
     const defaults = getDateDefaults()
+    const parsedRange = parseDateRange({
+      range: options.range,
+      calendar: defaults.calendar,
+    })
+
     this.options = {
+      ...defaults,
       ...options,
-      locale: options.locale || defaults.locale,
-      timeZone: options.timeZone || defaults.timeZone,
-      calendar: options.calendar || defaults.calendar,
       events: options.events || null,
+      resources: options.resources || null,
+      range: parsedRange,
     }
 
+    const now = Temporal.Now.plainDateISO().withCalendar(this.options.calendar)
+    const initialDate = constrainDateToRange({
+      date: now,
+      range: this.options.range,
+    })
+
     this.store = new Store<CalendarStore>({
-      currentPeriod: Temporal.Now.plainDateISO().withCalendar(
-        this.options.calendar,
-      ),
+      currentPeriod: initialDate,
+      activeDate: initialDate,
       viewMode: options.viewMode,
-      currentTime: Temporal.Now.plainDateTimeISO(this.options.timeZone),
     })
   }
 
@@ -146,7 +197,7 @@ export class CalendarCore<TEvent extends Event = Event>
           })
         : this.store.state.currentPeriod
 
-    let end
+    let end: Temporal.PlainDate
     switch (this.store.state.viewMode.unit) {
       case 'month': {
         const lastDayOfMonth = this.getFirstDayOfMonth()
@@ -172,44 +223,62 @@ export class CalendarCore<TEvent extends Event = Event>
         })
         break
       }
+      case 'workWeek': {
+        end = start.add({ days: 4 })
+        break
+      }
     }
 
-    const allDays = generateDateRange(start, end)
-    const startMonth = this.store.state.currentPeriod.month
-    const endMonth = this.store.state.currentPeriod.add({
-      months: this.store.state.viewMode.value - 1,
-    }).month
+    const allDays = generateDateRange(start.toString(), end.toString())
+    const startMonthDate = this.store.state.currentPeriod.with({ day: 1 })
+    const endMonthDate = this.store.state.currentPeriod
+      .add({
+        months: this.store.state.viewMode.value - 1,
+      })
+      .with({
+        day: Temporal.PlainDate.from(
+          this.store.state.currentPeriod.toString({ calendarName: 'auto' }),
+        ).daysInMonth,
+      })
 
-    return allDays.filter(
-      (day) => day.month >= startMonth && day.month <= endMonth,
+    const filteredDays = allDays.filter(
+      (day) =>
+        Temporal.PlainDate.compare(day, startMonthDate) >= 0 &&
+        Temporal.PlainDate.compare(day, endMonthDate) <= 0,
     )
+
+    if (this.options.range.start || this.options.range.end) {
+      return filteredDays.filter((day) =>
+        isDateInRange({ date: day, range: this.options.range }),
+      )
+    }
+
+    return filteredDays
   }
 
   private getEventMap() {
     const map = new Map<string, TEvent[]>()
     this.options.events?.forEach((event) => {
-      const eventStartDate =
-        event.startDate instanceof Temporal.PlainDateTime
-          ? event.startDate.toZonedDateTime(this.options.timeZone)
-          : event.startDate
-      const eventEndDate =
-        event.endDate instanceof Temporal.PlainDateTime
-          ? event.endDate.toZonedDateTime(this.options.timeZone)
-          : event.endDate
+      const eventStartDate = Temporal.PlainDateTime.from(
+        event.start,
+      ).toZonedDateTime(this.options.timeZone)
+      const eventEndDate = Temporal.PlainDateTime.from(
+        event.end,
+      ).toZonedDateTime(this.options.timeZone)
       if (Temporal.ZonedDateTime.compare(eventStartDate, eventEndDate) !== 0) {
-        const splitEvents = splitMultiDayEvents<TEvent>(
+        const splitEvents = splitMultiDayEvents<TResource, TEvent>(
           event,
           this.options.timeZone,
         )
         splitEvents.forEach((splitEvent) => {
-          const splitKey = splitEvent.startDate.toString().split('T')[0]
-          if (splitKey) {
-            if (!map.has(splitKey)) map.set(splitKey, [])
-            map.get(splitKey)?.push(splitEvent)
+          const [datePart] = splitEvent.start.toString().split('T')
+          if (datePart) {
+            if (!map.has(datePart)) map.set(datePart, [])
+            map.get(datePart)?.push(splitEvent)
           }
         })
       } else {
-        const eventKey = event.startDate.toString().split('T')[0]
+        const [eventKey] = event.start.toString().split('T')
         if (eventKey) {
           if (!map.has(eventKey)) map.set(eventKey, [])
           map.get(eventKey)?.push(event)
@@ -240,12 +309,14 @@ export class CalendarCore<TEvent extends Event = Event>
     })
   }
 
-  getDaysNames() {
+  getDaysNames(weekday: 'long' | 'short' = 'short') {
     const baseDate = Temporal.PlainDate.from('2024-01-01')
+    const firstDayOfWeek = this.getFirstDayOfWeek().dayOfWeek
+
     return Array.from({ length: 7 }).map((_, i) =>
       baseDate
-        .add({ days: (i + (this.getFirstDayOfWeek().dayOfWeek + 1)) % 7 })
-        .toLocaleString(this.options.locale, { weekday: 'short' }),
+        .add({ days: (i + (firstDayOfWeek - 1)) % 7 })
+        .toLocaleString(this.options.locale, { weekday: weekday }),
     )
   }
 
@@ -257,141 +328,200 @@ export class CalendarCore<TEvent extends Event = Event>
   }
 
   goToPreviousPeriod() {
-    const firstDayOfMonth = this.getFirstDayOfMonth()
-    const firstDayOfWeek = this.getFirstDayOfWeek()
+    let newActiveDate: Temporal.PlainDate
 
     switch (this.store.state.viewMode.unit) {
       case 'month': {
-        const firstDayOfPrevMonth = firstDayOfMonth.subtract({
+        newActiveDate = this.store.state.activeDate.subtract({
           months: this.store.state.viewMode.value,
         })
-        this.store.setState((prev) => ({
-          ...prev,
-          currentPeriod: firstDayOfPrevMonth,
-        }))
         break
       }
 
       case 'week': {
-        const firstDayOfPrevWeek = firstDayOfWeek.subtract({
+        newActiveDate = this.store.state.activeDate.subtract({
           weeks: this.store.state.viewMode.value,
         })
-        this.store.setState((prev) => ({
-          ...prev,
-          currentPeriod: firstDayOfPrevWeek,
-        }))
         break
       }
 
       case 'day': {
-        const prevCustomStart = this.store.state.currentPeriod.subtract({
+        newActiveDate = this.store.state.activeDate.subtract({
           days: this.store.state.viewMode.value,
         })
-        this.store.setState((prev) => ({
-          ...prev,
-          currentPeriod: prevCustomStart,
-        }))
+        break
+      }
+      case 'workWeek': {
+        newActiveDate = this.store.state.activeDate.subtract({
+          days: 5,
+        })
         break
       }
     }
+
+    const constrainedDate = constrainDateToRange({
+      date: newActiveDate,
+      range: this.options.range,
+    })
+    this.store.setState((prev) => ({
+      ...prev,
+      activeDate: constrainedDate,
+      currentPeriod: constrainedDate,
+    }))
   }
 
   goToNextPeriod() {
-    const firstDayOfMonth = this.getFirstDayOfMonth()
-    const firstDayOfWeek = this.getFirstDayOfWeek()
+    let newActiveDate: Temporal.PlainDate
 
     switch (this.store.state.viewMode.unit) {
       case 'month': {
-        const firstDayOfNextMonth = firstDayOfMonth.add({
+        newActiveDate = this.store.state.activeDate.add({
           months: this.store.state.viewMode.value,
         })
-        this.store.setState((prev) => ({
-          ...prev,
-          currentPeriod: firstDayOfNextMonth,
-        }))
         break
       }
 
       case 'week': {
-        const firstDayOfNextWeek = firstDayOfWeek.add({
+        newActiveDate = this.store.state.activeDate.add({
           weeks: this.store.state.viewMode.value,
         })
-        this.store.setState((prev) => ({
-          ...prev,
-          currentPeriod: firstDayOfNextWeek,
-        }))
         break
       }
 
       case 'day': {
-        const nextCustomStart = this.store.state.currentPeriod.add({
+        newActiveDate = this.store.state.activeDate.add({
           days: this.store.state.viewMode.value,
         })
-        this.store.setState((prev) => ({
-          ...prev,
-          currentPeriod: nextCustomStart,
-        }))
+        break
+      }
+      case 'workWeek': {
+        newActiveDate = this.store.state.activeDate.add({
+          days: 5,
+        })
         break
       }
     }
+
+    const constrainedDate = constrainDateToRange({
+      date: newActiveDate,
+      range: this.options.range,
+    })
+    this.store.setState((prev) => ({
+      ...prev,
+      activeDate: constrainedDate,
+      currentPeriod: constrainedDate,
+    }))
   }
 
   goToCurrentPeriod() {
+    const now = Temporal.Now.plainDateISO().withCalendar(this.options.calendar)
+    const constrainedDate = constrainDateToRange({
+      date: now,
+      range: this.options.range,
+    })
     this.store.setState((prev) => ({
       ...prev,
-      currentPeriod: Temporal.Now.plainDateISO(),
+      activeDate: constrainedDate,
+      currentPeriod: constrainedDate,
     }))
   }
 
-  goToSpecificPeriod(date: Temporal.PlainDate) {
+  goToSpecificPeriod(date: string) {
+    const targetDate = Temporal.PlainDate.from(date).withCalendar(
+      this.options.calendar,
+    )
+    const constrainedDate = constrainDateToRange({
+      date: targetDate,
+      range: this.options.range,
+    })
     this.store.setState((prev) => ({
       ...prev,
-      currentPeriod: date,
+      activeDate: constrainedDate,
+      currentPeriod: constrainedDate,
     }))
   }
 
-  updateCurrentTime() {
-    this.store.setState((prev) => ({
-      ...prev,
-      currentTime: Temporal.Now.plainDateTimeISO(),
-    }))
+  canGoPreviousPeriod(): boolean {
+    let previousDate: Temporal.PlainDate
+
+    switch (this.store.state.viewMode.unit) {
+      case 'month': {
+        previousDate = this.store.state.activeDate.subtract({
+          months: this.store.state.viewMode.value,
+        })
+        break
+      }
+      case 'week': {
+        previousDate = this.store.state.activeDate.subtract({
+          weeks: this.store.state.viewMode.value,
+        })
+        break
+      }
+      case 'day': {
+        previousDate = this.store.state.activeDate.subtract({
+          days: this.store.state.viewMode.value,
+        })
+        break
+      }
+      case 'workWeek': {
+        previousDate = this.store.state.activeDate.subtract({ days: 5 })
+        break
+      }
+    }
+
+    return isDateInRange({ date: previousDate, range: this.options.range })
+  }
+
+  canGoNextPeriod(): boolean {
+    let nextDate: Temporal.PlainDate
+
+    switch (this.store.state.viewMode.unit) {
+      case 'month': {
+        nextDate = this.store.state.activeDate.add({
+          months: this.store.state.viewMode.value,
+        })
+        break
+      }
+      case 'week': {
+        nextDate = this.store.state.activeDate.add({
+          weeks: this.store.state.viewMode.value,
+        })
+        break
+      }
+      case 'day': {
+        nextDate = this.store.state.activeDate.add({
+          days: this.store.state.viewMode.value,
+        })
+        break
+      }
+      case 'workWeek': {
+        nextDate = this.store.state.activeDate.add({ days: 5 })
+        break
+      }
+    }
+
+    return isDateInRange({ date: nextDate, range: this.options.range })
   }
 
   getEventProps(id: Event['id']) {
-    return getEventProps(this.getEventMap(), id, this.store.state)
-  }
-
-  getCurrentTimeMarkerProps(): {
-    style: CSSProperties
-    currentTime: string | undefined
-  } {
-    const { hour, minute } = this.store.state.currentTime
-    const currentTimeInMinutes = hour * 60 + minute
-    const percentageOfDay = (currentTimeInMinutes / (24 * 60)) * 100
-
-    return {
-      style: {
-        position: 'absolute',
-        top: `${percentageOfDay}%`,
-        left: 0,
-      },
-      currentTime: this.store.state.currentTime
-        .toString()
-        .split('T')[1]
-        ?.substring(0, 5),
-    }
+    return getEventProps(
+      this.getEventMap(),
+      id,
+      this.store.state,
+    ) as ReturnType<CalendarActions<TResource, TEvent>['getEventProps']>
   }
 
   groupDaysBy({
     days,
     unit,
     fillMissingDays = true,
-  }: Omit<GroupDaysByProps<TEvent>, 'weekStartsOn'>) {
-    return groupDaysBy({
+  }: Omit<GroupDaysByProps<TResource, TEvent>, 'weekStartsOn' | 'locale'>) {
+    return groupDaysBy<TResource, TEvent>({
       days,
       unit,
       fillMissingDays,
       weekStartsOn: this.getFirstDayOfWeek().dayOfWeek,
-    } as GroupDaysByProps<TEvent>)
+      locale: this.options.locale,
+    } as GroupDaysByProps<TResource, TEvent>)
   }
 }
