@@ -1,13 +1,26 @@
 import { Store } from '@tanstack/store'
 import { Temporal } from '@js-temporal/polyfill'
-import { getFirstDayOfMonth, getFirstDayOfWeek } from '../utils'
+import {
+  getFirstDayOfMonth,
+  getFirstDayOfWeek,
+  parseDateRange,
+  constrainDateToRange,
+  isDateInRange,
+} from '../utils'
 import { generateDateRange } from '../calendar/generateDateRange'
 import { splitMultiDayEvents } from '../calendar/splitMultiDayEvents'
 import { getEventProps } from '../calendar/getEventProps'
 import { groupDaysBy } from '../calendar/groupDaysBy'
 import { getDateDefaults } from '../utils/dateDefaults'
 import type { GroupDaysByProps } from '../calendar/groupDaysBy'
-import type { CalendarStore, Day, Event, Resource } from '../calendar/types'
+import type {
+  CalendarStore,
+  DateRange,
+  Day,
+  Event,
+  Resource,
+} from '../calendar/types'
+import type { ParsedDateRange } from '../utils/dateRange'
 
 import '@bart-krakowski/get-week-info-polyfill'
 
@@ -45,6 +58,8 @@ export interface CalendarCoreOptions<
   calendar?: Temporal.CalendarLike
   /** Optional resources to be used in the calendar. */
   resources?: TResource[] | null
+  /** Optional range of dates to be used in the calendar. */
+  range?: DateRange
 }
 
 /**
@@ -108,28 +123,45 @@ export interface CalendarApi<
  * such as navigating through time periods, handling events, and adjusting settings.
  * @template TEvent - The type of events managed by the calendar.
  */
+interface ParsedCalendarCoreOptions<
+  TResource extends Resource,
+  TEvent extends Event<TResource>,
+> extends Omit<Required<CalendarCoreOptions<TResource, TEvent>>, 'range'> {
+  range: ParsedDateRange
+}
+
 export class CalendarCore<
   TResource extends Resource,
   TEvent extends Event<TResource>,
 > implements CalendarActions<TResource, TEvent>
 {
   store: Store<CalendarStore>
-  options: Required<CalendarCoreOptions<TResource, TEvent>>
+  options: ParsedCalendarCoreOptions<TResource, TEvent>
 
   constructor(options: CalendarCoreOptions<TResource, TEvent>) {
     const defaults = getDateDefaults()
+    const parsedRange = parseDateRange({
+      range: options.range,
+      calendar: defaults.calendar,
+    })
+
     this.options = {
       ...defaults,
       ...options,
       events: options.events || null,
       resources: options.resources || null,
+      range: parsedRange,
     }
 
     const now = Temporal.Now.plainDateISO().withCalendar(this.options.calendar)
+    const initialDate = constrainDateToRange({
+      date: now,
+      range: this.options.range,
+    })
 
     this.store = new Store<CalendarStore>({
-      currentPeriod: now,
-      activeDate: now,
+      currentPeriod: initialDate,
+      activeDate: initialDate,
       viewMode: options.viewMode,
     })
   }
@@ -205,11 +237,19 @@ export class CalendarCore<
         ).daysInMonth,
       })
 
-    return allDays.filter(
+    const filteredDays = allDays.filter(
       (day) =>
         Temporal.PlainDate.compare(day, startMonthDate) >= 0 &&
         Temporal.PlainDate.compare(day, endMonthDate) <= 0,
     )
+
+    if (this.options.range.start || this.options.range.end) {
+      return filteredDays.filter((day) =>
+        isDateInRange({ date: day, range: this.options.range }),
+      )
+    }
+
+    return filteredDays
   }
 
   private getEventMap() {
@@ -284,121 +324,116 @@ export class CalendarCore<
   }
 
   goToPreviousPeriod() {
+    let newActiveDate: Temporal.PlainDate
+
     switch (this.store.state.viewMode.unit) {
       case 'month': {
-        const newActiveDate = this.store.state.activeDate.subtract({
+        newActiveDate = this.store.state.activeDate.subtract({
           months: this.store.state.viewMode.value,
         })
-        this.store.setState((prev) => ({
-          ...prev,
-          activeDate: newActiveDate,
-          currentPeriod: newActiveDate,
-        }))
         break
       }
 
       case 'week': {
-        const newActiveDate = this.store.state.activeDate.subtract({
+        newActiveDate = this.store.state.activeDate.subtract({
           weeks: this.store.state.viewMode.value,
         })
-        this.store.setState((prev) => ({
-          ...prev,
-          activeDate: newActiveDate,
-          currentPeriod: newActiveDate,
-        }))
         break
       }
 
       case 'day': {
-        const newActiveDate = this.store.state.activeDate.subtract({
+        newActiveDate = this.store.state.activeDate.subtract({
           days: this.store.state.viewMode.value,
         })
-        this.store.setState((prev) => ({
-          ...prev,
-          activeDate: newActiveDate,
-          currentPeriod: newActiveDate,
-        }))
         break
       }
       case 'workWeek': {
-        const newActiveDate = this.store.state.activeDate.subtract({
+        newActiveDate = this.store.state.activeDate.subtract({
           days: 5,
         })
-        this.store.setState((prev) => ({
-          ...prev,
-          activeDate: newActiveDate,
-          currentPeriod: newActiveDate,
-        }))
         break
       }
     }
+
+    const constrainedDate = constrainDateToRange({
+      date: newActiveDate,
+      range: this.options.range,
+    })
+    this.store.setState((prev) => ({
+      ...prev,
+      activeDate: constrainedDate,
+      currentPeriod: constrainedDate,
+    }))
   }
 
   goToNextPeriod() {
+    let newActiveDate: Temporal.PlainDate
+
     switch (this.store.state.viewMode.unit) {
       case 'month': {
-        const newActiveDate = this.store.state.activeDate.add({
+        newActiveDate = this.store.state.activeDate.add({
           months: this.store.state.viewMode.value,
         })
-        this.store.setState((prev) => ({
-          ...prev,
-          activeDate: newActiveDate,
-          currentPeriod: newActiveDate,
-        }))
         break
       }
 
       case 'week': {
-        const newActiveDate = this.store.state.activeDate.add({
+        newActiveDate = this.store.state.activeDate.add({
           weeks: this.store.state.viewMode.value,
         })
-        this.store.setState((prev) => ({
-          ...prev,
-          activeDate: newActiveDate,
-          currentPeriod: newActiveDate,
-        }))
         break
       }
 
       case 'day': {
-        const newActiveDate = this.store.state.activeDate.add({
+        newActiveDate = this.store.state.activeDate.add({
           days: this.store.state.viewMode.value,
         })
-        this.store.setState((prev) => ({
-          ...prev,
-          activeDate: newActiveDate,
-          currentPeriod: newActiveDate,
-        }))
         break
       }
       case 'workWeek': {
-        const newActiveDate = this.store.state.activeDate.add({
+        newActiveDate = this.store.state.activeDate.add({
           days: 5,
         })
-        this.store.setState((prev) => ({
-          ...prev,
-          activeDate: newActiveDate,
-          currentPeriod: newActiveDate,
-        }))
         break
       }
     }
+
+    const constrainedDate = constrainDateToRange({
+      date: newActiveDate,
+      range: this.options.range,
+    })
+    this.store.setState((prev) => ({
+      ...prev,
+      activeDate: constrainedDate,
+      currentPeriod: constrainedDate,
+    }))
   }
 
   goToCurrentPeriod() {
-    const now = Temporal.Now.plainDateISO()
+    const now = Temporal.Now.plainDateISO().withCalendar(this.options.calendar)
+    const constrainedDate = constrainDateToRange({
+      date: now,
+      range: this.options.range,
+    })
     this.store.setState((prev) => ({
       ...prev,
-      activeDate: now,
-      currentPeriod: now,
+      activeDate: constrainedDate,
+      currentPeriod: constrainedDate,
     }))
   }
 
   goToSpecificPeriod(date: string) {
+    const targetDate = Temporal.PlainDate.from(date).withCalendar(
+      this.options.calendar,
+    )
+    const constrainedDate = constrainDateToRange({
+      date: targetDate,
+      range: this.options.range,
+    })
     this.store.setState((prev) => ({
       ...prev,
-      activeDate: Temporal.PlainDate.from(date),
-      currentPeriod: Temporal.PlainDate.from(date),
+      activeDate: constrainedDate,
+      currentPeriod: constrainedDate,
     }))
   }
 

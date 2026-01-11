@@ -1,5 +1,6 @@
-export * from './parse'
+export * from './parseDate'
 export * from './getFirstDayOfMonth'
 export * from './getFirstDayOfWeek'
 export * from './startOf'
 export * from './endOf'
+export * from './dateRange'

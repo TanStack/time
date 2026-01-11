@@ -1,4 +1,5 @@
 import type { Temporal } from '@js-temporal/polyfill'
+import { PossibleDate } from '../utils/parseDate'
 
 export type Resource = string | null
 
@@ -27,4 +28,9 @@ export type Day<
   events: TEvent[]
   isToday: boolean
   isInCurrentPeriod: boolean
+}
+
+export interface DateRange {
+  start: PossibleDate | null
+  end: PossibleDate | null
 }

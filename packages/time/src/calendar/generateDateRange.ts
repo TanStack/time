@@ -1,13 +1,9 @@
 import { Temporal } from '@js-temporal/polyfill'
-import { validateDate } from '../utils/validateDate'
 
 export const generateDateRange = (
   start: string,
   end: string,
 ): Temporal.PlainDate[] => {
-  validateDate({ date: start })
-  validateDate({ date: end })
-
   const startDate = Temporal.PlainDate.from(start)
   const endDate = Temporal.PlainDate.from(end)
   const dates: Temporal.PlainDate[] = []

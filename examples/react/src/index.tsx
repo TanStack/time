@@ -39,28 +39,40 @@ const sampleEvents: Event[] = [
 ]
 
 export default function App() {
-  const calendar = useCalendar({
+  const {
+    changeViewMode,
+    getEventProps,
+    groupDaysBy,
+    getDaysNames,
+    days,
+    viewMode,
+    isPending,
+    goToPreviousPeriod,
+    goToNextPeriod,
+    goToCurrentPeriod,
+    currentPeriod,
+  } = useCalendar({
     events: sampleEvents,
     viewMode: { value: 1, unit: 'month' },
     locale: 'en-US',
   })
 
-  const daysNames = calendar.getDaysNames('short')
+  const daysNames = getDaysNames('short')
 
   const groupedWeeks =
-    calendar.viewMode.unit === 'month'
-      ? calendar.groupDaysBy({
-          days: calendar.days,
+    viewMode.unit === 'month'
+      ? groupDaysBy({
+          days: days,
           unit: 'week',
           fillMissingDays: true,
         })
-      : calendar.viewMode.unit === 'week'
-        ? calendar.groupDaysBy({
-            days: calendar.days,
+      : viewMode.unit === 'week'
+        ? groupDaysBy({
+            days: days,
             unit: 'week',
             fillMissingDays: true,
           })
-        : [[...calendar.days]]
+        : [[...days]]
 
   return (
     <div className="p-5 font-sans">
@@ -71,42 +83,39 @@ export default function App() {
       <div className="mb-5">
         <div className="flex gap-2.5 items-center">
           <button
-            onClick={calendar.goToPreviousPeriod}
-            disabled={calendar.isPending}
+            onClick={goToPreviousPeriod}
+            disabled={isPending}
             className="px-4 py-2 text-sm rounded bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             ← Previous
           </button>
           <button
-            onClick={calendar.goToCurrentPeriod}
-            disabled={calendar.isPending}
+            onClick={goToCurrentPeriod}
+            disabled={isPending}
             className="px-4 py-2 text-sm rounded bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Today
           </button>
           <button
-            onClick={calendar.goToNextPeriod}
-            disabled={calendar.isPending}
+            onClick={goToNextPeriod}
+            disabled={isPending}
             className="px-4 py-2 text-sm rounded bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Next →
           </button>
           <div className="ml-5 text-lg font-bold">
-            {Temporal.PlainDate.from(calendar.currentPeriod).toLocaleString(
-              'en-US',
-              {
-                month: 'long',
-                year: 'numeric',
-              },
-            )}
+            {Temporal.PlainDate.from(currentPeriod).toLocaleString('en-US', {
+              month: 'long',
+              year: 'numeric',
+            })}
           </div>
         </div>
 
         <div className="mt-2.5 flex gap-2.5">
           <button
-            onClick={() => calendar.changeViewMode({ value: 1, unit: 'month' })}
+            onClick={() => changeViewMode({ value: 1, unit: 'month' })}
             className={`px-3 py-1.5 text-xs rounded border border-gray-300 transition-colors ${
-              calendar.viewMode.unit === 'month'
+              viewMode.unit === 'month'
                 ? 'bg-blue-500 text-white border-blue-500'
                 : 'bg-gray-100 text-black hover:bg-gray-200'
             }`}
@@ -114,9 +123,9 @@ export default function App() {
             Month
           </button>
           <button
-            onClick={() => calendar.changeViewMode({ value: 1, unit: 'week' })}
+            onClick={() => changeViewMode({ value: 1, unit: 'week' })}
             className={`px-3 py-1.5 text-xs rounded border border-gray-300 transition-colors ${
-              calendar.viewMode.unit === 'week'
+              viewMode.unit === 'week'
                 ? 'bg-blue-500 text-white border-blue-500'
                 : 'bg-gray-100 text-black hover:bg-gray-200'
             }`}
@@ -124,9 +133,9 @@ export default function App() {
             Week
           </button>
           <button
-            onClick={() => calendar.changeViewMode({ value: 1, unit: 'day' })}
+            onClick={() => changeViewMode({ value: 1, unit: 'day' })}
             className={`px-3 py-1.5 text-xs rounded border border-gray-300 transition-colors ${
-              calendar.viewMode.unit === 'day'
+              viewMode.unit === 'day'
                 ? 'bg-blue-500 text-white border-blue-500'
                 : 'bg-gray-100 text-black hover:bg-gray-200'
             }`}
@@ -154,10 +163,7 @@ export default function App() {
         </div>
 
         {groupedWeeks.map(
-          (
-            week: Array<(typeof calendar.days)[0] | null>,
-            weekIndex: number,
-          ) => (
+          (week: Array<(typeof days)[0] | null>, weekIndex: number) => (
             <div
               key={weekIndex}
               className="grid gap-px"
@@ -165,7 +171,7 @@ export default function App() {
                 gridTemplateColumns: `repeat(${daysNames.length}, 1fr)`,
               }}
             >
-              {week.map((day: (typeof calendar.days)[0] | null) => {
+              {week.map((day: (typeof days)[0] | null) => {
                 if (!day) {
                   return (
                     <div
@@ -197,7 +203,7 @@ export default function App() {
                     </div>
                     <div className="flex flex-col gap-0.5">
                       {day.events.map((event: Event) => {
-                        const eventProps = calendar.getEventProps(event.id)
+                        const eventProps = getEventProps(event.id)
                         const hasOverlappingEvents =
                           (eventProps?.overlappingEvents.length ?? 0) > 0
                         return (
@@ -223,7 +229,7 @@ export default function App() {
         )}
       </div>
 
-      {calendar.isPending && (
+      {isPending && (
         <div className="mt-2.5 text-gray-600 text-sm">Loading...</div>
       )}
     </div>
