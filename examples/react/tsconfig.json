@@ -7,15 +7,19 @@
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
 
-    /* Bundler mode */
     "moduleResolution": "Bundler",
+    "baseUrl": ".",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Linting */
+    "paths": {
+      "@tanstack/react-time": ["../../packages/react-time/src/index.ts"],
+      "@tanstack/time": ["../../packages/time/src/index.ts"]
+    },
+
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,

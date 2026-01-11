@@ -55,6 +55,10 @@ export default function App() {
     events: sampleEvents,
     viewMode: { value: 1, unit: 'month' },
     locale: 'en-US',
+    range: {
+      start: '2024-05-10',
+      end: '2024-06-20',
+    },
   })
 
   const daysNames = getDaysNames('short')

@@ -6,7 +6,6 @@ import path from 'path'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
-    conditions: ['development', 'import', 'module', 'browser', 'default'],
     alias: {
       '@tanstack/react-time': path.resolve(
         __dirname,
