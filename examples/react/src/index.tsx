@@ -11,12 +11,17 @@ const sampleEvents: Event[] = [
     start: '2024-06-10T09:00:00',
     end: '2024-06-10T10:00:00',
     title: 'Team Meeting',
+    resources: [{ id: 'room-1', label: 'Room 201' }],
   },
   {
     id: '2',
     start: '2024-06-12T11:00:00',
     end: '2024-06-12T12:00:00',
     title: 'Project Review',
+    resources: [
+      { id: 'room-2', label: 'Room 305' },
+      { id: 'person-1', label: 'John Doe' },
+    ],
   },
   {
     id: '3',
@@ -29,12 +34,17 @@ const sampleEvents: Event[] = [
     start: '2024-06-15T10:00:00',
     end: '2024-06-15T11:00:00',
     title: 'Workshop',
+    resources: [{ id: 'room-3', label: 'Auditorium' }],
   },
   {
     id: '5',
     start: '2024-06-20T09:00:00',
     end: '2024-06-22T17:00:00',
     title: 'Multi-day Conference',
+    resources: [
+      { id: 'room-4', label: 'Room 101' },
+      { id: 'person-2', label: 'Jane Smith' },
+    ],
   },
 ]
 
@@ -57,7 +67,7 @@ export default function App() {
     locale: 'en-US',
     range: {
       start: '2024-05-10',
-      end: '2024-06-20',
+      end: '2024-08-20',
     },
   })
 
@@ -220,7 +230,20 @@ export default function App() {
                             } ${eventProps?.isSplitEvent ? 'opacity-70' : 'opacity-100'}`}
                             title={event.title}
                           >
-                            {event.title}
+                            <div className="font-medium">{event.title}</div>
+                            {event.resources && event.resources.length > 0 && (
+                              <div className="mt-0.5 flex flex-wrap gap-0.5">
+                                {event.resources.map((resource) => (
+                                  <span
+                                    key={resource.id}
+                                    className="text-[9px] px-1 py-0.5 rounded bg-white/20 backdrop-blur-sm"
+                                    title={resource.label}
+                                  >
+                                    {resource.label}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         )
                       })}

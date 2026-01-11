@@ -5,7 +5,7 @@ import { CalendarCore } from '@tanstack/time'
 import { useStore } from '@tanstack/react-store'
 import { useCalendar } from '../useCalendar'
 import type { Mock } from 'vitest'
-import type { Event } from '@tanstack/time'
+import type { Event, Resource } from '@tanstack/time'
 
 vi.mock('@tanstack/time', () => {
   return {
@@ -20,7 +20,7 @@ vi.mock('@tanstack/react-store', () => {
 })
 
 describe('useCalendar', () => {
-  const events: Array<Event<string>> = [
+  const events: Array<Event<Resource>> = [
     {
       id: '1',
       start: '2024-06-01T10:00:00',

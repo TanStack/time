@@ -1,7 +1,10 @@
 import type { Temporal } from '@js-temporal/polyfill'
 import { PossibleDate } from '../utils/parseDate'
 
-export type Resource = string | null
+export interface Resource {
+  id: string
+  label: string
+}
 
 export interface Event<TResource extends Resource = Resource> {
   id: string
