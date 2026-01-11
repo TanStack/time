@@ -1,26 +1,16 @@
 import { Store } from '@tanstack/store'
 import { Temporal } from '@js-temporal/polyfill'
-import { getDateDefaults } from '../utils/dateDefaults'
-import { CalendarCore } from './calendar'
-import type { CalendarCoreOptions, CalendarStore } from './calendar'
+import { isDateInRange, ParsedDateRange } from '../utils'
+import { BaseDateCore, type BaseDateCoreOptions } from './base-date-core'
+import type { CalendarStore } from './calendar'
 
-export interface DatePickerOptions extends CalendarCoreOptions {
+export type DatePickerMode = 'single' | 'multiple' | 'range'
+
+export interface DatePickerOptions extends BaseDateCoreOptions {
   /**
-   * The earliest date that can be selected. Null if no minimum constraint.
+   * Selection mode: 'single' for single date, 'multiple' for multiple dates, 'range' for date range.
    */
-  minDate?: Temporal.PlainDate | null
-  /**
-   * The latest date that can be selected. Null if no maximum constraint.
-   */
-  maxDate?: Temporal.PlainDate | null
-  /**
-   * Allows selection of multiple dates.
-   */
-  multiple?: boolean
-  /**
-   * Allows selection of a range of dates.
-   */
-  range?: boolean
+  mode?: DatePickerMode
   /**
    * Initial set of selected dates.
    */
@@ -34,26 +24,19 @@ export interface DatePickerCoreState extends CalendarStore {
   selectedDates: Map<string, Temporal.PlainDate>
 }
 
-export class DatePickerCore extends CalendarCore {
+export class DatePickerCore extends BaseDateCore {
   datePickerStore: Store<DatePickerCoreState>
-  options: Required<DatePickerOptions>
+  declare options: Required<DatePickerOptions> & {
+    range: ParsedDateRange
+  }
 
   constructor(options: DatePickerOptions) {
     super(options)
-    const defaults = getDateDefaults()
 
-    this.options = {
-      ...options,
-      multiple: options.multiple ?? false,
-      range: options.range ?? false,
-      minDate: options.minDate ?? null,
-      maxDate: options.maxDate ?? null,
+    Object.assign(this.options, {
+      mode: options.mode ?? 'single',
       selectedDates: options.selectedDates ?? [],
-      events: options.events ?? [],
-      locale: options.locale ?? defaults.locale,
-      timeZone: options.timeZone ?? defaults.timeZone,
-      calendar: options.calendar ?? defaults.calendar,
-    }
+    })
     this.datePickerStore = new Store<DatePickerCoreState>({
       ...this.store.state,
       selectedDates: new Map(
@@ -66,25 +49,66 @@ export class DatePickerCore extends CalendarCore {
     return Array.from(this.datePickerStore.state.selectedDates.values())
   }
 
-  selectDate(date: Temporal.PlainDate) {
-    const { multiple, range, minDate, maxDate } = this.options
+  getDaysWithEvents() {
+    const calendarDays = this.getCalendarDays()
+    return calendarDays.map((day) => {
+      const currentMonthRange = Array.from(
+        { length: this.store.state.viewMode.value },
+        (_, i) => this.store.state.currentPeriod.add({ months: i }).month,
+      )
+      const isInCurrentPeriod = currentMonthRange.includes(day.month)
+      return {
+        date: day,
+        events: [] as never[],
+        isToday:
+          Temporal.PlainDate.compare(day, Temporal.Now.plainDateISO()) === 0,
+        isInCurrentPeriod,
+      }
+    })
+  }
 
-    if (minDate && Temporal.PlainDate.compare(date, minDate) < 0) return
-    if (maxDate && Temporal.PlainDate.compare(date, maxDate) > 0) return
+  selectDate(date: Temporal.PlainDate) {
+    const { mode } = this.options
+
+    if (this.options.range.start || this.options.range.end) {
+      if (!isDateInRange({ date, range: this.options.range })) return
+    }
 
     const selectedDates = new Map(this.datePickerStore.state.selectedDates)
 
-    if (range && selectedDates.size === 1) {
-      selectedDates.set(date.toString(), date)
-    } else if (multiple) {
-      if (selectedDates.has(date.toString())) {
-        selectedDates.delete(date.toString())
-      } else {
-        selectedDates.set(date.toString(), date)
+    switch (mode) {
+      case 'range': {
+        if (selectedDates.size === 0) {
+          selectedDates.set(date.toString(), date)
+        } else if (selectedDates.size === 1) {
+          const firstDate = Array.from(selectedDates.values())[0]
+          if (firstDate && Temporal.PlainDate.compare(date, firstDate) < 0) {
+            selectedDates.clear()
+            selectedDates.set(date.toString(), date)
+            selectedDates.set(firstDate.toString(), firstDate)
+          } else {
+            selectedDates.set(date.toString(), date)
+          }
+        } else {
+          selectedDates.clear()
+          selectedDates.set(date.toString(), date)
+        }
+        break
       }
-    } else {
-      selectedDates.clear()
-      selectedDates.set(date.toString(), date)
+      case 'multiple': {
+        if (selectedDates.has(date.toString())) {
+          selectedDates.delete(date.toString())
+        } else {
+          selectedDates.set(date.toString(), date)
+        }
+        break
+      }
+      case 'single':
+      default: {
+        selectedDates.clear()
+        selectedDates.set(date.toString(), date)
+        break
+      }
     }
 
     this.datePickerStore.setState((prev) => ({

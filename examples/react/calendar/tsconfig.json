@@ -16,8 +16,8 @@
     "jsx": "react-jsx",
 
     "paths": {
-      "@tanstack/react-time": ["../../packages/react-time/src/index.ts"],
-      "@tanstack/time": ["../../packages/time/src/index.ts"]
+      "@tanstack/react-time": ["../../../packages/react-time/src/index.ts"],
+      "@tanstack/time": ["../../../packages/time/src/index.ts"]
     },
 
     "strict": true,

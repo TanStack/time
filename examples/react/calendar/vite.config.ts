@@ -9,11 +9,11 @@ export default defineConfig({
     alias: {
       '@tanstack/react-time': path.resolve(
         __dirname,
-        '../../packages/react-time/src/index.ts',
+        '../../../packages/react-time/src/index.ts',
       ),
       '@tanstack/time': path.resolve(
         __dirname,
-        '../../packages/time/src/index.ts',
+        '../../../packages/time/src/index.ts',
       ),
     },
   },

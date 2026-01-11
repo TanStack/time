@@ -1,0 +1,39 @@
+{
+  "name": "@tanstack/time-example-react-date-picker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port=3002",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test:types": "tsc"
+  },
+  "dependencies": {
+    "@js-temporal/polyfill": "catalog:",
+    "@tailwindcss/vite": "^4.1.18",
+    "@tanstack/react-store": "^0.4.1",
+    "@tanstack/react-time": "workspace:*",
+    "@tanstack/time": "workspace:*",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tailwindcss": "^4.1.18"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.0.5",
+    "@vitejs/plugin-react": "^5.1.2",
+    "vite": "^6.3.3"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

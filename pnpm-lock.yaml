@@ -139,7 +139,7 @@ importers:
         specifier: ^3.3.4
         version: 3.5.26(typescript@5.9.3)
 
-  examples/react:
+  examples/react/calendar:
     dependencies:
       '@js-temporal/polyfill':
         specifier: 'catalog:'
@@ -152,10 +152,50 @@ importers:
         version: 0.4.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@tanstack/react-time':
         specifier: workspace:*
-        version: link:../../packages/react-time
+        version: link:../../../packages/react-time
       '@tanstack/time':
         specifier: workspace:*
-        version: link:../../packages/time
+        version: link:../../../packages/time
+      react:
+        specifier: ^18.2.0
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.2.0
+        version: 18.3.1(react@18.3.1)
+      tailwindcss:
+        specifier: ^4.1.18
+        version: 4.1.18
+    devDependencies:
+      '@types/react':
+        specifier: ^18.2.45
+        version: 18.3.27
+      '@types/react-dom':
+        specifier: ^18.0.5
+        version: 18.3.7(@types/react@18.3.27)
+      '@vitejs/plugin-react':
+        specifier: ^5.1.2
+        version: 5.1.2(vite@6.4.1(@types/node@18.19.130)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass@1.93.2)(terser@5.44.0)(yaml@2.8.2))
+      vite:
+        specifier: ^6.3.3
+        version: 6.4.1(@types/node@18.19.130)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass@1.93.2)(terser@5.44.0)(yaml@2.8.2)
+
+  examples/react/date-picker:
+    dependencies:
+      '@js-temporal/polyfill':
+        specifier: 'catalog:'
+        version: 0.5.1
+      '@tailwindcss/vite':
+        specifier: ^4.1.18
+        version: 4.1.18(vite@6.4.1(@types/node@18.19.130)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass@1.93.2)(terser@5.44.0)(yaml@2.8.2))
+      '@tanstack/react-store':
+        specifier: ^0.4.1
+        version: 0.4.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@tanstack/react-time':
+        specifier: workspace:*
+        version: link:../../../packages/react-time
+      '@tanstack/time':
+        specifier: workspace:*
+        version: link:../../../packages/time
       react:
         specifier: ^18.2.0
         version: 18.3.1
