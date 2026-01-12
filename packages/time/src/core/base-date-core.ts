@@ -12,6 +12,23 @@ import { getDateDefaults } from '../utils/dateDefaults'
 import type { CalendarStore, DateRange } from '../calendar/types'
 import type { ParsedDateRange } from '../utils/dateRange'
 
+export type DateInput = string | number | Date | Temporal.PlainDate
+
+function toTemporalPlainDateString(
+  date: DateInput,
+): string {
+  if (date instanceof Temporal.PlainDate) {
+    return date.toString({ calendarName: 'never' })
+  }
+  if (date instanceof Date) {
+    return date.toISOString().split('T')[0]!
+  }
+  if (typeof date === 'number') {
+    return new Date(date).toISOString().split('T')[0]!
+  }
+  return date
+}
+
 /**
  * Base options interface for date-related core classes.
  */
@@ -47,7 +64,7 @@ export interface BaseDateActions {
   /** Resets the view to the current period based on today's date. */
   goToCurrentPeriod: () => void
   /** Navigates to a specific date. */
-  goToSpecificPeriod: (date: string) => void
+  goToSpecificPeriod: (date: DateInput) => void
   /** Checks if navigation to the previous period is allowed within the range. */
   canGoPreviousPeriod: () => boolean
   /** Checks if navigation to the next period is allowed within the range. */
@@ -297,8 +314,9 @@ export abstract class BaseDateCore implements BaseDateActions {
     }))
   }
 
-  goToSpecificPeriod(date: string) {
-    const targetDate = Temporal.PlainDate.from(date).withCalendar(
+  goToSpecificPeriod(date: DateInput) {
+    const dateStr = toTemporalPlainDateString(date)
+    const targetDate = Temporal.PlainDate.from(dateStr).withCalendar(
       this.options.calendar,
     )
     const constrainedDate = constrainDateToRange({

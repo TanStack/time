@@ -6,6 +6,8 @@ export interface Resource {
   label: string
 }
 
+export type ViewMode = 'month' | 'week' | 'workWeek' | 'day'
+
 export interface Event<TResource extends Resource = Resource> {
   id: string
   start: string
@@ -19,7 +21,7 @@ export interface CalendarStore {
   activeDate: Temporal.PlainDate
   viewMode: {
     value: number
-    unit: 'month' | 'week' | 'workWeek' | 'day'
+    unit: ViewMode
   }
 }
 

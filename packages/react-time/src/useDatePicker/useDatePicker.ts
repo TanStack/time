@@ -1,14 +1,15 @@
-import { useCallback, useState, useTransition } from 'react'
+import { useCallback, useMemo, useState, useTransition } from 'react'
 import { useStore } from '@tanstack/react-store'
-import { Temporal } from '@js-temporal/polyfill'
 import { DatePickerCore } from '@tanstack/time'
-import { groupDaysBy } from '@tanstack/time'
 import type { DatePickerOptions } from '@tanstack/time'
 
 export const useDatePicker = (options: DatePickerOptions) => {
   const [datePickerCore] = useState(() => new DatePickerCore(options))
   const state = useStore(datePickerCore.store)
   const datePickerState = useStore(datePickerCore.datePickerStore)
+  const selectedDatesKeys = useStore(datePickerCore.datePickerStore, (s) =>
+    Array.from(s.selectedDates.keys()).sort().join(','),
+  )
   const [isPending, startTransition] = useTransition()
 
   const goToPreviousPeriod = useCallback<
@@ -35,10 +36,8 @@ export const useDatePicker = (options: DatePickerOptions) => {
     })
   }, [datePickerCore, startTransition])
 
-  const goToSpecificPeriod = useCallback<
-    typeof datePickerCore.goToSpecificPeriod
-  >(
-    (date) => {
+  const goToSpecificPeriod = useCallback(
+    (date: string | number | Date) => {
       startTransition(() => {
         datePickerCore.goToSpecificPeriod(date)
       })
@@ -59,36 +58,17 @@ export const useDatePicker = (options: DatePickerOptions) => {
 
   const groupDaysByCallback = useCallback(
     (props: {
-      days: Array<{
-        date: Temporal.PlainDate
-        events: never[]
-        isToday: boolean
-        isInCurrentPeriod: boolean
-      }>
+      days: ReturnType<typeof datePickerCore.getDaysWithEvents>
       unit: 'week' | 'month' | 'day'
       fillMissingDays?: boolean
     }) => {
-      const daysWithMetadata = props.days.map((day) => ({
-        date: day.date,
-        events: [],
-        isToday: day.isToday,
-        isInCurrentPeriod: day.isInCurrentPeriod,
-      }))
-      const unit =
-        props.unit === 'day'
-          ? 'week'
-          : props.unit === 'month'
-            ? 'month'
-            : 'week'
-      return groupDaysBy({
-        days: daysWithMetadata,
-        unit: unit as 'month' | 'week' | 'workWeek',
-        fillMissingDays: props.fillMissingDays ?? true,
-        weekStartsOn: datePickerCore.getWeekStartsOn(),
-        locale: datePickerCore.options.locale,
-      } as any)
+      const unit = props.unit === 'day' ? 'week' : props.unit
+      return datePickerCore.groupDaysBy({
+        ...props,
+        unit: unit as 'week' | 'month',
+      })
     },
-    [datePickerCore],
+    [datePickerCore, selectedDatesKeys],
   )
 
   const getDaysNames = useCallback<typeof datePickerCore.getDaysNames>(
@@ -107,20 +87,27 @@ export const useDatePicker = (options: DatePickerOptions) => {
 
   const selectDate = useCallback(
     (date: string) => {
-      datePickerCore.selectDate(Temporal.PlainDate.from(date))
+      startTransition(() => {
+        datePickerCore.selectDate(date)
+      })
     },
-    [datePickerCore],
+    [datePickerCore, startTransition],
   )
 
   const getSelectedDates = useCallback(() => {
-    return datePickerCore.getSelectedDates().map((date) => date.toString())
+    return datePickerCore.getSelectedDates()
   }, [datePickerCore])
+
+  const days = useMemo(
+    () => datePickerCore.getDaysWithEvents(),
+    [datePickerCore, selectedDatesKeys, state.currentPeriod, state.viewMode],
+  )
 
   return {
     activeDate: state.activeDate.toString(),
     currentPeriod: state.currentPeriod.toString(),
     viewMode: state.viewMode,
-    days: datePickerCore.getDaysWithEvents(),
+    days,
     getDaysNames,
     goToPreviousPeriod,
     goToNextPeriod,
@@ -132,7 +119,6 @@ export const useDatePicker = (options: DatePickerOptions) => {
     getEventProps,
     isPending,
     groupDaysBy: groupDaysByCallback,
-    selectedDates: Array.from(datePickerState.selectedDates.keys()),
     selectDate,
     getSelectedDates,
   }
