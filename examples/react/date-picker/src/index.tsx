@@ -1,9 +1,16 @@
 import * as React from 'react'
+import { useMemo } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Temporal } from '@js-temporal/polyfill'
 import { useDatePicker } from '@tanstack/react-time'
 import { isDateInRange } from '@tanstack/time'
+import { clsx } from 'clsx'
+import type { ClassValue } from 'clsx'
 import './index.css'
+
+export function cn(...inputs: ClassValue[]) {
+  return clsx(inputs)
+}
 
 export default function App() {
   const today = Temporal.Now.plainDateISO()
@@ -26,7 +33,6 @@ export default function App() {
     canGoPreviousPeriod,
     canGoNextPeriod,
     currentPeriod,
-    selectedDates,
     selectDate,
     getSelectedDates,
     groupDaysBy,
@@ -39,11 +45,15 @@ export default function App() {
 
   const daysNames = getDaysNames('short')
 
-  const groupedWeeks = groupDaysBy({
-    days: days,
-    unit: 'week',
-    fillMissingDays: true,
-  })
+  const groupedWeeks = useMemo(
+    () =>
+      groupDaysBy({
+        days: days,
+        unit: 'week',
+        fillMissingDays: true,
+      }),
+    [groupDaysBy, days],
+  )
 
   const selectedDatesList = getSelectedDates()
 
@@ -59,10 +69,10 @@ export default function App() {
           <div className="flex flex-wrap gap-2">
             {selectedDatesList.map((date) => (
               <span
-                key={date}
+                key={date.toISOString()}
                 className="px-3 py-1 bg-blue-500 text-white rounded text-sm"
               >
-                {Temporal.PlainDate.from(date).toLocaleString('en-US', {
+                {date.toLocaleDateString('en-US', {
                   month: 'short',
                   day: 'numeric',
                   year: 'numeric',
@@ -147,64 +157,63 @@ export default function App() {
           ))}
         </div>
 
-        {groupedWeeks.map(
-          (week: Array<(typeof days)[0] | null>, weekIndex: number) => (
-            <div
-              key={weekIndex}
-              className="grid gap-px"
-              style={{
-                gridTemplateColumns: `repeat(${daysNames.length}, 1fr)`,
-              }}
-            >
-              {week.map((day: (typeof days)[0] | null) => {
-                if (!day) {
-                  return (
-                    <div
-                      key={`empty-${weekIndex}`}
-                      className="min-h-[100px] p-2 bg-gray-50 border border-gray-200"
-                    />
-                  )
-                }
-
-                const dateStr = day.date.toString()
-                const isToday = day.isToday
-                const isInCurrentPeriod = day.isInCurrentPeriod
-                const isSelected = selectedDates.includes(dateStr)
-                const isDisabled =
-                  selectableRange.start || selectableRange.end
-                    ? !isDateInRange({
-                        date: day.date,
-                        range: {
-                          start: rangeStart,
-                          end: rangeEnd,
-                        },
-                      })
-                    : false
-
+        {groupedWeeks.map((week, weekIndex) => (
+          <div
+            key={weekIndex}
+            className="grid gap-px"
+            style={{
+              gridTemplateColumns: `repeat(${daysNames.length}, 1fr)`,
+            }}
+          >
+            {week.map((day) => {
+              if (!day) {
                 return (
-                  <button
-                    key={dateStr}
-                    onClick={() => !isDisabled && selectDate(dateStr)}
-                    disabled={isDisabled}
-                    className={`min-h-[100px] p-2 text-left transition-colors ${
-                      isDisabled
-                        ? 'bg-gray-100 border border-gray-200 opacity-30 cursor-not-allowed'
-                        : isSelected
-                          ? 'bg-blue-500 text-white border-2 border-blue-700 hover:bg-blue-600'
-                          : isToday
-                            ? 'bg-blue-50 border-2 border-blue-500 hover:bg-blue-100'
-                            : isInCurrentPeriod
-                              ? 'bg-white border border-gray-200 hover:bg-gray-50'
-                              : 'bg-gray-100 border border-gray-200 opacity-50 hover:bg-gray-150'
-                    }`}
-                  >
-                    <div className="text-sm mb-1">{day.date.day}</div>
-                  </button>
+                  <div
+                    key={`empty-${weekIndex}`}
+                    className="min-h-[100px] p-2 bg-gray-50 border border-gray-200"
+                  />
                 )
-              })}
-            </div>
-          ),
-        )}
+              }
+
+              const dateStr = day.date.toString()
+              const isToday = day.isToday
+              const isInCurrentPeriod = day.isInCurrentPeriod
+              const isSelected = day.isSelected
+              const isBetweenDates = day.isBetweenDates
+
+              return (
+                <button
+                  key={dateStr}
+                  onClick={() => selectDate(dateStr)}
+                  className={cn(
+                    'min-h-[100px] p-2 text-left transition-colors',
+                    isSelected &&
+                      'bg-blue-500 text-white border-2 border-blue-700 hover:bg-blue-600',
+                    !isSelected &&
+                      isBetweenDates &&
+                      'bg-blue-400 hover:bg-blue-100',
+                    !isSelected &&
+                      !isBetweenDates &&
+                      isToday &&
+                      'bg-blue-50 border-2 border-blue-500 hover:bg-blue-100',
+                    !isSelected &&
+                      !isBetweenDates &&
+                      !isToday &&
+                      isInCurrentPeriod &&
+                      'bg-white border border-gray-200 hover:bg-gray-50',
+                    !isSelected &&
+                      !isBetweenDates &&
+                      !isToday &&
+                      !isInCurrentPeriod &&
+                      'bg-gray-100 border border-gray-200 opacity-50 hover:bg-gray-150',
+                  )}
+                >
+                  <div className="text-sm mb-1">{day.date.day}</div>
+                </button>
+              )
+            })}
+          </div>
+        ))}
       </div>
 
       {isPending && (
