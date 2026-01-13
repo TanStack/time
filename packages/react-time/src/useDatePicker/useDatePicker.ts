@@ -6,7 +6,6 @@ import type { DatePickerOptions } from '@tanstack/time'
 export const useDatePicker = (options: DatePickerOptions) => {
   const [datePickerCore] = useState(() => new DatePickerCore(options))
   const state = useStore(datePickerCore.store)
-  const datePickerState = useStore(datePickerCore.datePickerStore)
   const selectedDatesKeys = useStore(datePickerCore.datePickerStore, (s) =>
     Array.from(s.selectedDates.keys()).sort().join(','),
   )

@@ -14,9 +14,7 @@ import type { ParsedDateRange } from '../utils/dateRange'
 
 export type DateInput = string | number | Date | Temporal.PlainDate
 
-function toTemporalPlainDateString(
-  date: DateInput,
-): string {
+function toTemporalPlainDateString(date: DateInput): string {
   if (date instanceof Temporal.PlainDate) {
     return date.toString({ calendarName: 'never' })
   }
