@@ -39,7 +39,7 @@ function toTemporalPlainDate(
 }
 
 function toDate(temporalDate: Temporal.PlainDate): Date {
-  return new Date(temporalDate.year, temporalDate.month - 1, temporalDate.day)
+  return new Date(Date.UTC(temporalDate.year, temporalDate.month - 1, temporalDate.day))
 }
 
 export interface DatePickerOptions extends BaseDateCoreOptions {
