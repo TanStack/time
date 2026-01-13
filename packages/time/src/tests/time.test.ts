@@ -2,7 +2,6 @@ import { Temporal } from '@js-temporal/polyfill'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { TimeCore } from '../core/time'
 
-
 export class TestTimeCore extends TimeCore {
   getCurrentTime(): Temporal.ZonedDateTime {
     return super.getCurrentTime()
@@ -18,9 +17,16 @@ export class TestTimeCore extends TimeCore {
 }
 
 describe('TimeCore', () => {
-beforeEach(() => {
+  beforeEach(() => {
     vi.useFakeTimers()
-    const mockNow = Temporal.PlainDateTime.from({ year: 2024, month: 1, day: 1, hour: 0, minute: 0, second: 0 })
+    const mockNow = Temporal.PlainDateTime.from({
+      year: 2024,
+      month: 1,
+      day: 1,
+      hour: 0,
+      minute: 0,
+      second: 0,
+    })
     vi.setSystemTime(mockNow.toZonedDateTime('UTC').epochMilliseconds)
   })
 
@@ -46,7 +52,9 @@ beforeEach(() => {
     timeCore.startUpdatingTime()
     vi.advanceTimersByTime(1000)
     const currentTime = Temporal.Now.zonedDateTimeISO()
-    expect(timeCore.getCurrentTime().epochMilliseconds).toBe(currentTime.epochMilliseconds)
+    expect(timeCore.getCurrentTime().epochMilliseconds).toBe(
+      currentTime.epochMilliseconds,
+    )
   })
 
   test('should stop updating the current time', () => {
