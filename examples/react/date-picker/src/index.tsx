@@ -1,9 +1,7 @@
-import * as React from 'react'
-import { useMemo } from 'react'
+import { StrictMode, useMemo } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Temporal } from '@js-temporal/polyfill'
 import { useDatePicker } from '@tanstack/react-time'
-import { isDateInRange } from '@tanstack/time'
 import { clsx } from 'clsx'
 import type { ClassValue } from 'clsx'
 import './index.css'
@@ -226,7 +224,7 @@ export default function App() {
 const rootElement = document.getElementById('root')!
 
 createRoot(rootElement).render(
-  <React.StrictMode>
+  <StrictMode>
     <App />
-  </React.StrictMode>,
+  </StrictMode>,
 )
