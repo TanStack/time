@@ -60,11 +60,17 @@
     "react-dom": "^17.0.0 || ^18.0.0"
   },
   "dependencies": {
+    "@js-temporal/polyfill": "catalog:",
+    "@tanstack/react-store": "^0.4.1",
     "@tanstack/time": "workspace:*",
+    "typesafe-actions": "^5.1.0",
     "use-sync-external-store": "^1.2.0"
   },
   "devDependencies": {
     "@types/use-sync-external-store": "^0.0.3",
-    "@vitejs/plugin-react": "^4.2.1"
+    "@vitejs/plugin-react": "^5.1.2",
+    "eslint-plugin-react-compiler": "19.1.0-rc.2",
+    "@eslint-react/eslint-plugin": "^2.5.1",
+    "eslint-plugin-react-hooks": "^7.0.1"
   }
 }
