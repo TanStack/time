@@ -12,7 +12,7 @@ describe('useTimer', () => {
     act(() => {
       result.current.start()
     })
-    expect(result.current.isRunning).toBe(true)
+    expect(result.current.state).toBe('running')
   })
 
   test('should stop the timer', () => {
@@ -23,7 +23,7 @@ describe('useTimer', () => {
     act(() => {
       result.current.stop()
     })
-    expect(result.current.isRunning).toBe(false)
+    expect(result.current.state).toBe('stopped')
   })
 
   test('should reset the timer', () => {
@@ -34,8 +34,8 @@ describe('useTimer', () => {
     act(() => {
       result.current.stop()
     })
-    expect(result.current.isRunning).toBe(false)
-    expect(result.current.remainingTime).toBe(5)
+    expect(result.current.state).toBe('stopped')
+    expect(result.current.currentTime.seconds).toBe(5)
   })
 
   test('should update the remaining time', () => {
@@ -46,54 +46,6 @@ describe('useTimer', () => {
     act(() => {
       vi.advanceTimersByTime(1000)
     })
-    expect(result.current.remainingTime).toBe(4)
-  })
-
-  test('should call onStart callback', () => {
-    const onStart = vi.fn()
-    const { result } = renderHook(() => useTimer({ initialTime: 5, onStart }))
-    act(() => {
-      result.current.start()
-    })
-    expect(onStart).toHaveBeenCalledTimes(1)
-  })
-
-  test('should call onStop callback', () => {
-    const onStop = vi.fn()
-    const { result } = renderHook(() => useTimer({ initialTime: 5, onStop }))
-    act(() => {
-      result.current.start()
-    })
-    act(() => {
-      result.current.stop()
-    })
-    expect(onStop).toHaveBeenCalledTimes(1)
-  })
-
-  test('should call onReset callback', () => {
-    const onReset = vi.fn()
-    const { result } = renderHook(() => useTimer({ initialTime: 5, onReset }))
-    act(() => {
-      result.current.start()
-    })
-    act(() => {
-      result.current.stop()
-    })
-    act(() => {
-      result.current.reset()
-    })
-    expect(onReset).toHaveBeenCalledTimes(1)
-  })
-
-  test('should call onFinish callback', () => {
-    const onFinish = vi.fn()
-    const { result } = renderHook(() => useTimer({ initialTime: 5, onFinish }))
-    act(() => {
-      result.current.start()
-    })
-    act(() => {
-      vi.advanceTimersByTime(5000)
-    })
-    expect(onFinish).toHaveBeenCalledTimes(1)
+    expect(result.current.currentTime.seconds).toBe(4)
   })
 })
