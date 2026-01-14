@@ -1,8 +1,9 @@
+import { Temporal } from '@js-temporal/polyfill'
 import { useStore } from '@tanstack/react-store'
-import { Timer, type TimerApi, type TimerOptions } from '@tanstack/time'
+import { Timer, type TimerOptions } from '@tanstack/time'
 import { useCallback, useState } from 'react'
 
-export const useTimer = (options: TimerOptions): TimerApi => {
+export const useTimer = (options: TimerOptions) => {
   const [timer] = useState(() => new Timer(options))
   const state = useStore(timer.store)
 
@@ -18,5 +19,40 @@ export const useTimer = (options: TimerOptions): TimerApi => {
     timer.reset()
   }, [timer])
 
-  return { ...state, start, stop, reset }
+  const toggle = useCallback<typeof timer.toggle>(() => {
+    timer.toggle()
+  }, [timer])
+
+  const setTime = useCallback<typeof timer.setTime>(
+    (newTime: number) => {
+      timer.setTime(newTime)
+    },
+    [timer],
+  )
+
+  const add = useCallback<typeof timer.add>(
+    (duration: Temporal.DurationLike) => {
+      return timer.add(duration)
+    },
+    [timer],
+  )
+
+  const subtract = useCallback<typeof timer.subtract>(
+    (duration: Temporal.DurationLike) => {
+      return timer.subtract(duration)
+    },
+    [timer],
+  )
+
+  return {
+    ...state,
+    currentTime: timer.getCurrentTime(),
+    start,
+    stop,
+    reset,
+    toggle,
+    setTime,
+    add,
+    subtract,
+  }
 }
