@@ -1,5 +1,5 @@
 import { defineConfig, mergeConfig } from 'vitest/config'
-import { tanstackViteConfig } from '@tanstack/vite-config'
+import { tanstackViteConfig } from '@tanstack/config/vite'
 
 const config = defineConfig({
   test: {
@@ -7,6 +7,7 @@ const config = defineConfig({
     dir: './tests',
     watch: false,
     environment: 'jsdom',
+    setupFiles: ['./test-setup.ts'],
     coverage: { enabled: true, provider: 'istanbul', include: ['src/**/*'] },
     typecheck: { enabled: true },
   },

@@ -38,6 +38,7 @@
   "type": "module",
   "exports": {
     ".": {
+      "development": "./src/index.ts",
       "import": {
         "types": "./dist/esm/index.d.ts",
         "default": "./dist/esm/index.js"
@@ -55,6 +56,14 @@
     "src"
   ],
   "dependencies": {
-    "@js-temporal/polyfill": "^0.5.1"
+    "@js-temporal/polyfill": "^0.4.4",
+    "@tanstack/store": "^0.4.1",
+    "csstype": "^3.2.3"
+  },
+  "devDependencies": {
+    "@bart-krakowski/get-week-info-polyfill": "^1.0.6",
+    "@js-temporal/polyfill": "catalog:",
+    "@tanstack/store": "^0.4.1",
+    "zod": "^3.24.4"
   }
 }
