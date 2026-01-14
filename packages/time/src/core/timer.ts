@@ -1,119 +1,176 @@
-import { Store } from '@tanstack/store'
+import { Temporal } from '@js-temporal/polyfill'
 import { TimeCore } from './time'
-import type { TimeCoreOptions, TimeState } from './time'
+import type { TimeState } from './time'
 
-export interface TimerOptions extends TimeCoreOptions {
+export interface TimerOptions {
   /**
-   * The initial time for the timer.
+   * The initial time for the timer in seconds.
    */
   initialTime: number
   /**
-   * A callback that is called when the timer finishes.
+   * The update interval in milliseconds.
+   * @default 1000
    */
-  onFinish?: () => void
-  /**
-   * A callback that is called when the timer finishes.
-   */
-  onStart?: () => void
-  /**
-   * A callback that is called when the timer stops.
-   */
-  onStop?: () => void
-  /**
-   * A callback that is called when the timer resets.
-   */
-  onReset?: () => void
+  intervalMs?: number
 }
+
+type State = 'idle' | 'running' | 'stopped' | 'finished'
 
 interface TimerState extends TimeState {
   /**
-   * The remaining time for the timer.
-   * @default 0
+   * The initial time for the timer in seconds.
    * @readonly
    * @type number
    */
-  remainingTime: number
+  initialTime: number
+  /**
+   * The progress of the timer as a percentage (0-100).
+   * @default 100
+   * @readonly
+   * @type number
+   */
+  progress: number
   /**
    * Whether the timer is running.
    * @default false
    * @readonly
    * @type boolean
    */
-  isRunning: boolean
+  state: State
 }
 
-export interface TimerActions {
-  /**
-   * Start the timer.
-   */
-  start: () => void
-  /**
-   * Stop the timer.
-   */
-  stop: () => void
-  /**
-   * Reset the timer.
-   */
-  reset: () => void
-}
-
-export interface TimerApi extends TimerActions, TimerState {}
-
-export class Timer extends TimeCore<TimerState> implements TimerActions {
-  private options: TimerOptions
+export class Timer extends TimeCore<TimerState> {
+  private interval: NodeJS.Timeout | null = null
+  private intervalMs: number
 
   constructor(options: TimerOptions) {
-    super(options)
-    this.options = options
-    this.store = new Store<TimerState>({
-      remainingTime: options.initialTime,
-      isRunning: false,
-      currentTime: this.store.state.currentTime,
+    super({
+      currentTime: options.initialTime,
     })
+    this.intervalMs = options.intervalMs ?? 1000
+    this.store.setState((prev) => ({
+      ...prev,
+      initialTime: options.initialTime,
+      progress: options.initialTime > 0 ? 100 : 0,
+      state: 'idle',
+    }))
+  }
+
+  private startUpdatingTime() {
+    if (!this.interval) {
+      this.interval = setInterval(
+        () => this.updateCurrentTime(),
+        this.intervalMs,
+      )
+    }
+  }
+
+  private stopUpdatingTime() {
+    if (this.interval) {
+      clearInterval(this.interval)
+      this.interval = null
+    }
   }
 
   start() {
-    if (!this.store.state.isRunning) {
+    if (this.store.state.state !== 'running') {
       this.store.setState((prev) => ({
         ...prev,
-        isRunning: true,
+        state: 'running',
       }))
-      this.startUpdatingTime(1000)
-      this.options.onStart?.()
+      this.startUpdatingTime()
     }
   }
 
   stop() {
-    if (this.store.state.isRunning) {
+    if (this.store.state.state === 'running') {
       this.store.setState((prev) => ({
         ...prev,
-        isRunning: false,
+        state: 'stopped',
       }))
       this.stopUpdatingTime()
-      this.options.onStop?.()
+    }
+  }
+
+  toggle() {
+    if (this.store.state.state === 'running') {
+      this.stop()
+    } else {
+      this.start()
     }
   }
 
   reset() {
-    this.stop()
+    this.stopUpdatingTime()
     this.store.setState((prev) => ({
       ...prev,
-      remainingTime: this.options.initialTime,
+      currentTime: Temporal.Duration.from({ seconds: prev.initialTime }),
+      progress: prev.initialTime > 0 ? 100 : 0,
+      state: 'idle',
     }))
-    this.options.onReset?.()
+  }
+
+  setTime(newTime: number) {
+    if (newTime < 0) throw new Error('Time must be a positive number')
+
+    this.stopUpdatingTime()
+    this.store.setState((prev) => ({
+      ...prev,
+      currentTime: Temporal.Duration.from({ seconds: newTime }),
+      initialTime: newTime,
+      progress: newTime > 0 ? 100 : 0,
+      state: 'idle',
+    }))
+  }
+
+  add(duration: Temporal.Duration | Temporal.DurationLike) {
+    super.add(duration)
+    this.onCurrentTimeUpdated()
+  }
+
+  subtract(duration: Temporal.Duration | Temporal.DurationLike) {
+    super.subtract(duration)
+    this.onCurrentTimeUpdated()
+  }
+
+  private onCurrentTimeUpdated() {
+    const currentTimeSeconds = this.getCurrentTimeDuration().total({
+      unit: 'second',
+    })
+    const initialTime = this.store.state.initialTime
+    const progress =
+      initialTime > 0 ? (currentTimeSeconds / initialTime) * 100 : 0
+
+    this.store.setState((prev) => ({
+      ...prev,
+      progress: Math.max(0, progress),
+    }))
   }
 
   protected updateCurrentTime() {
-    super.updateCurrentTime()
-    if (this.store.state.isRunning && this.store.state.remainingTime > 0) {
+    if (this.store.state.state !== 'running') return
+
+    const decrementDuration = Temporal.Duration.from({
+      milliseconds: this.intervalMs,
+    })
+    const newDuration = this.store.state.currentTime.subtract(decrementDuration)
+    const remainingSeconds = newDuration.total({ unit: 'second' })
+
+    if (remainingSeconds <= 0) {
       this.store.setState((prev) => ({
         ...prev,
-        remainingTime: prev.remainingTime - 1,
+        currentTime: Temporal.Duration.from({ seconds: 0 }),
+        progress: 0,
+        state: 'finished',
       }))
-      if (this.store.state.remainingTime <= 0) {
-        this.stop()
-        this.options.onFinish?.()
-      }
+      this.stopUpdatingTime()
+      return
     }
+
+    this.store.setState((prev) => ({
+      ...prev,
+      currentTime: newDuration,
+    }))
+    this.onCurrentTimeUpdated()
   }
 }
