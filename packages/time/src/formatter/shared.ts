@@ -1,4 +1,4 @@
-export interface ILocaleFormatterOptions {
+export interface LocaleFormatterOptions {
   localeMatcher?: 'lookup' | 'best fit'
   calendar?: string
   numberingSystem?: string
@@ -11,7 +11,7 @@ type FormatStyle = 'full' | 'long' | 'medium' | 'short'
 
 export type Locale = string | Intl.Locale | string[] | Intl.Locale[]
 
-export interface IDateFormatterOptions extends ILocaleFormatterOptions {
+export interface DateFormatterOptions extends LocaleFormatterOptions {
   formatMatcher?: 'basic' | 'best fit'
   weekday?: 'narrow' | 'short' | 'long'
   era?: 'narrow' | 'short' | 'long'
@@ -22,7 +22,7 @@ export interface IDateFormatterOptions extends ILocaleFormatterOptions {
   dateStyle?: FormatStyle
 }
 
-export interface ITimeFormatterOptions extends ILocaleFormatterOptions {
+export interface TimeFormatterOptions extends LocaleFormatterOptions {
   formatMatcher?: 'basic' | 'best fit'
   dayPeriod?: 'narrow' | 'short' | 'long'
   hour?: '2-digit' | 'numeric'
@@ -40,21 +40,21 @@ export interface ITimeFormatterOptions extends ILocaleFormatterOptions {
   timeStyle?: FormatStyle
 }
 
-export interface IDateTimeFormatterOptions
-  extends IDateFormatterOptions,
-    ITimeFormatterOptions {}
+export interface DateTimeFormatterOptions
+  extends DateFormatterOptions,
+    TimeFormatterOptions {}
 
-export interface IDateFormatterBuildParams {
+export interface DateFormatterBuildParams {
   locale?: Locale
-  options?: FormatStyle | IDateFormatterOptions
+  options?: FormatStyle | DateFormatterOptions
 }
 
-export interface ITimeFormatterBuildParams {
+export interface TimeFormatterBuildParams {
   locale?: Locale
-  options?: FormatStyle | ITimeFormatterOptions
+  options?: FormatStyle | TimeFormatterOptions
 }
 
-export interface IDateTimeFormatterBuildParams {
+export interface DateTimeFormatterBuildParams {
   locale?: Locale
-  options?: FormatStyle | IDateTimeFormatterOptions
+  options?: FormatStyle | DateTimeFormatterOptions
 }

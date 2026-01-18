@@ -9,5 +9,5 @@ declare global {
 
 if (!('Temporal' in globalThis)) {
   // Attach Temporal to the global object if it doesn't exist
-  ;(globalThis as any).Temporal = Temporal
+  ;(globalThis as Record<string, unknown>).Temporal = Temporal
 }

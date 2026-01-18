@@ -1,6 +1,6 @@
 import { Locale } from '../formatter/shared'
 
-export interface IDateDefaults {
+export interface DateDefaults {
   calendar: string
   locale: string
   timeZone: string
@@ -14,9 +14,9 @@ const {
 
 /**
  * getDateDefaults
- * @returns IDateDefaults
+ * @returns DateDefaults
  */
-export function getDateDefaults(): IDateDefaults {
+export function getDateDefaults(): DateDefaults {
   return {
     calendar: defaultCalendar,
     locale: defaultLocale,

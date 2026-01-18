@@ -4,7 +4,7 @@ import {
   getDefaultCalendar,
   getDefaultLocale,
   getDefaultTimeZone,
-} from '../src/utils/dateDefaults'
+} from '../src/date/dateDefaults'
 
 const {
   calendar: defaultCalendar,

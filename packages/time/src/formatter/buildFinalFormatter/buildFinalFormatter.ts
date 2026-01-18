@@ -1,5 +1,5 @@
-import { validateDate } from './validateDate'
-import { parse as parser } from './parse'
+import { validateDate } from '../../date/validateDate'
+import { parse as parser } from '../../date/parse'
 
 export interface BuildFinalFormatterOptions {
   formatter: Intl.DateTimeFormat

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { buildFinalFormatter } from '../src/utils/buildFinalFormatter'
+import { buildFinalFormatter } from '../buildFinalFormatter'
 
 const dateTimeFormat = new Intl.DateTimeFormat('en-US', {
   year: 'numeric',
@@ -21,30 +21,20 @@ const timeOnlyFormat = new Intl.DateTimeFormat('en-US', {
 })
 
 describe('buildFinalFormatter', () => {
-  test('should return a function', () => {
-    const formatter = buildFinalFormatter({
+  test('should format a date string', () => {
+    const format = buildFinalFormatter({
       formatter: dateTimeFormat,
       formatterName: 'dateTimeFormat',
     })
-    expect(typeof formatter).toBe('function')
-  })
-
-  const format = buildFinalFormatter({
-    formatter: dateTimeFormat,
-    formatterName: 'dateTimeFormat',
-  })
-
-  test('should format a date string', () => {
     expect(format('2021-03-12T14:42')).toBe('03/12/2021, 02:42:00 PM EST')
   })
 
-  const timeFormat = buildFinalFormatter({
-    formatter: timeOnlyFormat,
-    formatterName: 'timeOnlyFormat',
-    forRange: true,
-  })
-
   test('should format a time string range', () => {
+    const timeFormat = buildFinalFormatter({
+      formatter: timeOnlyFormat,
+      formatterName: 'timeOnlyFormat',
+      forRange: true,
+    })
     // output does not show 2-digit hour in range due to a bug in Intl.DateTimeFormat.formatRange
     expect(timeFormat('2021-03-12T14:42', '2021-03-12T15:42')).toBe(
       '2:42 – 3:42 PM',

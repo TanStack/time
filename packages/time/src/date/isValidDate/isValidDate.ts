@@ -4,9 +4,10 @@
  * @param date Date
  * @returns boolean
  */
-export function isValidDate(date: any): boolean {
+export function isValidDate(date: unknown): date is Date {
   if (Object.prototype.toString.call(date) !== '[object Date]') {
     return false
   }
-  return date.getTime() === date.getTime()
+  const dateObj = date as Date
+  return dateObj.getTime() === dateObj.getTime()
 }
