@@ -4,5 +4,3 @@ title: "@tanstack/solid-time"
 ---
 
 # @tanstack/solid-time
-
-## Functions
