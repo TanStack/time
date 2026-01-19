@@ -73,5 +73,8 @@
     "@tanstack/react-time-devtools": "workspace:*",
     "@tanstack/solid-time": "workspace:*",
     "@tanstack/solid-time-devtools": "workspace:*"
+  },
+  "dependencies": {
+    "@js-temporal/polyfill": "^0.5.1"
   }
 }
