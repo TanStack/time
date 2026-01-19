@@ -200,7 +200,7 @@ importers:
         version: 19.2.3(react@19.2.3)
     devDependencies:
       '@eslint-react/eslint-plugin':
-        specifier: ^2.5.7
+        specifier: ^2.7.2
         version: 2.7.2(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
       '@testing-library/react':
         specifier: ^16.1.0
@@ -230,9 +230,21 @@ importers:
         specifier: '>=16.8'
         version: 19.2.3(react@19.2.3)
     devDependencies:
+      '@eslint-react/eslint-plugin':
+        specifier: ^2.7.2
+        version: 2.7.2(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
       '@types/react':
         specifier: ^19.2.8
         version: 19.2.8
+      '@vitejs/plugin-react':
+        specifier: ^5.1.2
+        version: 5.1.2(vite@7.3.1(@types/node@25.0.9)(jiti@2.6.1)(yaml@2.8.2))
+      eslint-plugin-react-compiler:
+        specifier: 19.1.0-rc.2
+        version: 19.1.0-rc.2(eslint@9.39.2(jiti@2.6.1))
+      eslint-plugin-react-hooks:
+        specifier: ^7.0.1
+        version: 7.0.1(eslint@9.39.2(jiti@2.6.1))
       react:
         specifier: ^19.2.3
         version: 19.2.3
@@ -250,8 +262,11 @@ importers:
         specifier: ^25.0.7
         version: 25.0.9
       solid-js:
-        specifier: ^1.9.5
+        specifier: ^1.9.10
         version: 1.9.10
+      vite-plugin-solid:
+        specifier: ^2.11.10
+        version: 2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.10)(vite@7.3.1(@types/node@25.0.9)(jiti@2.6.1)(yaml@2.8.2))
 
   packages/solid-time-devtools:
     dependencies:
@@ -260,8 +275,11 @@ importers:
         version: link:../time-devtools
     devDependencies:
       solid-js:
-        specifier: ^1.9.5
+        specifier: ^1.9.10
         version: 1.9.10
+      vite-plugin-solid:
+        specifier: ^2.11.10
+        version: 2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.10)(vite@7.3.1(@types/node@25.0.9)(jiti@2.6.1)(yaml@2.8.2))
 
   packages/time:
     dependencies:

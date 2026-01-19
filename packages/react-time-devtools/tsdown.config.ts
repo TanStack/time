@@ -10,6 +10,9 @@ export default defineConfig({
   minify: false,
   fixedExtension: false,
   exports: true,
+  esbuild: {
+    jsx: 'automatic',
+  },
   publint: {
     strict: true,
   },
