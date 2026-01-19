@@ -128,7 +128,12 @@ function parseTimeOnlyString(value: string): Date {
     }
     // If no meridiem, assume 24-hour format (hour can be 00-23)
     const millisecondStr = (millisecond || '000').padEnd(3, '0').substring(0, 3)
-    now.setHours(trueHour, Number(minute), Number(second), Number(millisecondStr))
+    now.setHours(
+      trueHour,
+      Number(minute),
+      Number(second),
+      Number(millisecondStr),
+    )
     return now
   }
   throw new Error(`"${value}" is an invalid time string`)
