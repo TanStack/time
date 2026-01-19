@@ -1,12 +1,17 @@
-import type { WeekInfo } from "./types";
+import type { WeekInfo } from './types'
 
 const normalizeLocale = (loc: string) => {
   const [lang, region] = loc.split('-')
-  return region ? `${lang?.toLowerCase()}-${region.toUpperCase()}` : lang?.toLowerCase()
+  return region
+    ? `${lang?.toLowerCase()}-${region.toUpperCase()}`
+    : lang?.toLowerCase()
 }
 
 ;(function () {
-  if ('weekInfo' in Intl.Locale.prototype && typeof Intl.Locale.prototype.getWeekInfo !== 'function') {
+  if (
+    'weekInfo' in Intl.Locale.prototype &&
+    typeof Intl.Locale.prototype.getWeekInfo !== 'function'
+  ) {
     Intl.Locale.prototype.getWeekInfo = function () {
       return this.weekInfo
     }
@@ -26,8 +31,8 @@ const normalizeLocale = (loc: string) => {
         }
 
         if (!match) {
-          match = Object.entries(weekInfoData).find(([key]) => 
-            normalizeLocale(key) === normalizedLocale
+          match = Object.entries(weekInfoData).find(
+            ([key]) => normalizeLocale(key) === normalizedLocale,
           )?.[1]
         }
 

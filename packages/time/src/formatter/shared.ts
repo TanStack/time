@@ -41,8 +41,7 @@ export interface TimeFormatterOptions extends LocaleFormatterOptions {
 }
 
 export interface DateTimeFormatterOptions
-  extends DateFormatterOptions,
-    TimeFormatterOptions {}
+  extends DateFormatterOptions, TimeFormatterOptions {}
 
 export interface DateFormatterBuildParams {
   locale?: Locale
