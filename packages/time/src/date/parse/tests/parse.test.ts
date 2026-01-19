@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { Temporal } from '@js-temporal/polyfill'
 import { parse } from '../parse'
 
 const dateTimeFormat = new Intl.DateTimeFormat('en-US', {
