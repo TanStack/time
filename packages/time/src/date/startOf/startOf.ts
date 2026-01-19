@@ -31,9 +31,26 @@ export function startOf(
   return withDateOperation<StartOfArgs>((zdt, { unit }) => {
     switch (unit) {
       case 'year':
-        return zdt.with({ month: 1, day: 1, hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 })
+        return zdt.with({
+          month: 1,
+          day: 1,
+          hour: 0,
+          minute: 0,
+          second: 0,
+          millisecond: 0,
+          microsecond: 0,
+          nanosecond: 0,
+        })
       case 'month':
-        return zdt.with({ day: 1, hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 })
+        return zdt.with({
+          day: 1,
+          hour: 0,
+          minute: 0,
+          second: 0,
+          millisecond: 0,
+          microsecond: 0,
+          nanosecond: 0,
+        })
       case 'week': {
         const dayOfWeek = zdt.dayOfWeek
         const firstDayOfWeek = 1
@@ -41,11 +58,29 @@ export function startOf(
         return zdt.subtract({ days: daysToSubtract })
       }
       case 'day':
-        return zdt.with({ hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 })
+        return zdt.with({
+          hour: 0,
+          minute: 0,
+          second: 0,
+          millisecond: 0,
+          microsecond: 0,
+          nanosecond: 0,
+        })
       case 'hour':
-        return zdt.with({ minute: 0, second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 })
+        return zdt.with({
+          minute: 0,
+          second: 0,
+          millisecond: 0,
+          microsecond: 0,
+          nanosecond: 0,
+        })
       case 'minute':
-        return zdt.with({ second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 })
+        return zdt.with({
+          second: 0,
+          millisecond: 0,
+          microsecond: 0,
+          nanosecond: 0,
+        })
       case 'second':
         return zdt.with({ millisecond: 0, microsecond: 0, nanosecond: 0 })
       case 'millisecond':
