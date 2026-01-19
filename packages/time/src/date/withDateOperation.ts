@@ -1,5 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill'
-import { parse } from './parse/parse'
+import { validateDate } from './validateDate'
 import { getDateDefaults } from './dateDefaults'
 
 export type DateInput = string | number | Date | Temporal.ZonedDateTime
@@ -68,15 +68,14 @@ function toZonedDateTime(
     if (input.includes('[') && input.includes(']')) {
       return Temporal.ZonedDateTime.from(input)
     }
-    dateString = input
+    const date = validateDate({ date: input })
+    dateString = date.toISOString()
   } else if (typeof input === 'number') {
-    const date = parse(input)
-    if (!date) {
-      throw new Error(`"${input}" is an invalid date value`)
-    }
+    const date = validateDate({ date: input })
     dateString = date.toISOString()
   } else if (input instanceof Date) {
-    dateString = input.toISOString()
+    const date = validateDate({ date: input })
+    dateString = date.toISOString()
   } else {
     throw new Error(`Invalid date input type: ${typeof input}`)
   }
