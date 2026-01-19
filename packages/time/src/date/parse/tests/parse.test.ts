@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { Temporal } from '@js-temporal/polyfill'
 import { parse } from '../parse'
 
@@ -21,20 +21,12 @@ const timeOnlyFormat = new Intl.DateTimeFormat('en-US', {
 })
 
 describe('parse', () => {
-  const mockDate = new Date('2023-06-15')
-  const mockDateTime = new Date('2023-06-15T10:00:00')
-
   beforeEach(() => {
-    const mockTemporalDate = Temporal.PlainDate.from(
-      mockDate.toISOString().split('T')[0]!,
-    )
-    const mockTemporalDateTime = Temporal.PlainDateTime.from(
-      mockDateTime.toISOString().replace('Z', ''),
-    )
-    vi.spyOn(Temporal.Now, 'plainDateISO').mockReturnValue(mockTemporalDate)
-    vi.spyOn(Temporal.Now, 'plainDateTimeISO').mockReturnValue(
-      mockTemporalDateTime,
-    )
+    vi.stubEnv('TZ', 'America/New_York')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   test('should parse a valid year only date string', () => {
