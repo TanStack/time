@@ -19,3 +19,8 @@ export interface DurationLike {
   microseconds?: number
   nanoseconds?: number
 }
+
+export interface Range {
+  start: DateInput
+  end: DateInput
+}
