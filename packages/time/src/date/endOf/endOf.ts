@@ -1,9 +1,6 @@
 import { withDateOperation } from '../withDateOperation'
-import type {
-  DateInput,
-  DateOperationOptions,
-  DateOperationResult,
-} from '../withDateOperation'
+import type { DateOperationOptions } from '../withDateOperation'
+import type { DateInput } from '../types'
 
 export type EndOfUnit =
   | 'year'
@@ -27,7 +24,7 @@ export function endOf(
   input: DateInput,
   args: EndOfArgs,
   options?: DateOperationOptions,
-): DateOperationResult {
+) {
   return withDateOperation<EndOfArgs>((zdt, { unit }) => {
     switch (unit) {
       case 'year':

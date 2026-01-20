@@ -1,13 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill'
 import { validateDate } from '../validateDate'
 import { getDateDefaults } from '../dateDefaults'
-
-export type DateInput = string | number | Date | Temporal.ZonedDateTime
-
-export interface DateOptions {
-  calendar?: string
-  timeZone?: string
-}
+import type { DateInput, DateOptions } from '../types'
 
 export type ReturnFormat = 'standard' | 'long'
 
@@ -15,25 +9,12 @@ export interface DateOperationOptions extends DateOptions {
   returnFormat?: ReturnFormat
 }
 
-export interface DateOperationResult {
-  value: string | number | Date | Temporal.ZonedDateTime
-  options: Required<DateOptions>
-  returnFormat: ReturnFormat
-  asDate: () => Date
-  asEpoch: () => number
-  asString: () => string
-  asLong: () => string
-  asZonedDateTime: () => Temporal.ZonedDateTime
-  timeZone: string
-  calendar: string
-}
-
 function createDateOperationResult(
   zdt: Temporal.ZonedDateTime,
   options: Required<DateOptions>,
   returnFormat: ReturnFormat = 'standard',
-): DateOperationResult {
-  const getValue = (): string | number | Date | Temporal.ZonedDateTime => {
+) {
+  const getValue = (): string => {
     switch (returnFormat) {
       case 'standard':
         return zdt.toInstant().toString()
@@ -113,7 +94,7 @@ export function withDateOperation<TArgs extends Record<string, unknown>>(
     input: DateInput,
     args: TArgs,
     options?: DateOperationOptions,
-  ): DateOperationResult => {
+  ) => {
     const defaults = getDateDefaults()
     const timeZone = options?.timeZone ?? defaults.timeZone
     const calendar = options?.calendar ?? defaults.calendar

@@ -1,9 +1,6 @@
 import { withDateOperation } from '../withDateOperation'
-import type {
-  DateInput,
-  DateOperationOptions,
-  DateOperationResult,
-} from '../withDateOperation'
+import type { DateOperationOptions } from '../withDateOperation'
+import type { DateInput } from '../types'
 
 export type StartOfUnit =
   | 'year'
@@ -27,7 +24,7 @@ export function startOf(
   input: DateInput,
   args: StartOfArgs,
   options?: DateOperationOptions,
-): DateOperationResult {
+) {
   return withDateOperation<StartOfArgs>((zdt, { unit }) => {
     switch (unit) {
       case 'year':
