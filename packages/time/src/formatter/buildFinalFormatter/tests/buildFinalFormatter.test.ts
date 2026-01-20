@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { buildFinalFormatter } from '../buildFinalFormatter'
 
 const dateTimeFormat = new Intl.DateTimeFormat('en-US', {
@@ -15,12 +15,18 @@ const dateTimeFormat = new Intl.DateTimeFormat('en-US', {
 const timeOnlyFormat = new Intl.DateTimeFormat('en-US', {
   hour: '2-digit',
   minute: '2-digit',
-  // second: '2-digit',
-  // timeZoneName: 'short',
   timeZone: 'America/New_York',
 })
 
 describe('buildFinalFormatter', () => {
+  beforeEach(() => {
+    vi.stubEnv('TZ', 'America/New_York')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   test('should format a date string', () => {
     const format = buildFinalFormatter({
       formatter: dateTimeFormat,

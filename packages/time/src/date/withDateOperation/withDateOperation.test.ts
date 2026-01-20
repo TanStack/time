@@ -136,7 +136,7 @@ describe('withDateOperation', () => {
   })
 
   describe('result properties', () => {
-    test('should have value property as string', () => {
+    test('should have value property (defaults to string)', () => {
       const result = mockOperation(
         '2024-03-15T14:42:12.789Z',
         { unit: 'test' },
@@ -145,7 +145,8 @@ describe('withDateOperation', () => {
         },
       )
       expect(typeof result.value).toBe('string')
-      expect(result.value).toContain('2024-03-15')
+      const valueStr = result.value as string
+      expect(valueStr).toContain('2024-03-15')
     })
 
     test('should have options property', () => {
@@ -187,10 +188,62 @@ describe('withDateOperation', () => {
           calendar: 'gregory',
         },
       )
-      const { value, timeZone, calendar } = result
+      const { value, timeZone, calendar, returnFormat } = result
       expect(typeof value).toBe('string')
       expect(timeZone).toBe('UTC')
       expect(calendar).toBe('gregory')
+      expect(returnFormat).toBe('standard')
+    })
+  })
+
+  describe('returnFormat', () => {
+    test('should default to standard format', () => {
+      const result = mockOperation(
+        '2024-03-15T14:42:12.789Z',
+        { unit: 'test' },
+        {
+          timeZone: 'UTC',
+        },
+      )
+      expect(result.returnFormat).toBe('standard')
+      expect(typeof result.value).toBe('string')
+      expect(result.value).toContain('2024-03-15')
+      expect(result.value).not.toContain('[')
+    })
+
+    test('should return standard format (RFC 3339 string)', () => {
+      const result = mockOperation(
+        '2024-03-15T14:42:12.789Z',
+        { unit: 'test' },
+        {
+          timeZone: 'UTC',
+          returnFormat: 'standard',
+        },
+      )
+      expect(result.returnFormat).toBe('standard')
+      expect(typeof result.value).toBe('string')
+      const valueStr = result.value as string
+      expect(valueStr).toContain('2024-03-15')
+      expect(valueStr).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
+      expect(valueStr).not.toContain('[')
+    })
+
+    test('should return long format (with timezone and calendar)', () => {
+      const result = mockOperation(
+        '2024-03-15T14:42:12.789Z',
+        { unit: 'test' },
+        {
+          timeZone: 'America/New_York',
+          calendar: 'gregory',
+          returnFormat: 'long',
+        },
+      )
+      expect(result.returnFormat).toBe('long')
+      expect(typeof result.value).toBe('string')
+      const valueStr = result.value as string
+      expect(valueStr).toContain('2024-03-15')
+      expect(valueStr).toContain('[America/New_York]')
+      expect(valueStr).toContain('[u-ca=gregory]')
     })
   })
 
@@ -225,7 +278,8 @@ describe('withDateOperation', () => {
           timeZone: 'UTC',
         },
       )
-      expect(result.value).toContain('2024-03-30')
+      const valueStr = result.value as string
+      expect(valueStr).toContain('2024-03-30')
     })
   })
 })

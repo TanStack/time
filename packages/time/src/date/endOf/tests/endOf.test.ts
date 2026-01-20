@@ -51,10 +51,10 @@ describe('endOf', () => {
       const result = endOf('2024-03-15T14:42:12.789Z', { unit: 'week' }, {
         timeZone: 'UTC',
       })
-      const resultDate = new Date(result.value)
+      const resultDate = new Date(result.asString())
       expect(resultDate.getUTCDay()).toBe(0) // Sunday
-      expect(result.value).toContain('2024-03-17')
-      expect(result.value).toContain('23:59:59.999')
+      expect(result.asString()).toContain('2024-03-17')
+      expect(result.asString()).toContain('23:59:59.999')
     })
 
     test('should return end of week for Sunday', () => {
@@ -62,10 +62,10 @@ describe('endOf', () => {
       const result = endOf('2024-03-17T14:42:12.789Z', { unit: 'week' }, {
         timeZone: 'UTC',
       })
-      const resultDate = new Date(result.value)
+      const resultDate = new Date(result.asString())
       expect(resultDate.getUTCDay()).toBe(0) // Sunday
-      expect(result.value).toContain('2024-03-17')
-      expect(result.value).toContain('23:59:59.999')
+      expect(result.asString()).toContain('2024-03-17')
+      expect(result.asString()).toContain('23:59:59.999')
     })
 
     test('should return end of week for Monday', () => {
@@ -73,9 +73,9 @@ describe('endOf', () => {
       const result = endOf('2024-03-11T14:42:12.789Z', { unit: 'week' }, {
         timeZone: 'UTC',
       })
-      const resultDate = new Date(result.value)
+      const resultDate = new Date(result.asString())
       expect(resultDate.getUTCDay()).toBe(0) // Sunday
-      expect(result.value).toContain('2024-03-17')
+      expect(result.asString()).toContain('2024-03-17')
     })
   })
 

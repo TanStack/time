@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill'
-import { validateDate } from './validateDate'
-import { getDateDefaults } from './dateDefaults'
+import { validateDate } from '../validateDate'
+import { getDateDefaults } from '../dateDefaults'
 
 export type DateInput = string | number | Date | Temporal.ZonedDateTime
 
@@ -9,11 +9,16 @@ export interface DateOptions {
   timeZone?: string
 }
 
-export interface DateOperationOptions extends DateOptions {}
+export type ReturnFormat = 'standard' | 'long'
+
+export interface DateOperationOptions extends DateOptions {
+  returnFormat?: ReturnFormat
+}
 
 export interface DateOperationResult {
-  value: string
+  value: string | number | Date | Temporal.ZonedDateTime
   options: Required<DateOptions>
+  returnFormat: ReturnFormat
   asDate: () => Date
   asEpoch: () => number
   asString: () => string
@@ -26,10 +31,23 @@ export interface DateOperationResult {
 function createDateOperationResult(
   zdt: Temporal.ZonedDateTime,
   options: Required<DateOptions>,
+  returnFormat: ReturnFormat = 'standard',
 ): DateOperationResult {
+  const getValue = (): string | number | Date | Temporal.ZonedDateTime => {
+    switch (returnFormat) {
+      case 'standard':
+        return zdt.toInstant().toString()
+      case 'long':
+        return `${zdt.toInstant().toString()}[${zdt.timeZoneId}][u-ca=${zdt.calendarId}]`
+      default:
+        return zdt.toInstant().toString()
+    }
+  }
+
   return {
-    value: zdt.toInstant().toString(),
+    value: getValue(),
     options,
+    returnFormat,
     asDate: () => {
       return new Date(Number(zdt.epochNanoseconds / 1_000_000n))
     },
@@ -99,6 +117,7 @@ export function withDateOperation<TArgs extends Record<string, unknown>>(
     const defaults = getDateDefaults()
     const timeZone = options?.timeZone ?? defaults.timeZone
     const calendar = options?.calendar ?? defaults.calendar
+    const returnFormat = options?.returnFormat ?? 'standard'
 
     const inputZdt = toZonedDateTime(input, timeZone, calendar)
     const resultZdt = fn(inputZdt, args)
@@ -106,6 +125,6 @@ export function withDateOperation<TArgs extends Record<string, unknown>>(
     return createDateOperationResult(resultZdt, {
       timeZone,
       calendar,
-    })
+    }, returnFormat)
   }
 }
