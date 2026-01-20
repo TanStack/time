@@ -48,26 +48,6 @@ asEpoch: () => number;
 
 `number`
 
-### asLong()
-
-```ts
-asLong: () => string;
-```
-
-#### Returns
-
-`string`
-
-### asString()
-
-```ts
-asString: () => string;
-```
-
-#### Returns
-
-`string`
-
 ### asZonedDateTime()
 
 ```ts
@@ -81,25 +61,25 @@ asZonedDateTime: () => ZonedDateTime;
 ### calendar
 
 ```ts
-calendar: string = options.calendar;
+calendar: string | undefined = options.calendar;
 ```
 
 ### options
 
 ```ts
-options: Required<DateOptions>;
+options: DateOperationOptions;
 ```
 
 ### returnFormat
 
 ```ts
-returnFormat: ReturnFormat;
+returnFormat: ReturnFormat | undefined;
 ```
 
 ### timeZone
 
 ```ts
-timeZone: string = options.timeZone;
+timeZone: string | undefined = options.timeZone;
 ```
 
 ### value
