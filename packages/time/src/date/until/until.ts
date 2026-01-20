@@ -42,11 +42,7 @@ function toZonedDateTime(
  * until
  * Returns the duration from the first date/time instance until the second date/time instance
  */
-export function until(
-  start: DateInput,
-  end: DateInput,
-  options: UntilOptions,
-) {
+export function until(start: DateInput, end: DateInput, options: UntilOptions) {
   const defaults = getDateDefaults()
   const timeZone = options.timeZone ?? defaults.timeZone
   const calendar = options.calendar ?? defaults.calendar

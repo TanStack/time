@@ -140,50 +140,34 @@ describe('until', () => {
 
   describe('edge cases', () => {
     test('should handle month boundaries', () => {
-      const duration = until(
-        '2024-03-31T00:00:00Z',
-        '2024-04-01T00:00:00Z',
-        {
-          timeZone: 'UTC',
-          unit: 'day',
-        },
-      )
+      const duration = until('2024-03-31T00:00:00Z', '2024-04-01T00:00:00Z', {
+        timeZone: 'UTC',
+        unit: 'day',
+      })
       expect(duration).toBe(1)
     })
 
     test('should handle year boundaries', () => {
-      const duration = until(
-        '2024-12-31T00:00:00Z',
-        '2025-01-01T00:00:00Z',
-        {
-          timeZone: 'UTC',
-          unit: 'day',
-        },
-      )
+      const duration = until('2024-12-31T00:00:00Z', '2025-01-01T00:00:00Z', {
+        timeZone: 'UTC',
+        unit: 'day',
+      })
       expect(duration).toBe(1)
     })
 
     test('should handle leap years', () => {
-      const duration = until(
-        '2024-02-28T00:00:00Z',
-        '2024-02-29T00:00:00Z',
-        {
-          timeZone: 'UTC',
-          unit: 'day',
-        },
-      )
+      const duration = until('2024-02-28T00:00:00Z', '2024-02-29T00:00:00Z', {
+        timeZone: 'UTC',
+        unit: 'day',
+      })
       expect(duration).toBe(1)
     })
 
     test('should handle non-leap years', () => {
-      const duration = until(
-        '2023-02-28T00:00:00Z',
-        '2023-03-01T00:00:00Z',
-        {
-          timeZone: 'UTC',
-          unit: 'day',
-        },
-      )
+      const duration = until('2023-02-28T00:00:00Z', '2023-03-01T00:00:00Z', {
+        timeZone: 'UTC',
+        unit: 'day',
+      })
       expect(duration).toBe(1)
     })
   })
@@ -222,26 +206,18 @@ describe('until', () => {
 
   describe('timezone handling', () => {
     test('should respect timezone', () => {
-      const duration = until(
-        '2024-03-15T14:00:00Z',
-        '2024-03-15T15:00:00Z',
-        {
-          timeZone: 'America/New_York',
-          unit: 'hour',
-        },
-      )
+      const duration = until('2024-03-15T14:00:00Z', '2024-03-15T15:00:00Z', {
+        timeZone: 'America/New_York',
+        unit: 'hour',
+      })
       expect(duration).toBe(1)
     })
 
     test('should handle different timezones correctly', () => {
-      const duration = until(
-        '2024-03-15T00:00:00Z',
-        '2024-03-15T01:00:00Z',
-        {
-          timeZone: 'UTC',
-          unit: 'hour',
-        },
-      )
+      const duration = until('2024-03-15T00:00:00Z', '2024-03-15T01:00:00Z', {
+        timeZone: 'UTC',
+        unit: 'hour',
+      })
       expect(duration).toBe(1)
     })
   })

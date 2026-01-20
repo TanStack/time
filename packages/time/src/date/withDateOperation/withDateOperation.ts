@@ -90,11 +90,7 @@ function toZonedDateTime(
 export function withDateOperation<TArgs extends Record<string, unknown>>(
   fn: (zdt: Temporal.ZonedDateTime, args: TArgs) => Temporal.ZonedDateTime,
 ) {
-  return (
-    input: DateInput,
-    args: TArgs,
-    options?: DateOperationOptions,
-  ) => {
+  return (input: DateInput, args: TArgs, options?: DateOperationOptions) => {
     const defaults = getDateDefaults()
     const timeZone = options?.timeZone ?? defaults.timeZone
     const calendar = options?.calendar ?? defaults.calendar
@@ -103,9 +99,13 @@ export function withDateOperation<TArgs extends Record<string, unknown>>(
     const inputZdt = toZonedDateTime(input, timeZone, calendar)
     const resultZdt = fn(inputZdt, args)
 
-    return createDateOperationResult(resultZdt, {
-      timeZone,
-      calendar,
-    }, returnFormat)
+    return createDateOperationResult(
+      resultZdt,
+      {
+        timeZone,
+        calendar,
+      },
+      returnFormat,
+    )
   }
 }

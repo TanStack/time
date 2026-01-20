@@ -222,7 +222,9 @@ describe('subtract', () => {
     })
 
     test('should work with ZonedDateTime', () => {
-      const zdt = Temporal.ZonedDateTime.from('2024-03-15T14:42:12.789Z[UTC][u-ca=gregory]')
+      const zdt = Temporal.ZonedDateTime.from(
+        '2024-03-15T14:42:12.789Z[UTC][u-ca=gregory]',
+      )
       const result = subtract(
         zdt,
         { duration: { days: 1 } },
