@@ -38,8 +38,8 @@ export function isSameOrBefore(
   if (options.unit === 'week') {
     const normalized1 = normalizeWeek(zdt1)
     const normalized2 = normalizeWeek(zdt2)
-    return Temporal.ZonedDateTime.compare(normalized1, normalized2) >= 0
+    return Temporal.ZonedDateTime.compare(normalized1, normalized2) <= 0
   }
 
-  return Temporal.ZonedDateTime.compare(zdt1, zdt2) >= 0
+  return Temporal.ZonedDateTime.compare(zdt1, zdt2) <= 0
 }

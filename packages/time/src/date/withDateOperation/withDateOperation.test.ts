@@ -74,29 +74,6 @@ describe('withDateOperation', () => {
       expect(new Date(epoch).toISOString()).toContain('2024-03-15')
     })
 
-    test('should have asString method', () => {
-      const result = mockOperation('2024-03-15T14:42:12.789Z', {
-        unit: 'test',
-        timeZone: 'UTC',
-      })
-      const str = result.asString()
-      expect(typeof str).toBe('string')
-      expect(str).toContain('2024-03-15')
-    })
-
-    test('should have asLong method', () => {
-      const result = mockOperation('2024-03-15T14:42:12.789Z', {
-        unit: 'test',
-        timeZone: 'America/New_York',
-        calendar: 'gregory',
-      })
-      const long = result.asLong()
-      expect(typeof long).toBe('string')
-      expect(long).toContain('2024-03-15')
-      expect(long).toContain('[America/New_York]')
-      expect(long).toContain('[u-ca=gregory]')
-    })
-
     test('should have asZonedDateTime method', () => {
       const result = mockOperation('2024-03-15T14:42:12.789Z', {
         unit: 'test',

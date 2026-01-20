@@ -11,9 +11,9 @@ export interface DateOperationOptions extends DateOptions {
 
 function createDateOperationResult(
   zdt: Temporal.ZonedDateTime,
-  options: Required<DateOptions>,
-  returnFormat: ReturnFormat = 'standard',
+  options: DateOperationOptions,
 ) {
+  const { returnFormat } = options
   const getValue = (): string => {
     switch (returnFormat) {
       case 'standard':
@@ -34,12 +34,6 @@ function createDateOperationResult(
     },
     asEpoch: () => {
       return Number(zdt.epochNanoseconds / 1_000_000n)
-    },
-    asString: () => {
-      return zdt.toInstant().toString()
-    },
-    asLong: () => {
-      return `${zdt.toInstant().toString()}[${zdt.timeZoneId}][u-ca=${zdt.calendarId}]`
     },
     asZonedDateTime: () => {
       return zdt
@@ -67,13 +61,10 @@ export function withDateOperation<TArgs>(
     const inputZdt = toZonedDateTime(input, timeZone, calendar)
     const resultZdt = fn(inputZdt, options)
 
-    return createDateOperationResult(
-      resultZdt,
-      {
-        timeZone,
-        calendar,
-      },
+    return createDateOperationResult(resultZdt, {
+      timeZone,
+      calendar,
       returnFormat,
-    )
+    })
   }
 }
