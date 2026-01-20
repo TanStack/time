@@ -14,17 +14,10 @@ export interface SinceOptions extends DateOptions {
  */
 export function since(start: DateInput, end: DateInput, options: SinceOptions) {
   const defaults = getDateDefaults()
-  const timeZone = options.timeZone ?? defaults.timeZone
-  const calendar = options.calendar ?? defaults.calendar
+  const { timeZone = defaults.timeZone, calendar = defaults.calendar } = options
 
   const startZdt = toZonedDateTime(start, timeZone, calendar)
   const endZdt = toZonedDateTime(end, timeZone, calendar)
-
   const duration = endZdt.since(startZdt)
-  const unit = options.unit
-
-  return duration.total({
-    unit,
-    relativeTo: startZdt,
-  })
+  return duration.total({ unit: options.unit, relativeTo: startZdt })
 }

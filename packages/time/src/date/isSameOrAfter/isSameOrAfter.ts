@@ -28,12 +28,10 @@ export function isSameOrAfter(
   options: IsSameOrAfterOptions,
 ): boolean {
   const defaults = getDateDefaults()
-  const timeZone = options.timeZone ?? defaults.timeZone
-  const calendar = options.calendar ?? defaults.calendar
+  const { timeZone = defaults.timeZone, calendar = defaults.calendar } = options
 
   const startOf1 = startOf(date1, { unit: options.unit, timeZone, calendar })
   const startOf2 = startOf(date2, { unit: options.unit, timeZone, calendar })
-
   const zdt1 = startOf1.asZonedDateTime()
   const zdt2 = startOf2.asZonedDateTime()
 

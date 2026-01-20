@@ -58,9 +58,11 @@ export function withDateOperation<TArgs>(
 ) {
   return (input: DateInput, options: DateOperationOptions & TArgs) => {
     const defaults = getDateDefaults()
-    const timeZone = options.timeZone ?? defaults.timeZone
-    const calendar = options.calendar ?? defaults.calendar
-    const returnFormat = options.returnFormat ?? 'standard'
+    const {
+      timeZone = defaults.timeZone,
+      calendar = defaults.calendar,
+      returnFormat = 'standard',
+    } = options
 
     const inputZdt = toZonedDateTime(input, timeZone, calendar)
     const resultZdt = fn(inputZdt, options)

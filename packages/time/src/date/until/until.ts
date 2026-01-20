@@ -13,8 +13,7 @@ export interface UntilOptions extends DateOptions {
  */
 export function until(start: DateInput, end: DateInput, options: UntilOptions) {
   const defaults = getDateDefaults()
-  const timeZone = options.timeZone ?? defaults.timeZone
-  const calendar = options.calendar ?? defaults.calendar
+  const { timeZone = defaults.timeZone, calendar = defaults.calendar } = options
 
   const startZdt = toZonedDateTime(start, timeZone, calendar)
   const endZdt = toZonedDateTime(end, timeZone, calendar)

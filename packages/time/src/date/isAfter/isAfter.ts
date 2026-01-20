@@ -15,8 +15,8 @@ export function isAfter(
   options?: IsAfterOptions,
 ): boolean {
   const defaults = getDateDefaults()
-  const timeZone = options?.timeZone ?? defaults.timeZone
-  const calendar = options?.calendar ?? defaults.calendar
+  const { timeZone = defaults.timeZone, calendar = defaults.calendar } =
+    options ?? {}
 
   const zdt1 = toZonedDateTime(date1, timeZone, calendar)
   const zdt2 = toZonedDateTime(date2, timeZone, calendar)

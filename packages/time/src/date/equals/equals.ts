@@ -26,8 +26,8 @@ export function equals(
   options?: EqualsOptions,
 ): boolean {
   const defaults = getDateDefaults()
-  const timeZone = options?.timeZone ?? defaults.timeZone
-  const calendar = options?.calendar ?? defaults.calendar
+  const { timeZone = defaults.timeZone, calendar = defaults.calendar } =
+    options ?? {}
 
   const startOf1 = startOf(date1, { unit, timeZone, calendar })
   const startOf2 = startOf(date2, { unit, timeZone, calendar })
