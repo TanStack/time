@@ -1,4 +1,5 @@
 import { getDateDefaults } from '../dateDefaults'
+import { normalizeWeek } from '../helpers'
 import { startOf } from '../startOf/startOf'
 import type { DateInput, DateOptions } from '../types'
 
@@ -35,22 +36,8 @@ export function equals(
   const zdt2 = startOf2.asZonedDateTime()
 
   if (unit === 'week') {
-    const normalized1 = zdt1.with({
-      hour: 0,
-      minute: 0,
-      second: 0,
-      millisecond: 0,
-      microsecond: 0,
-      nanosecond: 0,
-    })
-    const normalized2 = zdt2.with({
-      hour: 0,
-      minute: 0,
-      second: 0,
-      millisecond: 0,
-      microsecond: 0,
-      nanosecond: 0,
-    })
+    const normalized1 = normalizeWeek(zdt1)
+    const normalized2 = normalizeWeek(zdt2)
     return (
       normalized1.toInstant().epochNanoseconds ===
       normalized2.toInstant().epochNanoseconds

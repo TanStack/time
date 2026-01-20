@@ -115,7 +115,7 @@ describe('withDateOperation', () => {
         timeZone: 'UTC',
       })
       expect(typeof result.value).toBe('string')
-      const valueStr = result.value as string
+      const valueStr = result.value
       expect(valueStr).toContain('2024-03-15')
     })
 
@@ -177,7 +177,7 @@ describe('withDateOperation', () => {
       })
       expect(result.returnFormat).toBe('standard')
       expect(typeof result.value).toBe('string')
-      const valueStr = result.value as string
+      const valueStr = result.value
       expect(valueStr).toContain('2024-03-15')
       expect(valueStr).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
       expect(valueStr).not.toContain('[')
@@ -192,7 +192,7 @@ describe('withDateOperation', () => {
       })
       expect(result.returnFormat).toBe('long')
       expect(typeof result.value).toBe('string')
-      const valueStr = result.value as string
+      const valueStr = result.value
       expect(valueStr).toContain('2024-03-15')
       expect(valueStr).toContain('[America/New_York]')
       expect(valueStr).toContain('[u-ca=gregory]')
@@ -224,7 +224,7 @@ describe('withDateOperation', () => {
         multiplier: 2,
         timeZone: 'UTC',
       })
-      const valueStr = result.value as string
+      const valueStr = result.value
       expect(valueStr).toContain('2024-03-30')
     })
   })

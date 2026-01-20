@@ -1,19 +1,6 @@
 import { withDateOperation } from '../withDateOperation'
 import type { DateOperationOptions } from '../withDateOperation'
-import type { DateInput } from '../types'
-
-export interface DurationLike {
-  years?: number
-  months?: number
-  weeks?: number
-  days?: number
-  hours?: number
-  minutes?: number
-  seconds?: number
-  milliseconds?: number
-  microseconds?: number
-  nanoseconds?: number
-}
+import type { DateInput, DurationLike } from '../types'
 
 export interface AddOptions extends DateOperationOptions {
   duration: DurationLike
