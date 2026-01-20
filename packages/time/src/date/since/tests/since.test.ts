@@ -1,10 +1,11 @@
 import { describe, expect, test } from 'vitest'
-import { until } from '../until'
+import { since } from '../since'
+import { until } from '../../until/until'
 
-describe('until', () => {
+describe('since', () => {
   describe('with string inputs', () => {
     test('should calculate duration in days', () => {
-      const duration = until(
+      const duration = since(
         '2024-03-15T14:42:12.789Z',
         '2024-03-16T14:42:12.789Z',
         {
@@ -16,7 +17,7 @@ describe('until', () => {
     })
 
     test('should calculate duration in hours', () => {
-      const duration = until(
+      const duration = since(
         '2024-03-15T14:42:12.789Z',
         '2024-03-15T16:42:12.789Z',
         {
@@ -28,7 +29,7 @@ describe('until', () => {
     })
 
     test('should calculate duration in minutes', () => {
-      const duration = until(
+      const duration = since(
         '2024-03-15T14:42:12.789Z',
         '2024-03-15T14:44:12.789Z',
         {
@@ -40,7 +41,7 @@ describe('until', () => {
     })
 
     test('should calculate duration in seconds', () => {
-      const duration = until(
+      const duration = since(
         '2024-03-15T14:42:12.789Z',
         '2024-03-15T14:42:57.789Z',
         {
@@ -52,7 +53,7 @@ describe('until', () => {
     })
 
     test('should calculate duration in milliseconds', () => {
-      const duration = until(
+      const duration = since(
         '2024-03-15T14:42:12.789Z',
         '2024-03-15T14:42:12.889Z',
         {
@@ -64,7 +65,7 @@ describe('until', () => {
     })
 
     test('should calculate complex duration', () => {
-      const duration = until(
+      const duration = since(
         '2024-03-15T14:42:12.789Z',
         '2024-03-16T17:12:12.789Z',
         {
@@ -76,7 +77,7 @@ describe('until', () => {
     })
 
     test('should calculate duration in months', () => {
-      const duration = until(
+      const duration = since(
         '2024-03-15T14:42:12.789Z',
         '2024-04-15T14:42:12.789Z',
         {
@@ -88,7 +89,7 @@ describe('until', () => {
     })
 
     test('should calculate duration in years', () => {
-      const duration = until(
+      const duration = since(
         '2024-03-15T14:42:12.789Z',
         '2025-03-15T14:42:12.789Z',
         {
@@ -100,7 +101,7 @@ describe('until', () => {
     })
 
     test('should calculate duration in weeks', () => {
-      const duration = until(
+      const duration = since(
         '2024-03-15T14:42:12.789Z',
         '2024-03-29T14:42:12.789Z',
         {
@@ -114,7 +115,7 @@ describe('until', () => {
 
   describe('with negative duration', () => {
     test('should return negative duration when end is before start', () => {
-      const duration = until(
+      const duration = since(
         '2024-03-16T14:42:12.789Z',
         '2024-03-15T14:42:12.789Z',
         {
@@ -126,7 +127,7 @@ describe('until', () => {
     })
 
     test('should return zero duration when dates are equal', () => {
-      const duration = until(
+      const duration = since(
         '2024-03-15T14:42:12.789Z',
         '2024-03-15T14:42:12.789Z',
         {
@@ -140,7 +141,7 @@ describe('until', () => {
 
   describe('edge cases', () => {
     test('should handle month boundaries', () => {
-      const duration = until('2024-03-31T00:00:00Z', '2024-04-01T00:00:00Z', {
+      const duration = since('2024-03-31T00:00:00Z', '2024-04-01T00:00:00Z', {
         timeZone: 'UTC',
         unit: 'day',
       })
@@ -148,7 +149,7 @@ describe('until', () => {
     })
 
     test('should handle year boundaries', () => {
-      const duration = until('2024-12-31T00:00:00Z', '2025-01-01T00:00:00Z', {
+      const duration = since('2024-12-31T00:00:00Z', '2025-01-01T00:00:00Z', {
         timeZone: 'UTC',
         unit: 'day',
       })
@@ -156,7 +157,7 @@ describe('until', () => {
     })
 
     test('should handle leap years', () => {
-      const duration = until('2024-02-28T00:00:00Z', '2024-02-29T00:00:00Z', {
+      const duration = since('2024-02-28T00:00:00Z', '2024-02-29T00:00:00Z', {
         timeZone: 'UTC',
         unit: 'day',
       })
@@ -164,7 +165,7 @@ describe('until', () => {
     })
 
     test('should handle non-leap years', () => {
-      const duration = until('2023-02-28T00:00:00Z', '2023-03-01T00:00:00Z', {
+      const duration = since('2023-02-28T00:00:00Z', '2023-03-01T00:00:00Z', {
         timeZone: 'UTC',
         unit: 'day',
       })
@@ -176,7 +177,7 @@ describe('until', () => {
     test('should work with Date objects', () => {
       const start = new Date('2024-03-15T14:42:12.789Z')
       const end = new Date('2024-03-16T14:42:12.789Z')
-      const duration = until(start, end, {
+      const duration = since(start, end, {
         timeZone: 'UTC',
         unit: 'day',
       })
@@ -186,7 +187,7 @@ describe('until', () => {
     test('should work with epoch time', () => {
       const start = new Date('2024-03-15T14:42:12.789Z').getTime()
       const end = new Date('2024-03-16T14:42:12.789Z').getTime()
-      const duration = until(start, end, {
+      const duration = since(start, end, {
         timeZone: 'UTC',
         unit: 'day',
       })
@@ -196,7 +197,7 @@ describe('until', () => {
     test('should work with mixed input types', () => {
       const start = '2024-03-15T14:42:12.789Z'
       const end = new Date('2024-03-16T14:42:12.789Z')
-      const duration = until(start, end, {
+      const duration = since(start, end, {
         timeZone: 'UTC',
         unit: 'day',
       })
@@ -206,7 +207,7 @@ describe('until', () => {
 
   describe('timezone handling', () => {
     test('should respect timezone', () => {
-      const duration = until('2024-03-15T14:00:00Z', '2024-03-15T15:00:00Z', {
+      const duration = since('2024-03-15T14:00:00Z', '2024-03-15T15:00:00Z', {
         timeZone: 'America/New_York',
         unit: 'hour',
       })
@@ -214,7 +215,7 @@ describe('until', () => {
     })
 
     test('should handle different timezones correctly', () => {
-      const duration = until('2024-03-15T00:00:00Z', '2024-03-15T01:00:00Z', {
+      const duration = since('2024-03-15T00:00:00Z', '2024-03-15T01:00:00Z', {
         timeZone: 'UTC',
         unit: 'hour',
       })
@@ -224,7 +225,7 @@ describe('until', () => {
 
   describe('calendar handling', () => {
     test('should respect calendar', () => {
-      const duration = until(
+      const duration = since(
         '2024-03-15T14:42:12.789Z',
         '2024-03-16T14:42:12.789Z',
         {
@@ -233,6 +234,22 @@ describe('until', () => {
         },
       )
       expect(duration).toBe(1)
+    })
+  })
+
+  describe('comparison with until', () => {
+    test('should return same result as until', () => {
+      const start = '2024-03-15T14:42:12.789Z'
+      const end = '2024-03-16T14:42:12.789Z'
+      const options = {
+        timeZone: 'UTC' as const,
+        unit: 'day' as const,
+      }
+
+      const sinceResult = since(start, end, options)
+      const untilResult = until(start, end, options)
+
+      expect(sinceResult).toBe(untilResult)
     })
   })
 })

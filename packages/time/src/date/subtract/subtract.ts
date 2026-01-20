@@ -15,7 +15,7 @@ export interface DurationLike {
   nanoseconds?: number
 }
 
-export interface SubtractArgs extends Record<string, unknown> {
+export interface SubtractOptions extends DateOperationOptions {
   duration: DurationLike
 }
 
@@ -23,12 +23,8 @@ export interface SubtractArgs extends Record<string, unknown> {
  * subtract
  * Subtracts a duration from a date/time instance
  */
-export function subtract(
-  input: DateInput,
-  args: SubtractArgs,
-  options?: DateOperationOptions,
-) {
-  return withDateOperation<SubtractArgs>((zdt, { duration }) => {
+export function subtract(input: DateInput, options: SubtractOptions) {
+  return withDateOperation((zdt, { duration }) => {
     return zdt.subtract(duration)
-  })(input, args, options)
+  })(input, options)
 }

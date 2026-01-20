@@ -12,7 +12,7 @@ export type StartOfUnit =
   | 'second'
   | 'millisecond'
 
-export interface StartOfArgs extends Record<string, unknown> {
+export interface StartOfOptions extends DateOperationOptions {
   unit: StartOfUnit
 }
 
@@ -20,12 +20,8 @@ export interface StartOfArgs extends Record<string, unknown> {
  * startOf
  * Returns the start of a given unit for a date/time instance
  */
-export function startOf(
-  input: DateInput,
-  args: StartOfArgs,
-  options?: DateOperationOptions,
-) {
-  return withDateOperation<StartOfArgs>((zdt, { unit }) => {
+export function startOf(input: DateInput, options: StartOfOptions) {
+  return withDateOperation<StartOfOptions>((zdt, { unit }) => {
     switch (unit) {
       case 'year':
         return zdt.with({
@@ -85,5 +81,5 @@ export function startOf(
       default:
         return zdt
     }
-  })(input, args, options)
+  })(input, options)
 }

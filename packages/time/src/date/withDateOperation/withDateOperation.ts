@@ -87,25 +87,25 @@ function toZonedDateTime(
  * Higher-order function that provides common parsing, defaults, and formatting logic
  * for date utility functions like startOf, endOf, etc.
  */
-export function withDateOperation<TArgs extends Record<string, unknown>>(
+export function withDateOperation<TArgs>(
   fn: (zdt: Temporal.ZonedDateTime, args: TArgs) => Temporal.ZonedDateTime,
 ) {
-  return (
-    input: DateInput,
-    args: TArgs,
-    options?: DateOperationOptions,
-  ) => {
+  return (input: DateInput, options: DateOperationOptions & TArgs) => {
     const defaults = getDateDefaults()
-    const timeZone = options?.timeZone ?? defaults.timeZone
-    const calendar = options?.calendar ?? defaults.calendar
-    const returnFormat = options?.returnFormat ?? 'standard'
+    const timeZone = options.timeZone ?? defaults.timeZone
+    const calendar = options.calendar ?? defaults.calendar
+    const returnFormat = options.returnFormat ?? 'standard'
 
     const inputZdt = toZonedDateTime(input, timeZone, calendar)
-    const resultZdt = fn(inputZdt, args)
+    const resultZdt = fn(inputZdt, options)
 
-    return createDateOperationResult(resultZdt, {
-      timeZone,
-      calendar,
-    }, returnFormat)
+    return createDateOperationResult(
+      resultZdt,
+      {
+        timeZone,
+        calendar,
+      },
+      returnFormat,
+    )
   }
 }

@@ -3,7 +3,7 @@ import { validateDate } from '../validateDate'
 import { getDateDefaults } from '../dateDefaults'
 import type { DateInput, DateOptions } from '../types'
 
-export interface UntilOptions extends DateOptions {
+export interface SinceOptions extends DateOptions {
   unit: Temporal.DateTimeUnit
 }
 
@@ -39,10 +39,11 @@ function toZonedDateTime(
 }
 
 /**
- * until
- * Returns the duration from the first date/time instance until the second date/time instance
+ * since
+ * Returns the duration from the first date/time instance since the second date/time instance
+ * (equivalent to: how long has it been since the second date, from the first date's perspective)
  */
-export function until(start: DateInput, end: DateInput, options: UntilOptions) {
+export function since(start: DateInput, end: DateInput, options: SinceOptions) {
   const defaults = getDateDefaults()
   const timeZone = options.timeZone ?? defaults.timeZone
   const calendar = options.calendar ?? defaults.calendar
@@ -50,7 +51,7 @@ export function until(start: DateInput, end: DateInput, options: UntilOptions) {
   const startZdt = toZonedDateTime(start, timeZone, calendar)
   const endZdt = toZonedDateTime(end, timeZone, calendar)
 
-  const duration = startZdt.until(endZdt)
+  const duration = endZdt.since(startZdt)
   const unit = options.unit
 
   return duration.total({

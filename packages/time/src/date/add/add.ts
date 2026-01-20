@@ -15,7 +15,7 @@ export interface DurationLike {
   nanoseconds?: number
 }
 
-export interface AddArgs extends Record<string, unknown> {
+export interface AddOptions extends DateOperationOptions {
   duration: DurationLike
 }
 
@@ -23,12 +23,8 @@ export interface AddArgs extends Record<string, unknown> {
  * add
  * Adds a duration to a date/time instance
  */
-export function add(
-  input: DateInput,
-  args: AddArgs,
-  options?: DateOperationOptions,
-) {
-  return withDateOperation<AddArgs>((zdt, { duration }) => {
+export function add(input: DateInput, options: AddOptions) {
+  return withDateOperation<AddOptions>((zdt, { duration }) => {
     return zdt.add(duration)
-  })(input, args, options)
+  })(input, options)
 }

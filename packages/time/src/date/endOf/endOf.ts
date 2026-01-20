@@ -12,7 +12,7 @@ export type EndOfUnit =
   | 'second'
   | 'millisecond'
 
-export interface EndOfArgs extends Record<string, unknown> {
+export interface EndOfOptions extends DateOperationOptions {
   unit: EndOfUnit
 }
 
@@ -20,12 +20,8 @@ export interface EndOfArgs extends Record<string, unknown> {
  * endOf
  * Returns the end of a given unit for a date/time instance
  */
-export function endOf(
-  input: DateInput,
-  args: EndOfArgs,
-  options?: DateOperationOptions,
-) {
-  return withDateOperation<EndOfArgs>((zdt, { unit }) => {
+export function endOf(input: DateInput, options: EndOfOptions) {
+  return withDateOperation<EndOfOptions>((zdt, { unit }) => {
     switch (unit) {
       case 'year':
         return zdt.with({
@@ -95,5 +91,5 @@ export function endOf(
       default:
         return zdt
     }
-  })(input, args, options)
+  })(input, options)
 }

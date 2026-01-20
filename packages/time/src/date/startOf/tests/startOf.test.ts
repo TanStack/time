@@ -4,37 +4,28 @@ import { startOf } from '../startOf'
 describe('startOf', () => {
   describe('with string input', () => {
     test('should return start of year', () => {
-      const result = startOf(
-        '2024-03-15T14:42:12.789Z',
-        { unit: 'year' },
-        {
-          timeZone: 'UTC',
-        },
-      )
+      const result = startOf('2024-03-15T14:42:12.789Z', {
+        unit: 'year',
+        timeZone: 'UTC',
+      })
       expect(result.value).toBe('2024-01-01T00:00:00Z')
       expect(result.options.timeZone).toBe('UTC')
       expect(result.options.calendar).toBeDefined()
     })
 
     test('should return start of month', () => {
-      const result = startOf(
-        '2024-03-15T14:42:12.789Z',
-        { unit: 'month' },
-        {
-          timeZone: 'UTC',
-        },
-      )
+      const result = startOf('2024-03-15T14:42:12.789Z', {
+        unit: 'month',
+        timeZone: 'UTC',
+      })
       expect(result.value).toBe('2024-03-01T00:00:00Z')
     })
 
     test('should return start of day', () => {
-      const result = startOf(
-        '2024-03-15T14:42:12.789Z',
-        { unit: 'day' },
-        {
-          timeZone: 'UTC',
-        },
-      )
+      const result = startOf('2024-03-15T14:42:12.789Z', {
+        unit: 'day',
+        timeZone: 'UTC',
+      })
       expect(result.value).toBe('2024-03-15T00:00:00Z')
     })
 
@@ -87,35 +78,26 @@ describe('startOf', () => {
 
   describe('edge cases', () => {
     test('should handle start of year for January 1st', () => {
-      const result = startOf(
-        '2024-01-01T00:00:00Z',
-        { unit: 'year' },
-        {
-          timeZone: 'UTC',
-        },
-      )
+      const result = startOf('2024-01-01T00:00:00Z', {
+        unit: 'year',
+        timeZone: 'UTC',
+      })
       expect(result.value).toBe('2024-01-01T00:00:00Z')
     })
 
     test('should handle start of month for first day', () => {
-      const result = startOf(
-        '2024-03-01T00:00:00Z',
-        { unit: 'month' },
-        {
-          timeZone: 'UTC',
-        },
-      )
+      const result = startOf('2024-03-01T00:00:00Z', {
+        unit: 'month',
+        timeZone: 'UTC',
+      })
       expect(result.value).toBe('2024-03-01T00:00:00Z')
     })
 
     test('should handle start of day at midnight', () => {
-      const result = startOf(
-        '2024-03-15T00:00:00Z',
-        { unit: 'day' },
-        {
-          timeZone: 'UTC',
-        },
-      )
+      const result = startOf('2024-03-15T00:00:00Z', {
+        unit: 'day',
+        timeZone: 'UTC',
+      })
       expect(result.value).toBe('2024-03-15T00:00:00Z')
     })
 
