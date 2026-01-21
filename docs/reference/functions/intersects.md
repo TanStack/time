@@ -18,7 +18,7 @@ Returns true if the date/time instance intersects with the range (i.e., is withi
 
 ### date
 
-`DateInput`
+[`DateInput`](../type-aliases/DateInput.md)
 
 The date to check
 

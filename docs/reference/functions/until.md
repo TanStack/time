@@ -21,11 +21,11 @@ Returns the duration from the first date/time instance until the second date/tim
 
 ### start
 
-`DateInput`
+[`DateInput`](../type-aliases/DateInput.md)
 
 ### end
 
-`DateInput`
+[`DateInput`](../type-aliases/DateInput.md)
 
 ### options
 

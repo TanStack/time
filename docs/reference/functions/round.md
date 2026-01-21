@@ -18,7 +18,7 @@ Returns the date/time instance rounded to the nearest unit
 
 ### input
 
-`DateInput`
+[`DateInput`](../type-aliases/DateInput.md)
 
 ### options
 

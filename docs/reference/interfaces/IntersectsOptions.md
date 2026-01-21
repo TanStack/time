@@ -9,7 +9,7 @@ Defined in: [intersects/intersects.ts:6](https://github.com/TanStack/time/blob/m
 
 ## Extends
 
-- `DateOptions`
+- [`DateOptions`](DateOptions.md)
 
 ## Properties
 
@@ -23,9 +23,7 @@ Defined in: [types.ts:6](https://github.com/TanStack/time/blob/main/packages/tim
 
 #### Inherited from
 
-```ts
-DateOptions.calendar
-```
+[`DateOptions`](DateOptions.md).[`calendar`](DateOptions.md#calendar)
 
 ***
 
@@ -49,6 +47,4 @@ Defined in: [types.ts:7](https://github.com/TanStack/time/blob/main/packages/tim
 
 #### Inherited from
 
-```ts
-DateOptions.timeZone
-```
+[`DateOptions`](DateOptions.md).[`timeZone`](DateOptions.md#timezone)
