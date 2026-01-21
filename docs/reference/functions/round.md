@@ -9,7 +9,7 @@ title: round
 function round(input, options): object;
 ```
 
-Defined in: [round/round.ts:25](https://github.com/TanStack/time/blob/main/packages/time/src/date/round/round.ts#L25)
+Defined in: [round/round.ts:27](https://github.com/TanStack/time/blob/main/packages/time/src/date/round/round.ts#L27)
 
 round
 Returns the date/time instance rounded to the nearest unit

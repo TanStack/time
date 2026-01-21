@@ -45,6 +45,26 @@ DateOperationOptions.returnFormat
 
 ***
 
+### roundingIncrement?
+
+```ts
+optional roundingIncrement: number;
+```
+
+Defined in: [round/round.ts:20](https://github.com/TanStack/time/blob/main/packages/time/src/date/round/round.ts#L20)
+
+***
+
+### roundingMode?
+
+```ts
+optional roundingMode: RoundingMode;
+```
+
+Defined in: [round/round.ts:19](https://github.com/TanStack/time/blob/main/packages/time/src/date/round/round.ts#L19)
+
+***
+
 ### timeZone?
 
 ```ts
