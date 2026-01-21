@@ -22,11 +22,11 @@ Returns true if two date/time instances are equal at the specified unit level
 
 ### date1
 
-`DateInput`
+[`DateInput`](../type-aliases/DateInput.md)
 
 ### date2
 
-`DateInput`
+[`DateInput`](../type-aliases/DateInput.md)
 
 ### unit
 

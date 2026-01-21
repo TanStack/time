@@ -21,11 +21,11 @@ Returns true if the first date/time instance is before the second date/time inst
 
 ### date1
 
-`DateInput`
+[`DateInput`](../type-aliases/DateInput.md)
 
 ### date2
 
-`DateInput`
+[`DateInput`](../type-aliases/DateInput.md)
 
 ### options?
 

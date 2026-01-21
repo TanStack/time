@@ -18,7 +18,7 @@ Adds a duration to a date/time instance
 
 ### input
 
-`DateInput`
+[`DateInput`](../type-aliases/DateInput.md)
 
 ### options
 

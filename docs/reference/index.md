@@ -8,8 +8,11 @@ title: "@tanstack/time"
 ## Interfaces
 
 - [AddOptions](interfaces/AddOptions.md)
+- [DateOptions](interfaces/DateOptions.md)
+- [DurationLike](interfaces/DurationLike.md)
 - [EndOfOptions](interfaces/EndOfOptions.md)
 - [EqualsOptions](interfaces/EqualsOptions.md)
+- [FormatDateOptions](interfaces/FormatDateOptions.md)
 - [IntersectsOptions](interfaces/IntersectsOptions.md)
 - [IsAfterOptions](interfaces/IsAfterOptions.md)
 - [IsBeforeOptions](interfaces/IsBeforeOptions.md)
@@ -25,8 +28,10 @@ title: "@tanstack/time"
 
 ## Type Aliases
 
+- [DateInput](type-aliases/DateInput.md)
 - [EndOfUnit](type-aliases/EndOfUnit.md)
 - [EqualsUnit](type-aliases/EqualsUnit.md)
+- [FormatType](type-aliases/FormatType.md)
 - [IsSameOrAfterUnit](type-aliases/IsSameOrAfterUnit.md)
 - [IsSameOrBeforeUnit](type-aliases/IsSameOrBeforeUnit.md)
 - [RoundUnit](type-aliases/RoundUnit.md)
@@ -37,6 +42,7 @@ title: "@tanstack/time"
 - [add](functions/add.md)
 - [endOf](functions/endOf.md)
 - [equals](functions/equals.md)
+- [format](functions/format.md)
 - [intersects](functions/intersects.md)
 - [isAfter](functions/isAfter.md)
 - [isBefore](functions/isBefore.md)

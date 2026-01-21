@@ -18,7 +18,7 @@ Returns the end of a given unit for a date/time instance
 
 ### input
 
-`DateInput`
+[`DateInput`](../type-aliases/DateInput.md)
 
 ### options
 

@@ -18,7 +18,7 @@ Returns true if the date/time instance is between the start and end of the range
 
 ### date
 
-`DateInput`
+[`DateInput`](../type-aliases/DateInput.md)
 
 The date to check
 
