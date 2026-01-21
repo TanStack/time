@@ -14,7 +14,6 @@ Defined in: [types.ts:5](https://github.com/TanStack/time/blob/main/packages/tim
 - [`EqualsOptions`](EqualsOptions.md)
 - [`IsLeapYearOptions`](IsLeapYearOptions.md)
 - [`IsWeekendOptions`](IsWeekendOptions.md)
-- [`IsWeekdayOptions`](IsWeekdayOptions.md)
 - [`IsBeforeOptions`](IsBeforeOptions.md)
 - [`IsAfterOptions`](IsAfterOptions.md)
 - [`IsSameOrBeforeOptions`](IsSameOrBeforeOptions.md)

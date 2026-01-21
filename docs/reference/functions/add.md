@@ -61,25 +61,25 @@ asZonedDateTime: () => ZonedDateTime;
 ### calendar
 
 ```ts
-calendar: string | undefined = options.calendar;
+calendar: string = options.calendar;
 ```
 
 ### options
 
 ```ts
-options: DateOperationOptions;
+options: ResolvedDateOperationOptions;
 ```
 
 ### returnFormat
 
 ```ts
-returnFormat: ReturnFormat | undefined;
+returnFormat: ReturnFormat;
 ```
 
 ### timeZone
 
 ```ts
-timeZone: string | undefined = options.timeZone;
+timeZone: string = options.timeZone;
 ```
 
 ### value

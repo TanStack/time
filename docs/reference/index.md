@@ -9,7 +9,6 @@ title: "@tanstack/time"
 
 - [AddOptions](interfaces/AddOptions.md)
 - [DateOptions](interfaces/DateOptions.md)
-- [DurationLike](interfaces/DurationLike.md)
 - [EndOfOptions](interfaces/EndOfOptions.md)
 - [EqualsOptions](interfaces/EqualsOptions.md)
 - [FormatDateOptions](interfaces/FormatDateOptions.md)
@@ -20,9 +19,9 @@ title: "@tanstack/time"
 - [IsLeapYearOptions](interfaces/IsLeapYearOptions.md)
 - [IsSameOrAfterOptions](interfaces/IsSameOrAfterOptions.md)
 - [IsSameOrBeforeOptions](interfaces/IsSameOrBeforeOptions.md)
-- [IsWeekdayOptions](interfaces/IsWeekdayOptions.md)
 - [IsWeekendOptions](interfaces/IsWeekendOptions.md)
 - [Range](interfaces/Range.md)
+- [RangeOptions](interfaces/RangeOptions.md)
 - [RoundOptions](interfaces/RoundOptions.md)
 - [SinceOptions](interfaces/SinceOptions.md)
 - [StartOfOptions](interfaces/StartOfOptions.md)
@@ -32,6 +31,7 @@ title: "@tanstack/time"
 ## Type Aliases
 
 - [DateInput](type-aliases/DateInput.md)
+- [DurationLike](type-aliases/DurationLike.md)
 - [EndOfUnit](type-aliases/EndOfUnit.md)
 - [EqualsUnit](type-aliases/EqualsUnit.md)
 - [FormatType](type-aliases/FormatType.md)
@@ -53,8 +53,8 @@ title: "@tanstack/time"
 - [isLeapYear](functions/isLeapYear.md)
 - [isSameOrAfter](functions/isSameOrAfter.md)
 - [isSameOrBefore](functions/isSameOrBefore.md)
-- [isWeekday](functions/isWeekday.md)
 - [isWeekend](functions/isWeekend.md)
+- [range](functions/range.md)
 - [round](functions/round.md)
 - [since](functions/since.md)
 - [startOf](functions/startOf.md)
