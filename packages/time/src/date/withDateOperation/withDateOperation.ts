@@ -9,9 +9,26 @@ export interface DateOperationOptions extends DateOptions {
   returnFormat?: ReturnFormat
 }
 
-function createDateOperationResult(
-  zdt: Temporal.ZonedDateTime,
+export interface ResolvedDateOperationOptions {
+  timeZone: string
+  calendar: string
+  returnFormat: ReturnFormat
+}
+
+export function resolveOptions(
   options: DateOperationOptions,
+): ResolvedDateOperationOptions {
+  const defaults = getDateDefaults()
+  return {
+    timeZone: options.timeZone ?? defaults.timeZone,
+    calendar: options.calendar ?? defaults.calendar,
+    returnFormat: options.returnFormat ?? 'standard',
+  }
+}
+
+export function createDateOperationResult(
+  zdt: Temporal.ZonedDateTime,
+  options: ResolvedDateOperationOptions,
 ) {
   const { returnFormat } = options
   const getValue = (): string => {
@@ -51,20 +68,14 @@ export function withDateOperation<TArgs>(
   fn: (zdt: Temporal.ZonedDateTime, args: TArgs) => Temporal.ZonedDateTime,
 ) {
   return (input: DateInput, options: DateOperationOptions & TArgs) => {
-    const defaults = getDateDefaults()
-    const {
-      timeZone = defaults.timeZone,
-      calendar = defaults.calendar,
-      returnFormat = 'standard',
-    } = options
-
-    const inputZdt = toZonedDateTime(input, timeZone, calendar)
+    const resolved = resolveOptions(options)
+    const inputZdt = toZonedDateTime(
+      input,
+      resolved.timeZone,
+      resolved.calendar,
+    )
     const resultZdt = fn(inputZdt, options)
 
-    return createDateOperationResult(resultZdt, {
-      timeZone,
-      calendar,
-      returnFormat,
-    })
+    return createDateOperationResult(resultZdt, resolved)
   }
 }

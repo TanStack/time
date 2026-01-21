@@ -7,18 +7,7 @@ export interface DateOptions {
   timeZone?: string
 }
 
-export interface DurationLike {
-  years?: number
-  months?: number
-  weeks?: number
-  days?: number
-  hours?: number
-  minutes?: number
-  seconds?: number
-  milliseconds?: number
-  microseconds?: number
-  nanoseconds?: number
-}
+export type DurationLike = Temporal.DurationLike
 
 export interface Range {
   start: DateInput
