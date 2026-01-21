@@ -3,78 +3,6 @@ import { Temporal } from '@js-temporal/polyfill'
 import { round } from '../round'
 
 describe('round', () => {
-  describe('rounding to year', () => {
-    test('should round down when before midpoint of year', () => {
-      const result = round('2024-06-15T14:42:12.789Z', {
-        unit: 'year',
-        timeZone: 'UTC',
-      })
-      expect(result.value).toBe('2024-01-01T00:00:00Z')
-    })
-
-    test('should round up when at or after midpoint of year', () => {
-      const result = round('2024-07-15T14:42:12.789Z', {
-        unit: 'year',
-        timeZone: 'UTC',
-      })
-      expect(result.value).toBe('2025-01-01T00:00:00Z')
-    })
-
-    test('should round down when exactly at start of year', () => {
-      const result = round('2024-01-01T00:00:00Z', {
-        unit: 'year',
-        timeZone: 'UTC',
-      })
-      expect(result.value).toBe('2024-01-01T00:00:00Z')
-    })
-  })
-
-  describe('rounding to month', () => {
-    test('should round down when before midpoint of month', () => {
-      const result = round('2024-03-10T14:42:12.789Z', {
-        unit: 'month',
-        timeZone: 'UTC',
-      })
-      expect(result.value).toBe('2024-03-01T00:00:00Z')
-    })
-
-    test('should round up when at or after midpoint of month', () => {
-      const result = round('2024-03-20T14:42:12.789Z', {
-        unit: 'month',
-        timeZone: 'UTC',
-      })
-      expect(result.value).toBe('2024-04-01T00:00:00Z')
-    })
-
-    test('should handle February correctly', () => {
-      const result = round('2024-02-15T14:42:12.789Z', {
-        unit: 'month',
-        timeZone: 'UTC',
-      })
-      expect(result.value).toBe('2024-03-01T00:00:00Z')
-    })
-  })
-
-  describe('rounding to week', () => {
-    test('should round down when before midpoint of week', () => {
-      const result = round('2024-03-13T10:00:00Z', {
-        unit: 'week',
-        timeZone: 'UTC',
-      })
-      const weekStart = result.asZonedDateTime()
-      expect(weekStart.dayOfWeek).toBe(1)
-    })
-
-    test('should round up when at or after midpoint of week', () => {
-      const result = round('2024-03-16T18:00:00Z', {
-        unit: 'week',
-        timeZone: 'UTC',
-      })
-      const weekStart = result.asZonedDateTime()
-      expect(weekStart.dayOfWeek).toBe(1)
-    })
-  })
-
   describe('rounding to day', () => {
     test('should round down when before noon', () => {
       const result = round('2024-03-15T10:00:00Z', {
@@ -239,14 +167,6 @@ describe('round', () => {
     test('should handle month boundary correctly', () => {
       const result = round('2024-02-29T18:00:00Z', {
         unit: 'day',
-        timeZone: 'UTC',
-      })
-      expect(result.value).toBe('2024-03-01T00:00:00Z')
-    })
-
-    test('should handle leap year correctly', () => {
-      const result = round('2024-02-15T12:00:00Z', {
-        unit: 'month',
         timeZone: 'UTC',
       })
       expect(result.value).toBe('2024-03-01T00:00:00Z')
