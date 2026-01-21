@@ -1,15 +1,15 @@
-import { getDateDefaults } from '../dateDefaults'
 import { toZonedDateTime } from '../helpers'
-import { buildFinalFormatter } from '../../formatter/buildFinalFormatter'
-import { buildDateFormatter } from '../../formatter/buildDateFormatter'
-import { buildTimeFormatter } from '../../formatter/buildTimeFormatter'
-import { buildDateTimeFormatter } from '../../formatter/buildDateTimeFormatter'
 import type { DateInput, DateOptions } from '../types'
 import type {
   DateFormatterBuildParams,
   DateTimeFormatterBuildParams,
   TimeFormatterBuildParams,
-} from '../../formatter/shared'
+} from '~/formatter/shared'
+import { getDateTimeDefaults } from '~/utils'
+import { buildFinalFormatter } from '~/formatter/buildFinalFormatter'
+import { buildDateFormatter } from '~/formatter/buildDateFormatter'
+import { buildTimeFormatter } from '~/formatter/buildTimeFormatter'
+import { buildDateTimeFormatter } from '~/formatter/buildDateTimeFormatter'
 
 export type FormatType = 'date' | 'time' | 'datetime'
 
@@ -33,12 +33,16 @@ export function format(
   date: DateInput,
   formatOptions?: FormatDateOptions,
 ): string {
-  const defaults = getDateDefaults()
+  const {
+    locale: defaultLocale,
+    timeZone: defaultTimeZone,
+    calendar: defaultCalendar,
+  } = getDateTimeDefaults()
   const {
     type = 'datetime',
-    locale = defaults.locale,
-    timeZone = defaults.timeZone,
-    calendar = defaults.calendar,
+    locale = defaultLocale,
+    timeZone = defaultTimeZone,
+    calendar = defaultCalendar,
     options,
   } = formatOptions ?? {}
 

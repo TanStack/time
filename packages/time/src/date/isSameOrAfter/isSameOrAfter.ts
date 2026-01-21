@@ -1,8 +1,8 @@
 import { Temporal } from '@js-temporal/polyfill'
-import { getDateDefaults } from '../dateDefaults'
-import { normalizeWeek } from '../helpers'
-import { startOf } from '../startOf/startOf'
 import type { DateInput, DateOptions } from '../types'
+import { getDateTimeDefaults } from '~/utils'
+import { normalizeWeek } from '~/date/helpers'
+import { startOf } from '~/date/startOf/startOf'
 
 export type IsSameOrAfterUnit =
   | 'year'
@@ -27,8 +27,9 @@ export function isSameOrAfter(
   date2: DateInput,
   options: IsSameOrAfterOptions,
 ): boolean {
-  const defaults = getDateDefaults()
-  const { timeZone = defaults.timeZone, calendar = defaults.calendar } = options
+  const { timeZone: defaultTimeZone, calendar: defaultCalendar } =
+    getDateTimeDefaults()
+  const { timeZone = defaultTimeZone, calendar = defaultCalendar } = options
 
   const startOf1 = startOf(date1, { unit: options.unit, timeZone, calendar })
   const startOf2 = startOf(date2, { unit: options.unit, timeZone, calendar })

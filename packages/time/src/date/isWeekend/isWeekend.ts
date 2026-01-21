@@ -1,7 +1,7 @@
 import '../../polyfills/getWeekInfo'
-import { getDateDefaults } from '../dateDefaults'
-import { toZonedDateTime } from '../helpers'
 import type { DateInput, DateOptions } from '../types'
+import { toZonedDateTime } from '~/date/helpers'
+import { getDateTimeDefaults } from '~/utils'
 
 export interface IsWeekendOptions extends DateOptions {
   locale?: string
@@ -15,11 +15,15 @@ export function isWeekend(
   date: DateInput,
   options?: IsWeekendOptions,
 ): boolean {
-  const defaults = getDateDefaults()
   const {
-    timeZone = defaults.timeZone,
-    calendar = defaults.calendar,
-    locale = defaults.locale,
+    timeZone: defaultTimeZone,
+    calendar: defaultCalendar,
+    locale: defaultLocale,
+  } = getDateTimeDefaults()
+  const {
+    timeZone = defaultTimeZone,
+    calendar = defaultCalendar,
+    locale = defaultLocale,
   } = options ?? {}
 
   const zdt = toZonedDateTime(date, timeZone, calendar)

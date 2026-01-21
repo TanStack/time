@@ -1,6 +1,11 @@
 import type { Temporal } from '@js-temporal/polyfill'
 
-export type DateInput = string | number | Date | Temporal.ZonedDateTime
+export type DateInput =
+  | string
+  | number
+  | Date
+  | Temporal.ZonedDateTime
+  | Temporal.PlainDate
 
 export interface DateOptions {
   calendar?: string

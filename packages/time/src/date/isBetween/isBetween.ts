@@ -1,7 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill'
-import { getDateDefaults } from '../dateDefaults'
 import { toZonedDateTime } from '../helpers'
 import type { DateInput, DateOptions, Range } from '../types'
+import { getDateTimeDefaults } from '~/utils'
 
 export interface IsBetweenOptions extends DateOptions {
   inclusive?: boolean | 'start' | 'end'
@@ -16,11 +16,12 @@ export interface IsBetweenOptions extends DateOptions {
  * @param options - Options including timeZone, calendar, and inclusivity
  */
 export function isBetween(date: DateInput, options: IsBetweenOptions): boolean {
-  const defaults = getDateDefaults()
+  const { timeZone: defaultTimeZone, calendar: defaultCalendar } =
+    getDateTimeDefaults()
   const {
     range: { start, end },
-    timeZone = defaults.timeZone,
-    calendar = defaults.calendar,
+    timeZone = defaultTimeZone,
+    calendar = defaultCalendar,
     inclusive = true,
   } = options
   const zdt = toZonedDateTime(date, timeZone, calendar)

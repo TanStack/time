@@ -1,7 +1,7 @@
-import { getDateDefaults } from '../dateDefaults'
-import { toZonedDateTime } from '../helpers'
 import type { Temporal } from '@js-temporal/polyfill'
 import type { DateInput, DateOptions } from '../types'
+import { getDateTimeDefaults } from '~/utils'
+import { toZonedDateTime } from '~/date/helpers'
 
 export type ReturnFormat = 'standard' | 'long'
 
@@ -18,10 +18,12 @@ export interface ResolvedDateOperationOptions {
 export function resolveOptions(
   options: DateOperationOptions,
 ): ResolvedDateOperationOptions {
-  const defaults = getDateDefaults()
+  const { timeZone: defaultTimeZone, calendar: defaultCalendar } =
+    getDateTimeDefaults()
+  const { timeZone = defaultTimeZone, calendar = defaultCalendar } = options
   return {
-    timeZone: options.timeZone ?? defaults.timeZone,
-    calendar: options.calendar ?? defaults.calendar,
+    timeZone,
+    calendar,
     returnFormat: options.returnFormat ?? 'standard',
   }
 }

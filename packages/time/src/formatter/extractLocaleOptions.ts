@@ -1,9 +1,9 @@
-import { getDefaultCalendar, getDefaultTimeZone } from '../date/dateDefaults'
 import type {
   DateFormatterOptions,
   DateTimeFormatterOptions,
   TimeFormatterOptions,
 } from './shared'
+import { getDateTimeDefaults } from '~/utils'
 
 /**
  * @typedef {Object} DateFormatterOptions
@@ -72,11 +72,11 @@ import type {
  */
 export function extractLocaleOptions({
   localeMatcher,
-  calendar = getDefaultCalendar(),
+  calendar = getDateTimeDefaults().calendar,
+  timeZone = getDateTimeDefaults().timeZone,
   numberingSystem,
   hour12,
   hourCycle,
-  timeZone = getDefaultTimeZone(),
   ...formatOptions
 }: DateFormatterOptions | DateTimeFormatterOptions | TimeFormatterOptions) {
   return {

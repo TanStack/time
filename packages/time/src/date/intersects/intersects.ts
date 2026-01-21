@@ -1,7 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill'
-import { getDateDefaults } from '../dateDefaults'
 import { toZonedDateTime } from '../helpers'
 import type { DateInput, DateOptions, Range } from '../types'
+import { getDateTimeDefaults } from '~/utils'
 
 export interface IntersectsOptions extends DateOptions {
   range: Range
@@ -17,11 +17,12 @@ export function intersects(
   date: DateInput,
   options: IntersectsOptions,
 ): boolean {
-  const defaults = getDateDefaults()
+  const { timeZone: defaultTimeZone, calendar: defaultCalendar } =
+    getDateTimeDefaults()
   const {
     range: { start, end },
-    timeZone = defaults.timeZone,
-    calendar = defaults.calendar,
+    timeZone = defaultTimeZone,
+    calendar = defaultCalendar,
   } = options
 
   const zdt = toZonedDateTime(date, timeZone, calendar)

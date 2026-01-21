@@ -1,7 +1,7 @@
-import { getDateDefaults } from '../dateDefaults'
 import { normalizeWeek } from '../helpers'
-import { startOf } from '../startOf/startOf'
+import { startOf } from '../startOf'
 import type { DateInput, DateOptions } from '../types'
+import { getDateTimeDefaults } from '~/utils'
 
 export type EqualsUnit =
   | 'year'
@@ -25,8 +25,9 @@ export function equals(
   unit: EqualsUnit,
   options?: EqualsOptions,
 ): boolean {
-  const defaults = getDateDefaults()
-  const { timeZone = defaults.timeZone, calendar = defaults.calendar } =
+  const { timeZone: defaultTimeZone, calendar: defaultCalendar } =
+    getDateTimeDefaults()
+  const { timeZone = defaultTimeZone, calendar = defaultCalendar } =
     options ?? {}
 
   const startOf1 = startOf(date1, { unit, timeZone, calendar })
