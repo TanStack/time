@@ -10,7 +10,10 @@ export interface IsWeekdayOptions extends DateOptions {
  * isWeekday
  * Returns true if the date falls on a weekday based on locale-specific week info
  */
-export function isWeekday(date: DateInput, options?: IsWeekdayOptions): boolean {
+export function isWeekday(
+  date: DateInput,
+  options?: IsWeekdayOptions,
+): boolean {
   const defaults = getDateDefaults()
   const {
     timeZone = defaults.timeZone,
@@ -21,7 +24,8 @@ export function isWeekday(date: DateInput, options?: IsWeekdayOptions): boolean 
   const zdt = toZonedDateTime(date, timeZone, calendar)
   const dayOfWeek = zdt.dayOfWeek
 
-  const localeObj = typeof locale === 'string' ? new Intl.Locale(locale) : locale
+  const localeObj =
+    typeof locale === 'string' ? new Intl.Locale(locale) : locale
 
   const weekInfo = localeObj.getWeekInfo()
   return !weekInfo.weekend.includes(dayOfWeek)
