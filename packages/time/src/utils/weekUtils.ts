@@ -1,5 +1,4 @@
 import { Temporal } from '@js-temporal/polyfill'
-import '@bart-krakowski/get-week-info-polyfill'
 
 /**
  * Get the first day of the month for a given year-month string
@@ -22,6 +21,8 @@ export function getFirstDayOfWeek(
   const date = Temporal.PlainDate.from(dateString)
   const weekInfo = new Intl.Locale(locale).getWeekInfo()
   const firstDayOfWeek = weekInfo.firstDay
+
+  console.log('locale', locale)
 
   const dayOfWeek = date.dayOfWeek
   const daysToSubtract = (dayOfWeek - firstDayOfWeek + 7) % 7

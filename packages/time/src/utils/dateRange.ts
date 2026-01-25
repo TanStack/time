@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill'
-import type { DateRange } from '../date/calendar/types'
 import type { DateInput } from '../date/types'
+import type { DateRange } from '../calendar/types'
 
 export interface ParsedDateRange {
   start: Temporal.PlainDate | null

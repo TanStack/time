@@ -1,4 +1,4 @@
-import '../../polyfills/getWeekInfo'
+
 import type { DateInput, DateOptions } from '../types'
 import { toZonedDateTime } from '~/date/helpers'
 import { getDateTimeDefaults } from '~/utils'
