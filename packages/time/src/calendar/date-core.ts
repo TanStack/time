@@ -67,11 +67,10 @@ export interface DateCoreOptions {
   dateTimeFormatter?: Intl.DateTimeFormat
 }
 
-export interface ParsedDateCoreOptions
-  extends Omit<
-    Required<DateCoreOptions>,
-    'range' | 'dateFormatter' | 'timeFormatter' | 'dateTimeFormatter'
-  > {
+export interface ParsedDateCoreOptions extends Omit<
+  Required<DateCoreOptions>,
+  'range' | 'dateFormatter' | 'timeFormatter' | 'dateTimeFormatter'
+> {
   range: ParsedDateRange
 }
 

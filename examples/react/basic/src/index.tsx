@@ -69,7 +69,10 @@ function getSampleEvents(): Array<Event<Resource>> {
 
 const sampleEvents = getSampleEvents()
 
-function parseEventTime(event: Event<Resource>): { hour: number; minute: number } {
+function parseEventTime(event: Event<Resource>): {
+  hour: number
+  minute: number
+} {
   const [_datePart, timePart] = event.start.split('T')
   if (!timePart) return { hour: 0, minute: 0 }
   const [hour, minute] = timePart.split(':').map(Number)
@@ -89,7 +92,11 @@ function ScheduleView({
   calendar: ReturnType<typeof useCalendar<Resource, Event<Resource>>>
   days: Array<Day<Resource, Event<Resource>>>
 }) {
-  const timeSlots = calendar.getTimeSlots({ startHour: 0, endHour: 24, interval: 60 })
+  const timeSlots = calendar.getTimeSlots({
+    startHour: 0,
+    endHour: 24,
+    interval: 60,
+  })
   const slotHeight = 60
 
   const getEventPosition = (event: Event<Resource>) => {
@@ -114,53 +121,67 @@ function ScheduleView({
         ))}
       </div>
       <div className="flex-1 overflow-x-auto">
-        <div className="grid min-w-full" style={{ gridTemplateColumns: `repeat(${days.length}, 1fr)` }}>
+        <div
+          className="grid min-w-full"
+          style={{ gridTemplateColumns: `repeat(${days.length}, 1fr)` }}
+        >
           <div className="contents">
             {days.map((day) => {
-              const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(
-                new Date(day.date.year, day.date.month - 1, day.date.day)
+              const dayName = new Intl.DateTimeFormat('en-US', {
+                weekday: 'short',
+              }).format(
+                new Date(day.date.year, day.date.month - 1, day.date.day),
               )
               return (
-              <div key={day.date.toString()} className="border-r border-gray-200 last:border-r-0">
-                <div className="h-12 border-b border-gray-200 bg-gray-50 px-3 py-2 text-center">
-                  <div className="text-sm font-semibold text-gray-700">
-                    {dayName}
+                <div
+                  key={day.date.toString()}
+                  className="border-r border-gray-200 last:border-r-0"
+                >
+                  <div className="h-12 border-b border-gray-200 bg-gray-50 px-3 py-2 text-center">
+                    <div className="text-sm font-semibold text-gray-700">
+                      {dayName}
+                    </div>
+                    <div className="text-xs text-gray-500">{day.date.day}</div>
                   </div>
-                  <div className="text-xs text-gray-500">{day.date.day}</div>
+                  <div
+                    className="relative"
+                    style={{ height: `${timeSlots.length * slotHeight}px` }}
+                  >
+                    {day.events.map((event) => {
+                      const { top, height } = getEventPosition(event)
+                      return (
+                        <div
+                          key={event.id}
+                          className="absolute left-1 right-1 bg-blue-500 text-white rounded px-2 py-1 text-xs font-medium cursor-pointer overflow-hidden"
+                          style={{
+                            top: `${top}px`,
+                            height: `${height}px`,
+                            minHeight: '20px',
+                          }}
+                          title={event.title}
+                        >
+                          <div className="font-semibold">{event.title}</div>
+                          {height > 30 && (
+                            <div className="text-xs opacity-90 mt-0.5">
+                              {new Date(event.start).toLocaleTimeString(
+                                'en-US',
+                                {
+                                  hour: 'numeric',
+                                  minute: '2-digit',
+                                },
+                              )}
+                              {' - '}
+                              {new Date(event.end).toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
-                <div className="relative" style={{ height: `${timeSlots.length * slotHeight}px` }}>
-                  {day.events.map((event) => {
-                    const { top, height } = getEventPosition(event)
-                    return (
-                      <div
-                        key={event.id}
-                        className="absolute left-1 right-1 bg-blue-500 text-white rounded px-2 py-1 text-xs font-medium cursor-pointer overflow-hidden"
-                        style={{
-                          top: `${top}px`,
-                          height: `${height}px`,
-                          minHeight: '20px',
-                        }}
-                        title={event.title}
-                      >
-                        <div className="font-semibold">{event.title}</div>
-                        {height > 30 && (
-                          <div className="text-xs opacity-90 mt-0.5">
-                            {new Date(event.start).toLocaleTimeString('en-US', {
-                              hour: 'numeric',
-                              minute: '2-digit',
-                            })}
-                            {' - '}
-                            {new Date(event.end).toLocaleTimeString('en-US', {
-                              hour: 'numeric',
-                              minute: '2-digit',
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
               )
             })}
           </div>
@@ -171,7 +192,6 @@ function ScheduleView({
 }
 
 function CalendarView() {
-
   const calendar = useCalendar<Resource, Event<Resource>>({
     viewMode: { value: 1, unit: 'month' },
     events: sampleEvents,
@@ -186,7 +206,8 @@ function CalendarView() {
     fillMissingDays: true,
   })
 
-  const isScheduleView = calendar.viewMode.unit === 'week' || calendar.viewMode.unit === 'day'
+  const isScheduleView =
+    calendar.viewMode.unit === 'week' || calendar.viewMode.unit === 'day'
   const scheduleDays: Array<Day<Resource, Event<Resource>>> = isScheduleView
     ? calendar.viewMode.unit === 'day'
       ? calendar.days.filter((day) => {
@@ -220,7 +241,9 @@ function CalendarView() {
             onClick={calendar.goToCurrentPeriod}
             disabled={calendar.isPending}
             className={`px-4 py-2 border border-gray-300 rounded-md bg-white ${
-              calendar.isPending ? 'cursor-not-allowed opacity-50' : 'cursor-pointer opacity-100'
+              calendar.isPending
+                ? 'cursor-not-allowed opacity-50'
+                : 'cursor-pointer opacity-100'
             }`}
           >
             Today
@@ -240,7 +263,9 @@ function CalendarView() {
 
           <div className="ml-auto flex gap-2">
             <button
-              onClick={() => calendar.changeViewMode({ value: 1, unit: 'month' })}
+              onClick={() =>
+                calendar.changeViewMode({ value: 1, unit: 'month' })
+              }
               className={`px-3 py-1.5 rounded-md cursor-pointer ${
                 calendar.viewMode.unit === 'month'
                   ? 'border-2 border-blue-500 bg-blue-50'
@@ -250,7 +275,9 @@ function CalendarView() {
               Month
             </button>
             <button
-              onClick={() => calendar.changeViewMode({ value: 1, unit: 'week' })}
+              onClick={() =>
+                calendar.changeViewMode({ value: 1, unit: 'week' })
+              }
               className={`px-3 py-1.5 rounded-md cursor-pointer ${
                 calendar.viewMode.unit === 'week'
                   ? 'border-2 border-blue-500 bg-blue-50'
@@ -301,64 +328,76 @@ function CalendarView() {
             className="grid"
             style={{ gridTemplateColumns: `repeat(${dayNames.length}, 1fr)` }}
           >
-            {groupedDays.map((week: Array<Day<Resource, Event<Resource>> | null>, weekIndex: number) =>
-              week.map((day, dayIndex) => {
-                if (!day) {
+            {groupedDays.map(
+              (
+                week: Array<Day<Resource, Event<Resource>> | null>,
+                weekIndex: number,
+              ) =>
+                week.map((day, dayIndex) => {
+                  if (!day) {
+                    return (
+                      <div
+                        key={`empty-${weekIndex}-${dayIndex}`}
+                        className={`min-h-[120px] bg-gray-50 ${
+                          dayIndex < dayNames.length - 1
+                            ? 'border-r border-gray-200'
+                            : ''
+                        } ${
+                          weekIndex < groupedDays.length - 1
+                            ? 'border-b border-gray-200'
+                            : ''
+                        }`}
+                      />
+                    )
+                  }
+
+                  const isToday = day.isToday
+                  const isInCurrentPeriod = day.isInCurrentPeriod
+
                   return (
                     <div
-                      key={`empty-${weekIndex}-${dayIndex}`}
-                      className={`min-h-[120px] bg-gray-50 ${
-                        dayIndex < dayNames.length - 1 ? 'border-r border-gray-200' : ''
+                      key={day.date.toString()}
+                      className={`min-h-[120px] p-2 relative ${
+                        dayIndex < dayNames.length - 1
+                          ? 'border-r border-gray-200'
+                          : ''
                       } ${
-                        weekIndex < groupedDays.length - 1 ? 'border-b border-gray-200' : ''
-                      }`}
-                    />
-                  )
-                }
-
-                const isToday = day.isToday
-                const isInCurrentPeriod = day.isInCurrentPeriod
-
-                return (
-                  <div
-                    key={day.date.toString()}
-                    className={`min-h-[120px] p-2 relative ${
-                      dayIndex < dayNames.length - 1 ? 'border-r border-gray-200' : ''
-                    } ${
-                      weekIndex < groupedDays.length - 1 ? 'border-b border-gray-200' : ''
-                    } ${
-                      isToday
-                        ? 'bg-blue-50'
-                        : isInCurrentPeriod
-                          ? 'bg-white'
-                          : 'bg-gray-50'
-                    }`}
-                  >
-                    <div
-                      className={`text-sm mb-1 ${
+                        weekIndex < groupedDays.length - 1
+                          ? 'border-b border-gray-200'
+                          : ''
+                      } ${
                         isToday
-                          ? 'font-bold text-blue-500'
+                          ? 'bg-blue-50'
                           : isInCurrentPeriod
-                            ? 'font-medium text-gray-900'
-                            : 'font-medium text-gray-400'
+                            ? 'bg-white'
+                            : 'bg-gray-50'
                       }`}
                     >
-                      {day.date.day}
+                      <div
+                        className={`text-sm mb-1 ${
+                          isToday
+                            ? 'font-bold text-blue-500'
+                            : isInCurrentPeriod
+                              ? 'font-medium text-gray-900'
+                              : 'font-medium text-gray-400'
+                        }`}
+                      >
+                        {day.date.day}
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        {day.events.map((event) => (
+                          <div
+                            key={event.id}
+                            className="px-1.5 py-1 bg-blue-500 text-white rounded text-xs font-medium cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap"
+                            title={event.title}
+                          >
+                            {event.title}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      {day.events.map((event) => (
-                        <div
-                          key={event.id}
-                          className="px-1.5 py-1 bg-blue-500 text-white rounded text-xs font-medium cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap"
-                          title={event.title}
-                        >
-                          {event.title}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )
-              }),
+                  )
+                }),
             )}
           </div>
         </div>

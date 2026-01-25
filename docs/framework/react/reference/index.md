@@ -4,3 +4,7 @@ title: "@tanstack/react-time"
 ---
 
 # @tanstack/react-time
+
+## Functions
+
+- [useCalendar](functions/useCalendar.md)

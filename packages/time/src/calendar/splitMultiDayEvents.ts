@@ -27,9 +27,7 @@ export const splitMultiDayEvents = <
         ? startDate
         : startOfDay
     const eventEnd =
-      Temporal.ZonedDateTime.compare(endDate, endOfDay) < 0
-        ? endDate
-        : endOfDay
+      Temporal.ZonedDateTime.compare(endDate, endOfDay) < 0 ? endDate : endOfDay
 
     events.push({
       ...event,
