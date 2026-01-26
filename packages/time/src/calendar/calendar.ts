@@ -4,15 +4,9 @@ import { getEventProps } from './getEventProps'
 import { groupDaysBy } from './groupDaysBy'
 import { getTimeSlots } from './getTimeSlots'
 import { DateCore } from './date-core'
-import type {DateCoreOptions, ParsedDateCoreOptions} from './date-core';
+import type { DateCoreOptions, ParsedDateCoreOptions } from './date-core'
 import type { GroupDaysByProps } from './groupDaysBy'
-import type {
-  Day,
-  Event,
-  Resource,
-  TimeSlot,
-  ViewMode,
-} from './types'
+import type { Day, Event, Resource, TimeSlot, ViewMode } from './types'
 
 export type * from './types'
 export * from './date-core'
@@ -61,11 +55,19 @@ interface CalendarActions<
   canGoNextPeriod: () => boolean
   /** Changes the current view mode of the calendar. */
   changeViewMode: (newViewMode: CalendarStore['viewMode']) => void
-  /** Retrieves styling properties for a specific event, identified by ID. */
-  getEventProps: (id: Event['id']) => {
+  /** Retrieves styling properties for a specific event. */
+  getEventProps: (event: TEvent) => {
     isSplitEvent: boolean
     overlappingEvents: Array<TEvent>
-  } | null
+    start: string
+    end: string
+    style?: {
+      top: string
+      height: string
+      left: string
+      width: string
+    }
+  }
   /** Retrieves the names of the days of the week, based on the current locale. */
   getDaysNames: (weekday?: 'long' | 'short') => Array<string>
   /** Groups days by a specified unit. */
@@ -73,7 +75,9 @@ interface CalendarActions<
     props: Omit<GroupDaysByProps<TResource, TEvent>, 'weekStartsOn' | 'locale'>,
   ) => Array<Array<Day<TResource, TEvent> | null>>
   /** Retrieves time slots for day view with configurable intervals. */
-  getTimeSlots: (options?: Parameters<typeof getTimeSlots>[1]) => Array<TimeSlot>
+  getTimeSlots: (
+    options?: Parameters<typeof getTimeSlots>[1],
+  ) => Array<TimeSlot>
   /** Retrieves events for a specific date. */
   getEventsByDate: (date: string) => Array<TEvent>
 }
@@ -99,7 +103,9 @@ type ConvertTemporalToString<T> = {
 export interface CalendarApi<
   TResource extends Resource,
   TEvent extends Event<TResource>,
-> extends CalendarActions<TResource, TEvent>,
+>
+  extends
+    CalendarActions<TResource, TEvent>,
     ConvertTemporalToString<CalendarState<TResource, TEvent>> {}
 
 /**
@@ -116,9 +122,9 @@ type ParsedCalendarCoreOptions<
 }
 
 export class CalendarCore<
-    TResource extends Resource,
-    TEvent extends Event<TResource>,
-  >
+  TResource extends Resource,
+  TEvent extends Event<TResource>,
+>
   extends DateCore
   implements CalendarActions<TResource, TEvent>
 {
@@ -154,7 +160,9 @@ export class CalendarCore<
           this.options.timeZone,
         )
         splitEvents.forEach((splitEvent) => {
-          const dateKey = Temporal.ZonedDateTime.from(splitEvent.start).toPlainDate().toString({ calendarName: 'never' })
+          const dateKey = Temporal.PlainDateTime.from(splitEvent.start)
+            .toPlainDate()
+            .toString({ calendarName: 'never' })
           if (!map.has(dateKey)) map.set(dateKey, [])
           map.get(dateKey)?.push(splitEvent)
         })
@@ -188,12 +196,10 @@ export class CalendarCore<
     })
   }
 
-  getEventProps(id: Event['id']) {
-    return getEventProps(
-      this.getEventMap(),
-      id,
-      this.store.state,
-    ) as ReturnType<CalendarActions<TResource, TEvent>['getEventProps']>
+  getEventProps(event: TEvent) {
+    return getEventProps(this.getEventMap(), event, this.store.state, {
+      timeZone: this.options.timeZone,
+    }) as ReturnType<CalendarActions<TResource, TEvent>['getEventProps']>
   }
 
   groupDaysBy({

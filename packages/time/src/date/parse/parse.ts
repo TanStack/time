@@ -67,25 +67,8 @@ function parseDateTimeString(value: string): Date {
       timezone = '',
     } = match.groups
 
-    // If timezone is specified, use ISO string format (will be parsed as UTC/offset)
-    if (timezone) {
-      const millisecondStr = millisecond || '000'
-      return new Date(
-        `${year}-${month}-${day}T${hour}:${minute}:${second}.${millisecondStr.padEnd(3, '0').substring(0, 3)}${timezone}`,
-      )
-    }
-
-    // For dates without timezone, use Date constructor with individual components
-    // This creates a date in the system's local timezone
-    const millisecondStr = (millisecond || '000').padEnd(3, '0').substring(0, 3)
     return new Date(
-      Number(year),
-      Number(month) - 1, // Month is 0-indexed
-      Number(day),
-      Number(hour),
-      Number(minute),
-      Number(second),
-      Number(millisecondStr),
+      `${year}-${month}-${day}T${hour}:${minute}:${second}.${millisecond}${timezone}`,
     )
   }
   throw new Error(`"${value}" is an invalid RFC339 Internet Date Time string`)
@@ -111,29 +94,14 @@ function parseTimeOnlyString(value: string): Date {
     // convert 12 hour time to 24
     let trueHour = Number(hour)
     if (meridiem) {
-      if (trueHour > 12 || trueHour === 0) {
+      if (trueHour > 12) {
         throw new Error(`"${value}" is an invalid time string`)
       }
-      if (meridiem.toLowerCase() === 'pm') {
-        if (trueHour < 12) {
-          trueHour += 12
-        }
-        // If hour is 12 PM, keep it as 12 (noon)
-      } else {
-        // AM
-        if (trueHour === 12) {
-          trueHour = 0 // 12 AM is midnight
-        }
+      if (meridiem.toLowerCase() === 'pm' && trueHour < 12) {
+        trueHour += 12
       }
     }
-    // If no meridiem, assume 24-hour format (hour can be 00-23)
-    const millisecondStr = (millisecond || '000').padEnd(3, '0').substring(0, 3)
-    now.setHours(
-      trueHour,
-      Number(minute),
-      Number(second),
-      Number(millisecondStr),
-    )
+    now.setHours(trueHour, Number(minute), Number(second), Number(millisecond))
     return now
   }
   throw new Error(`"${value}" is an invalid time string`)

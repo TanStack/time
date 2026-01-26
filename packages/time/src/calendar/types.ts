@@ -45,3 +45,9 @@ export interface TimeSlot {
   minute: number
   label: string
 }
+
+export interface CalendarStore {
+  currentPeriod: Temporal.PlainDate
+  activeDate: Temporal.PlainDate
+  viewMode: ViewMode
+}

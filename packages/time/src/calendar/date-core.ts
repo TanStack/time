@@ -13,7 +13,7 @@ import { buildDateTimeFormatter } from '../formatter/buildDateTimeFormatter'
 import { buildTimeFormatter } from '../formatter/buildTimeFormatter'
 import { generateDateRange } from './generateDateRange'
 import type { ParsedDateRange } from '../utils/dateRange'
-import type { DateRange, ViewMode } from './types'
+import type { CalendarStore, DateRange, ViewMode } from './types'
 import type { DateInput } from '~/date'
 
 function toTemporalPlainDateString(date: DateInput): string {
@@ -67,20 +67,15 @@ export interface DateCoreOptions {
   dateTimeFormatter?: Intl.DateTimeFormat
 }
 
-export interface ParsedDateCoreOptions
-  extends Omit<
-    Required<DateCoreOptions>,
-    'range' | 'dateFormatter' | 'timeFormatter' | 'dateTimeFormatter'
-  > {
+export interface ParsedDateCoreOptions extends Omit<
+  Required<DateCoreOptions>,
+  'range' | 'dateFormatter' | 'timeFormatter' | 'dateTimeFormatter'
+> {
   range: ParsedDateRange
 }
 
 export abstract class DateCore {
-  store: Store<{
-    currentPeriod: Temporal.PlainDate
-    activeDate: Temporal.PlainDate
-    viewMode: ViewMode
-  }>
+  store: Store<CalendarStore>
   options: ParsedDateCoreOptions
   formatters: {
     date: Intl.DateTimeFormat

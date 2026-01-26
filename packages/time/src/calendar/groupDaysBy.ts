@@ -42,10 +42,9 @@ export const groupDaysBy = <
   fillMissingDays = true,
   weekStartsOn,
   locale,
-}: GroupDaysByProps<TResource, TEvent>): Array<Array<Day<
-  TResource,
-  TEvent
-> | null>> => {
+}: GroupDaysByProps<TResource, TEvent>): Array<
+  Array<Day<TResource, TEvent> | null>
+> => {
   const groups: Array<Array<Day<TResource, TEvent> | null>> = []
   const loc = new Intl.Locale(locale)
   const { weekend } = loc.getWeekInfo()
