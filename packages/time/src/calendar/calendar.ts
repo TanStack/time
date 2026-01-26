@@ -5,7 +5,6 @@ import { groupDaysBy } from './groupDaysBy'
 import { getTimeSlots } from './getTimeSlots'
 import { DateCore } from './date-core'
 import type { DateCoreOptions, ParsedDateCoreOptions } from './date-core'
-import type { GroupDaysByProps } from './groupDaysBy'
 import type { Day, Event, Resource, TimeSlot, ViewMode } from './types'
 
 export type * from './types'
@@ -71,9 +70,11 @@ interface CalendarActions<
   /** Retrieves the names of the days of the week, based on the current locale. */
   getDaysNames: (weekday?: 'long' | 'short') => Array<string>
   /** Groups days by a specified unit. */
-  groupDaysBy: (
-    props: Omit<GroupDaysByProps<TResource, TEvent>, 'weekStartsOn' | 'locale'>,
-  ) => Array<Array<Day<TResource, TEvent> | null>>
+  groupDaysBy: (props: {
+    days: Array<Day<TResource, TEvent> | null>
+    unit: 'week' | 'workWeek'
+    fillMissingDays?: boolean
+  }) => Array<Array<Day<TResource, TEvent> | null>>
   /** Retrieves time slots for day view with configurable intervals. */
   getTimeSlots: (
     options?: Parameters<typeof getTimeSlots>[1],
@@ -206,7 +207,11 @@ export class CalendarCore<
     days,
     unit,
     fillMissingDays = true,
-  }: Omit<GroupDaysByProps<TResource, TEvent>, 'weekStartsOn' | 'locale'>) {
+  }: {
+    days: Array<Day<TResource, TEvent> | null>
+    unit: 'week' | 'workWeek'
+    fillMissingDays?: boolean
+  }) {
     return groupDaysBy<TResource, TEvent>({
       days,
       unit,
