@@ -96,6 +96,21 @@ export const useCalendar = <
     [calendarCore],
   )
 
+  const addEvent = useCallback<typeof calendarCore.addEvent>(
+    (event) => calendarCore.addEvent(event),
+    [calendarCore],
+  )
+
+  const updateEvent = useCallback<typeof calendarCore.updateEvent>(
+    (id, updates) => calendarCore.updateEvent(id, updates),
+    [calendarCore],
+  )
+
+  const removeEvent = useCallback<typeof calendarCore.removeEvent>(
+    (id) => calendarCore.removeEvent(id),
+    [calendarCore],
+  )
+
   return {
     activeDate: state.activeDate.toString(),
     currentPeriod: state.currentPeriod.toString(),
@@ -112,6 +127,9 @@ export const useCalendar = <
     canGoNextPeriod,
     changeViewMode,
     getEventProps,
+    addEvent,
+    updateEvent,
+    removeEvent,
     isPending,
     groupDaysBy,
   }

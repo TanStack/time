@@ -203,30 +203,41 @@ export abstract class DateCore {
     }
 
     const allDays = generateDateRange(start.toString(), end.toString())
-    const startMonthDate = this.store.state.currentPeriod.with({ day: 1 })
-    const endMonthDate = this.store.state.currentPeriod
-      .add({
-        months: this.store.state.viewMode.value - 1,
-      })
-      .with({
-        day: Temporal.PlainDate.from(
-          this.store.state.currentPeriod.toString({ calendarName: 'auto' }),
-        ).daysInMonth,
-      })
 
-    const filteredDays = allDays.filter(
-      (day) =>
-        Temporal.PlainDate.compare(day, startMonthDate) >= 0 &&
-        Temporal.PlainDate.compare(day, endMonthDate) <= 0,
-    )
+    if (this.store.state.viewMode.unit === 'month') {
+      const startMonthDate = this.store.state.currentPeriod.with({ day: 1 })
+      const endMonthDate = this.store.state.currentPeriod
+        .add({
+          months: this.store.state.viewMode.value - 1,
+        })
+        .with({
+          day: Temporal.PlainDate.from(
+            this.store.state.currentPeriod.toString({ calendarName: 'auto' }),
+          ).daysInMonth,
+        })
+
+      const filteredDays = allDays.filter(
+        (day) =>
+          Temporal.PlainDate.compare(day, startMonthDate) >= 0 &&
+          Temporal.PlainDate.compare(day, endMonthDate) <= 0,
+      )
+
+      if (this.options.range.start || this.options.range.end) {
+        return filteredDays.filter((day) =>
+          isDateInRange({ date: day, range: this.options.range }),
+        )
+      }
+
+      return filteredDays
+    }
 
     if (this.options.range.start || this.options.range.end) {
-      return filteredDays.filter((day) =>
+      return allDays.filter((day) =>
         isDateInRange({ date: day, range: this.options.range }),
       )
     }
 
-    return filteredDays
+    return allDays
   }
 
   getDaysNames(weekday: 'long' | 'short' = 'short') {

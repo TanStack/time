@@ -1,5 +1,6 @@
 import { useCalendar } from '@tanstack/react-time'
 import ReactDOM from 'react-dom/client'
+import { useState } from 'react'
 import type { Day, Event, Resource } from '@tanstack/time'
 import './index.css'
 
@@ -69,12 +70,173 @@ function getSampleEvents(): Array<Event<Resource>> {
 
 const sampleEvents = getSampleEvents()
 
+interface EventFormData {
+  title: string
+  startDate: string
+  startTime: string
+  endDate: string
+  endTime: string
+}
+
+const emptyFormData: EventFormData = {
+  title: '',
+  startDate: formatDateToISO(new Date()),
+  startTime: '09:00',
+  endDate: formatDateToISO(new Date()),
+  endTime: '10:00',
+}
+
+function EventModal({
+  isOpen,
+  onClose,
+  onSave,
+  onDelete,
+  initialData,
+  mode,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  onSave: (data: EventFormData) => void
+  onDelete?: () => void
+  initialData: EventFormData
+  mode: 'add' | 'edit'
+}) {
+  const [formData, setFormData] = useState<EventFormData>(initialData)
+
+  if (!isOpen) return null
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSave(formData)
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+        <h2 className="text-xl font-semibold mb-4">
+          {mode === 'add' ? 'Add Event' : 'Edit Event'}
+        </h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Title
+            </label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) =>
+                setFormData({ ...formData, title: e.target.value })
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Start Date
+              </label>
+              <input
+                type="date"
+                value={formData.startDate}
+                onChange={(e) =>
+                  setFormData({ ...formData, startDate: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Start Time
+              </label>
+              <input
+                type="time"
+                value={formData.startTime}
+                onChange={(e) =>
+                  setFormData({ ...formData, startTime: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                End Date
+              </label>
+              <input
+                type="date"
+                value={formData.endDate}
+                onChange={(e) =>
+                  setFormData({ ...formData, endDate: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                End Time
+              </label>
+              <input
+                type="time"
+                value={formData.endTime}
+                onChange={(e) =>
+                  setFormData({ ...formData, endTime: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+          </div>
+          <div className="flex justify-between pt-4">
+            <div>
+              {mode === 'edit' && onDelete && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onDelete()
+                    onClose()
+                  }}
+                  className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-md"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              >
+                {mode === 'add' ? 'Add' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 function ScheduleView({
   calendar,
   days,
+  onEventClick,
 }: {
   calendar: ReturnType<typeof useCalendar<Resource, Event<Resource>>>
   days: Array<Day<Resource, Event<Resource>>>
+  onEventClick: (event: Event<Resource>) => void
 }) {
   const timeSlots = calendar.getTimeSlots()
 
@@ -122,9 +284,10 @@ function ScheduleView({
                       return (
                         <div
                           key={`${event.id}-${eventIndex}`}
-                          className="absolute bg-blue-500 text-white rounded px-2 py-1 text-xs font-medium cursor-pointer overflow-hidden"
+                          className="absolute bg-blue-500 text-white rounded px-2 py-1 text-xs font-medium cursor-pointer overflow-hidden hover:bg-blue-600 transition-colors"
                           title={event.title}
                           style={style}
+                          onClick={() => onEventClick(event)}
                         >
                           <div className="font-semibold">{event.title}</div>
                           {style && parseFloat(style.height) > 2 && (
@@ -161,10 +324,20 @@ function ScheduleView({
 }
 
 function CalendarView() {
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean
+    mode: 'add' | 'edit'
+    eventId?: string
+    initialData: EventFormData
+  }>({
+    isOpen: false,
+    mode: 'add',
+    initialData: emptyFormData,
+  })
+
   const calendar = useCalendar<Resource, Event<Resource>>({
     viewMode: { value: 1, unit: 'month' },
     events: sampleEvents,
-
     timeZone: 'UTC',
   })
 
@@ -185,6 +358,58 @@ function CalendarView() {
         })
       : calendar.days
     : []
+
+  const openAddModal = () => {
+    setModalState({
+      isOpen: true,
+      mode: 'add',
+      initialData: emptyFormData,
+    })
+  }
+
+  const openEditModal = (event: Event<Resource>) => {
+    const eventProps = calendar.getEventProps(event)
+    const startDate = new Date(eventProps.start)
+    const endDate = new Date(eventProps.end)
+
+    setModalState({
+      isOpen: true,
+      mode: 'edit',
+      eventId: event.id,
+      initialData: {
+        title: event.title,
+        startDate: formatDateToISO(startDate),
+        startTime: startDate.toTimeString().slice(0, 5),
+        endDate: formatDateToISO(endDate),
+        endTime: endDate.toTimeString().slice(0, 5),
+      },
+    })
+  }
+
+  const closeModal = () => {
+    setModalState((prev) => ({ ...prev, isOpen: false }))
+  }
+
+  const handleSave = (data: EventFormData) => {
+    const eventData = {
+      title: data.title,
+      start: `${data.startDate}T${data.startTime}:00`,
+      end: `${data.endDate}T${data.endTime}:00`,
+    }
+
+    if (modalState.mode === 'add') {
+      const newId = String(Date.now())
+      calendar.addEvent({ id: newId, ...eventData })
+    } else if (modalState.eventId) {
+      calendar.updateEvent(modalState.eventId, eventData)
+    }
+  }
+
+  const handleDelete = () => {
+    if (modalState.eventId) {
+      calendar.removeEvent(modalState.eventId)
+    }
+  }
 
   return (
     <div className="p-5 font-sans max-w-[1200px] mx-auto">
@@ -228,6 +453,13 @@ function CalendarView() {
             }`}
           >
             Next →
+          </button>
+
+          <button
+            onClick={openAddModal}
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 cursor-pointer"
+          >
+            + Add Event
           </button>
 
           <div className="ml-auto flex gap-2">
@@ -274,7 +506,11 @@ function CalendarView() {
       </div>
 
       {isScheduleView ? (
-        <ScheduleView calendar={calendar} days={scheduleDays} />
+        <ScheduleView
+          calendar={calendar}
+          days={scheduleDays}
+          onEventClick={openEditModal}
+        />
       ) : (
         <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
           <div
@@ -357,8 +593,9 @@ function CalendarView() {
                         {day.events.map((event) => (
                           <div
                             key={event.id}
-                            className="px-1.5 py-1 bg-blue-500 text-white rounded text-xs font-medium cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap"
+                            className="px-1.5 py-1 bg-blue-500 text-white rounded text-xs font-medium cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap hover:bg-blue-600 transition-colors"
                             title={event.title}
+                            onClick={() => openEditModal(event)}
                           >
                             {event.title}
                           </div>
@@ -377,6 +614,15 @@ function CalendarView() {
           Loading...
         </div>
       )}
+
+      <EventModal
+        isOpen={modalState.isOpen}
+        onClose={closeModal}
+        onSave={handleSave}
+        onDelete={modalState.mode === 'edit' ? handleDelete : undefined}
+        initialData={modalState.initialData}
+        mode={modalState.mode}
+      />
     </div>
   )
 }

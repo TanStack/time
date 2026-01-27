@@ -81,6 +81,12 @@ interface CalendarActions<
   ) => Array<TimeSlot>
   /** Retrieves events for a specific date. */
   getEventsByDate: (date: string) => Array<TEvent>
+  /** Adds a new event to the calendar. */
+  addEvent: (event: TEvent) => void
+  /** Updates an existing event by ID. */
+  updateEvent: (id: Event['id'], updates: Partial<Omit<TEvent, 'id'>>) => void
+  /** Removes an event by ID. */
+  removeEvent: (id: Event['id']) => void
 }
 
 interface CalendarState<
@@ -231,5 +237,31 @@ export class CalendarCore<
     })
     const eventMap = this.getEventMap()
     return eventMap.get(targetDate) ?? []
+  }
+
+  addEvent(event: TEvent): void {
+    if (!this.options.events) {
+      this.options.events = []
+    }
+    this.options.events.push(event)
+  }
+
+  updateEvent(id: Event['id'], updates: Partial<Omit<TEvent, 'id'>>): void {
+    if (!this.options.events) return
+
+    const index = this.options.events.findIndex((e) => e.id === id)
+    if (index === -1) return
+
+    const existingEvent = this.options.events[index]
+    this.options.events[index] = { ...existingEvent, ...updates } as TEvent
+  }
+
+  removeEvent(id: Event['id']): void {
+    if (!this.options.events) return
+
+    const index = this.options.events.findIndex((e) => e.id === id)
+    if (index === -1) return
+
+    this.options.events.splice(index, 1)
   }
 }

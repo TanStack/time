@@ -92,13 +92,15 @@ export const getEventProps = (
 
   const eventIndex =
     overlappingCount > 0
-      ? overlappingEvents.filter(
-          (e) =>
-            Temporal.ZonedDateTime.compare(
-              toZonedDateTime(e.start, timeZone),
-              segmentStart,
-            ) < 0,
-        ).length
+      ? overlappingEvents.filter((e) => {
+          const eStart = toZonedDateTime(e.start, timeZone)
+          const comparison = Temporal.ZonedDateTime.compare(
+            eStart,
+            segmentStart,
+          )
+          if (comparison !== 0) return comparison < 0
+          return e.id < event.id
+        }).length
       : 0
 
   return {
