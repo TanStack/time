@@ -463,22 +463,20 @@ function ScheduleView({
                       const eventProps = calendar.getEventProps(event)
                       const { style, isSplitEvent } = eventProps
 
-                      const eventStartDate = event.start.split('T')[0]
-                      const eventEndDate = event.end.split('T')[0]
+                      const originalStart = event._originalStart ?? event.start
+                      const originalEnd = event._originalEnd ?? event.end
+                      const originalStartDate = originalStart.split('T')[0]
+                      const originalEndDate = originalEnd.split('T')[0]
                       const segmentStartDate = eventProps.start.split('T')[0]
                       const segmentEndDate = eventProps.end.split('T')[0]
 
-                      // First segment: event starts on this day (exact match or same date)
-                      const isFirstSegment =
-                        event.start === eventProps.start ||
-                        eventStartDate === segmentStartDate
+                      // First segment: this segment's start date matches the original event's start date
+                      const isFirstSegment = originalStartDate === segmentStartDate
 
-                      // Last segment: event ends on this day
-                      // For multi-day events, check if this segment's date matches the event's end date
+                      // Last segment: this segment's date matches the original event's end date
                       const isLastSegment =
-                        event.end === eventProps.end ||
-                        eventEndDate === segmentEndDate ||
-                        eventEndDate === segmentStartDate
+                        originalEndDate === segmentEndDate ||
+                        originalEndDate === segmentStartDate
 
                       const isBeingResized =
                         resizeState.isResizing && resizeState.eventId === event.id
@@ -593,13 +591,8 @@ function ScheduleView({
 
                       // Show bottom handle if:
                       // 1. Not a split event (single day), OR
-                      // 2. This segment's date matches the event's end date (last segment)
-                      // Check if the event ends on this day by comparing the dayDate with eventEndDate
-                      const showBottomHandle =
-                        !isSplitEvent ||
-                        dayDate === eventEndDate ||
-                        eventEndDate === segmentStartDate ||
-                        eventEndDate === segmentEndDate
+                      // 2. This is the last segment (matches original event's end date)
+                      const showBottomHandle = !isSplitEvent || isLastSegment
 
                       // Check if this segment is being actively resized (original or new target)
                       const isActivelyResized = isBeingResized && previewStyle !== null
@@ -630,8 +623,8 @@ function ScheduleView({
                               {...getResizeHandleProps(
                                 event.id,
                                 'top',
-                                event.start,
-                                event.end,
+                                event._originalStart ?? event.start,
+                                event._originalEnd ?? event.end,
                               )}
                             />
                           )}
@@ -655,8 +648,8 @@ function ScheduleView({
                               {...getResizeHandleProps(
                                 event.id,
                                 'bottom',
-                                event.start,
-                                event.end,
+                                event._originalStart ?? event.start,
+                                event._originalEnd ?? event.end,
                               )}
                             />
                           )}

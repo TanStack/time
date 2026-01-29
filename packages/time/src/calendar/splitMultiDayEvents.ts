@@ -33,6 +33,8 @@ export const splitMultiDayEvents = <
       ...event,
       start: eventStart.toPlainDateTime().toString(),
       end: eventEnd.toPlainDateTime().toString(),
+      _originalStart: event.start,
+      _originalEnd: event.end,
     })
 
     currentDay = startOfDay.add({ days: 1 })

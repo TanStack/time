@@ -23,6 +23,10 @@ export interface Event<TResource extends Resource = Resource> {
   end: string
   title: string
   resources?: Array<TResource>
+  /** Original start time before splitting (only set on split segments of multi-day events) */
+  _originalStart?: string
+  /** Original end time before splitting (only set on split segments of multi-day events) */
+  _originalEnd?: string
 }
 
 export type Day<
