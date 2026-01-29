@@ -507,13 +507,11 @@ function ScheduleView({
 
                         // Check if this segment's day is within the preview range
                         const previewAffectsThisDay =
-                          previewStartDateStr === dayDate ||
-                          previewEndDateStr === dayDate ||
-                          (previewStartDateStr < dayDate && previewEndDateStr > dayDate)
+                          dayDate >= previewStartDateStr && dayDate <= previewEndDateStr
 
-                        // Check if this segment is being shrunk away (not in preview range anymore)
-                        const isBeingShrunkAway =
-                          isThisSegmentBeingResized && !previewAffectsThisDay
+                        // Check if this segment should be hidden (not in preview range anymore)
+                        // This applies to ANY segment of the event being resized, not just the edge being resized
+                        const isBeingShrunkAway = !previewAffectsThisDay
 
                         // Check if the preview has actually changed from the original event bounds
                         const hasPreviewChanged =
@@ -523,48 +521,46 @@ function ScheduleView({
                         if (isBeingShrunkAway) {
                           // This segment is being removed by the resize, hide it
                           shouldHideSegment = true
-                        } else if (isThisSegmentBeingResized && isSpanningMultipleDays && previewAffectsThisDay) {
-                          // Extending to another day - use multi-day style with SEGMENT bounds
-                          previewStyle = calculateOriginalSegmentStyleForMultiDay(
-                            segmentStart,
-                            segmentEnd,
-                            resizeState.edge,
-                            true,
-                          )
-                        } else if (isThisSegmentBeingResized && !isSpanningMultipleDays && hasPreviewChanged) {
-                          // Normal resize within same day - only apply if preview actually changed
-                          // For multi-day events, the segment always starts at midnight (for non-first segments)
-                          // and ends at end of day (for non-last segments), except for the actual boundaries
-                          const effectivePreviewStart = resizeState.edge === 'top' && previewStartDateStr === dayDate
-                            ? resizeState.previewStart
-                            : segmentStart
-                          const effectivePreviewEnd = resizeState.edge === 'bottom' && previewEndDateStr === dayDate
-                            ? resizeState.previewEnd
-                            : segmentEnd
+                        } else if (previewAffectsThisDay && hasPreviewChanged) {
+                          // This segment is within the preview range - calculate its new bounds
+                          const isPreviewFirstDay = previewStartDateStr === dayDate
+                          const isPreviewLastDay = previewEndDateStr === dayDate
 
-                          previewStyle = calculatePreviewStyleForSegment(
-                            effectivePreviewStart,
-                            effectivePreviewEnd,
-                            segmentStart,
-                            segmentEnd,
-                            resizeState.edge,
-                          )
-                        } else if (!isThisSegmentBeingResized && previewAffectsThisDay && hasPreviewChanged) {
-                          // This segment is newly affected by the resize (e.g., shrinking to this day)
-                          // Check if this is the new "last segment" for bottom resize
-                          const isNewLastSegment =
-                            resizeState.edge === 'bottom' && previewEndDateStr === dayDate
-                          const isNewFirstSegment =
-                            resizeState.edge === 'top' && previewStartDateStr === dayDate
+                          // Calculate the effective start and end for this segment in the preview
+                          let effectiveStart: string
+                          let effectiveEnd: string
 
-                          if (isNewLastSegment || isNewFirstSegment) {
-                            previewStyle = calculatePreviewStyleForSegment(
-                              resizeState.previewStart,
-                              resizeState.previewEnd,
-                              segmentStart,
-                              segmentEnd,
-                              resizeState.edge,
-                            )
+                          if (isPreviewFirstDay && isPreviewLastDay) {
+                            // Single day event - use exact preview times
+                            effectiveStart = resizeState.previewStart
+                            effectiveEnd = resizeState.previewEnd
+                          } else if (isPreviewFirstDay) {
+                            // First day of multi-day - start at preview start, end at end of day
+                            effectiveStart = resizeState.previewStart
+                            effectiveEnd = `${dayDate}T23:59:59`
+                          } else if (isPreviewLastDay) {
+                            // Last day of multi-day - start at beginning of day, end at preview end
+                            effectiveStart = `${dayDate}T00:00:00`
+                            effectiveEnd = resizeState.previewEnd
+                          } else {
+                            // Middle day - full day
+                            effectiveStart = `${dayDate}T00:00:00`
+                            effectiveEnd = `${dayDate}T23:59:59`
+                          }
+
+                          // Calculate preview style from effective times
+                          const startDate = new Date(effectiveStart)
+                          const endDate = new Date(effectiveEnd)
+                          const startMinutes = startDate.getHours() * 60 + startDate.getMinutes()
+                          const endMinutes = endDate.getHours() * 60 + endDate.getMinutes() || MINUTES_IN_DAY
+                          const topPercent = (startMinutes / MINUTES_IN_DAY) * 100
+                          const heightPercent = ((endMinutes - startMinutes) / MINUTES_IN_DAY) * 100
+
+                          if (heightPercent > 0) {
+                            previewStyle = {
+                              top: `${topPercent}%`,
+                              height: `${Math.max(heightPercent, (30 / MINUTES_IN_DAY) * 100)}%`,
+                            }
                           }
                         }
                       }
@@ -585,19 +581,23 @@ function ScheduleView({
                       if (isBeingResized && resizeState.previewStart && resizeState.previewEnd) {
                         const previewEndDateStr = resizeState.previewEnd.split('T')[0]
                         const previewStartDateStr = resizeState.previewStart.split('T')[0]
+                        const previewAffectsThisDay = dayDate >= previewStartDateStr && dayDate <= previewEndDateStr
 
-                        if (resizeState.edge === 'top') {
-                          // For top edge resize, update start if this is the new first segment
-                          if (previewStartDateStr === dayDate) {
+                        if (previewAffectsThisDay) {
+                          const isPreviewFirstDay = previewStartDateStr === dayDate
+                          const isPreviewLastDay = previewEndDateStr === dayDate
+
+                          // Update display times based on position in preview range
+                          if (isPreviewFirstDay) {
                             displayStart = resizeState.previewStart
+                          } else {
+                            displayStart = `${dayDate}T00:00:00`
                           }
-                        } else if (resizeState.edge === 'bottom') {
-                          // For bottom edge resize, update end if this is the new last segment
-                          if (previewEndDateStr === dayDate) {
+
+                          if (isPreviewLastDay) {
                             displayEnd = resizeState.previewEnd
-                          } else if (isThisSegmentBeingResized && previewEndDateStr !== segmentStartDate) {
-                            // Extending to next day - show end of day for current segment
-                            displayEnd = `${segmentStartDate}T23:59:00`
+                          } else {
+                            displayEnd = `${dayDate}T23:59:00`
                           }
                         }
                       }
@@ -673,43 +673,75 @@ function ScheduleView({
                         </div>
                       )
                     })}
-                    {/* Ghost preview on target day when resizing across days */}
+                    {/* Ghost preview on ALL days in preview range when resizing across days */}
                     {resizeState.isResizing &&
-                      resizeState.targetDayDate === dayDate &&
                       resizeState.previewStart &&
                       resizeState.previewEnd &&
                       (() => {
                         const previewStartDate = resizeState.previewStart.split('T')[0]
                         const previewEndDate = resizeState.previewEnd.split('T')[0]
 
+                        // Check if this day already has a segment of the event being resized
                         const eventOnThisDay = day.events.some(
                           (e) => e.id === resizeState.eventId,
                         )
+
+                        // Check if this day is within the new preview range
                         const isDayInPreviewRange =
                           dayDate >= previewStartDate && dayDate <= previewEndDate
 
+                        // Show ghost on days that are in the preview range but don't have an existing segment
                         if (!eventOnThisDay && isDayInPreviewRange) {
-                          const ghostStyle = calculateGhostPreviewStyle(
-                            resizeState.previewStart,
-                            resizeState.previewEnd,
-                            resizeState.edge,
-                          )
+                          // Calculate ghost style based on position in the range
+                          const isFirstDay = dayDate === previewStartDate
+                          const isLastDay = dayDate === previewEndDate
 
-                          if (!ghostStyle) return null
+                          let ghostTop: number
+                          let ghostBottom: number
+
+                          if (isFirstDay && isLastDay) {
+                            // Single day - use actual times
+                            const startDate = new Date(resizeState.previewStart)
+                            const endDate = new Date(resizeState.previewEnd)
+                            ghostTop = (startDate.getHours() * 60 + startDate.getMinutes()) / MINUTES_IN_DAY * 100
+                            ghostBottom = (endDate.getHours() * 60 + endDate.getMinutes()) / MINUTES_IN_DAY * 100
+                          } else if (isFirstDay) {
+                            // First day of multi-day range
+                            const startDate = new Date(resizeState.previewStart)
+                            ghostTop = (startDate.getHours() * 60 + startDate.getMinutes()) / MINUTES_IN_DAY * 100
+                            ghostBottom = 100 // End of day
+                          } else if (isLastDay) {
+                            // Last day of multi-day range
+                            const endDate = new Date(resizeState.previewEnd)
+                            ghostTop = 0 // Start of day
+                            ghostBottom = (endDate.getHours() * 60 + endDate.getMinutes()) / MINUTES_IN_DAY * 100
+                          } else {
+                            // Middle day - full day
+                            ghostTop = 0
+                            ghostBottom = 100
+                          }
+
+                          const ghostHeight = ghostBottom - ghostTop
+                          if (ghostHeight <= 0) return null
+
+                          const ghostStyle = {
+                            top: `${ghostTop}%`,
+                            height: `${Math.max(ghostHeight, (30 / MINUTES_IN_DAY) * 100)}%`,
+                          }
 
                           // Calculate display times for the ghost
-                          const ghostStartTime = resizeState.edge === 'bottom'
-                            ? '00:00'
-                            : new Date(resizeState.previewStart).toLocaleTimeString('en-US', {
+                          const ghostStartTime = isFirstDay
+                            ? new Date(resizeState.previewStart).toLocaleTimeString('en-US', {
                                 hour: 'numeric',
                                 minute: '2-digit',
                               })
-                          const ghostEndTime = resizeState.edge === 'top'
-                            ? '11:59 PM'
-                            : new Date(resizeState.previewEnd).toLocaleTimeString('en-US', {
+                            : '12:00 AM'
+                          const ghostEndTime = isLastDay
+                            ? new Date(resizeState.previewEnd).toLocaleTimeString('en-US', {
                                 hour: 'numeric',
                                 minute: '2-digit',
                               })
+                            : '11:59 PM'
 
                           return (
                             <div
