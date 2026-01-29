@@ -463,20 +463,24 @@ function ScheduleView({
                       const eventProps = calendar.getEventProps(event)
                       const { style, isSplitEvent } = eventProps
 
+                      // Original event times (for resize calculations)
                       const originalStart = event._originalStart ?? event.start
                       const originalEnd = event._originalEnd ?? event.end
                       const originalStartDate = originalStart.split('T')[0]
                       const originalEndDate = originalEnd.split('T')[0]
-                      const segmentStartDate = eventProps.start.split('T')[0]
-                      const segmentEndDate = eventProps.end.split('T')[0]
+
+                      // Segment times (the actual bounds of THIS day's portion)
+                      // Note: event.start/end are segment bounds, eventProps.start/end are full event bounds
+                      const segmentStart = event.start
+                      const segmentEnd = event.end
+                      const segmentStartDate = segmentStart.split('T')[0]
+                      const segmentEndDate = segmentEnd.split('T')[0]
 
                       // First segment: this segment's start date matches the original event's start date
                       const isFirstSegment = originalStartDate === segmentStartDate
 
                       // Last segment: this segment's date matches the original event's end date
-                      const isLastSegment =
-                        originalEndDate === segmentEndDate ||
-                        originalEndDate === segmentStartDate
+                      const isLastSegment = originalEndDate === segmentStartDate || originalEndDate === segmentEndDate
 
                       const isBeingResized =
                         resizeState.isResizing && resizeState.eventId === event.id
@@ -487,12 +491,11 @@ function ScheduleView({
                         ((resizeState.edge === 'top' && isFirstSegment) ||
                           (resizeState.edge === 'bottom' && isLastSegment))
 
-                      // Check if resize is spanning multiple days
-                      const segmentDate = eventProps.start.split('T')[0]
+                      // Check if resize is spanning multiple days (mouse moved to a different day than segment)
                       const isSpanningMultipleDays =
                         isThisSegmentBeingResized &&
                         resizeState.targetDayDate !== null &&
-                        resizeState.targetDayDate !== segmentDate
+                        resizeState.targetDayDate !== segmentStartDate
 
                       // Calculate display style based on resize state
                       let previewStyle: { top: string; height: string } | null = null
@@ -512,27 +515,41 @@ function ScheduleView({
                         const isBeingShrunkAway =
                           isThisSegmentBeingResized && !previewAffectsThisDay
 
+                        // Check if the preview has actually changed from the original event bounds
+                        const hasPreviewChanged =
+                          resizeState.previewStart !== originalStart ||
+                          resizeState.previewEnd !== originalEnd
+
                         if (isBeingShrunkAway) {
                           // This segment is being removed by the resize, hide it
                           shouldHideSegment = true
                         } else if (isThisSegmentBeingResized && isSpanningMultipleDays && previewAffectsThisDay) {
-                          // Extending to another day - use multi-day style
+                          // Extending to another day - use multi-day style with SEGMENT bounds
                           previewStyle = calculateOriginalSegmentStyleForMultiDay(
-                            eventProps.start,
-                            eventProps.end,
+                            segmentStart,
+                            segmentEnd,
                             resizeState.edge,
                             true,
                           )
-                        } else if (isThisSegmentBeingResized && !isSpanningMultipleDays) {
-                          // Normal resize within same day
+                        } else if (isThisSegmentBeingResized && !isSpanningMultipleDays && hasPreviewChanged) {
+                          // Normal resize within same day - only apply if preview actually changed
+                          // For multi-day events, the segment always starts at midnight (for non-first segments)
+                          // and ends at end of day (for non-last segments), except for the actual boundaries
+                          const effectivePreviewStart = resizeState.edge === 'top' && previewStartDateStr === dayDate
+                            ? resizeState.previewStart
+                            : segmentStart
+                          const effectivePreviewEnd = resizeState.edge === 'bottom' && previewEndDateStr === dayDate
+                            ? resizeState.previewEnd
+                            : segmentEnd
+
                           previewStyle = calculatePreviewStyleForSegment(
-                            resizeState.previewStart,
-                            resizeState.previewEnd,
-                            eventProps.start,
-                            eventProps.end,
+                            effectivePreviewStart,
+                            effectivePreviewEnd,
+                            segmentStart,
+                            segmentEnd,
                             resizeState.edge,
                           )
-                        } else if (!isThisSegmentBeingResized && previewAffectsThisDay) {
+                        } else if (!isThisSegmentBeingResized && previewAffectsThisDay && hasPreviewChanged) {
                           // This segment is newly affected by the resize (e.g., shrinking to this day)
                           // Check if this is the new "last segment" for bottom resize
                           const isNewLastSegment =
@@ -544,8 +561,8 @@ function ScheduleView({
                             previewStyle = calculatePreviewStyleForSegment(
                               resizeState.previewStart,
                               resizeState.previewEnd,
-                              eventProps.start,
-                              eventProps.end,
+                              segmentStart,
+                              segmentEnd,
                               resizeState.edge,
                             )
                           }
@@ -561,9 +578,9 @@ function ScheduleView({
                         ? { ...style, ...previewStyle }
                         : style
 
-                      // Calculate display times based on preview
-                      let displayStart = eventProps.start
-                      let displayEnd = eventProps.end
+                      // Calculate display times based on preview (use segment times as base)
+                      let displayStart = segmentStart
+                      let displayEnd = segmentEnd
 
                       if (isBeingResized && resizeState.previewStart && resizeState.previewEnd) {
                         const previewEndDateStr = resizeState.previewEnd.split('T')[0]
@@ -578,9 +595,9 @@ function ScheduleView({
                           // For bottom edge resize, update end if this is the new last segment
                           if (previewEndDateStr === dayDate) {
                             displayEnd = resizeState.previewEnd
-                          } else if (isThisSegmentBeingResized && previewEndDateStr !== segmentDate) {
+                          } else if (isThisSegmentBeingResized && previewEndDateStr !== segmentStartDate) {
                             // Extending to next day - show end of day for current segment
-                            displayEnd = `${segmentDate}T23:59:00`
+                            displayEnd = `${segmentStartDate}T23:59:00`
                           }
                         }
                       }
