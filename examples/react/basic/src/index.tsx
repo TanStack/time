@@ -259,154 +259,10 @@ function ResizeHandle({ edge, onMouseDown }: ResizeHandleProps) {
   )
 }
 
-function calculatePreviewStyleForSegment(
-  previewStart: string,
-  previewEnd: string,
-  segmentStart: string,
-  segmentEnd: string,
-  edge: 'top' | 'bottom' | null,
-): { top: string; height: string } | null {
-  const previewStartDate = new Date(previewStart)
-  const previewEndDate = new Date(previewEnd)
-  const segmentStartDate = new Date(segmentStart)
-  const segmentEndDate = new Date(segmentEnd)
-
-  // Get the date part (YYYY-MM-DD) for comparison
-  const segmentDate = segmentStart.split('T')[0]
-  const previewStartDateStr = previewStart.split('T')[0]
-  const previewEndDateStr = previewEnd.split('T')[0]
-
-  let effectiveStart: Date
-  let effectiveEnd: Date
-
-  if (edge === 'top') {
-    // For top edge resize, check if preview start is on the same day as segment
-    if (previewStartDateStr !== segmentDate) {
-      // Preview start is on a different day, use segment start
-      effectiveStart = segmentStartDate
-    } else {
-      effectiveStart = previewStartDate
-    }
-    effectiveEnd = segmentEndDate
-  } else if (edge === 'bottom') {
-    // For bottom edge resize, check if preview end is on the same day as segment
-    effectiveStart = segmentStartDate
-    if (previewEndDateStr !== segmentDate) {
-      // Preview end is on a different day, use segment end (end of day)
-      effectiveEnd = new Date(segmentDate + 'T23:59:59')
-    } else {
-      effectiveEnd = previewEndDate
-    }
-  } else {
-    // For both edges or no edge specified, check if preview spans this segment's day
-    if (previewStartDateStr === segmentDate && previewEndDateStr === segmentDate) {
-      // Both preview times are on the same day as segment
-      effectiveStart = previewStartDate
-      effectiveEnd = previewEndDate
-    } else if (previewStartDateStr === segmentDate) {
-      // Only start is on this day
-      effectiveStart = previewStartDate
-      effectiveEnd = new Date(segmentDate + 'T23:59:59')
-    } else if (previewEndDateStr === segmentDate) {
-      // Only end is on this day
-      effectiveStart = new Date(segmentDate + 'T00:00:00')
-      effectiveEnd = previewEndDate
-    } else {
-      // Preview doesn't span this day at all
-      return null
-    }
-  }
-
-  const startMinutes = effectiveStart.getHours() * 60 + effectiveStart.getMinutes()
-  const endMinutes = effectiveEnd.getHours() * 60 + effectiveEnd.getMinutes()
-  const durationMinutes = endMinutes - startMinutes
-
-  if (durationMinutes <= 0) return null
-
-  const topPercent = (startMinutes / MINUTES_IN_DAY) * 100
-  const heightPercent = (durationMinutes / MINUTES_IN_DAY) * 100
-
-  return {
-    top: `${topPercent}%`,
-    height: `${Math.max(heightPercent, (30 / MINUTES_IN_DAY) * 100)}%`,
-  }
-}
 
 // Calculate style for original segment when resizing spans multiple days
-function calculateOriginalSegmentStyleForMultiDay(
-  originalStart: string,
-  originalEnd: string,
-  edge: 'top' | 'bottom' | null,
-  isSpanningMultipleDays: boolean,
-): { top: string; height: string } | null {
-  if (!isSpanningMultipleDays) return null
-
-  const startDate = new Date(originalStart)
-  const endDate = new Date(originalEnd)
-
-  let startMinutes: number
-  let endMinutes: number
-
-  if (edge === 'bottom') {
-    // Resizing bottom to next day: original shows from start to end of day
-    startMinutes = startDate.getHours() * 60 + startDate.getMinutes()
-    endMinutes = MINUTES_IN_DAY // 23:59 (end of day)
-  } else if (edge === 'top') {
-    // Resizing top to previous day: original shows from start of day to end
-    startMinutes = 0 // 00:00 (start of day)
-    endMinutes = endDate.getHours() * 60 + endDate.getMinutes()
-  } else {
-    return null
-  }
-
-  const durationMinutes = endMinutes - startMinutes
-  if (durationMinutes <= 0) return null
-
-  const topPercent = (startMinutes / MINUTES_IN_DAY) * 100
-  const heightPercent = (durationMinutes / MINUTES_IN_DAY) * 100
-
-  return {
-    top: `${topPercent}%`,
-    height: `${Math.max(heightPercent, (30 / MINUTES_IN_DAY) * 100)}%`,
-  }
-}
 
 // Calculate style for ghost preview on target day
-function calculateGhostPreviewStyle(
-  previewStart: string,
-  previewEnd: string,
-  edge: 'top' | 'bottom' | null,
-): { top: string; height: string } | null {
-  const previewStartDate = new Date(previewStart)
-  const previewEndDate = new Date(previewEnd)
-
-  let startMinutes: number
-  let endMinutes: number
-
-  if (edge === 'bottom') {
-    // Resizing bottom to next day: ghost starts at 00:00 and ends at preview end time
-    startMinutes = 0
-    endMinutes = previewEndDate.getHours() * 60 + previewEndDate.getMinutes()
-  } else if (edge === 'top') {
-    // Resizing top to previous day: ghost starts at preview start time and ends at 23:59
-    startMinutes = previewStartDate.getHours() * 60 + previewStartDate.getMinutes()
-    endMinutes = MINUTES_IN_DAY
-  } else {
-    startMinutes = previewStartDate.getHours() * 60 + previewStartDate.getMinutes()
-    endMinutes = previewEndDate.getHours() * 60 + previewEndDate.getMinutes()
-  }
-
-  const durationMinutes = endMinutes - startMinutes
-  if (durationMinutes <= 0) return null
-
-  const topPercent = (startMinutes / MINUTES_IN_DAY) * 100
-  const heightPercent = (durationMinutes / MINUTES_IN_DAY) * 100
-
-  return {
-    top: `${topPercent}%`,
-    height: `${Math.max(heightPercent, (30 / MINUTES_IN_DAY) * 100)}%`,
-  }
-}
 
 function ScheduleView({
   calendar,
@@ -492,10 +348,6 @@ function ScheduleView({
                           (resizeState.edge === 'bottom' && isLastSegment))
 
                       // Check if resize is spanning multiple days (mouse moved to a different day than segment)
-                      const isSpanningMultipleDays =
-                        isThisSegmentBeingResized &&
-                        resizeState.targetDayDate !== null &&
-                        resizeState.targetDayDate !== segmentStartDate
 
                       // Calculate display style based on resize state
                       let previewStyle: { top: string; height: string } | null = null
