@@ -426,34 +426,6 @@ function ScheduleView({
                         ? { ...style, ...previewStyle }
                         : style
 
-                      // Calculate display times based on preview (use segment times as base)
-                      let displayStart = segmentStart
-                      let displayEnd = segmentEnd
-
-                      if (isBeingResized && resizeState.previewStart && resizeState.previewEnd) {
-                        const previewEndDateStr = resizeState.previewEnd.split('T')[0]
-                        const previewStartDateStr = resizeState.previewStart.split('T')[0]
-                        const previewAffectsThisDay = dayDate >= previewStartDateStr && dayDate <= previewEndDateStr
-
-                        if (previewAffectsThisDay) {
-                          const isPreviewFirstDay = previewStartDateStr === dayDate
-                          const isPreviewLastDay = previewEndDateStr === dayDate
-
-                          // Update display times based on position in preview range
-                          if (isPreviewFirstDay) {
-                            displayStart = resizeState.previewStart
-                          } else {
-                            displayStart = `${dayDate}T00:00:00`
-                          }
-
-                          if (isPreviewLastDay) {
-                            displayEnd = resizeState.previewEnd
-                          } else {
-                            displayEnd = `${dayDate}T23:59:00`
-                          }
-                        }
-                      }
-
                       // For multi-day events, show handles on first/last segments
                       // For single-day events, show both handles
                       const showTopHandle = !isSplitEvent || isFirstSegment
@@ -498,19 +470,30 @@ function ScheduleView({
                             />
                           )}
                           <div className="font-semibold pt-1">{event.title}</div>
-                          {displayStyle && parseFloat(displayStyle.height) > 2 && (
-                            <div className="text-xs opacity-90 mt-0.5">
-                              {new Date(displayStart).toLocaleTimeString('en-US', {
-                                hour: 'numeric',
-                                minute: '2-digit',
-                              })}
-                              {' - '}
-                              {new Date(displayEnd).toLocaleTimeString('en-US', {
-                                hour: 'numeric',
-                                minute: '2-digit',
-                              })}
-                            </div>
-                          )}
+                          {displayStyle && parseFloat(displayStyle.height) > 2 && (() => {
+                            const startDt = new Date(isBeingResized ? resizeState.previewStart! : originalStart)
+                            const endDt = new Date(isBeingResized ? resizeState.previewEnd! : originalEnd)
+                            const isMultiDay = startDt.toDateString() !== endDt.toDateString()
+
+                            if (isMultiDay) {
+                              return (
+                                <div className="text-xs opacity-90 mt-0.5">
+                                  {startDt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}{' '}
+                                  {startDt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                                  {' - '}
+                                  {endDt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}{' '}
+                                  {endDt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                                </div>
+                              )
+                            }
+                            return (
+                              <div className="text-xs opacity-90 mt-0.5">
+                                {startDt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                                {' - '}
+                                {endDt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                              </div>
+                            )
+                          })()}
                           {showBottomHandle && (
                             <ResizeHandle
                               edge="bottom"
@@ -581,19 +564,17 @@ function ScheduleView({
                             height: `${Math.max(ghostHeight, (30 / MINUTES_IN_DAY) * 100)}%`,
                           }
 
-                          // Calculate display times for the ghost
-                          const ghostStartTime = isFirstDay
-                            ? new Date(resizeState.previewStart).toLocaleTimeString('en-US', {
-                                hour: 'numeric',
-                                minute: '2-digit',
-                              })
-                            : '12:00 AM'
-                          const ghostEndTime = isLastDay
-                            ? new Date(resizeState.previewEnd).toLocaleTimeString('en-US', {
-                                hour: 'numeric',
-                                minute: '2-digit',
-                              })
-                            : '11:59 PM'
+                          // Display the full event date and time (only dates for multi-day)
+                          const startDateTime = new Date(resizeState.previewStart)
+                          const endDateTime = new Date(resizeState.previewEnd)
+                          const isMultiDay = startDateTime.toDateString() !== endDateTime.toDateString()
+
+                          const ghostStart = isMultiDay
+                            ? `${startDateTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${startDateTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+                            : startDateTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                          const ghostEnd = isMultiDay
+                            ? `${endDateTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${endDateTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+                            : endDateTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 
                           return (
                             <div
@@ -601,7 +582,7 @@ function ScheduleView({
                               style={ghostStyle}
                             >
                               <div className="font-semibold pt-1 opacity-70">
-                                {ghostStartTime} - {ghostEndTime}
+                                {ghostStart} - {ghostEnd}
                               </div>
                             </div>
                           )
