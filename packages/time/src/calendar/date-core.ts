@@ -124,6 +124,7 @@ export abstract class DateCore {
       currentPeriod: initialDate,
       activeDate: initialDate,
       viewMode: options.viewMode,
+      eventsVersion: 0,
     })
   }
 
@@ -159,16 +160,26 @@ export abstract class DateCore {
   }
 
   protected getCalendarDays() {
-    const start =
-      this.store.state.viewMode.unit === 'month'
-        ? this.getFirstDayOfMonth().subtract({
-            days:
-              (this.getFirstDayOfMonth().dayOfWeek -
-                (this.getFirstDayOfWeek().dayOfWeek + 1) +
-                7) %
-              7,
-          })
-        : this.store.state.currentPeriod
+    let start: Temporal.PlainDate
+    switch (this.store.state.viewMode.unit) {
+      case 'month':
+        start = this.getFirstDayOfMonth().subtract({
+          days:
+            (this.getFirstDayOfMonth().dayOfWeek -
+              (this.getFirstDayOfWeek().dayOfWeek + 1) +
+              7) %
+            7,
+        })
+        break
+      case 'week':
+      case 'workWeek':
+        start = this.getFirstDayOfWeek()
+        break
+      case 'day':
+      default:
+        start = this.store.state.currentPeriod
+        break
+    }
 
     let end: Temporal.PlainDate
     switch (this.store.state.viewMode.unit) {

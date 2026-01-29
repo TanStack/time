@@ -244,6 +244,10 @@ export class CalendarCore<
       this.options.events = []
     }
     this.options.events.push(event)
+    this.store.setState((prev) => ({
+      ...prev,
+      eventsVersion: prev.eventsVersion + 1,
+    }))
   }
 
   updateEvent(id: Event['id'], updates: Partial<Omit<TEvent, 'id'>>): void {
@@ -254,6 +258,10 @@ export class CalendarCore<
 
     const existingEvent = this.options.events[index]
     this.options.events[index] = { ...existingEvent, ...updates } as TEvent
+    this.store.setState((prev) => ({
+      ...prev,
+      eventsVersion: prev.eventsVersion + 1,
+    }))
   }
 
   removeEvent(id: Event['id']): void {
@@ -263,5 +271,9 @@ export class CalendarCore<
     if (index === -1) return
 
     this.options.events.splice(index, 1)
+    this.store.setState((prev) => ({
+      ...prev,
+      eventsVersion: prev.eventsVersion + 1,
+    }))
   }
 }

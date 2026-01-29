@@ -50,4 +50,5 @@ export interface CalendarStore {
   currentPeriod: Temporal.PlainDate
   activeDate: Temporal.PlainDate
   viewMode: ViewMode
+  eventsVersion: number
 }
