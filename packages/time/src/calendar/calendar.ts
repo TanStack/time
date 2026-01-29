@@ -183,6 +183,7 @@ export class CalendarCore<
   }
 
   getDaysWithEvents() {
+    console.log('getDaysWithEvents')
     const calendarDays = this.getCalendarDays()
     const eventMap = this.getEventMap()
     return calendarDays.map((day) => {

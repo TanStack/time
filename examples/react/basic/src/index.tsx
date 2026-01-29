@@ -341,12 +341,6 @@ function ScheduleView({
                       const isBeingResized =
                         resizeState.isResizing && resizeState.eventId === event.id
 
-                      // Check if this event is being resized
-                      const isThisSegmentBeingResized =
-                        isBeingResized &&
-                        ((resizeState.edge === 'top' && isFirstSegment) ||
-                          (resizeState.edge === 'bottom' && isLastSegment))
-
                       // Check if resize is spanning multiple days (mouse moved to a different day than segment)
 
                       // Calculate display style based on resize state
@@ -373,7 +367,7 @@ function ScheduleView({
                         if (isBeingShrunkAway) {
                           // This segment is being removed by the resize, hide it
                           shouldHideSegment = true
-                        } else if (previewAffectsThisDay && hasPreviewChanged) {
+                        } else if (hasPreviewChanged) {
                           // This segment is within the preview range - calculate its new bounds
                           const isPreviewFirstDay = previewStartDateStr === dayDate
                           const isPreviewLastDay = previewEndDateStr === dayDate

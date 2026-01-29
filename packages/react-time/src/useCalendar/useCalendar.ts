@@ -249,8 +249,6 @@ export const useCalendar = <
 
         document.addEventListener('mousemove', handleMouseMove)
         document.addEventListener('mouseup', handleMouseUp)
-        document.body.style.cursor = 'ns-resize'
-        document.body.style.userSelect = 'none'
       },
     }),
     [resizeEnabled, handleMouseMove, handleMouseUp, resize, updateResizeState],
@@ -348,7 +346,6 @@ export const useCalendar = <
   )
 
   const days = useMemo(() => {
-    // state dependency triggers recalculation when calendar state changes
     void state
     return calendarCore.getDaysWithEvents()
   }, [calendarCore, state])
@@ -357,7 +354,7 @@ export const useCalendar = <
     activeDate: state.activeDate.toString(),
     currentPeriod: state.currentPeriod.toString(),
     viewMode: state.viewMode,
-    days: calendarCore.getDaysWithEvents(),
+    days,
     getDaysNames,
     getTimeSlots,
     getEventsByDate,
