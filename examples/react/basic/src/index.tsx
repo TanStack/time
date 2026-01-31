@@ -118,14 +118,14 @@ function EventModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-        <h2 className="text-xl font-semibold mb-4">
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+      <div className="bg-neutral-950 border border-neutral-800 rounded-lg w-full max-w-md p-6">
+        <h2 className="text-xl font-semibold text-white mb-4">
           {mode === 'add' ? 'Add Event' : 'Edit Event'}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-neutral-400 mb-1">
               Title
             </label>
             <input
@@ -134,13 +134,13 @@ function EventModal({
               onChange={(e) =>
                 setFormData({ ...formData, title: e.target.value })
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-black border border-neutral-800 rounded-md text-white placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-neutral-600 focus:border-neutral-600"
               required
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-400 mb-1">
                 Start Date
               </label>
               <input
@@ -149,12 +149,12 @@ function EventModal({
                 onChange={(e) =>
                   setFormData({ ...formData, startDate: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-black border border-neutral-800 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-neutral-600 focus:border-neutral-600"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-400 mb-1">
                 Start Time
               </label>
               <input
@@ -163,14 +163,14 @@ function EventModal({
                 onChange={(e) =>
                   setFormData({ ...formData, startTime: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-black border border-neutral-800 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-neutral-600 focus:border-neutral-600"
                 required
               />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-400 mb-1">
                 End Date
               </label>
               <input
@@ -179,12 +179,12 @@ function EventModal({
                 onChange={(e) =>
                   setFormData({ ...formData, endDate: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-black border border-neutral-800 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-neutral-600 focus:border-neutral-600"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-400 mb-1">
                 End Time
               </label>
               <input
@@ -193,7 +193,7 @@ function EventModal({
                 onChange={(e) =>
                   setFormData({ ...formData, endTime: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-black border border-neutral-800 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-neutral-600 focus:border-neutral-600"
                 required
               />
             </div>
@@ -207,7 +207,7 @@ function EventModal({
                     onDelete()
                     onClose()
                   }}
-                  className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-md"
+                  className="px-4 py-2 text-red-400 hover:text-red-300 rounded-md"
                 >
                   Delete
                 </button>
@@ -217,13 +217,13 @@ function EventModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                className="px-4 py-2 border border-neutral-700 rounded-md text-neutral-300 hover:bg-neutral-800 hover:border-neutral-600"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                className="px-4 py-2 bg-white text-black rounded-md font-medium hover:bg-neutral-200"
               >
                 {mode === 'add' ? 'Add' : 'Save'}
               </button>
@@ -244,18 +244,17 @@ function ResizeHandle({ edge, onMouseDown }: ResizeHandleProps) {
   return (
     <div
       data-resize-handle
-      className={`absolute left-0 right-0 h-3 cursor-ns-resize z-30 bg-transparent hover:bg-blue-300/50 pointer-events-auto ${
+      className={`absolute left-0 right-0 h-3 cursor-ns-resize z-30 bg-transparent hover:bg-neutral-500/30 pointer-events-auto ${
         edge === 'top' ? 'top-0' : 'bottom-0'
       }`}
       onMouseDown={onMouseDown}
       onClick={(e) => {
-        // Prevent event click from firing when clicking resize handle
         e.stopPropagation()
       }}
       style={{ touchAction: 'none' }}
     >
       <div
-        className={`absolute left-1/2 -translate-x-1/2 w-8 h-1 bg-white/70 rounded opacity-50 group-hover:opacity-100 transition-opacity ${
+        className={`absolute left-1/2 -translate-x-1/2 w-8 h-1 bg-neutral-400 rounded opacity-50 group-hover:opacity-100 transition-opacity ${
           edge === 'top' ? 'top-1' : 'bottom-1'
         }`}
       />
@@ -263,10 +262,6 @@ function ResizeHandle({ edge, onMouseDown }: ResizeHandleProps) {
   )
 }
 
-
-// Calculate style for original segment when resizing spans multiple days
-
-// Calculate style for ghost preview on target day
 
 function ScheduleView({
   calendar,
@@ -281,13 +276,13 @@ function ScheduleView({
   const { resizeState, getResizeHandleProps, getDayColumnProps } = calendar
 
   return (
-    <div className="flex border border-gray-200 rounded-lg overflow-hidden bg-white">
-      <div className="w-20 border-r border-gray-200 bg-gray-50">
-        <div className="h-12 border-b border-gray-200"></div>
+    <div className="flex border border-neutral-800 rounded-lg overflow-hidden bg-black">
+      <div className="w-20 border-r border-neutral-800 bg-neutral-950">
+        <div className="h-12 border-b border-neutral-800"></div>
         {timeSlots.map((slot) => (
           <div
             key={`${slot.hour}-${slot.minute}`}
-            className="h-[60px] border-b border-gray-100 px-2 py-1 text-xs text-gray-500"
+            className="h-[60px] border-b border-neutral-800/50 px-2 py-1 text-xs text-neutral-500"
           >
             {slot.label}
           </div>
@@ -309,16 +304,16 @@ function ScheduleView({
               return (
                 <div
                   key={day.date.toString()}
-                  className="border-r border-gray-200 last:border-r-0"
+                  className="border-r border-neutral-800 last:border-r-0"
                   {...getDayColumnProps(dayDate)}
                 >
-                  <div className="h-12 border-b border-gray-200 bg-gray-50 px-3 py-2 text-center">
-                    <div className="text-sm font-semibold text-gray-700">
+                  <div className="h-12 border-b border-neutral-800 bg-neutral-950 px-3 py-2 text-center">
+                    <div className="text-sm font-semibold text-neutral-200">
                       {dayName}
                     </div>
-                    <div className="text-xs text-gray-500">{day.date.day}</div>
+                    <div className="text-xs text-neutral-500">{day.date.day}</div>
                   </div>
-                  <div className="relative h-[1440px]">
+                  <div className="relative h-[1440px] bg-neutral-950/30">
                     {day.events.map((event, eventIndex) => {
                       const eventProps = calendar.getEventProps(event)
                       const { style, isSplitEvent } = eventProps
@@ -361,10 +356,10 @@ function ScheduleView({
                       return (
                         <div
                           key={`${event.id}-${eventIndex}`}
-                          className={`group absolute bg-blue-500 text-white rounded px-2 py-1 text-xs font-medium overflow-hidden transition-colors ${
+                          className={`group absolute bg-neutral-800 text-white rounded px-2 py-1 text-xs font-medium overflow-hidden transition-colors border border-neutral-700 ${
                             isActivelyResized
-                              ? 'bg-blue-600 ring-2 ring-blue-300 z-20'
-                              : 'cursor-pointer hover:bg-blue-600'
+                              ? 'bg-neutral-700 ring-2 ring-neutral-500 z-20'
+                              : 'cursor-pointer hover:bg-neutral-700'
                           }`}
                           title={event.title}
                           style={displayStyle}
@@ -429,10 +424,10 @@ function ScheduleView({
 
                         return (
                           <div
-                            className="absolute bg-blue-500/70 text-white rounded px-2 py-1 text-xs font-medium overflow-hidden ring-2 ring-blue-300 z-20"
+                            className="absolute bg-neutral-700/60 text-neutral-200 rounded px-2 py-1 text-xs font-medium overflow-hidden border border-neutral-600 border-dashed z-20"
                             style={ghostStyle}
                           >
-                            <div className="font-semibold pt-1 opacity-70">
+                            <div className="font-semibold pt-1 opacity-80">
                               {timeRange.rangeFormatted}
                             </div>
                           </div>
@@ -546,20 +541,20 @@ function CalendarView() {
   }
 
   return (
-    <div className="p-5 font-sans max-w-[1200px] mx-auto">
+    <div className="p-5 max-w-[1200px] mx-auto min-h-screen">
       <div className="mb-6">
-        <h1 className="m-0 mb-4 text-[28px] font-semibold">
-          TanStack Time - Calendar Example
+        <h1 className="m-0 mb-4 text-[28px] font-semibold text-white">
+          TanStack Time
         </h1>
 
-        <div className="flex gap-3 items-center mb-4">
+        <div className="flex gap-3 items-center mb-4 flex-wrap">
           <button
             onClick={calendar.goToPreviousPeriod}
             disabled={!calendar.canGoPreviousPeriod() || calendar.isPending}
-            className={`px-4 py-2 border border-gray-300 rounded-md bg-white ${
+            className={`px-4 py-2 border rounded-md ${
               calendar.canGoPreviousPeriod() && !calendar.isPending
-                ? 'cursor-pointer opacity-100'
-                : 'cursor-not-allowed opacity-50'
+                ? 'border-neutral-600 text-neutral-200 hover:bg-neutral-800 hover:border-neutral-500'
+                : 'border-neutral-800 text-neutral-600 cursor-not-allowed'
             }`}
           >
             ← Previous
@@ -568,10 +563,8 @@ function CalendarView() {
           <button
             onClick={calendar.goToCurrentPeriod}
             disabled={calendar.isPending}
-            className={`px-4 py-2 border border-gray-300 rounded-md bg-white ${
-              calendar.isPending
-                ? 'cursor-not-allowed opacity-50'
-                : 'cursor-pointer opacity-100'
+            className={`px-4 py-2 border border-neutral-600 rounded-md text-neutral-200 hover:bg-neutral-800 hover:border-neutral-500 ${
+              calendar.isPending ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >
             Today
@@ -580,10 +573,10 @@ function CalendarView() {
           <button
             onClick={calendar.goToNextPeriod}
             disabled={!calendar.canGoNextPeriod() || calendar.isPending}
-            className={`px-4 py-2 border border-gray-300 rounded-md bg-white ${
+            className={`px-4 py-2 border rounded-md ${
               calendar.canGoNextPeriod() && !calendar.isPending
-                ? 'cursor-pointer opacity-100'
-                : 'cursor-not-allowed opacity-50'
+                ? 'border-neutral-600 text-neutral-200 hover:bg-neutral-800 hover:border-neutral-500'
+                : 'border-neutral-800 text-neutral-600 cursor-not-allowed'
             }`}
           >
             Next →
@@ -591,7 +584,7 @@ function CalendarView() {
 
           <button
             onClick={openAddModal}
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 cursor-pointer"
+            className="px-4 py-2 bg-white text-black rounded-md font-medium hover:bg-neutral-200"
           >
             + Add Event
           </button>
@@ -601,10 +594,10 @@ function CalendarView() {
               onClick={() =>
                 calendar.changeViewMode({ value: 1, unit: 'month' })
               }
-              className={`px-3 py-1.5 rounded-md cursor-pointer ${
+              className={`px-3 py-1.5 rounded-md border ${
                 calendar.viewMode.unit === 'month'
-                  ? 'border-2 border-blue-500 bg-blue-50'
-                  : 'border border-gray-300 bg-white'
+                  ? 'border-neutral-500 bg-neutral-800 text-white'
+                  : 'border-neutral-700 text-neutral-400 hover:text-neutral-200 hover:border-neutral-600'
               }`}
             >
               Month
@@ -613,20 +606,20 @@ function CalendarView() {
               onClick={() =>
                 calendar.changeViewMode({ value: 1, unit: 'week' })
               }
-              className={`px-3 py-1.5 rounded-md cursor-pointer ${
+              className={`px-3 py-1.5 rounded-md border ${
                 calendar.viewMode.unit === 'week'
-                  ? 'border-2 border-blue-500 bg-blue-50'
-                  : 'border border-gray-300 bg-white'
+                  ? 'border-neutral-500 bg-neutral-800 text-white'
+                  : 'border-neutral-700 text-neutral-400 hover:text-neutral-200 hover:border-neutral-600'
               }`}
             >
               Week
             </button>
             <button
               onClick={() => calendar.changeViewMode({ value: 1, unit: 'day' })}
-              className={`px-3 py-1.5 rounded-md cursor-pointer ${
+              className={`px-3 py-1.5 rounded-md border ${
                 calendar.viewMode.unit === 'day'
-                  ? 'border-2 border-blue-500 bg-blue-50'
-                  : 'border border-gray-300 bg-white'
+                  ? 'border-neutral-500 bg-neutral-800 text-white'
+                  : 'border-neutral-700 text-neutral-400 hover:text-neutral-200 hover:border-neutral-600'
               }`}
             >
               Day
@@ -634,7 +627,7 @@ function CalendarView() {
           </div>
         </div>
 
-        <div className="text-lg font-medium text-gray-700">
+        <div className="text-lg font-medium text-neutral-400">
           {formatPeriodDate(calendar.currentPeriod)}
         </div>
       </div>
@@ -646,16 +639,16 @@ function CalendarView() {
           onEventClick={openEditModal}
         />
       ) : (
-        <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+        <div className="border border-neutral-800 rounded-lg overflow-hidden bg-black">
           <div
-            className="grid border-b-2 border-gray-200 bg-gray-50"
+            className="grid border-b border-neutral-800 bg-neutral-950"
             style={{ gridTemplateColumns: `repeat(${dayNames.length}, 1fr)` }}
           >
             {dayNames.map((dayName: string, index: number) => (
               <div
                 key={index}
-                className={`py-3 text-center font-semibold text-sm text-gray-500 ${
-                  index < dayNames.length - 1 ? 'border-r border-gray-200' : ''
+                className={`py-3 text-center font-semibold text-sm text-neutral-500 ${
+                  index < dayNames.length - 1 ? 'border-r border-neutral-800' : ''
                 }`}
               >
                 {dayName}
@@ -677,13 +670,13 @@ function CalendarView() {
                     return (
                       <div
                         key={`empty-${weekIndex}-${dayIndex}`}
-                        className={`min-h-[120px] bg-gray-50 ${
+                        className={`min-h-[120px] bg-neutral-950/50 ${
                           dayIndex < dayNames.length - 1
-                            ? 'border-r border-gray-200'
+                            ? 'border-r border-neutral-800'
                             : ''
                         } ${
                           weekIndex < groupedDays.length - 1
-                            ? 'border-b border-gray-200'
+                            ? 'border-b border-neutral-800'
                             : ''
                         }`}
                       />
@@ -698,27 +691,27 @@ function CalendarView() {
                       key={day.date.toString()}
                       className={`min-h-[120px] p-2 relative ${
                         dayIndex < dayNames.length - 1
-                          ? 'border-r border-gray-200'
+                          ? 'border-r border-neutral-800'
                           : ''
                       } ${
                         weekIndex < groupedDays.length - 1
-                          ? 'border-b border-gray-200'
+                          ? 'border-b border-neutral-800'
                           : ''
                       } ${
                         isToday
-                          ? 'bg-blue-50'
+                          ? 'bg-neutral-900'
                           : isInCurrentPeriod
-                            ? 'bg-white'
-                            : 'bg-gray-50'
+                            ? 'bg-black'
+                            : 'bg-neutral-950/50'
                       }`}
                     >
                       <div
                         className={`text-sm mb-1 ${
                           isToday
-                            ? 'font-bold text-blue-500'
+                            ? 'font-bold text-white'
                             : isInCurrentPeriod
-                              ? 'font-medium text-gray-900'
-                              : 'font-medium text-gray-400'
+                              ? 'font-medium text-neutral-200'
+                              : 'font-medium text-neutral-500'
                         }`}
                       >
                         {day.date.day}
@@ -727,7 +720,7 @@ function CalendarView() {
                         {day.events.map((event) => (
                           <div
                             key={event.id}
-                            className="px-1.5 py-1 bg-blue-500 text-white rounded text-xs font-medium cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap hover:bg-blue-600 transition-colors"
+                            className="px-1.5 py-1 bg-neutral-800 text-neutral-200 rounded text-xs font-medium cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap hover:bg-neutral-700 border border-neutral-700 transition-colors"
                             title={event.title}
                             onClick={() => openEditModal(event)}
                           >
@@ -744,7 +737,7 @@ function CalendarView() {
       )}
 
       {calendar.isPending && (
-        <div className="fixed top-5 right-5 px-5 py-3 bg-blue-500 text-white rounded-md text-sm font-medium shadow-lg">
+        <div className="fixed top-5 right-5 px-5 py-3 bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-md text-sm font-medium">
           Loading...
         </div>
       )}
