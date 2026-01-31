@@ -42,6 +42,10 @@ interface ResizeHandleHandlers {
   onMouseDown: (e: React.MouseEvent) => void
 }
 
+interface DayColumnProps {
+  ref: (element: HTMLElement | null) => void
+}
+
 export interface UseCalendarOptions<
   TResource extends Resource,
   TEvent extends Event<TResource>,
@@ -58,8 +62,6 @@ const initialResizeState: ResizeState = {
   targetDayDate: null,
 }
 
-const DEFAULT_CONTAINER_HEIGHT = 1440
-
 export const useCalendar = <
   TResource extends Resource,
   TEvent extends Event<TResource> = Event<TResource>,
@@ -74,10 +76,11 @@ export const useCalendar = <
     originalStart: string,
     originalEnd: string,
   ) => ResizeHandleHandlers
+  getDayColumnProps: (dayDate: string) => DayColumnProps
 } => {
   const { resize, ...calendarOptions } = options
   const resizeEnabled = resize?.enabled ?? true
-  const containerHeight = resize?.containerHeight ?? DEFAULT_CONTAINER_HEIGHT
+  const containerHeight = resize?.containerHeight ?? 0
   const constraints = resize?.constraints
 
   const [calendarCore] = useState(
@@ -88,6 +91,7 @@ export const useCalendar = <
 
   const resizeStateRef = useRef<ResizeState>(initialResizeState)
   const resizeListenersRef = useRef<Set<() => void>>(new Set())
+  const dayColumnRefsRef = useRef<Map<string, HTMLElement>>(new Map())
   const originalEventRef = useRef<{
     id: string
     start: string
@@ -123,6 +127,16 @@ export const useCalendar = <
     getResizeSnapshot,
   )
 
+  const getDayFromPoint = useCallback((x: number): string | null => {
+    for (const [dayDate, element] of dayColumnRefsRef.current) {
+      const rect = element.getBoundingClientRect()
+      if (x >= rect.left && x <= rect.right) {
+        return dayDate
+      }
+    }
+    return null
+  }, [])
+
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
       if (!originalEventRef.current) return
@@ -136,17 +150,7 @@ export const useCalendar = <
         containerHeight,
       )
 
-      // Detect which day column the mouse is over
-      const dayColumns = document.querySelectorAll('[data-day-date]')
-      let targetDayDate: string | null = null
-
-      for (const column of dayColumns) {
-        const rect = column.getBoundingClientRect()
-        if (e.clientX >= rect.left && e.clientX <= rect.right) {
-          targetDayDate = column.getAttribute('data-day-date')
-          break
-        }
-      }
+      const targetDayDate = getDayFromPoint(e.clientX) ?? originalDayDate
 
       // Calculate day offset if moved to a different day
       let dayOffsetMinutes = 0
@@ -158,7 +162,6 @@ export const useCalendar = <
             (1000 * 60 * 60 * 24),
         )
 
-        // Apply day offset in both directions for flexible resizing
         dayOffsetMinutes = dayDiff * 24 * 60
         originalEventRef.current.currentDayDate = targetDayDate
       }
@@ -181,7 +184,13 @@ export const useCalendar = <
         targetDayDate,
       })
     },
-    [containerHeight, calendarOptions.timeZone, constraints, updateResizeState],
+    [
+      containerHeight,
+      calendarOptions.timeZone,
+      constraints,
+      getDayFromPoint,
+      updateResizeState,
+    ],
   )
 
   const handleMouseUp = useCallback(() => {
@@ -209,6 +218,18 @@ export const useCalendar = <
     document.removeEventListener('mouseup', handleMouseUp)
   }, [calendarCore, handleMouseMove, resize, updateResizeState])
 
+  const getDayFromElement = useCallback(
+    (element: HTMLElement): string | null => {
+      for (const [dayDate, dayElement] of dayColumnRefsRef.current) {
+        if (dayElement.contains(element)) {
+          return dayDate
+        }
+      }
+      return null
+    },
+    [],
+  )
+
   const getResizeHandleProps = useCallback(
     (
       eventId: string,
@@ -222,9 +243,8 @@ export const useCalendar = <
         e.preventDefault()
         e.stopPropagation()
 
-        // Find the day column this event is in
-        const dayColumn = (e.target as HTMLElement).closest('[data-day-date]')
-        const dayDate = dayColumn?.getAttribute('data-day-date') ?? ''
+        const dayDate = getDayFromElement(e.target as HTMLElement)
+        if (!dayDate) return
 
         originalEventRef.current = {
           id: eventId,
@@ -251,7 +271,27 @@ export const useCalendar = <
         document.addEventListener('mouseup', handleMouseUp)
       },
     }),
-    [resizeEnabled, handleMouseMove, handleMouseUp, resize, updateResizeState],
+    [
+      resizeEnabled,
+      getDayFromElement,
+      handleMouseMove,
+      handleMouseUp,
+      resize,
+      updateResizeState,
+    ],
+  )
+
+  const getDayColumnProps = useCallback(
+    (dayDate: string): DayColumnProps => ({
+      ref: (element: HTMLElement | null) => {
+        if (element) {
+          dayColumnRefsRef.current.set(dayDate, element)
+        } else {
+          dayColumnRefsRef.current.delete(dayDate)
+        }
+      },
+    }),
+    [],
   )
 
   const goToPreviousPeriod = useCallback<
@@ -373,5 +413,6 @@ export const useCalendar = <
     groupDaysBy,
     resizeState,
     getResizeHandleProps,
+    getDayColumnProps,
   }
 }

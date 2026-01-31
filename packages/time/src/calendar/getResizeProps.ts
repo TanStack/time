@@ -7,6 +7,11 @@ export interface ResizeConstraints {
   snapToMinutes?: number
 }
 
+const MINUTES_IN_DAY = 24 * 60
+
+const extractDateFromDateTime = (dateTime: string): string =>
+  dateTime.split('T')[0] ?? dateTime
+
 interface CalculateResizedEventOptions {
   originalStart: string
   originalEnd: string
@@ -112,4 +117,342 @@ export function getResizeHandleStyle(edge: ResizeEdge): ResizeHandleStyle {
     return { ...baseStyle, top: 0 }
   }
   return { ...baseStyle, bottom: 0 }
+}
+
+/**
+ * Information about a segment's position within a multi-day event
+ */
+export interface SegmentInfo {
+  /** Whether this is the first segment of a multi-day event */
+  isFirstSegment: boolean
+  /** Whether this is the last segment of a multi-day event */
+  isLastSegment: boolean
+  /** Whether this segment is part of a split multi-day event */
+  isSplitEvent: boolean
+  /** The original event start (before splitting) */
+  originalStart: string
+  /** The original event end (before splitting) */
+  originalEnd: string
+  /** The segment's start time */
+  segmentStart: string
+  /** The segment's end time */
+  segmentEnd: string
+}
+
+/**
+ * Analyzes a segment to determine its position within a multi-day event
+ */
+export function getSegmentInfo(event: {
+  start: string
+  end: string
+  _originalStart?: string
+  _originalEnd?: string
+}): SegmentInfo {
+  const originalStart = event._originalStart ?? event.start
+  const originalEnd = event._originalEnd ?? event.end
+  const originalStartDate = extractDateFromDateTime(originalStart)
+  const originalEndDate = extractDateFromDateTime(originalEnd)
+
+  const segmentStart = event.start
+  const segmentEnd = event.end
+  const segmentStartDate = extractDateFromDateTime(segmentStart)
+  const segmentEndDate = extractDateFromDateTime(segmentEnd)
+
+  const isSplitEvent =
+    event._originalStart !== undefined || event._originalEnd !== undefined
+  const isFirstSegment = originalStartDate === segmentStartDate
+  const isLastSegment =
+    originalEndDate === segmentStartDate || originalEndDate === segmentEndDate
+
+  return {
+    isFirstSegment,
+    isLastSegment,
+    isSplitEvent,
+    originalStart,
+    originalEnd,
+    segmentStart,
+    segmentEnd,
+  }
+}
+
+/**
+ * Style for positioned elements (events, ghosts)
+ */
+export interface PositionStyle {
+  top: string
+  height: string
+}
+
+/**
+ * Result of resize preview calculation for a segment
+ */
+export interface SegmentResizePreview {
+  /** Whether the segment should be hidden (shrunk away) */
+  shouldHide: boolean
+  /** The preview style to apply, if any */
+  previewStyle: PositionStyle | null
+  /** Whether the preview has changed from the original */
+  hasChanged: boolean
+}
+
+export interface ResizePreviewOptions {
+  /** The date string of the day being rendered (YYYY-MM-DD) */
+  dayDate: string
+  /** The original start of the event (before resize) */
+  originalStart: string
+  /** The original end of the event (before resize) */
+  originalEnd: string
+  /** The preview start during resize */
+  previewStart: string
+  /** The preview end during resize */
+  previewEnd: string
+}
+
+/**
+ * Calculates the resize preview state for a segment on a specific day
+ */
+export function calculateSegmentResizePreview(
+  options: ResizePreviewOptions,
+): SegmentResizePreview {
+  const { dayDate, originalStart, originalEnd, previewStart, previewEnd } =
+    options
+
+  const previewStartDate = extractDateFromDateTime(previewStart)
+  const previewEndDate = extractDateFromDateTime(previewEnd)
+
+  const previewAffectsThisDay =
+    dayDate >= previewStartDate && dayDate <= previewEndDate
+
+  const hasChanged =
+    previewStart !== originalStart || previewEnd !== originalEnd
+
+  if (!previewAffectsThisDay) {
+    return { shouldHide: true, previewStyle: null, hasChanged }
+  }
+
+  if (!hasChanged) {
+    return { shouldHide: false, previewStyle: null, hasChanged: false }
+  }
+
+  const isPreviewFirstDay = previewStartDate === dayDate
+  const isPreviewLastDay = previewEndDate === dayDate
+
+  let effectiveStart: string
+  let effectiveEnd: string
+
+  if (isPreviewFirstDay && isPreviewLastDay) {
+    effectiveStart = previewStart
+    effectiveEnd = previewEnd
+  } else if (isPreviewFirstDay) {
+    effectiveStart = previewStart
+    effectiveEnd = `${dayDate}T23:59:59`
+  } else if (isPreviewLastDay) {
+    effectiveStart = `${dayDate}T00:00:00`
+    effectiveEnd = previewEnd
+  } else {
+    effectiveStart = `${dayDate}T00:00:00`
+    effectiveEnd = `${dayDate}T23:59:59`
+  }
+
+  const startDate = new Date(effectiveStart)
+  const endDate = new Date(effectiveEnd)
+  const startMinutes = startDate.getHours() * 60 + startDate.getMinutes()
+  const endMinutes =
+    endDate.getHours() * 60 + endDate.getMinutes() || MINUTES_IN_DAY
+
+  const topPercent = (startMinutes / MINUTES_IN_DAY) * 100
+  const heightPercent = ((endMinutes - startMinutes) / MINUTES_IN_DAY) * 100
+
+  if (heightPercent <= 0) {
+    return { shouldHide: true, previewStyle: null, hasChanged }
+  }
+
+  const minHeightPercent = (30 / MINUTES_IN_DAY) * 100
+
+  return {
+    shouldHide: false,
+    previewStyle: {
+      top: `${topPercent}%`,
+      height: `${Math.max(heightPercent, minHeightPercent)}%`,
+    },
+    hasChanged,
+  }
+}
+
+export interface GhostPreviewOptions {
+  /** The date string of the day being rendered (YYYY-MM-DD) */
+  dayDate: string
+  /** The preview start during resize */
+  previewStart: string
+  /** The preview end during resize */
+  previewEnd: string
+}
+
+/**
+ * Calculates the ghost preview style for a day that doesn't have an existing segment
+ */
+export function calculateGhostPreviewStyle(
+  options: GhostPreviewOptions,
+): PositionStyle | null {
+  const { dayDate, previewStart, previewEnd } = options
+
+  const previewStartDate = extractDateFromDateTime(previewStart)
+  const previewEndDate = extractDateFromDateTime(previewEnd)
+
+  const isDayInPreviewRange =
+    dayDate >= previewStartDate && dayDate <= previewEndDate
+
+  if (!isDayInPreviewRange) {
+    return null
+  }
+
+  const isFirstDay = dayDate === previewStartDate
+  const isLastDay = dayDate === previewEndDate
+
+  let ghostTop: number
+  let ghostBottom: number
+
+  if (isFirstDay && isLastDay) {
+    const startDate = new Date(previewStart)
+    const endDate = new Date(previewEnd)
+    ghostTop =
+      ((startDate.getHours() * 60 + startDate.getMinutes()) / MINUTES_IN_DAY) *
+      100
+    ghostBottom =
+      ((endDate.getHours() * 60 + endDate.getMinutes()) / MINUTES_IN_DAY) * 100
+  } else if (isFirstDay) {
+    const startDate = new Date(previewStart)
+    ghostTop =
+      ((startDate.getHours() * 60 + startDate.getMinutes()) / MINUTES_IN_DAY) *
+      100
+    ghostBottom = 100
+  } else if (isLastDay) {
+    const endDate = new Date(previewEnd)
+    ghostTop = 0
+    ghostBottom =
+      ((endDate.getHours() * 60 + endDate.getMinutes()) / MINUTES_IN_DAY) * 100
+  } else {
+    ghostTop = 0
+    ghostBottom = 100
+  }
+
+  const ghostHeight = ghostBottom - ghostTop
+  if (ghostHeight <= 0) {
+    return null
+  }
+
+  const minHeightPercent = (30 / MINUTES_IN_DAY) * 100
+
+  return {
+    top: `${ghostTop}%`,
+    height: `${Math.max(ghostHeight, minHeightPercent)}%`,
+  }
+}
+
+/**
+ * Checks if an event spans multiple days
+ */
+export function isMultiDayEvent(start: string, end: string): boolean {
+  const startDate = new Date(start)
+  const endDate = new Date(end)
+  return startDate.toDateString() !== endDate.toDateString()
+}
+
+export interface EventTimeRange {
+  start: string
+  end: string
+  isMultiDay: boolean
+}
+
+/**
+ * Gets the time range to display for an event, considering resize state
+ */
+export function getEventDisplayTimeRange(options: {
+  originalStart: string
+  originalEnd: string
+  isBeingResized?: boolean
+  previewStart?: string
+  previewEnd?: string
+}): EventTimeRange {
+  const {
+    originalStart,
+    originalEnd,
+    isBeingResized,
+    previewStart,
+    previewEnd,
+  } = options
+
+  const displayStart =
+    isBeingResized && previewStart ? previewStart : originalStart
+  const displayEnd = isBeingResized && previewEnd ? previewEnd : originalEnd
+
+  return {
+    start: displayStart,
+    end: displayEnd,
+    isMultiDay: isMultiDayEvent(displayStart, displayEnd),
+  }
+}
+
+export interface FormatEventTimeOptions {
+  /** Locale for formatting (e.g., 'en-US') */
+  locale?: string
+  /** Whether to include date for single-day events */
+  alwaysShowDate?: boolean
+}
+
+export interface FormattedEventTime {
+  /** Formatted start string */
+  startFormatted: string
+  /** Formatted end string */
+  endFormatted: string
+  /** Full formatted range string */
+  rangeFormatted: string
+  /** Whether this is a multi-day event */
+  isMultiDay: boolean
+}
+
+/**
+ * Formats an event's time range for display
+ * For multi-day events: includes date and time
+ * For single-day events: includes only time (unless alwaysShowDate is true)
+ */
+export function formatEventTimeRange(
+  start: string,
+  end: string,
+  options: FormatEventTimeOptions = {},
+): FormattedEventTime {
+  const { locale = 'en-US', alwaysShowDate = false } = options
+
+  const startDate = new Date(start)
+  const endDate = new Date(end)
+  const isMultiDay = startDate.toDateString() !== endDate.toDateString()
+
+  const timeOptions: Intl.DateTimeFormatOptions = {
+    hour: 'numeric',
+    minute: '2-digit',
+  }
+
+  const dateTimeOptions: Intl.DateTimeFormatOptions = {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }
+
+  const showDate = isMultiDay || alwaysShowDate
+
+  const startFormatted = showDate
+    ? startDate.toLocaleString(locale, dateTimeOptions)
+    : startDate.toLocaleTimeString(locale, timeOptions)
+
+  const endFormatted = showDate
+    ? endDate.toLocaleString(locale, dateTimeOptions)
+    : endDate.toLocaleTimeString(locale, timeOptions)
+
+  return {
+    startFormatted,
+    endFormatted,
+    rangeFormatted: `${startFormatted} - ${endFormatted}`,
+    isMultiDay,
+  }
 }

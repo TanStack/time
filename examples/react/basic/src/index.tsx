@@ -1,4 +1,10 @@
-import { useCalendar } from '@tanstack/react-time'
+import {
+  calculateGhostPreviewStyle,
+  calculateSegmentResizePreview,
+  formatEventTimeRange,
+  getSegmentInfo,
+  useCalendar,
+} from '@tanstack/react-time'
 import ReactDOM from 'react-dom/client'
 import { useState } from 'react'
 import type { Day, Event, Resource } from '@tanstack/time'
@@ -229,8 +235,6 @@ function EventModal({
   )
 }
 
-const MINUTES_IN_DAY = 24 * 60
-
 interface ResizeHandleProps {
   edge: 'top' | 'bottom'
   onMouseDown: (e: React.MouseEvent) => void
@@ -274,7 +278,7 @@ function ScheduleView({
   onEventClick: (event: Event<Resource>) => void
 }) {
   const timeSlots = calendar.getTimeSlots()
-  const { resizeState, getResizeHandleProps } = calendar
+  const { resizeState, getResizeHandleProps, getDayColumnProps } = calendar
 
   return (
     <div className="flex border border-gray-200 rounded-lg overflow-hidden bg-white">
@@ -306,7 +310,7 @@ function ScheduleView({
                 <div
                   key={day.date.toString()}
                   className="border-r border-gray-200 last:border-r-0"
-                  data-day-date={dayDate}
+                  {...getDayColumnProps(dayDate)}
                 >
                   <div className="h-12 border-b border-gray-200 bg-gray-50 px-3 py-2 text-center">
                     <div className="text-sm font-semibold text-gray-700">
@@ -319,118 +323,40 @@ function ScheduleView({
                       const eventProps = calendar.getEventProps(event)
                       const { style, isSplitEvent } = eventProps
 
-                      // Original event times (for resize calculations)
-                      const originalStart = event._originalStart ?? event.start
-                      const originalEnd = event._originalEnd ?? event.end
-                      const originalStartDate = originalStart.split('T')[0]
-                      const originalEndDate = originalEnd.split('T')[0]
-
-                      // Segment times (the actual bounds of THIS day's portion)
-                      // Note: event.start/end are segment bounds, eventProps.start/end are full event bounds
-                      const segmentStart = event.start
-                      const segmentEnd = event.end
-                      const segmentStartDate = segmentStart.split('T')[0]
-                      const segmentEndDate = segmentEnd.split('T')[0]
-
-                      // First segment: this segment's start date matches the original event's start date
-                      const isFirstSegment = originalStartDate === segmentStartDate
-
-                      // Last segment: this segment's date matches the original event's end date
-                      const isLastSegment = originalEndDate === segmentStartDate || originalEndDate === segmentEndDate
+                      const segmentInfo = getSegmentInfo(event)
+                      const { isFirstSegment, isLastSegment, originalStart, originalEnd } = segmentInfo
 
                       const isBeingResized =
                         resizeState.isResizing && resizeState.eventId === event.id
 
-                      // Check if resize is spanning multiple days (mouse moved to a different day than segment)
+                      // Calculate preview state using library function
+                      const resizePreview = isBeingResized && resizeState.previewStart && resizeState.previewEnd
+                        ? calculateSegmentResizePreview({
+                            dayDate,
+                            originalStart,
+                            originalEnd,
+                            previewStart: resizeState.previewStart,
+                            previewEnd: resizeState.previewEnd,
+                          })
+                        : null
 
-                      // Calculate display style based on resize state
-                      let previewStyle: { top: string; height: string } | null = null
-                      let shouldHideSegment = false
-
-                      if (isBeingResized && resizeState.previewStart && resizeState.previewEnd) {
-                        const previewStartDateStr = resizeState.previewStart.split('T')[0]
-                        const previewEndDateStr = resizeState.previewEnd.split('T')[0]
-
-                        // Check if this segment's day is within the preview range
-                        const previewAffectsThisDay =
-                          dayDate >= previewStartDateStr && dayDate <= previewEndDateStr
-
-                        // Check if this segment should be hidden (not in preview range anymore)
-                        // This applies to ANY segment of the event being resized, not just the edge being resized
-                        const isBeingShrunkAway = !previewAffectsThisDay
-
-                        // Check if the preview has actually changed from the original event bounds
-                        const hasPreviewChanged =
-                          resizeState.previewStart !== originalStart ||
-                          resizeState.previewEnd !== originalEnd
-
-                        if (isBeingShrunkAway) {
-                          // This segment is being removed by the resize, hide it
-                          shouldHideSegment = true
-                        } else if (hasPreviewChanged) {
-                          // This segment is within the preview range - calculate its new bounds
-                          const isPreviewFirstDay = previewStartDateStr === dayDate
-                          const isPreviewLastDay = previewEndDateStr === dayDate
-
-                          // Calculate the effective start and end for this segment in the preview
-                          let effectiveStart: string
-                          let effectiveEnd: string
-
-                          if (isPreviewFirstDay && isPreviewLastDay) {
-                            // Single day event - use exact preview times
-                            effectiveStart = resizeState.previewStart
-                            effectiveEnd = resizeState.previewEnd
-                          } else if (isPreviewFirstDay) {
-                            // First day of multi-day - start at preview start, end at end of day
-                            effectiveStart = resizeState.previewStart
-                            effectiveEnd = `${dayDate}T23:59:59`
-                          } else if (isPreviewLastDay) {
-                            // Last day of multi-day - start at beginning of day, end at preview end
-                            effectiveStart = `${dayDate}T00:00:00`
-                            effectiveEnd = resizeState.previewEnd
-                          } else {
-                            // Middle day - full day
-                            effectiveStart = `${dayDate}T00:00:00`
-                            effectiveEnd = `${dayDate}T23:59:59`
-                          }
-
-                          // Calculate preview style from effective times
-                          const startDate = new Date(effectiveStart)
-                          const endDate = new Date(effectiveEnd)
-                          const startMinutes = startDate.getHours() * 60 + startDate.getMinutes()
-                          const endMinutes = endDate.getHours() * 60 + endDate.getMinutes() || MINUTES_IN_DAY
-                          const topPercent = (startMinutes / MINUTES_IN_DAY) * 100
-                          const heightPercent = ((endMinutes - startMinutes) / MINUTES_IN_DAY) * 100
-
-                          if (heightPercent > 0) {
-                            previewStyle = {
-                              top: `${topPercent}%`,
-                              height: `${Math.max(heightPercent, (30 / MINUTES_IN_DAY) * 100)}%`,
-                            }
-                          }
-                        }
-                      }
-
-                      // Skip rendering if segment is being shrunk away
-                      if (shouldHideSegment) {
+                      if (resizePreview?.shouldHide) {
                         return null
                       }
 
-                      const displayStyle = previewStyle
-                        ? { ...style, ...previewStyle }
+                      const displayStyle = resizePreview?.previewStyle
+                        ? { ...style, ...resizePreview.previewStyle }
                         : style
 
-                      // For multi-day events, show handles on first/last segments
-                      // For single-day events, show both handles
                       const showTopHandle = !isSplitEvent || isFirstSegment
-
-                      // Show bottom handle if:
-                      // 1. Not a split event (single day), OR
-                      // 2. This is the last segment (matches original event's end date)
                       const showBottomHandle = !isSplitEvent || isLastSegment
+                      const isActivelyResized = isBeingResized && resizePreview?.previewStyle !== null
 
-                      // Check if this segment is being actively resized (original or new target)
-                      const isActivelyResized = isBeingResized && previewStyle !== null
+                      // Format time display using library function
+                      const timeRange = formatEventTimeRange(
+                        isBeingResized && resizeState.previewStart ? resizeState.previewStart : originalStart,
+                        isBeingResized && resizeState.previewEnd ? resizeState.previewEnd : originalEnd,
+                      )
 
                       return (
                         <div
@@ -443,7 +369,6 @@ function ScheduleView({
                           title={event.title}
                           style={displayStyle}
                           onClick={(e) => {
-                            // Don't trigger event click if clicking on resize handle
                             if (
                               !resizeState.isResizing &&
                               !(e.target as HTMLElement).closest('[data-resize-handle]')
@@ -458,130 +383,60 @@ function ScheduleView({
                               {...getResizeHandleProps(
                                 event.id,
                                 'top',
-                                event._originalStart ?? event.start,
-                                event._originalEnd ?? event.end,
+                                originalStart,
+                                originalEnd,
                               )}
                             />
                           )}
                           <div className="font-semibold pt-1">{event.title}</div>
-                          {displayStyle && parseFloat(displayStyle.height) > 2 && (() => {
-                            const startDt = new Date(isBeingResized ? resizeState.previewStart! : originalStart)
-                            const endDt = new Date(isBeingResized ? resizeState.previewEnd! : originalEnd)
-                            const isMultiDay = startDt.toDateString() !== endDt.toDateString()
-
-                            if (isMultiDay) {
-                              return (
-                                <div className="text-xs opacity-90 mt-0.5">
-                                  {startDt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}{' '}
-                                  {startDt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                                  {' - '}
-                                  {endDt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}{' '}
-                                  {endDt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                                </div>
-                              )
-                            }
-                            return (
-                              <div className="text-xs opacity-90 mt-0.5">
-                                {startDt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                                {' - '}
-                                {endDt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                              </div>
-                            )
-                          })()}
+                          {displayStyle && parseFloat(displayStyle.height) > 2 && (
+                            <div className="text-xs opacity-90 mt-0.5">
+                              {timeRange.rangeFormatted}
+                            </div>
+                          )}
                           {showBottomHandle && (
                             <ResizeHandle
                               edge="bottom"
                               {...getResizeHandleProps(
                                 event.id,
                                 'bottom',
-                                event._originalStart ?? event.start,
-                                event._originalEnd ?? event.end,
+                                originalStart,
+                                originalEnd,
                               )}
                             />
                           )}
                         </div>
                       )
                     })}
-                    {/* Ghost preview on ALL days in preview range when resizing across days */}
+                    {/* Ghost preview on days without existing segments */}
                     {resizeState.isResizing &&
                       resizeState.previewStart &&
                       resizeState.previewEnd &&
+                      !day.events.some((e) => e.id === resizeState.eventId) &&
                       (() => {
-                        const previewStartDate = resizeState.previewStart.split('T')[0]
-                        const previewEndDate = resizeState.previewEnd.split('T')[0]
+                        const ghostStyle = calculateGhostPreviewStyle({
+                          dayDate,
+                          previewStart: resizeState.previewStart,
+                          previewEnd: resizeState.previewEnd,
+                        })
 
-                        // Check if this day already has a segment of the event being resized
-                        const eventOnThisDay = day.events.some(
-                          (e) => e.id === resizeState.eventId,
+                        if (!ghostStyle) return null
+
+                        const timeRange = formatEventTimeRange(
+                          resizeState.previewStart,
+                          resizeState.previewEnd,
                         )
 
-                        // Check if this day is within the new preview range
-                        const isDayInPreviewRange =
-                          dayDate >= previewStartDate && dayDate <= previewEndDate
-
-                        // Show ghost on days that are in the preview range but don't have an existing segment
-                        if (!eventOnThisDay && isDayInPreviewRange) {
-                          // Calculate ghost style based on position in the range
-                          const isFirstDay = dayDate === previewStartDate
-                          const isLastDay = dayDate === previewEndDate
-
-                          let ghostTop: number
-                          let ghostBottom: number
-
-                          if (isFirstDay && isLastDay) {
-                            // Single day - use actual times
-                            const startDate = new Date(resizeState.previewStart)
-                            const endDate = new Date(resizeState.previewEnd)
-                            ghostTop = (startDate.getHours() * 60 + startDate.getMinutes()) / MINUTES_IN_DAY * 100
-                            ghostBottom = (endDate.getHours() * 60 + endDate.getMinutes()) / MINUTES_IN_DAY * 100
-                          } else if (isFirstDay) {
-                            // First day of multi-day range
-                            const startDate = new Date(resizeState.previewStart)
-                            ghostTop = (startDate.getHours() * 60 + startDate.getMinutes()) / MINUTES_IN_DAY * 100
-                            ghostBottom = 100 // End of day
-                          } else if (isLastDay) {
-                            // Last day of multi-day range
-                            const endDate = new Date(resizeState.previewEnd)
-                            ghostTop = 0 // Start of day
-                            ghostBottom = (endDate.getHours() * 60 + endDate.getMinutes()) / MINUTES_IN_DAY * 100
-                          } else {
-                            // Middle day - full day
-                            ghostTop = 0
-                            ghostBottom = 100
-                          }
-
-                          const ghostHeight = ghostBottom - ghostTop
-                          if (ghostHeight <= 0) return null
-
-                          const ghostStyle = {
-                            top: `${ghostTop}%`,
-                            height: `${Math.max(ghostHeight, (30 / MINUTES_IN_DAY) * 100)}%`,
-                          }
-
-                          // Display the full event date and time (only dates for multi-day)
-                          const startDateTime = new Date(resizeState.previewStart)
-                          const endDateTime = new Date(resizeState.previewEnd)
-                          const isMultiDay = startDateTime.toDateString() !== endDateTime.toDateString()
-
-                          const ghostStart = isMultiDay
-                            ? `${startDateTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${startDateTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
-                            : startDateTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-                          const ghostEnd = isMultiDay
-                            ? `${endDateTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${endDateTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
-                            : endDateTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-
-                          return (
-                            <div
-                              className="absolute bg-blue-500/70 text-white rounded px-2 py-1 text-xs font-medium overflow-hidden ring-2 ring-blue-300 z-20"
-                              style={ghostStyle}
-                            >
-                              <div className="font-semibold pt-1 opacity-70">
-                                {ghostStart} - {ghostEnd}
-                              </div>
+                        return (
+                          <div
+                            className="absolute bg-blue-500/70 text-white rounded px-2 py-1 text-xs font-medium overflow-hidden ring-2 ring-blue-300 z-20"
+                            style={ghostStyle}
+                          >
+                            <div className="font-semibold pt-1 opacity-70">
+                              {timeRange.rangeFormatted}
                             </div>
-                          )
-                        }
-                        return null
+                          </div>
+                        )
                       })()}
                   </div>
                 </div>
