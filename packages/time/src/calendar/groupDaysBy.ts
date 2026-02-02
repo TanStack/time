@@ -1,4 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill'
+import { getWeekInfo } from '../polyfills/getWeekInfo'
 import type { Day, Event, Resource } from './types'
 
 interface GroupDaysByBaseProps<
@@ -46,8 +47,7 @@ export const groupDaysBy = <
   Array<Day<TResource, TEvent> | null>
 > => {
   const groups: Array<Array<Day<TResource, TEvent> | null>> = []
-  const loc = new Intl.Locale(locale)
-  const { weekend } = loc.getWeekInfo()
+  const { weekend } = getWeekInfo(locale)
 
   switch (unit) {
     case 'week': {

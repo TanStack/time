@@ -262,7 +262,6 @@ function ResizeHandle({ edge, onMouseDown }: ResizeHandleProps) {
   )
 }
 
-
 function ScheduleView({
   calendar,
   days,
@@ -311,7 +310,9 @@ function ScheduleView({
                     <div className="text-sm font-semibold text-neutral-200">
                       {dayName}
                     </div>
-                    <div className="text-xs text-neutral-500">{day.date.day}</div>
+                    <div className="text-xs text-neutral-500">
+                      {day.date.day}
+                    </div>
                   </div>
                   <div className="relative h-[1440px] bg-neutral-950/30">
                     {day.events.map((event, eventIndex) => {
@@ -319,21 +320,30 @@ function ScheduleView({
                       const { style, isSplitEvent } = eventProps
 
                       const segmentInfo = getSegmentInfo(event)
-                      const { isFirstSegment, isLastSegment, originalStart, originalEnd } = segmentInfo
+                      const {
+                        isFirstSegment,
+                        isLastSegment,
+                        originalStart,
+                        originalEnd,
+                      } = segmentInfo
 
                       const isBeingResized =
-                        resizeState.isResizing && resizeState.eventId === event.id
+                        resizeState.isResizing &&
+                        resizeState.eventId === event.id
 
                       // Calculate preview state using library function
-                      const resizePreview = isBeingResized && resizeState.previewStart && resizeState.previewEnd
-                        ? calculateSegmentResizePreview({
-                            dayDate,
-                            originalStart,
-                            originalEnd,
-                            previewStart: resizeState.previewStart,
-                            previewEnd: resizeState.previewEnd,
-                          })
-                        : null
+                      const resizePreview =
+                        isBeingResized &&
+                        resizeState.previewStart &&
+                        resizeState.previewEnd
+                          ? calculateSegmentResizePreview({
+                              dayDate,
+                              originalStart,
+                              originalEnd,
+                              previewStart: resizeState.previewStart,
+                              previewEnd: resizeState.previewEnd,
+                            })
+                          : null
 
                       if (resizePreview?.shouldHide) {
                         return null
@@ -345,12 +355,17 @@ function ScheduleView({
 
                       const showTopHandle = !isSplitEvent || isFirstSegment
                       const showBottomHandle = !isSplitEvent || isLastSegment
-                      const isActivelyResized = isBeingResized && resizePreview?.previewStyle !== null
+                      const isActivelyResized =
+                        isBeingResized && resizePreview?.previewStyle !== null
 
                       // Format time display using library function
                       const timeRange = formatEventTimeRange(
-                        isBeingResized && resizeState.previewStart ? resizeState.previewStart : originalStart,
-                        isBeingResized && resizeState.previewEnd ? resizeState.previewEnd : originalEnd,
+                        isBeingResized && resizeState.previewStart
+                          ? resizeState.previewStart
+                          : originalStart,
+                        isBeingResized && resizeState.previewEnd
+                          ? resizeState.previewEnd
+                          : originalEnd,
                       )
 
                       return (
@@ -366,7 +381,9 @@ function ScheduleView({
                           onClick={(e) => {
                             if (
                               !resizeState.isResizing &&
-                              !(e.target as HTMLElement).closest('[data-resize-handle]')
+                              !(e.target as HTMLElement).closest(
+                                '[data-resize-handle]',
+                              )
                             ) {
                               onEventClick(event)
                             }
@@ -383,12 +400,15 @@ function ScheduleView({
                               )}
                             />
                           )}
-                          <div className="font-semibold pt-1">{event.title}</div>
-                          {displayStyle && parseFloat(displayStyle.height) > 2 && (
-                            <div className="text-xs opacity-90 mt-0.5">
-                              {timeRange.rangeFormatted}
-                            </div>
-                          )}
+                          <div className="font-semibold pt-1">
+                            {event.title}
+                          </div>
+                          {displayStyle &&
+                            parseFloat(displayStyle.height) > 2 && (
+                              <div className="text-xs opacity-90 mt-0.5">
+                                {timeRange.rangeFormatted}
+                              </div>
+                            )}
                           {showBottomHandle && (
                             <ResizeHandle
                               edge="bottom"
@@ -648,7 +668,9 @@ function CalendarView() {
               <div
                 key={index}
                 className={`py-3 text-center font-semibold text-sm text-neutral-500 ${
-                  index < dayNames.length - 1 ? 'border-r border-neutral-800' : ''
+                  index < dayNames.length - 1
+                    ? 'border-r border-neutral-800'
+                    : ''
                 }`}
               >
                 {dayName}
