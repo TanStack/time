@@ -1,3 +1,4 @@
+import { getDateTimeDefaults } from '../utils/dateTimeDefaults'
 import { weekInfoData } from './weekInfoData'
 import type { WeekInfo } from './types'
 
@@ -37,8 +38,13 @@ function lookupWeekInfo(localeString: string): WeekInfo {
   return match
 }
 
-export function getWeekInfo(locale: string | Intl.Locale): WeekInfo {
-  const localeString = typeof locale === 'string' ? locale : locale.toString()
+export function getWeekInfo(locale?: string | Intl.Locale): WeekInfo {
+  const localeString =
+    locale == null
+      ? getDateTimeDefaults().locale
+      : typeof locale === 'string'
+        ? locale
+        : locale.toString()
   return lookupWeekInfo(localeString)
 }
 
