@@ -385,6 +385,17 @@ export const useCalendar = <
     [calendarCore],
   )
 
+  const getUnavailableRanges = useCallback<
+    typeof calendarCore.getUnavailableRanges
+  >(
+    (date, options) =>
+      calendarCore.getUnavailableRanges(date, {
+        containerHeight: options?.containerHeight ?? containerHeight,
+        resourceIds: options?.resourceIds,
+      }),
+    [calendarCore, containerHeight],
+  )
+
   const days = useMemo(() => {
     void state
     return calendarCore.getDaysWithEvents()
@@ -414,5 +425,6 @@ export const useCalendar = <
     resizeState,
     getResizeHandleProps,
     getDayColumnProps,
+    getUnavailableRanges,
   }
 }

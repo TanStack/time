@@ -5,7 +5,14 @@ import { groupDaysBy } from './groupDaysBy'
 import { getTimeSlots } from './getTimeSlots'
 import { DateCore } from './date-core'
 import type { DateCoreOptions, ParsedDateCoreOptions } from './date-core'
-import type { Day, Event, Resource, TimeSlot, ViewMode } from './types'
+import type {
+  Day,
+  Event,
+  Resource,
+  TimeSlot,
+  UnavailableRange,
+  ViewMode,
+} from './types'
 
 export type * from './types'
 export * from './date-core'
@@ -87,6 +94,14 @@ interface CalendarActions<
   updateEvent: (id: Event['id'], updates: Partial<Omit<TEvent, 'id'>>) => void
   /** Removes an event by ID. */
   removeEvent: (id: Event['id']) => void
+  /** Retrieves unavailable time ranges for a specific date based on resource availability. */
+  getUnavailableRanges: (
+    date: string,
+    options?: {
+      containerHeight?: number
+      resourceIds?: Array<TResource['id']>
+    },
+  ) => Array<UnavailableRange>
 }
 
 interface CalendarState<
@@ -275,6 +290,114 @@ export class CalendarCore<
     this.store.setState((prev) => ({
       ...prev,
       eventsVersion: prev.eventsVersion + 1,
+    }))
+  }
+
+  getUnavailableRanges(
+    date: string,
+    options?: {
+      containerHeight?: number
+      resourceIds?: Array<TResource['id']>
+    },
+  ): Array<UnavailableRange> {
+    const containerHeight = options?.containerHeight ?? 1440
+    const resources = options?.resourceIds
+      ? this.options.resources?.filter((resource) =>
+          options.resourceIds?.includes(resource.id),
+        )
+      : this.options.resources
+    if (!resources || resources.length === 0) {
+      return []
+    }
+
+    const plainDate = Temporal.PlainDate.from(date)
+    const weekday = plainDate.dayOfWeek
+
+    const availableRanges: Array<{ startMinutes: number; endMinutes: number }> =
+      []
+
+    for (const resource of resources) {
+      if (!resource.availability) continue
+
+      for (const slot of resource.availability) {
+        if (!slot.weekdays.includes(weekday)) continue
+
+        const startParts = slot.startTime.split(':').map(Number)
+        const endParts = slot.endTime.split(':').map(Number)
+        const startHour = startParts[0] ?? 0
+        const startMin = startParts[1] ?? 0
+        const endHour = endParts[0] ?? 0
+        const endMin = endParts[1] ?? 0
+
+        const startMinutes = startHour * 60 + startMin
+        const endMinutes = endHour * 60 + endMin
+
+        availableRanges.push({ startMinutes, endMinutes })
+      }
+    }
+
+    if (availableRanges.length === 0) {
+      return [
+        {
+          top: 0,
+          height: containerHeight,
+          startTime: '00:00',
+          endTime: '24:00',
+        },
+      ]
+    }
+
+    availableRanges.sort((a, b) => a.startMinutes - b.startMinutes)
+
+    const mergedAvailable: Array<{ startMinutes: number; endMinutes: number }> =
+      []
+    for (const range of availableRanges) {
+      const last = mergedAvailable[mergedAvailable.length - 1]
+      if (last && range.startMinutes <= last.endMinutes) {
+        last.endMinutes = Math.max(last.endMinutes, range.endMinutes)
+      } else {
+        mergedAvailable.push({ ...range })
+      }
+    }
+
+    const unavailableRanges: Array<{
+      startMinutes: number
+      endMinutes: number
+    }> = []
+    let currentMinute = 0
+    const dayEndMinutes = 24 * 60
+
+    for (const available of mergedAvailable) {
+      if (currentMinute < available.startMinutes) {
+        unavailableRanges.push({
+          startMinutes: currentMinute,
+          endMinutes: available.startMinutes,
+        })
+      }
+      currentMinute = available.endMinutes
+    }
+
+    if (currentMinute < dayEndMinutes) {
+      unavailableRanges.push({
+        startMinutes: currentMinute,
+        endMinutes: dayEndMinutes,
+      })
+    }
+
+    const minutesToPixels = (minutes: number) =>
+      (minutes / dayEndMinutes) * containerHeight
+
+    const formatTime = (minutes: number): string => {
+      const hours = Math.floor(minutes / 60)
+      const mins = minutes % 60
+      return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`
+    }
+
+    return unavailableRanges.map((range) => ({
+      top: minutesToPixels(range.startMinutes),
+      height: minutesToPixels(range.endMinutes - range.startMinutes),
+      startTime: formatTime(range.startMinutes),
+      endTime: formatTime(range.endMinutes),
     }))
   }
 }

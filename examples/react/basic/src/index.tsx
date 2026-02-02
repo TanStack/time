@@ -272,7 +272,12 @@ function ScheduleView({
   onEventClick: (event: Event<Resource>) => void
 }) {
   const timeSlots = calendar.getTimeSlots()
-  const { resizeState, getResizeHandleProps, getDayColumnProps } = calendar
+  const {
+    resizeState,
+    getResizeHandleProps,
+    getDayColumnProps,
+    getUnavailableRanges,
+  } = calendar
 
   return (
     <div className="flex border border-neutral-800 rounded-lg overflow-hidden bg-black">
@@ -315,6 +320,19 @@ function ScheduleView({
                     </div>
                   </div>
                   <div className="relative h-[1440px] bg-neutral-950/30">
+                    {getUnavailableRanges(dayDate, { resourceIds: ['1'] }).map(
+                      (range, idx) => (
+                        <div
+                          key={idx}
+                          className="absolute left-0 right-0 border-y border-neutral-800/50 pointer-events-none z-0 bg-[image:repeating-linear-gradient(315deg,_rgb(255_255_255_/_0.08)_0,_rgb(255_255_255_/_0.08)_1px,_transparent_0,_transparent_50%)] bg-[length:10px_10px] bg-fixed"
+                          style={{
+                            top: `${range.top}px`,
+                            height: `${range.height}px`,
+                          }}
+                          title="Unavailable"
+                        />
+                      ),
+                    )}
                     {day.events.map((event, eventIndex) => {
                       const eventProps = calendar.getEventProps(event)
                       const { style, isSplitEvent } = eventProps
@@ -371,7 +389,7 @@ function ScheduleView({
                       return (
                         <div
                           key={`${event.id}-${eventIndex}`}
-                          className={`group absolute bg-neutral-800 text-white rounded px-2 py-1 text-xs font-medium overflow-hidden transition-colors border border-neutral-700 ${
+                          className={`group absolute z-10 bg-neutral-800 text-white rounded px-2 py-1 text-xs font-medium overflow-hidden transition-colors border border-neutral-700 ${
                             isActivelyResized
                               ? 'bg-neutral-700 ring-2 ring-neutral-500 z-20'
                               : 'cursor-pointer hover:bg-neutral-700'
@@ -476,9 +494,29 @@ function CalendarView() {
     initialData: emptyFormData,
   })
 
+  const resources: Array<Resource> = [
+    {
+      id: '1',
+      label: 'Resource 1',
+      availability: [
+        {
+          weekdays: [1, 2, 3, 4, 5],
+          startTime: '08:00',
+          endTime: '17:00',
+        },
+        {
+          weekdays: [6, 7],
+          startTime: '10:00',
+          endTime: '15:00',
+        },
+      ],
+    },
+  ]
+
   const calendar = useCalendar<Resource, Event<Resource>>({
     viewMode: { value: 1, unit: 'month' },
     events: sampleEvents,
+    resources,
     timeZone: 'UTC',
     resize: {
       enabled: true,

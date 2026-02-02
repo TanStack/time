@@ -1,9 +1,20 @@
 import type { Temporal } from '@js-temporal/polyfill'
 import type { DateInput } from '~/date'
 
+export interface Availability {
+  /** Days of the week when available (ISO weekday: 1 = Monday, ..., 7 = Sunday) */
+  weekdays: Array<number>
+  /** Start time in HH:mm format */
+  startTime: string
+  /** End time in HH:mm format */
+  endTime: string
+}
+
 export interface Resource {
   id: string
   label: string
+  /** Optional availability schedule for this resource */
+  availability?: Array<Availability>
 }
 
 /**
@@ -48,6 +59,17 @@ export interface TimeSlot {
   hour: number
   minute: number
   label: string
+}
+
+export interface UnavailableRange {
+  /** Top position in pixels */
+  top: number
+  /** Height in pixels */
+  height: number
+  /** Start time as HH:mm string */
+  startTime: string
+  /** End time as HH:mm string */
+  endTime: string
 }
 
 export interface CalendarStore {
