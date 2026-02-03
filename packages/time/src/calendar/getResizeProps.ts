@@ -2,9 +2,18 @@ import { Temporal } from '@js-temporal/polyfill'
 
 export type ResizeEdge = 'top' | 'bottom'
 
+export interface UnavailableTimeRange {
+  /** Start time in minutes from midnight (0-1440) */
+  startMinutes: number
+  /** End time in minutes from midnight (0-1440) */
+  endMinutes: number
+}
+
 export interface ResizeConstraints {
   minDurationMinutes?: number
   snapToMinutes?: number
+  /** Unavailable time ranges that the event cannot be resized into */
+  unavailableRanges?: Array<UnavailableTimeRange>
 }
 
 const MINUTES_IN_DAY = 24 * 60
@@ -33,6 +42,19 @@ const DEFAULT_SNAP_TO_MINUTES = 15
 const roundToNearestInterval = (minutes: number, interval: number): number =>
   Math.round(minutes / interval) * interval
 
+const getMinutesFromMidnight = (zdt: Temporal.ZonedDateTime): number =>
+  zdt.hour * 60 + zdt.minute
+
+const setMinutesFromMidnight = (
+  zdt: Temporal.ZonedDateTime,
+  minutes: number,
+): Temporal.ZonedDateTime => {
+  const clampedMinutes = Math.max(0, Math.min(minutes, MINUTES_IN_DAY - 1))
+  const hours = Math.floor(clampedMinutes / 60)
+  const mins = clampedMinutes % 60
+  return zdt.with({ hour: hours, minute: mins, second: 0, millisecond: 0 })
+}
+
 export function calculateResizedEvent(
   options: CalculateResizedEventOptions,
 ): ResizedEventResult {
@@ -48,6 +70,7 @@ export function calculateResizedEvent(
   const {
     minDurationMinutes = DEFAULT_MIN_DURATION_MINUTES,
     snapToMinutes = DEFAULT_SNAP_TO_MINUTES,
+    unavailableRanges = [],
   } = constraints
 
   const startZdt =
@@ -60,17 +83,71 @@ export function calculateResizedEvent(
   let newStartZdt = startZdt
   let newEndZdt = endZdt
 
+  const isEntireDayUnavailable = unavailableRanges.some(
+    (range) => range.startMinutes === 0 && range.endMinutes >= MINUTES_IN_DAY,
+  )
+
   if (edge === 'top') {
     newStartZdt = startZdt.add({ minutes: snappedDelta })
     const maxStartZdt = endZdt.subtract({ minutes: minDurationMinutes })
     if (Temporal.ZonedDateTime.compare(newStartZdt, maxStartZdt) > 0) {
       newStartZdt = maxStartZdt
     }
+
+    if (isEntireDayUnavailable) {
+      const originalStartMinutes = getMinutesFromMidnight(startZdt)
+      newStartZdt = setMinutesFromMidnight(newStartZdt, originalStartMinutes)
+    } else {
+      let newStartMinutes = getMinutesFromMidnight(newStartZdt)
+
+      for (const range of unavailableRanges) {
+        if (
+          newStartMinutes >= range.startMinutes &&
+          newStartMinutes < range.endMinutes
+        ) {
+          if (range.endMinutes < MINUTES_IN_DAY) {
+            newStartZdt = setMinutesFromMidnight(newStartZdt, range.endMinutes)
+            newStartMinutes = range.endMinutes
+          } else if (range.startMinutes > 0) {
+            const validTime = range.startMinutes - snapToMinutes
+            if (validTime >= 0) {
+              newStartZdt = setMinutesFromMidnight(newStartZdt, validTime)
+              newStartMinutes = validTime
+            }
+          }
+        }
+      }
+    }
   } else {
     newEndZdt = endZdt.add({ minutes: snappedDelta })
     const minEndZdt = startZdt.add({ minutes: minDurationMinutes })
     if (Temporal.ZonedDateTime.compare(newEndZdt, minEndZdt) < 0) {
       newEndZdt = minEndZdt
+    }
+
+    if (isEntireDayUnavailable) {
+      const originalEndMinutes = getMinutesFromMidnight(endZdt)
+      newEndZdt = setMinutesFromMidnight(newEndZdt, originalEndMinutes)
+    } else {
+      let newEndMinutes = getMinutesFromMidnight(newEndZdt)
+
+      for (const range of unavailableRanges) {
+        if (
+          newEndMinutes > range.startMinutes &&
+          newEndMinutes <= range.endMinutes
+        ) {
+          if (range.startMinutes > 0) {
+            newEndZdt = setMinutesFromMidnight(newEndZdt, range.startMinutes)
+            newEndMinutes = range.startMinutes
+          } else if (range.endMinutes < MINUTES_IN_DAY) {
+            const validTime = range.endMinutes + snapToMinutes
+            if (validTime <= MINUTES_IN_DAY) {
+              newEndZdt = setMinutesFromMidnight(newEndZdt, validTime)
+              newEndMinutes = validTime
+            }
+          }
+        }
+      }
     }
   }
 
@@ -139,9 +216,6 @@ export interface SegmentInfo {
   segmentEnd: string
 }
 
-/**
- * Analyzes a segment to determine its position within a multi-day event
- */
 export function getSegmentInfo(event: {
   start: string
   end: string

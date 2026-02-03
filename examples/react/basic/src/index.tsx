@@ -32,6 +32,30 @@ function formatDateToISO(date: Date): string {
   return `${year}-${month}-${day}`
 }
 
+const sampleResources: Array<Resource> = [
+  {
+    id: '1',
+    label: 'Resource 1',
+    availability: [
+      {
+        weekdays: [1, 2, 3],
+        startTime: '08:00',
+        endTime: '17:00',
+      },
+      {
+        weekdays: [4, 5],
+        startTime: '00:00',
+        endTime: '24:00',
+      },
+      {
+        weekdays: [6, 7],
+        startTime: '10:00',
+        endTime: '15:00',
+      },
+    ],
+  },
+]
+
 function getSampleEvents(): Array<Event<Resource>> {
   const today = new Date()
   const tomorrow = new Date(today)
@@ -52,24 +76,28 @@ function getSampleEvents(): Array<Event<Resource>> {
       title: 'Team Meeting',
       start: `${formatDateToISO(tomorrow)}T10:00:00`,
       end: `${formatDateToISO(tomorrow)}T11:00:00`,
+      resources: sampleResources,
     },
     {
       id: '2',
       title: 'Project Review',
       start: `${formatDateToISO(dayAfterTomorrow)}T14:00:00`,
       end: `${formatDateToISO(dayAfterTomorrow)}T15:30:00`,
+      resources: sampleResources,
     },
     {
       id: '3',
       title: 'Multi-day Conference',
       start: `${formatDateToISO(threeDaysLater)}T09:00:00`,
       end: `${formatDateToISO(fourDaysLater)}T17:00:00`,
+      resources: sampleResources,
     },
     {
       id: '4',
       title: 'Lunch Break',
       start: `${formatDateToISO(threeDaysLater)}T12:00:00`,
       end: `${formatDateToISO(threeDaysLater)}T13:00:00`,
+      resources: sampleResources,
     },
   ]
 }
@@ -349,7 +377,6 @@ function ScheduleView({
                         resizeState.isResizing &&
                         resizeState.eventId === event.id
 
-                      // Calculate preview state using library function
                       const resizePreview =
                         isBeingResized &&
                         resizeState.previewStart &&
@@ -376,7 +403,6 @@ function ScheduleView({
                       const isActivelyResized =
                         isBeingResized && resizePreview?.previewStyle !== null
 
-                      // Format time display using library function
                       const timeRange = formatEventTimeRange(
                         isBeingResized && resizeState.previewStart
                           ? resizeState.previewStart
@@ -441,7 +467,6 @@ function ScheduleView({
                         </div>
                       )
                     })}
-                    {/* Ghost preview on days without existing segments */}
                     {resizeState.isResizing &&
                       resizeState.previewStart &&
                       resizeState.previewEnd &&
@@ -494,29 +519,10 @@ function CalendarView() {
     initialData: emptyFormData,
   })
 
-  const resources: Array<Resource> = [
-    {
-      id: '1',
-      label: 'Resource 1',
-      availability: [
-        {
-          weekdays: [1, 2, 3, 4, 5],
-          startTime: '08:00',
-          endTime: '17:00',
-        },
-        {
-          weekdays: [6, 7],
-          startTime: '10:00',
-          endTime: '15:00',
-        },
-      ],
-    },
-  ]
-
   const calendar = useCalendar<Resource, Event<Resource>>({
     viewMode: { value: 1, unit: 'month' },
     events: sampleEvents,
-    resources,
+    resources: sampleResources,
     timeZone: 'UTC',
     resize: {
       enabled: true,

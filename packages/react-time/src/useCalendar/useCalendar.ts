@@ -81,7 +81,7 @@ export const useCalendar = <
   const { resize, ...calendarOptions } = options
   const resizeEnabled = resize?.enabled ?? true
   const containerHeight = resize?.containerHeight ?? 0
-  const constraints = resize?.constraints
+  const resizeConstraints = resize?.constraints
 
   const [calendarCore] = useState(
     () => new CalendarCore<TResource, TEvent>(calendarOptions),
@@ -152,7 +152,6 @@ export const useCalendar = <
 
       const targetDayDate = getDayFromPoint(e.clientX) ?? originalDayDate
 
-      // Calculate day offset if moved to a different day
       let dayOffsetMinutes = 0
       if (targetDayDate && targetDayDate !== originalDayDate) {
         const originalDate = new Date(originalDayDate + 'T00:00:00')
@@ -168,26 +167,128 @@ export const useCalendar = <
 
       const totalDeltaMinutes = deltaMinutes + dayOffsetMinutes
 
+      const event = calendarOptions.events?.find((ev) => ev.id === id)
+      const resourceIds = event?.resources?.map((r) => r.id)
+
+      const getUnavailableMinutesForDay = (dayDate: string) => {
+        const rawRanges = resourceIds?.length
+          ? calendarCore.getUnavailableRanges(dayDate, {
+              containerHeight: 1440,
+              resourceIds,
+            })
+          : []
+        return rawRanges.map((range) => {
+          const startParts = range.startTime.split(':').map(Number)
+          const endParts = range.endTime.split(':').map(Number)
+          return {
+            startMinutes: (startParts[0] ?? 0) * 60 + (startParts[1] ?? 0),
+            endMinutes: (endParts[0] ?? 0) * 60 + (endParts[1] ?? 0),
+          }
+        })
+      }
+
+      const unavailableRanges = getUnavailableMinutesForDay(targetDayDate)
+
+      const originalStartDate = start.split('T')[0] ?? ''
+      const originalEndDate = end.split('T')[0] ?? ''
+
+      let shouldBlockResize = false
+
+      if (edge === 'top' && targetDayDate < originalStartDate) {
+        const rawStartMinutes =
+          new Date(start).getHours() * 60 +
+          new Date(start).getMinutes() +
+          totalDeltaMinutes
+        const targetStartMinutes = ((rawStartMinutes % 1440) + 1440) % 1440
+        const currentStartMinutes =
+          new Date(start).getHours() * 60 + new Date(start).getMinutes()
+
+        for (const range of unavailableRanges) {
+          if (
+            targetStartMinutes < range.endMinutes &&
+            range.startMinutes < 1440
+          ) {
+            shouldBlockResize = true
+            break
+          }
+        }
+
+        if (!shouldBlockResize) {
+          const sourceUnavailableRanges =
+            getUnavailableMinutesForDay(originalStartDate)
+          for (const range of sourceUnavailableRanges) {
+            if (
+              0 < range.endMinutes &&
+              range.startMinutes < currentStartMinutes
+            ) {
+              shouldBlockResize = true
+              break
+            }
+          }
+        }
+      } else if (edge === 'bottom' && targetDayDate > originalEndDate) {
+        const rawEndMinutes =
+          new Date(end).getHours() * 60 +
+          new Date(end).getMinutes() +
+          totalDeltaMinutes
+        const targetEndMinutes = ((rawEndMinutes % 1440) + 1440) % 1440
+        const currentEndMinutes =
+          new Date(end).getHours() * 60 + new Date(end).getMinutes()
+
+        const sourceUnavailableRanges =
+          getUnavailableMinutesForDay(originalEndDate)
+        for (const range of sourceUnavailableRanges) {
+          if (
+            currentEndMinutes < range.endMinutes &&
+            range.startMinutes < 1440
+          ) {
+            shouldBlockResize = true
+            break
+          }
+        }
+
+        if (!shouldBlockResize) {
+          for (const range of unavailableRanges) {
+            if (0 < range.endMinutes && range.startMinutes < targetEndMinutes) {
+              shouldBlockResize = true
+              break
+            }
+          }
+        }
+      }
+
+      const effectiveDeltaMinutes = shouldBlockResize
+        ? deltaMinutes
+        : totalDeltaMinutes
+      const effectiveUnavailableRanges = shouldBlockResize
+        ? getUnavailableMinutesForDay(originalDayDate)
+        : unavailableRanges
+
       const result = calculateResizedEvent({
         originalStart: start,
         originalEnd: end,
         edge,
-        deltaMinutes: totalDeltaMinutes,
+        deltaMinutes: effectiveDeltaMinutes,
         timeZone: calendarOptions.timeZone ?? 'UTC',
-        constraints,
+        constraints: {
+          ...resizeConstraints,
+          unavailableRanges: effectiveUnavailableRanges,
+        },
       })
 
       updateResizeState({
         eventId: id,
         previewStart: result.start,
         previewEnd: result.end,
-        targetDayDate,
+        targetDayDate: shouldBlockResize ? originalDayDate : targetDayDate,
       })
     },
     [
       containerHeight,
       calendarOptions.timeZone,
-      constraints,
+      calendarOptions.events,
+      calendarCore,
+      resizeConstraints,
       getDayFromPoint,
       updateResizeState,
     ],
