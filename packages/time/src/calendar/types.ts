@@ -13,8 +13,12 @@ export interface Availability {
 export interface Resource {
   id: string
   label: string
-  /** Optional availability schedule for this resource */
   availability?: Array<Availability>
+  capacity?: number
+  buffer?: {
+    before?: number
+    after?: number
+  }
 }
 
 /**

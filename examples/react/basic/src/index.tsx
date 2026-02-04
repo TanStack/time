@@ -36,6 +36,7 @@ const sampleResources: Array<Resource> = [
   {
     id: '1',
     label: 'Resource 1',
+    capacity: 1,
     availability: [
       {
         weekdays: [1, 2, 3],
@@ -51,6 +52,23 @@ const sampleResources: Array<Resource> = [
         weekdays: [6, 7],
         startTime: '10:00',
         endTime: '15:00',
+      },
+    ],
+  },
+  {
+    id: '2',
+    label: 'Resource 2',
+    capacity: 1,
+    availability: [
+      {
+        weekdays: [1, 2, 3, 4, 5],
+        startTime: '12:00',
+        endTime: '18:00',
+      },
+      {
+        weekdays: [6, 7],
+        startTime: '00:00',
+        endTime: '24:00',
       },
     ],
   },
@@ -308,9 +326,40 @@ function ScheduleView({
   } = calendar
 
   return (
-    <div className="flex border border-neutral-800 rounded-lg overflow-hidden bg-black">
-      <div className="w-20 border-r border-neutral-800 bg-neutral-950">
-        <div className="h-12 border-b border-neutral-800"></div>
+    <div className="border border-neutral-800 rounded-lg overflow-hidden bg-black">
+      <div className="border-b border-neutral-800 bg-neutral-950 px-4 py-3">
+        <div className="flex gap-6 flex-wrap">
+          {sampleResources.map((resource, idx) => {
+            const colors = ['#0049af75', '#00af3475']
+            const color = colors[idx % colors.length]
+            return (
+              <div
+                key={resource.id}
+                className="flex items-center gap-2"
+              >
+                <div
+                  className="w-4 h-4 rounded-sm"
+                  style={{
+                    backgroundColor: color,
+                    backgroundImage: `repeating-linear-gradient(315deg, ${color} 0, ${color} 1px, transparent 0, transparent 50%)`,
+                  }}
+                />
+                <span className="text-sm text-neutral-300">
+                  {resource.label}
+                </span>
+                {resource.capacity !== undefined && (
+                  <span className="text-xs text-neutral-500">
+                    (Capacity: {resource.capacity})
+                  </span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+      <div className="flex border-t border-neutral-800">
+        <div className="w-20 border-r border-neutral-800 bg-neutral-950">
+          <div className="h-12 border-b border-neutral-800"></div>
         {timeSlots.map((slot) => (
           <div
             key={`${slot.hour}-${slot.minute}`}
@@ -348,19 +397,30 @@ function ScheduleView({
                     </div>
                   </div>
                   <div className="relative h-[1440px] bg-neutral-950/30">
-                    {getUnavailableRanges(dayDate, { resourceIds: ['1'] }).map(
-                      (range, idx) => (
+                    {sampleResources.map((resource, resourceIdx) => {
+                      const resourceRanges = getUnavailableRanges(dayDate, {
+                        resourceIds: [resource.id],
+                      })
+                      const colors = [
+                        '#0049af75',
+                        '#00af3475',
+
+                      ]
+                      const color = colors[resourceIdx % colors.length]
+
+                      return resourceRanges.map((range, rangeIdx) => (
                         <div
-                          key={idx}
-                          className="absolute left-0 right-0 border-y border-neutral-800/50 pointer-events-none z-0 bg-[image:repeating-linear-gradient(315deg,_rgb(255_255_255_/_0.08)_0,_rgb(255_255_255_/_0.08)_1px,_transparent_0,_transparent_50%)] bg-[length:10px_10px] bg-fixed"
+                          key={`${resource.id}-${rangeIdx}`}
+                          className="absolute left-0 right-0 pointer-events-none z-0 bg-[length:10px_10px] bg-fixed"
                           style={{
                             top: `${range.top}px`,
                             height: `${range.height}px`,
+                            backgroundImage: `repeating-linear-gradient(315deg, ${color} 0, ${color} 1px, transparent 0, transparent 50%)`,
                           }}
-                          title="Unavailable"
+                          title={`Unavailable - ${resource.label}`}
                         />
-                      ),
-                    )}
+                      ))
+                    })}
                     {day.events.map((event, eventIndex) => {
                       const eventProps = calendar.getEventProps(event)
                       const { style, isSplitEvent } = eventProps
@@ -502,6 +562,7 @@ function ScheduleView({
             })}
           </div>
         </div>
+      </div>
       </div>
     </div>
   )
