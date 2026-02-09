@@ -1,4 +1,5 @@
 import { defineConfig } from 'tsdown'
+import solid from 'rolldown-plugin-solid'
 
 export default defineConfig({
   entry: ['./src/index.ts'],
@@ -13,4 +14,5 @@ export default defineConfig({
   publint: {
     strict: true,
   },
+  plugins: [solid()],
 })

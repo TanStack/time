@@ -48,6 +48,13 @@
     "src"
   ],
   "dependencies": {
-    "@tanstack/time": "workspace:*"
+    "@tanstack/devtools-ui": "^0.4.4",
+    "@tanstack/devtools-utils": "^0.3.0",
+    "@tanstack/time": "workspace:*",
+    "goober": "^2.1.18",
+    "solid-js": "^1.9.10"
+  },
+  "devDependencies": {
+    "rolldown-plugin-solid": "^0.2.1"
   }
 }

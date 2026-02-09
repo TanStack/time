@@ -1,8 +1,10 @@
-import { template } from 'solid-js/web'
+import { createSolidPanel } from '@tanstack/devtools-utils/solid'
+import { TimeDevtoolsCore } from '@tanstack/time-devtools'
+import type { DevtoolsPanelProps } from '@tanstack/devtools-utils/solid'
 
-const _tmpl$ = /* @__PURE__ */ template(`<div>Solid Time Devtools</div>`)
+const [TimeDevtoolsPanel, TimeDevtoolsPanelNoOp] =
+  createSolidPanel(TimeDevtoolsCore)
 
-export function TimeDevtools() {
-  console.log('Hello from @tanstack/solid-time-devtools!')
-  return _tmpl$()
-}
+export interface TimeDevtoolsSolidInit extends DevtoolsPanelProps {}
+
+export { TimeDevtoolsPanel, TimeDevtoolsPanelNoOp }

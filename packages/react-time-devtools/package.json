@@ -48,6 +48,7 @@
     "src"
   ],
   "dependencies": {
+    "@tanstack/devtools-utils": "^0.3.0",
     "@tanstack/time-devtools": "workspace:*"
   },
   "devDependencies": {
@@ -56,7 +57,8 @@
     "@vitejs/plugin-react": "^5.1.2",
     "eslint-plugin-react-compiler": "19.1.0-rc.2",
     "eslint-plugin-react-hooks": "^7.0.1",
-    "react": "^19.2.3"
+    "react": "^19.2.3",
+    "solid-js": "^1.9.10"
   },
   "peerDependencies": {
     "react": ">=16.8",
