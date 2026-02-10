@@ -1,4 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill'
+import { getTimeClient } from '../client'
 import { splitMultiDayEvents } from './splitMultiDayEvents'
 import { getEventProps } from './getEventProps'
 import { groupDaysBy } from './groupDaysBy'
@@ -264,6 +265,13 @@ export class CalendarCore<
       ...prev,
       eventsVersion: prev.eventsVersion + 1,
     }))
+
+    getTimeClient().emit('event:added', {
+      eventId: event.id,
+      eventTitle: event.title,
+      start: event.start,
+      end: event.end,
+    })
   }
 
   updateEvent(id: Event['id'], updates: Partial<Omit<TEvent, 'id'>>): void {
@@ -278,6 +286,17 @@ export class CalendarCore<
       ...prev,
       eventsVersion: prev.eventsVersion + 1,
     }))
+
+    // Emit event to TimeClient
+    if (existingEvent) {
+      getTimeClient().emit('event:updated', {
+        eventId: id,
+        eventTitle: existingEvent.title,
+        start: this.options.events[index].start,
+        end: this.options.events[index].end,
+        updates: updates as Record<string, unknown>,
+      })
+    }
   }
 
   removeEvent(id: Event['id']): void {
@@ -286,11 +305,21 @@ export class CalendarCore<
     const index = this.options.events.findIndex((e) => e.id === id)
     if (index === -1) return
 
+    const removedEvent = this.options.events[index]
     this.options.events.splice(index, 1)
     this.store.setState((prev) => ({
       ...prev,
       eventsVersion: prev.eventsVersion + 1,
     }))
+
+    if (removedEvent) {
+      getTimeClient().emit('event:removed', {
+        eventId: id,
+        eventTitle: removedEvent.title,
+        start: removedEvent.start,
+        end: removedEvent.end,
+      })
+    }
   }
 
   getUnavailableRanges(

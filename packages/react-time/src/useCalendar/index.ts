@@ -4,3 +4,4 @@ export type {
   ResizeOptions,
   UseCalendarOptions,
 } from './useCalendar'
+export type { ResizeError } from '@tanstack/time'

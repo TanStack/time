@@ -11,6 +11,7 @@ import { getDateTimeDefaults } from '../utils/dateDefaults'
 import { buildDateFormatter } from '../formatter/buildDateFormatter'
 import { buildDateTimeFormatter } from '../formatter/buildDateTimeFormatter'
 import { buildTimeFormatter } from '../formatter/buildTimeFormatter'
+import { getTimeClient } from '../client'
 import { generateDateRange } from './generateDateRange'
 import type { ParsedDateRange } from '../utils/dateRange'
 import type { CalendarStore, DateRange, ViewMode } from './types'
@@ -82,7 +83,6 @@ export abstract class DateCore {
     time: Intl.DateTimeFormat
     dateTime: Intl.DateTimeFormat
   }
-
   constructor(options: DateCoreOptions) {
     const defaults = getDateTimeDefaults()
     const parsedRange = parseDateRange({
@@ -267,6 +267,13 @@ export abstract class DateCore {
       ...prev,
       viewMode: newViewMode,
     }))
+
+    getTimeClient().emit('calendar:viewMode:changed', {
+      viewMode: {
+        value: newViewMode.value,
+        unit: newViewMode.unit,
+      },
+    })
   }
 
   goToPreviousPeriod() {
@@ -310,6 +317,11 @@ export abstract class DateCore {
       activeDate: constrainedDate,
       currentPeriod: constrainedDate,
     }))
+
+    getTimeClient().emit('calendar:navigate', {
+      direction: 'previous',
+      targetDate: constrainedDate.toString({ calendarName: 'never' }),
+    })
   }
 
   goToNextPeriod() {
@@ -353,6 +365,11 @@ export abstract class DateCore {
       activeDate: constrainedDate,
       currentPeriod: constrainedDate,
     }))
+
+    getTimeClient().emit('calendar:navigate', {
+      direction: 'next',
+      targetDate: constrainedDate.toString({ calendarName: 'never' }),
+    })
   }
 
   goToCurrentPeriod() {
@@ -366,6 +383,11 @@ export abstract class DateCore {
       activeDate: constrainedDate,
       currentPeriod: constrainedDate,
     }))
+
+    getTimeClient().emit('calendar:navigate', {
+      direction: 'current',
+      targetDate: constrainedDate.toString({ calendarName: 'never' }),
+    })
   }
 
   goToSpecificPeriod(date: DateInput) {
@@ -382,6 +404,11 @@ export abstract class DateCore {
       activeDate: constrainedDate,
       currentPeriod: constrainedDate,
     }))
+
+    getTimeClient().emit('calendar:navigate', {
+      direction: 'specific',
+      targetDate: constrainedDate.toString({ calendarName: 'never' }),
+    })
   }
 
   canGoPreviousPeriod(): boolean {

@@ -82,3 +82,44 @@ export interface CalendarStore {
   viewMode: ViewMode
   eventsVersion: number
 }
+
+/**
+ * Information about a specific availability conflict
+ */
+export interface AvailabilityConflict {
+  /** The date where the conflict occurred (YYYY-MM-DD) */
+  date: string
+  /** Time range that conflicts with availability */
+  conflictRange: {
+    start: string
+    end: string
+  }
+  /** The resource(s) whose availability is being violated */
+  resourceIds: Array<string>
+  /** Human-readable description of the conflict */
+  description: string
+}
+
+/**
+ * Error information when a resize operation is blocked
+ */
+export interface ResizeError {
+  eventId: string
+  eventTitle: string
+  reason: 'unavailable-time' | 'invalid-time' | 'min-duration' | 'blocked'
+  message: string
+  originalStart: string
+  originalEnd: string
+  attemptedStart?: string
+  attemptedEnd?: string
+  /** Specific availability conflicts that prevented the resize */
+  conflicts?: Array<AvailabilityConflict>
+}
+
+/**
+ * Result of checking if a resize is valid
+ */
+export interface ResizeValidationResult {
+  valid: boolean
+  error?: ResizeError
+}

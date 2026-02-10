@@ -11,13 +11,16 @@ import {
   CalendarCore,
   calculateDeltaMinutesFromPixels,
   calculateResizedEvent,
+  getTimeClient,
 } from '@tanstack/time'
 import type {
+  AvailabilityConflict,
   CalendarApi,
   CalendarCoreOptions,
   Event,
   ResizeConstraints,
   ResizeEdge,
+  ResizeError,
   Resource,
 } from '@tanstack/time'
 
@@ -36,6 +39,7 @@ export interface ResizeOptions {
   constraints?: ResizeConstraints
   onResizeStart?: (eventId: string, edge: ResizeEdge) => void
   onResizeEnd?: (eventId: string, newStart: string, newEnd: string) => void
+  onResizeError?: (error: ResizeError) => void
 }
 
 interface ResizeHandleHandlers {
@@ -100,6 +104,11 @@ export const useCalendar = <
     startY: number
     originalDayDate: string
     currentDayDate: string
+  } | null>(null)
+  const lastEmittedErrorRef = useRef<{
+    eventId: string
+    message: string
+    timestamp: number
   } | null>(null)
 
   const subscribeResize = useCallback((listener: () => void) => {
@@ -193,6 +202,21 @@ export const useCalendar = <
       const originalEndDate = end.split('T')[0] ?? ''
 
       let shouldBlockResize = false
+      let blockReason: ResizeError['reason'] = 'blocked'
+      let blockMessage = 'Resize blocked'
+      const conflicts: Array<AvailabilityConflict> = []
+
+      const formatMinutesToTime = (minutes: number): string => {
+        const hours = Math.floor(minutes / 60)
+        const mins = minutes % 60
+        return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`
+      }
+
+      const snapToMinutes = resizeConstraints?.snapToMinutes ?? 1
+      const snapMinutes = (minutes: number): number => {
+        if (snapToMinutes <= 1) return minutes
+        return Math.round(minutes / snapToMinutes) * snapToMinutes
+      }
 
       if (edge === 'top' && targetDayDate < originalStartDate) {
         const rawStartMinutes =
@@ -200,15 +224,30 @@ export const useCalendar = <
           new Date(start).getMinutes() +
           totalDeltaMinutes
         const targetStartMinutes = ((rawStartMinutes % 1440) + 1440) % 1440
+        // Snap to grid before checking conflicts
+        const snappedTargetStartMinutes = snapMinutes(targetStartMinutes)
         const currentStartMinutes =
           new Date(start).getHours() * 60 + new Date(start).getMinutes()
 
         for (const range of unavailableRanges) {
           if (
-            targetStartMinutes < range.endMinutes &&
+            snappedTargetStartMinutes < range.endMinutes &&
             range.startMinutes < 1440
           ) {
             shouldBlockResize = true
+            blockReason = 'unavailable-time'
+            blockMessage = `Cannot resize: Event would start at ${formatMinutesToTime(snappedTargetStartMinutes)} which is during unavailable time (${formatMinutesToTime(range.startMinutes)} - ${formatMinutesToTime(range.endMinutes)})`
+            conflicts.push({
+              date: targetDayDate,
+              conflictRange: {
+                start: formatMinutesToTime(
+                  Math.max(snappedTargetStartMinutes, range.startMinutes),
+                ),
+                end: formatMinutesToTime(range.endMinutes),
+              },
+              resourceIds: resourceIds ?? [],
+              description: `Target time ${formatMinutesToTime(snappedTargetStartMinutes)} conflicts with unavailable period ${formatMinutesToTime(range.startMinutes)} - ${formatMinutesToTime(range.endMinutes)}`,
+            })
             break
           }
         }
@@ -222,6 +261,19 @@ export const useCalendar = <
               range.startMinutes < currentStartMinutes
             ) {
               shouldBlockResize = true
+              blockReason = 'unavailable-time'
+              blockMessage = `Cannot resize: Would need to pass through unavailable time on ${originalStartDate} (${formatMinutesToTime(range.startMinutes)} - ${formatMinutesToTime(range.endMinutes)})`
+              conflicts.push({
+                date: originalStartDate,
+                conflictRange: {
+                  start: formatMinutesToTime(range.startMinutes),
+                  end: formatMinutesToTime(
+                    Math.min(range.endMinutes, currentStartMinutes),
+                  ),
+                },
+                resourceIds: resourceIds ?? [],
+                description: `Must pass through unavailable period ${formatMinutesToTime(range.startMinutes)} - ${formatMinutesToTime(range.endMinutes)}`,
+              })
               break
             }
           }
@@ -232,6 +284,8 @@ export const useCalendar = <
           new Date(end).getMinutes() +
           totalDeltaMinutes
         const targetEndMinutes = ((rawEndMinutes % 1440) + 1440) % 1440
+        // Snap to grid before checking conflicts
+        const snappedTargetEndMinutes = snapMinutes(targetEndMinutes)
         const currentEndMinutes =
           new Date(end).getHours() * 60 + new Date(end).getMinutes()
 
@@ -243,18 +297,97 @@ export const useCalendar = <
             range.startMinutes < 1440
           ) {
             shouldBlockResize = true
+            blockReason = 'unavailable-time'
+            blockMessage = `Cannot resize: Would need to pass through unavailable time on ${originalEndDate} (${formatMinutesToTime(range.startMinutes)} - ${formatMinutesToTime(range.endMinutes)})`
+            conflicts.push({
+              date: originalEndDate,
+              conflictRange: {
+                start: formatMinutesToTime(
+                  Math.max(range.startMinutes, currentEndMinutes),
+                ),
+                end: formatMinutesToTime(range.endMinutes),
+              },
+              resourceIds: resourceIds ?? [],
+              description: `Must pass through unavailable period ${formatMinutesToTime(range.startMinutes)} - ${formatMinutesToTime(range.endMinutes)}`,
+            })
             break
           }
         }
 
         if (!shouldBlockResize) {
           for (const range of unavailableRanges) {
-            if (0 < range.endMinutes && range.startMinutes < targetEndMinutes) {
+            if (
+              0 < range.endMinutes &&
+              range.startMinutes < snappedTargetEndMinutes
+            ) {
               shouldBlockResize = true
+              blockReason = 'unavailable-time'
+              blockMessage = `Cannot resize: Event would end at ${formatMinutesToTime(snappedTargetEndMinutes)} which is during unavailable time (${formatMinutesToTime(range.startMinutes)} - ${formatMinutesToTime(range.endMinutes)})`
+              conflicts.push({
+                date: targetDayDate,
+                conflictRange: {
+                  start: formatMinutesToTime(range.startMinutes),
+                  end: formatMinutesToTime(
+                    Math.min(snappedTargetEndMinutes, range.endMinutes),
+                  ),
+                },
+                resourceIds: resourceIds ?? [],
+                description: `Target time ${formatMinutesToTime(snappedTargetEndMinutes)} conflicts with unavailable period ${formatMinutesToTime(range.startMinutes)} - ${formatMinutesToTime(range.endMinutes)}`,
+              })
               break
             }
           }
         }
+      }
+
+      // Emit error if resize is blocked (throttle to avoid emitting on every mouse move)
+      if (shouldBlockResize) {
+        const event = calendarOptions.events?.find((ev) => ev.id === id)
+        const now = Date.now()
+        const lastError = lastEmittedErrorRef.current
+
+        // Only emit if this is a different error or it's been more than 500ms
+        const shouldEmitError =
+          !lastError ||
+          lastError.eventId !== id ||
+          lastError.message !== blockMessage ||
+          now - lastError.timestamp > 500
+
+        if (shouldEmitError) {
+          const resizeError: ResizeError = {
+            eventId: id,
+            eventTitle: event?.title ?? 'Unknown Event',
+            reason: blockReason,
+            message: blockMessage,
+            originalStart: start,
+            originalEnd: end,
+            conflicts: conflicts.length > 0 ? conflicts : undefined,
+          }
+
+          // Emit to TimeClient for devtools
+          getTimeClient().emit('event:resize:error', {
+            eventId: id,
+            eventTitle: event?.title ?? 'Unknown Event',
+            reason: blockReason,
+            message: blockMessage,
+            originalStart: start,
+            originalEnd: end,
+            conflicts: conflicts.length > 0 ? conflicts : undefined,
+          })
+
+          // Call user-provided error handler
+          resize?.onResizeError?.(resizeError)
+
+          // Track this error emission
+          lastEmittedErrorRef.current = {
+            eventId: id,
+            message: blockMessage,
+            timestamp: now,
+          }
+        }
+      } else {
+        // Clear last error when resize is no longer blocked
+        lastEmittedErrorRef.current = null
       }
 
       const effectiveDeltaMinutes = shouldBlockResize
@@ -313,6 +446,7 @@ export const useCalendar = <
     }
 
     originalEventRef.current = null
+    lastEmittedErrorRef.current = null
     updateResizeState(initialResizeState)
 
     document.removeEventListener('mousemove', handleMouseMove)
