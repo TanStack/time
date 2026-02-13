@@ -6,7 +6,11 @@ export type {
 } from './useCalendar'
 
 // Re-export ResizeError and AvailabilityConflict from core package
-export type { ResizeError, AvailabilityConflict } from '@tanstack/time'
+export type {
+  ResizeError,
+  AvailabilityConflict,
+  UnavailabilityReason,
+} from '@tanstack/time'
 
 export {
   calculateGhostPreviewStyle,

@@ -218,64 +218,216 @@ export const useCalendar = <
         return Math.round(minutes / snapToMinutes) * snapToMinutes
       }
 
+      const getDetailedConflicts = (
+        dayDate: string,
+        startMins: number,
+        endMins: number,
+      ): Array<AvailabilityConflict> => {
+        if (!resourceIds?.length) return []
+
+        const conflicts: Array<AvailabilityConflict> = []
+
+        const details = calendarCore.getUnavailabilityDetails(
+          dayDate,
+          startMins,
+          endMins,
+          {
+            resourceIds,
+          },
+        )
+
+        const unavailableRangesForDay = getUnavailableMinutesForDay(dayDate)
+
+        for (const range of unavailableRangesForDay) {
+          if (startMins < range.endMinutes && endMins > range.startMinutes) {
+            const overlappingDetails = details.filter((d) => {
+              const resource = calendarCore.options.resources?.find(
+                (r) => r.id === d.resourceId,
+              )
+              if (!resource) return false
+
+              const resourceAvailableSlots =
+                resource.availability?.filter((slot) => {
+                  const slotWeekday = new Date(dayDate).getDay() || 7
+                  return slot.weekdays.includes(slotWeekday)
+                }) || []
+
+              if (resourceAvailableSlots.length === 0) return true
+
+              return !resourceAvailableSlots.some((slot) => {
+                const slotStartParts = slot.startTime.split(':').map(Number)
+                const slotEndParts = slot.endTime.split(':').map(Number)
+                const slotStart =
+                  (slotStartParts[0] ?? 0) * 60 + (slotStartParts[1] ?? 0)
+                const slotEnd =
+                  (slotEndParts[0] ?? 0) * 60 + (slotEndParts[1] ?? 0)
+
+                return !(
+                  range.endMinutes <= slotStart || range.startMinutes >= slotEnd
+                )
+              })
+            })
+
+            if (overlappingDetails.length > 0) {
+              conflicts.push({
+                date: dayDate,
+                conflictRange: {
+                  start: formatMinutesToTime(
+                    Math.max(startMins, range.startMinutes),
+                  ),
+                  end: formatMinutesToTime(Math.min(endMins, range.endMinutes)),
+                },
+                resourceIds: overlappingDetails.map((d) => d.resourceId),
+                resourceDetails: overlappingDetails.map((d) => ({
+                  resourceId: d.resourceId,
+                  resourceLabel: d.resourceLabel,
+                  reason: d.reason,
+                  description: d.description,
+                })),
+                description: overlappingDetails
+                  .map((d) => d.description)
+                  .join('; '),
+              })
+            }
+          }
+        }
+
+        const eventsOnDay = calendarCore.getEventsByDate(dayDate)
+        const currentEventId = id
+
+        for (const resourceId of resourceIds) {
+          const resource = calendarCore.options.resources?.find(
+            (r) => r.id === resourceId,
+          )
+          if (!resource || !resource.capacity) continue
+
+          const overlappingEvents = eventsOnDay.filter((e) => {
+            if (e.id === currentEventId) return false
+
+            const eventResourceIds = e.resources?.map((r) => r.id) || []
+            if (!eventResourceIds.includes(resourceId)) return false
+
+            const eventStart = new Date(e.start)
+            const eventEnd = new Date(e.end)
+            const eventStartMins =
+              eventStart.getHours() * 60 + eventStart.getMinutes()
+            const eventEndMins =
+              eventEnd.getHours() * 60 + eventEnd.getMinutes()
+
+            return startMins < eventEndMins && endMins > eventStartMins
+          })
+
+          const currentUsage = overlappingEvents.length
+          const maxCapacity = resource.capacity
+
+          if (currentUsage >= maxCapacity) {
+            conflicts.push({
+              date: dayDate,
+              conflictRange: {
+                start: formatMinutesToTime(startMins),
+                end: formatMinutesToTime(endMins),
+              },
+              resourceIds: [resourceId],
+              resourceDetails: [
+                {
+                  resourceId: resource.id,
+                  resourceLabel: resource.label,
+                  reason: 'capacity',
+                  description: `${resource.label}: Capacity exceeded (${currentUsage}/${maxCapacity} slots used)`,
+                  capacityInfo: {
+                    max: maxCapacity,
+                    used: currentUsage,
+                    remaining: 0,
+                  },
+                },
+              ],
+              description: `${resource.label}: Capacity exceeded (${currentUsage}/${maxCapacity} slots used)`,
+            })
+          }
+        }
+
+        return conflicts
+      }
+
       if (edge === 'top' && targetDayDate < originalStartDate) {
         const rawStartMinutes =
           new Date(start).getHours() * 60 +
           new Date(start).getMinutes() +
           totalDeltaMinutes
         const targetStartMinutes = ((rawStartMinutes % 1440) + 1440) % 1440
-        // Snap to grid before checking conflicts
         const snappedTargetStartMinutes = snapMinutes(targetStartMinutes)
         const currentStartMinutes =
           new Date(start).getHours() * 60 + new Date(start).getMinutes()
 
-        for (const range of unavailableRanges) {
-          if (
-            snappedTargetStartMinutes < range.endMinutes &&
-            range.startMinutes < 1440
-          ) {
+        if (resourceIds?.length) {
+          const unavailabilityDetails = calendarCore.getUnavailabilityDetails(
+            targetDayDate,
+            snappedTargetStartMinutes,
+            1440,
+            { resourceIds },
+          )
+
+          if (unavailabilityDetails.length > 0) {
             shouldBlockResize = true
             blockReason = 'unavailable-time'
-            blockMessage = `Cannot resize: Event would start at ${formatMinutesToTime(snappedTargetStartMinutes)} which is during unavailable time (${formatMinutesToTime(range.startMinutes)} - ${formatMinutesToTime(range.endMinutes)})`
+            const detailsText = unavailabilityDetails
+              .map((d) => `${d.resourceLabel} (${d.reason})`)
+              .join(', ')
+            blockMessage = `Unavailable: Event at ${formatMinutesToTime(snappedTargetStartMinutes)} conflicts with ${detailsText}`
             conflicts.push({
               date: targetDayDate,
               conflictRange: {
-                start: formatMinutesToTime(
-                  Math.max(snappedTargetStartMinutes, range.startMinutes),
-                ),
-                end: formatMinutesToTime(range.endMinutes),
+                start: formatMinutesToTime(snappedTargetStartMinutes),
+                end: formatMinutesToTime(1440),
               },
-              resourceIds: resourceIds ?? [],
-              description: `Target time ${formatMinutesToTime(snappedTargetStartMinutes)} conflicts with unavailable period ${formatMinutesToTime(range.startMinutes)} - ${formatMinutesToTime(range.endMinutes)}`,
+              resourceIds: unavailabilityDetails.map((d) => d.resourceId),
+              resourceDetails: unavailabilityDetails.map((d) => ({
+                resourceId: d.resourceId,
+                resourceLabel: d.resourceLabel,
+                reason: d.reason,
+                description: d.description,
+              })),
+              description: unavailabilityDetails
+                .map((d) => d.description)
+                .join('; '),
             })
-            break
           }
         }
 
-        if (!shouldBlockResize) {
-          const sourceUnavailableRanges =
-            getUnavailableMinutesForDay(originalStartDate)
-          for (const range of sourceUnavailableRanges) {
-            if (
-              0 < range.endMinutes &&
-              range.startMinutes < currentStartMinutes
-            ) {
-              shouldBlockResize = true
-              blockReason = 'unavailable-time'
-              blockMessage = `Cannot resize: Would need to pass through unavailable time on ${originalStartDate} (${formatMinutesToTime(range.startMinutes)} - ${formatMinutesToTime(range.endMinutes)})`
-              conflicts.push({
-                date: originalStartDate,
-                conflictRange: {
-                  start: formatMinutesToTime(range.startMinutes),
-                  end: formatMinutesToTime(
-                    Math.min(range.endMinutes, currentStartMinutes),
-                  ),
-                },
-                resourceIds: resourceIds ?? [],
-                description: `Must pass through unavailable period ${formatMinutesToTime(range.startMinutes)} - ${formatMinutesToTime(range.endMinutes)}`,
-              })
-              break
-            }
+        // Check if we would need to pass through unavailable time on the source day
+        if (!shouldBlockResize && resourceIds?.length) {
+          const sourceUnavailabilityDetails =
+            calendarCore.getUnavailabilityDetails(
+              originalStartDate,
+              0,
+              currentStartMinutes,
+              { resourceIds },
+            )
+
+          if (sourceUnavailabilityDetails.length > 0) {
+            shouldBlockResize = true
+            blockReason = 'unavailable-time'
+            const detailsText = sourceUnavailabilityDetails
+              .map((d) => `${d.resourceLabel} (${d.reason})`)
+              .join(', ')
+            blockMessage = `Cannot resize: Would need to pass through unavailable time on ${originalStartDate} - ${detailsText}`
+            conflicts.push({
+              date: originalStartDate,
+              conflictRange: {
+                start: formatMinutesToTime(0),
+                end: formatMinutesToTime(currentStartMinutes),
+              },
+              resourceIds: sourceUnavailabilityDetails.map((d) => d.resourceId),
+              resourceDetails: sourceUnavailabilityDetails.map((d) => ({
+                resourceId: d.resourceId,
+                resourceLabel: d.resourceLabel,
+                reason: d.reason,
+                description: d.description,
+              })),
+              description: sourceUnavailabilityDetails
+                .map((d) => d.description)
+                .join('; '),
+            })
           }
         }
       } else if (edge === 'bottom' && targetDayDate > originalEndDate) {
@@ -284,58 +436,166 @@ export const useCalendar = <
           new Date(end).getMinutes() +
           totalDeltaMinutes
         const targetEndMinutes = ((rawEndMinutes % 1440) + 1440) % 1440
-        // Snap to grid before checking conflicts
         const snappedTargetEndMinutes = snapMinutes(targetEndMinutes)
         const currentEndMinutes =
           new Date(end).getHours() * 60 + new Date(end).getMinutes()
 
-        const sourceUnavailableRanges =
-          getUnavailableMinutesForDay(originalEndDate)
-        for (const range of sourceUnavailableRanges) {
-          if (
-            currentEndMinutes < range.endMinutes &&
-            range.startMinutes < 1440
-          ) {
+        // Check if any resource is unavailable at the target time on the target day
+        if (resourceIds?.length) {
+          const unavailabilityDetails = calendarCore.getUnavailabilityDetails(
+            targetDayDate,
+            0, // Check from start of day to end time
+            snappedTargetEndMinutes,
+            { resourceIds },
+          )
+
+          if (unavailabilityDetails.length > 0) {
             shouldBlockResize = true
             blockReason = 'unavailable-time'
-            blockMessage = `Cannot resize: Would need to pass through unavailable time on ${originalEndDate} (${formatMinutesToTime(range.startMinutes)} - ${formatMinutesToTime(range.endMinutes)})`
+            const detailsText = unavailabilityDetails
+              .map((d) => `${d.resourceLabel} (${d.reason})`)
+              .join(', ')
+            blockMessage = `Unavailable: Event ending at ${formatMinutesToTime(snappedTargetEndMinutes)} conflicts with ${detailsText}`
             conflicts.push({
-              date: originalEndDate,
+              date: targetDayDate,
               conflictRange: {
-                start: formatMinutesToTime(
-                  Math.max(range.startMinutes, currentEndMinutes),
-                ),
-                end: formatMinutesToTime(range.endMinutes),
+                start: formatMinutesToTime(0),
+                end: formatMinutesToTime(snappedTargetEndMinutes),
               },
-              resourceIds: resourceIds ?? [],
-              description: `Must pass through unavailable period ${formatMinutesToTime(range.startMinutes)} - ${formatMinutesToTime(range.endMinutes)}`,
+              resourceIds: unavailabilityDetails.map((d) => d.resourceId),
+              resourceDetails: unavailabilityDetails.map((d) => ({
+                resourceId: d.resourceId,
+                resourceLabel: d.resourceLabel,
+                reason: d.reason,
+                description: d.description,
+              })),
+              description: unavailabilityDetails
+                .map((d) => d.description)
+                .join('; '),
             })
-            break
           }
         }
 
+        // Check if we would need to pass through unavailable time on the source day
+        if (!shouldBlockResize && resourceIds?.length) {
+          const sourceUnavailabilityDetails =
+            calendarCore.getUnavailabilityDetails(
+              originalEndDate,
+              currentEndMinutes,
+              1440,
+              { resourceIds },
+            )
+
+          if (sourceUnavailabilityDetails.length > 0) {
+            shouldBlockResize = true
+            blockReason = 'unavailable-time'
+            const detailsText = sourceUnavailabilityDetails
+              .map((d) => `${d.resourceLabel} (${d.reason})`)
+              .join(', ')
+            blockMessage = `Cannot resize: Would need to pass through unavailable time on ${originalEndDate} - ${detailsText}`
+            conflicts.push({
+              date: originalEndDate,
+              conflictRange: {
+                start: formatMinutesToTime(currentEndMinutes),
+                end: formatMinutesToTime(1440),
+              },
+              resourceIds: sourceUnavailabilityDetails.map((d) => d.resourceId),
+              resourceDetails: sourceUnavailabilityDetails.map((d) => ({
+                resourceId: d.resourceId,
+                resourceLabel: d.resourceLabel,
+                reason: d.reason,
+                description: d.description,
+              })),
+              description: sourceUnavailabilityDetails
+                .map((d) => d.description)
+                .join('; '),
+            })
+          }
+        }
+      }
+
+      // Also check for conflicts when resizing within the same day
+      if (
+        !shouldBlockResize &&
+        targetDayDate === originalStartDate &&
+        targetDayDate === originalEndDate
+      ) {
+        // Calculate the new time range based on the resize
+        const rawStartMinutes =
+          new Date(start).getHours() * 60 +
+          new Date(start).getMinutes() +
+          (edge === 'top' ? totalDeltaMinutes : 0)
+        const rawEndMinutes =
+          new Date(end).getHours() * 60 +
+          new Date(end).getMinutes() +
+          (edge === 'bottom' ? totalDeltaMinutes : 0)
+
+        const snappedStartMinutes = snapMinutes(
+          ((rawStartMinutes % 1440) + 1440) % 1440,
+        )
+        const snappedEndMinutes = snapMinutes(
+          ((rawEndMinutes % 1440) + 1440) % 1440,
+        )
+
+        // Directly check if any resource is unavailable for the new time range
+        // This is more reliable than using getUnavailableRanges which merges availability
+        if (resourceIds?.length) {
+          const unavailabilityDetails = calendarCore.getUnavailabilityDetails(
+            targetDayDate,
+            snappedStartMinutes,
+            snappedEndMinutes,
+            { resourceIds },
+          )
+
+          if (unavailabilityDetails.length > 0) {
+            shouldBlockResize = true
+            blockReason = 'unavailable-time'
+            const detailsText = unavailabilityDetails
+              .map((d) => `${d.resourceLabel} (${d.reason})`)
+              .join(', ')
+            blockMessage = `Unavailable: Event at ${formatMinutesToTime(snappedStartMinutes)}-${formatMinutesToTime(snappedEndMinutes)} conflicts with ${detailsText}`
+            conflicts.push({
+              date: targetDayDate,
+              conflictRange: {
+                start: formatMinutesToTime(snappedStartMinutes),
+                end: formatMinutesToTime(snappedEndMinutes),
+              },
+              resourceIds: unavailabilityDetails.map((d) => d.resourceId),
+              resourceDetails: unavailabilityDetails.map((d) => ({
+                resourceId: d.resourceId,
+                resourceLabel: d.resourceLabel,
+                reason: d.reason,
+                description: d.description,
+              })),
+              description: unavailabilityDetails
+                .map((d) => d.description)
+                .join('; '),
+            })
+          }
+        }
+
+        // Also check capacity constraints if not already blocked
         if (!shouldBlockResize) {
-          for (const range of unavailableRanges) {
-            if (
-              0 < range.endMinutes &&
-              range.startMinutes < snappedTargetEndMinutes
-            ) {
-              shouldBlockResize = true
-              blockReason = 'unavailable-time'
-              blockMessage = `Cannot resize: Event would end at ${formatMinutesToTime(snappedTargetEndMinutes)} which is during unavailable time (${formatMinutesToTime(range.startMinutes)} - ${formatMinutesToTime(range.endMinutes)})`
-              conflicts.push({
-                date: targetDayDate,
-                conflictRange: {
-                  start: formatMinutesToTime(range.startMinutes),
-                  end: formatMinutesToTime(
-                    Math.min(snappedTargetEndMinutes, range.endMinutes),
-                  ),
-                },
-                resourceIds: resourceIds ?? [],
-                description: `Target time ${formatMinutesToTime(snappedTargetEndMinutes)} conflicts with unavailable period ${formatMinutesToTime(range.startMinutes)} - ${formatMinutesToTime(range.endMinutes)}`,
-              })
-              break
-            }
+          const detailedConflicts = getDetailedConflicts(
+            targetDayDate,
+            snappedStartMinutes,
+            snappedEndMinutes,
+          )
+
+          // Filter to only capacity conflicts (availability already checked above)
+          const capacityConflicts = detailedConflicts.filter((c) =>
+            c.resourceDetails.some((d) => d.reason === 'capacity'),
+          )
+
+          if (capacityConflicts.length > 0) {
+            shouldBlockResize = true
+            blockReason = 'unavailable-time'
+            const conflict = capacityConflicts[0]!
+            const detailsText = conflict.resourceDetails
+              .map((d) => `${d.resourceLabel} (${d.reason})`)
+              .join(', ')
+            blockMessage = `Unavailable: Event at ${formatMinutesToTime(snappedStartMinutes)}-${formatMinutesToTime(snappedEndMinutes)} conflicts with ${detailsText}`
+            conflicts.push(...capacityConflicts)
           }
         }
       }
@@ -390,12 +650,7 @@ export const useCalendar = <
         lastEmittedErrorRef.current = null
       }
 
-      const effectiveDeltaMinutes = shouldBlockResize
-        ? deltaMinutes
-        : totalDeltaMinutes
-      const effectiveUnavailableRanges = shouldBlockResize
-        ? getUnavailableMinutesForDay(originalDayDate)
-        : unavailableRanges
+      const effectiveDeltaMinutes = shouldBlockResize ? 0 : totalDeltaMinutes
 
       const result = calculateResizedEvent({
         originalStart: start,
@@ -405,7 +660,7 @@ export const useCalendar = <
         timeZone: calendarOptions.timeZone ?? 'UTC',
         constraints: {
           ...resizeConstraints,
-          unavailableRanges: effectiveUnavailableRanges,
+          unavailableRanges: shouldBlockResize ? [] : unavailableRanges,
         },
       })
 

@@ -1,5 +1,8 @@
 import { EventClient } from '@tanstack/devtools-event-client'
-import type { AvailabilityConflict } from '../calendar/types'
+import type {
+  AvailabilityConflict,
+  UnavailabilityReason,
+} from '../calendar/types'
 
 /**
  * Event map for TimeClient events
@@ -84,4 +87,4 @@ export function getTimeClient(): TimeClient {
   return TimeClient.getInstance()
 }
 
-export type { AvailabilityConflict }
+export type { AvailabilityConflict, UnavailabilityReason }

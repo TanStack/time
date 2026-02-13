@@ -429,4 +429,108 @@ export class CalendarCore<
       endTime: formatTime(range.endMinutes),
     }))
   }
+
+  /**
+   * Get detailed unavailability information for a specific time range on a date
+   * Returns which resources are unavailable and why
+   */
+  getUnavailabilityDetails(
+    date: string,
+    startMinutes: number,
+    endMinutes: number,
+    options?: {
+      resourceIds?: Array<TResource['id']>
+    },
+  ): Array<{
+    resourceId: string
+    resourceLabel: string
+    reason: 'outside-hours' | 'capacity' | 'no-availability'
+    description: string
+  }> {
+    const resources = options?.resourceIds
+      ? this.options.resources?.filter((resource) =>
+          options.resourceIds?.includes(resource.id),
+        )
+      : this.options.resources
+
+    if (!resources || resources.length === 0) {
+      return []
+    }
+
+    const plainDate = Temporal.PlainDate.from(date)
+    const weekday = plainDate.dayOfWeek
+
+    const details: Array<{
+      resourceId: string
+      resourceLabel: string
+      reason: 'outside-hours' | 'capacity' | 'no-availability'
+      description: string
+    }> = []
+
+    for (const resource of resources) {
+      if (!resource.availability || resource.availability.length === 0) {
+        details.push({
+          resourceId: resource.id,
+          resourceLabel: resource.label,
+          reason: 'no-availability',
+          description: `${resource.label}: No availability configured`,
+        })
+        continue
+      }
+
+      const availableSlots = resource.availability.filter((slot) =>
+        slot.weekdays.includes(weekday),
+      )
+
+      if (availableSlots.length === 0) {
+        details.push({
+          resourceId: resource.id,
+          resourceLabel: resource.label,
+          reason: 'outside-hours',
+          description: `${resource.label}: Not available on this day`,
+        })
+        continue
+      }
+
+      const isWithinAvailability = availableSlots.some((slot) => {
+        const slotStartParts = slot.startTime.split(':').map(Number)
+        const slotEndParts = slot.endTime.split(':').map(Number)
+        const slotStartMinutes =
+          (slotStartParts[0] ?? 0) * 60 + (slotStartParts[1] ?? 0)
+        const slotEndMinutes =
+          (slotEndParts[0] ?? 0) * 60 + (slotEndParts[1] ?? 0)
+
+        return startMinutes >= slotStartMinutes && endMinutes <= slotEndMinutes
+      })
+
+      if (!isWithinAvailability) {
+        const timeRanges = availableSlots
+          .map((slot) => {
+            const slotStartParts = slot.startTime.split(':').map(Number)
+            const slotEndParts = slot.endTime.split(':').map(Number)
+            return {
+              start: (slotStartParts[0] ?? 0) * 60 + (slotStartParts[1] ?? 0),
+              end: (slotEndParts[0] ?? 0) * 60 + (slotEndParts[1] ?? 0),
+            }
+          })
+          .sort((a, b) => a.start - b.start)
+
+        const formatTime = (mins: number) =>
+          `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`
+
+        const availabilityWindow = timeRanges
+          .map((r) => `${formatTime(r.start)}-${formatTime(r.end)}`)
+          .join(', ')
+
+        details.push({
+          resourceId: resource.id,
+          resourceLabel: resource.label,
+          reason: 'outside-hours',
+          description: `${resource.label}: Available ${availabilityWindow}, but event is ${formatTime(startMinutes)}-${formatTime(endMinutes)}`,
+        })
+      }
+    }
+
+    return details
+  }
 }

@@ -84,6 +84,26 @@ export interface CalendarStore {
 }
 
 /**
+ * Information about why a resource is unavailable
+ */
+export interface UnavailabilityReason {
+  /** Resource ID */
+  resourceId: string
+  /** Resource label/name */
+  resourceLabel: string
+  /** Why the resource is unavailable */
+  reason: 'outside-hours' | 'capacity' | 'no-availability'
+  /** Human-readable explanation */
+  description: string
+  /** Current capacity usage if applicable */
+  capacityInfo?: {
+    max: number
+    used: number
+    remaining: number
+  }
+}
+
+/**
  * Information about a specific availability conflict
  */
 export interface AvailabilityConflict {
@@ -96,6 +116,8 @@ export interface AvailabilityConflict {
   }
   /** The resource(s) whose availability is being violated */
   resourceIds: Array<string>
+  /** Detailed reasons for each resource */
+  resourceDetails: Array<UnavailabilityReason>
   /** Human-readable description of the conflict */
   description: string
 }
