@@ -5,9 +5,51 @@ title: Resource
 
 # Interface: Resource
 
-Defined in: [calendar/types.ts:4](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L4)
+Defined in: [calendar/types.ts:13](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L13)
 
 ## Properties
+
+### availability?
+
+```ts
+optional availability: Availability[];
+```
+
+Defined in: [calendar/types.ts:16](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L16)
+
+***
+
+### buffer?
+
+```ts
+optional buffer: object;
+```
+
+Defined in: [calendar/types.ts:18](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L18)
+
+#### after?
+
+```ts
+optional after: number;
+```
+
+#### before?
+
+```ts
+optional before: number;
+```
+
+***
+
+### capacity?
+
+```ts
+optional capacity: number;
+```
+
+Defined in: [calendar/types.ts:17](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L17)
+
+***
 
 ### id
 
@@ -15,7 +57,7 @@ Defined in: [calendar/types.ts:4](https://github.com/TanStack/time/blob/main/pac
 id: string;
 ```
 
-Defined in: [calendar/types.ts:5](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L5)
+Defined in: [calendar/types.ts:14](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L14)
 
 ***
 
@@ -25,4 +67,4 @@ Defined in: [calendar/types.ts:5](https://github.com/TanStack/time/blob/main/pac
 label: string;
 ```
 
-Defined in: [calendar/types.ts:6](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L6)
+Defined in: [calendar/types.ts:15](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L15)

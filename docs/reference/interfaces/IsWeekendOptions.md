@@ -5,7 +5,7 @@ title: IsWeekendOptions
 
 # Interface: IsWeekendOptions
 
-Defined in: [date/isWeekend/isWeekend.ts:5](https://github.com/TanStack/time/blob/main/packages/time/src/date/isWeekend/isWeekend.ts#L5)
+Defined in: [date/isWeekend/isWeekend.ts:6](https://github.com/TanStack/time/blob/main/packages/time/src/date/isWeekend/isWeekend.ts#L6)
 
 ## Extends
 
@@ -33,7 +33,7 @@ Defined in: [date/types.ts:11](https://github.com/TanStack/time/blob/main/packag
 optional locale: string;
 ```
 
-Defined in: [date/isWeekend/isWeekend.ts:6](https://github.com/TanStack/time/blob/main/packages/time/src/date/isWeekend/isWeekend.ts#L6)
+Defined in: [date/isWeekend/isWeekend.ts:7](https://github.com/TanStack/time/blob/main/packages/time/src/date/isWeekend/isWeekend.ts#L7)
 
 ***
 

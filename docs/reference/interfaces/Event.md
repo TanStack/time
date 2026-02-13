@@ -5,7 +5,7 @@ title: Event
 
 # Interface: Event\<TResource\>
 
-Defined in: [calendar/types.ts:20](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L20)
+Defined in: [calendar/types.ts:35](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L35)
 
 ## Type Parameters
 
@@ -15,13 +15,37 @@ Defined in: [calendar/types.ts:20](https://github.com/TanStack/time/blob/main/pa
 
 ## Properties
 
+### \_originalEnd?
+
+```ts
+optional _originalEnd: string;
+```
+
+Defined in: [calendar/types.ts:44](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L44)
+
+Original end time before splitting (only set on split segments of multi-day events)
+
+***
+
+### \_originalStart?
+
+```ts
+optional _originalStart: string;
+```
+
+Defined in: [calendar/types.ts:42](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L42)
+
+Original start time before splitting (only set on split segments of multi-day events)
+
+***
+
 ### end
 
 ```ts
 end: string;
 ```
 
-Defined in: [calendar/types.ts:23](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L23)
+Defined in: [calendar/types.ts:38](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L38)
 
 ***
 
@@ -31,7 +55,7 @@ Defined in: [calendar/types.ts:23](https://github.com/TanStack/time/blob/main/pa
 id: string;
 ```
 
-Defined in: [calendar/types.ts:21](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L21)
+Defined in: [calendar/types.ts:36](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L36)
 
 ***
 
@@ -41,7 +65,7 @@ Defined in: [calendar/types.ts:21](https://github.com/TanStack/time/blob/main/pa
 optional resources: TResource[];
 ```
 
-Defined in: [calendar/types.ts:25](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L25)
+Defined in: [calendar/types.ts:40](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L40)
 
 ***
 
@@ -51,7 +75,7 @@ Defined in: [calendar/types.ts:25](https://github.com/TanStack/time/blob/main/pa
 start: string;
 ```
 
-Defined in: [calendar/types.ts:22](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L22)
+Defined in: [calendar/types.ts:37](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L37)
 
 ***
 
@@ -61,4 +85,4 @@ Defined in: [calendar/types.ts:22](https://github.com/TanStack/time/blob/main/pa
 title: string;
 ```
 
-Defined in: [calendar/types.ts:24](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L24)
+Defined in: [calendar/types.ts:39](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L39)

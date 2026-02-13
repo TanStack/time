@@ -9,7 +9,7 @@ title: Day
 type Day<TResource, TEvent> = object;
 ```
 
-Defined in: [calendar/types.ts:28](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L28)
+Defined in: [calendar/types.ts:47](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L47)
 
 ## Type Parameters
 
@@ -29,7 +29,7 @@ Defined in: [calendar/types.ts:28](https://github.com/TanStack/time/blob/main/pa
 date: Temporal.PlainDate;
 ```
 
-Defined in: [calendar/types.ts:32](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L32)
+Defined in: [calendar/types.ts:51](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L51)
 
 ***
 
@@ -39,7 +39,7 @@ Defined in: [calendar/types.ts:32](https://github.com/TanStack/time/blob/main/pa
 events: TEvent[];
 ```
 
-Defined in: [calendar/types.ts:33](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L33)
+Defined in: [calendar/types.ts:52](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L52)
 
 ***
 
@@ -49,7 +49,7 @@ Defined in: [calendar/types.ts:33](https://github.com/TanStack/time/blob/main/pa
 isInCurrentPeriod: boolean;
 ```
 
-Defined in: [calendar/types.ts:35](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L35)
+Defined in: [calendar/types.ts:54](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L54)
 
 ***
 
@@ -59,4 +59,4 @@ Defined in: [calendar/types.ts:35](https://github.com/TanStack/time/blob/main/pa
 isToday: boolean;
 ```
 
-Defined in: [calendar/types.ts:34](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L34)
+Defined in: [calendar/types.ts:53](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L53)
