@@ -9,7 +9,7 @@ import ReactDOM from 'react-dom/client'
 import { useEffect, useState } from 'react'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { timeDevtoolsPlugin } from '@tanstack/react-time-devtools'
-import type { Day, Event, Resource, ResizeError } from '@tanstack/time'
+import type { Day, Event, ResizeError, Resource } from '@tanstack/time'
 
 import './index.css'
 

@@ -79,7 +79,7 @@ importers:
         specifier: ^4.0.17
         version: 4.0.18(@types/node@25.2.2)(happy-dom@20.5.3)(jiti@2.6.1)(yaml@2.8.2)
 
-  examples/react/basic:
+  examples/react/calendar:
     dependencies:
       '@tanstack/react-devtools':
         specifier: ^0.9.5
@@ -124,6 +124,52 @@ importers:
       vite:
         specifier: ^7.3.1
         version: 7.3.1(@types/node@25.2.2)(jiti@1.21.7)(yaml@2.8.2)
+
+  examples/react/timeline:
+    dependencies:
+      '@tanstack/react-devtools':
+        specifier: ^0.9.5
+        version: 0.9.5(@types/react-dom@19.2.3(@types/react@19.2.13))(@types/react@19.2.13)(csstype@3.2.3)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(solid-js@1.9.11)
+      '@tanstack/react-time':
+        specifier: ^0.0.0
+        version: link:../../../packages/react-time
+      '@tanstack/react-time-devtools':
+        specifier: ^0.0.0
+        version: link:../../../packages/react-time-devtools
+      '@tanstack/time':
+        specifier: ^0.0.0
+        version: link:../../../packages/time
+      react:
+        specifier: ^19.2.3
+        version: 19.2.4
+      react-dom:
+        specifier: ^19.2.3
+        version: 19.2.4(react@19.2.4)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.2.8
+        version: 19.2.13
+      '@types/react-dom':
+        specifier: ^19.2.3
+        version: 19.2.3(@types/react@19.2.13)
+      '@vitejs/plugin-react':
+        specifier: ^5.1.2
+        version: 5.1.3(vite@7.3.1(@types/node@25.2.2)(jiti@2.6.1)(yaml@2.8.2))
+      autoprefixer:
+        specifier: ^10.4.20
+        version: 10.4.24(postcss@8.5.6)
+      postcss:
+        specifier: ^8.4.49
+        version: 8.5.6
+      tailwindcss:
+        specifier: ^3.4.17
+        version: 3.4.19(yaml@2.8.2)
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      vite:
+        specifier: ^7.3.1
+        version: 7.3.1(@types/node@25.2.2)(jiti@2.6.1)(yaml@2.8.2)
 
   packages/react-time:
     dependencies:
