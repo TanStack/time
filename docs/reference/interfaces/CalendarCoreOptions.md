@@ -5,7 +5,7 @@ title: CalendarCoreOptions
 
 # Interface: CalendarCoreOptions\<TResource, TEvent\>
 
-Defined in: [calendar/calendar.ts:24](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L24)
+Defined in: [calendar/calendar.ts:32](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L32)
 
 Configuration options for initializing a CalendarCore instance, allowing customization
 of events, locale, time zone, and the calendar system.
@@ -34,7 +34,7 @@ Specifies the event type, extending a base Event type.
 optional calendar: CalendarLike;
 ```
 
-Defined in: [calendar/date-core.ts:59](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L59)
+Defined in: [calendar/date-core.ts:60](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L60)
 
 Optional calendar system to be used.
 
@@ -50,7 +50,7 @@ Optional calendar system to be used.
 optional dateFormatter: DateTimeFormat;
 ```
 
-Defined in: [calendar/date-core.ts:63](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L63)
+Defined in: [calendar/date-core.ts:64](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L64)
 
 Optional date formatter.
 
@@ -66,7 +66,7 @@ Optional date formatter.
 optional dateTimeFormatter: DateTimeFormat;
 ```
 
-Defined in: [calendar/date-core.ts:67](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L67)
+Defined in: [calendar/date-core.ts:68](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L68)
 
 Optional date time formatter.
 
@@ -82,7 +82,7 @@ Optional date time formatter.
 optional events: TEvent[] | null;
 ```
 
-Defined in: [calendar/calendar.ts:29](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L29)
+Defined in: [calendar/calendar.ts:37](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L37)
 
 An optional array of events to be handled by the calendar.
 
@@ -94,7 +94,7 @@ An optional array of events to be handled by the calendar.
 optional locale: string;
 ```
 
-Defined in: [calendar/date-core.ts:55](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L55)
+Defined in: [calendar/date-core.ts:56](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L56)
 
 Optional locale for date formatting. Uses a BCP 47 language tag.
 
@@ -110,7 +110,7 @@ Optional locale for date formatting. Uses a BCP 47 language tag.
 optional range: DateRange;
 ```
 
-Defined in: [calendar/date-core.ts:61](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L61)
+Defined in: [calendar/date-core.ts:62](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L62)
 
 Optional range of dates to be used.
 
@@ -126,7 +126,7 @@ Optional range of dates to be used.
 optional resources: TResource[] | null;
 ```
 
-Defined in: [calendar/calendar.ts:31](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L31)
+Defined in: [calendar/calendar.ts:39](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L39)
 
 Optional resources to be used in the calendar.
 
@@ -138,7 +138,7 @@ Optional resources to be used in the calendar.
 optional timeFormatter: DateTimeFormat;
 ```
 
-Defined in: [calendar/date-core.ts:65](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L65)
+Defined in: [calendar/date-core.ts:66](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L66)
 
 Optional time formatter.
 
@@ -154,7 +154,7 @@ Optional time formatter.
 optional timeZone: TimeZoneLike;
 ```
 
-Defined in: [calendar/date-core.ts:57](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L57)
+Defined in: [calendar/date-core.ts:58](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L58)
 
 Optional time zone specification.
 
@@ -170,7 +170,7 @@ Optional time zone specification.
 viewMode: ViewMode;
 ```
 
-Defined in: [calendar/date-core.ts:53](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L53)
+Defined in: [calendar/date-core.ts:54](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L54)
 
 The initial view mode configuration.
 

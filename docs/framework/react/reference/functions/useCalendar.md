@@ -9,7 +9,7 @@ title: useCalendar
 function useCalendar<TResource, TEvent>(options): CalendarApi<TResource, TEvent> & object;
 ```
 
-Defined in: [useCalendar.ts:11](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L11)
+Defined in: [useCalendar.ts:69](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L69)
 
 ## Type Parameters
 
@@ -25,7 +25,7 @@ Defined in: [useCalendar.ts:11](https://github.com/TanStack/time/blob/main/packa
 
 ### options
 
-`CalendarCoreOptions`\<`TResource`, `TEvent`\>
+[`UseCalendarOptions`](../interfaces/UseCalendarOptions.md)\<`TResource`, `TEvent`\>
 
 ## Returns
 

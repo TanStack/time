@@ -9,7 +9,7 @@ title: groupDaysBy
 function groupDaysBy<TResource, TEvent>(__namedParameters): (Day<TResource, TEvent> | null)[][];
 ```
 
-Defined in: [calendar/groupDaysBy.ts:36](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/groupDaysBy.ts#L36)
+Defined in: [calendar/groupDaysBy.ts:37](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/groupDaysBy.ts#L37)
 
 ## Type Parameters
 

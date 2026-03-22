@@ -5,7 +5,7 @@ title: CalendarApi
 
 # Interface: CalendarApi\<TResource, TEvent\>
 
-Defined in: [calendar/calendar.ts:110](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L110)
+Defined in: [calendar/calendar.ts:126](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L126)
 
 ## Extends
 
@@ -29,7 +29,7 @@ Defined in: [calendar/calendar.ts:110](https://github.com/TanStack/time/blob/mai
 activeDate: string;
 ```
 
-Defined in: [calendar/calendar.ts:103](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L103)
+Defined in: [calendar/calendar.ts:119](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L119)
 
 The currently active date in the calendar.
 
@@ -47,7 +47,7 @@ ConvertTemporalToString.activeDate
 addEvent: (event) => void;
 ```
 
-Defined in: [calendar/calendar.ts:85](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L85)
+Defined in: [calendar/calendar.ts:93](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L93)
 
 Adds a new event to the calendar.
 
@@ -75,7 +75,7 @@ CalendarActions.addEvent
 canGoNextPeriod: () => boolean;
 ```
 
-Defined in: [calendar/calendar.ts:54](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L54)
+Defined in: [calendar/calendar.ts:62](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L62)
 
 Checks if navigation to the next period is allowed within the range.
 
@@ -97,7 +97,7 @@ CalendarActions.canGoNextPeriod
 canGoPreviousPeriod: () => boolean;
 ```
 
-Defined in: [calendar/calendar.ts:52](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L52)
+Defined in: [calendar/calendar.ts:60](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L60)
 
 Checks if navigation to the previous period is allowed within the range.
 
@@ -119,7 +119,7 @@ CalendarActions.canGoPreviousPeriod
 changeViewMode: (newViewMode) => void;
 ```
 
-Defined in: [calendar/calendar.ts:56](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L56)
+Defined in: [calendar/calendar.ts:64](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L64)
 
 Changes the current view mode of the calendar.
 
@@ -147,7 +147,7 @@ CalendarActions.changeViewMode
 currentPeriod: string;
 ```
 
-Defined in: [calendar/calendar.ts:97](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L97)
+Defined in: [calendar/calendar.ts:113](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L113)
 
 The currently focused date period in the calendar.
 
@@ -165,7 +165,7 @@ ConvertTemporalToString.currentPeriod
 days: Day<TResource, TEvent>[];
 ```
 
-Defined in: [calendar/calendar.ts:101](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L101)
+Defined in: [calendar/calendar.ts:117](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L117)
 
 An array of days, each potentially containing events.
 
@@ -183,7 +183,7 @@ ConvertTemporalToString.days
 getDaysNames: (weekday?) => string[];
 ```
 
-Defined in: [calendar/calendar.ts:71](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L71)
+Defined in: [calendar/calendar.ts:79](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L79)
 
 Retrieves the names of the days of the week, based on the current locale.
 
@@ -211,7 +211,7 @@ CalendarActions.getDaysNames
 getEventProps: (event) => object;
 ```
 
-Defined in: [calendar/calendar.ts:58](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L58)
+Defined in: [calendar/calendar.ts:66](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L66)
 
 Retrieves styling properties for a specific event.
 
@@ -293,7 +293,7 @@ CalendarActions.getEventProps
 getEventsByDate: (date) => TEvent[];
 ```
 
-Defined in: [calendar/calendar.ts:83](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L83)
+Defined in: [calendar/calendar.ts:91](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L91)
 
 Retrieves events for a specific date.
 
@@ -321,7 +321,7 @@ CalendarActions.getEventsByDate
 getTimeSlots: (options?) => TimeSlot[];
 ```
 
-Defined in: [calendar/calendar.ts:79](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L79)
+Defined in: [calendar/calendar.ts:87](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L87)
 
 Retrieves time slots for day view with configurable intervals.
 
@@ -343,13 +343,51 @@ CalendarActions.getTimeSlots
 
 ***
 
+### getUnavailableRanges()
+
+```ts
+getUnavailableRanges: (date, options?) => UnavailableRange[];
+```
+
+Defined in: [calendar/calendar.ts:99](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L99)
+
+Retrieves unavailable time ranges for a specific date based on resource availability.
+
+#### Parameters
+
+##### date
+
+`string`
+
+##### options?
+
+###### containerHeight?
+
+`number`
+
+###### resourceIds?
+
+`TResource`\[`"id"`\][]
+
+#### Returns
+
+[`UnavailableRange`](UnavailableRange.md)[]
+
+#### Inherited from
+
+```ts
+CalendarActions.getUnavailableRanges
+```
+
+***
+
 ### goToCurrentPeriod()
 
 ```ts
 goToCurrentPeriod: () => void;
 ```
 
-Defined in: [calendar/calendar.ts:48](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L48)
+Defined in: [calendar/calendar.ts:56](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L56)
 
 Resets the view to the current period based on today's date.
 
@@ -371,7 +409,7 @@ CalendarActions.goToCurrentPeriod
 goToNextPeriod: () => void;
 ```
 
-Defined in: [calendar/calendar.ts:46](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L46)
+Defined in: [calendar/calendar.ts:54](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L54)
 
 Navigates to the next period according to the current view mode.
 
@@ -393,7 +431,7 @@ CalendarActions.goToNextPeriod
 goToPreviousPeriod: () => void;
 ```
 
-Defined in: [calendar/calendar.ts:44](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L44)
+Defined in: [calendar/calendar.ts:52](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L52)
 
 Navigates to the previous period according to the current view mode.
 
@@ -415,7 +453,7 @@ CalendarActions.goToPreviousPeriod
 goToSpecificPeriod: (date) => void;
 ```
 
-Defined in: [calendar/calendar.ts:50](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L50)
+Defined in: [calendar/calendar.ts:58](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L58)
 
 Navigates to a specific date.
 
@@ -443,7 +481,7 @@ CalendarActions.goToSpecificPeriod
 groupDaysBy: (props) => (Day<TResource, TEvent> | null)[][];
 ```
 
-Defined in: [calendar/calendar.ts:73](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L73)
+Defined in: [calendar/calendar.ts:81](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L81)
 
 Groups days by a specified unit.
 
@@ -481,7 +519,7 @@ CalendarActions.groupDaysBy
 removeEvent: (id) => void;
 ```
 
-Defined in: [calendar/calendar.ts:89](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L89)
+Defined in: [calendar/calendar.ts:97](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L97)
 
 Removes an event by ID.
 
@@ -509,7 +547,7 @@ CalendarActions.removeEvent
 updateEvent: (id, updates) => void;
 ```
 
-Defined in: [calendar/calendar.ts:87](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L87)
+Defined in: [calendar/calendar.ts:95](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L95)
 
 Updates an existing event by ID.
 
@@ -541,7 +579,7 @@ CalendarActions.updateEvent
 viewMode: ViewMode;
 ```
 
-Defined in: [calendar/calendar.ts:99](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L99)
+Defined in: [calendar/calendar.ts:115](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L115)
 
 The current view mode of the calendar.
 

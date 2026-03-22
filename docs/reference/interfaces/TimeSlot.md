@@ -5,7 +5,7 @@ title: TimeSlot
 
 # Interface: TimeSlot
 
-Defined in: [calendar/types.ts:43](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L43)
+Defined in: [calendar/types.ts:62](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L62)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/types.ts:43](https://github.com/TanStack/time/blob/main/pa
 hour: number;
 ```
 
-Defined in: [calendar/types.ts:44](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L44)
+Defined in: [calendar/types.ts:63](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L63)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [calendar/types.ts:44](https://github.com/TanStack/time/blob/main/pa
 label: string;
 ```
 
-Defined in: [calendar/types.ts:46](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L46)
+Defined in: [calendar/types.ts:65](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L65)
 
 ***
 
@@ -35,4 +35,4 @@ Defined in: [calendar/types.ts:46](https://github.com/TanStack/time/blob/main/pa
 minute: number;
 ```
 
-Defined in: [calendar/types.ts:45](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L45)
+Defined in: [calendar/types.ts:64](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L64)

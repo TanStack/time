@@ -5,7 +5,7 @@ title: DateCore
 
 # Abstract Class: DateCore
 
-Defined in: [calendar/date-core.ts:77](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L77)
+Defined in: [calendar/date-core.ts:78](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L78)
 
 ## Extended by
 
@@ -39,7 +39,7 @@ Defined in: [calendar/date-core.ts:86](https://github.com/TanStack/time/blob/mai
 formatters: object;
 ```
 
-Defined in: [calendar/date-core.ts:80](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L80)
+Defined in: [calendar/date-core.ts:81](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L81)
 
 #### date
 
@@ -67,7 +67,7 @@ time: DateTimeFormat;
 options: ParsedDateCoreOptions;
 ```
 
-Defined in: [calendar/date-core.ts:79](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L79)
+Defined in: [calendar/date-core.ts:80](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L80)
 
 ***
 
@@ -77,7 +77,7 @@ Defined in: [calendar/date-core.ts:79](https://github.com/TanStack/time/blob/mai
 store: Store<CalendarStore>;
 ```
 
-Defined in: [calendar/date-core.ts:78](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L78)
+Defined in: [calendar/date-core.ts:79](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L79)
 
 ## Methods
 
@@ -87,7 +87,7 @@ Defined in: [calendar/date-core.ts:78](https://github.com/TanStack/time/blob/mai
 canGoNextPeriod(): boolean;
 ```
 
-Defined in: [calendar/date-core.ts:407](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L407)
+Defined in: [calendar/date-core.ts:445](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L445)
 
 #### Returns
 
@@ -101,7 +101,7 @@ Defined in: [calendar/date-core.ts:407](https://github.com/TanStack/time/blob/ma
 canGoPreviousPeriod(): boolean;
 ```
 
-Defined in: [calendar/date-core.ts:376](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L376)
+Defined in: [calendar/date-core.ts:414](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L414)
 
 #### Returns
 
@@ -115,7 +115,7 @@ Defined in: [calendar/date-core.ts:376](https://github.com/TanStack/time/blob/ma
 changeViewMode(newViewMode): void;
 ```
 
-Defined in: [calendar/date-core.ts:254](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L254)
+Defined in: [calendar/date-core.ts:265](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L265)
 
 #### Parameters
 
@@ -135,7 +135,7 @@ Defined in: [calendar/date-core.ts:254](https://github.com/TanStack/time/blob/ma
 formatDate(date): string;
 ```
 
-Defined in: [calendar/date-core.ts:130](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L130)
+Defined in: [calendar/date-core.ts:131](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L131)
 
 #### Parameters
 
@@ -155,7 +155,7 @@ Defined in: [calendar/date-core.ts:130](https://github.com/TanStack/time/blob/ma
 formatDateTime(date): string;
 ```
 
-Defined in: [calendar/date-core.ts:138](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L138)
+Defined in: [calendar/date-core.ts:139](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L139)
 
 #### Parameters
 
@@ -175,7 +175,7 @@ Defined in: [calendar/date-core.ts:138](https://github.com/TanStack/time/blob/ma
 formatTime(date): string;
 ```
 
-Defined in: [calendar/date-core.ts:134](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L134)
+Defined in: [calendar/date-core.ts:135](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L135)
 
 #### Parameters
 
@@ -195,7 +195,7 @@ Defined in: [calendar/date-core.ts:134](https://github.com/TanStack/time/blob/ma
 protected getCalendarDays(): PlainDate[];
 ```
 
-Defined in: [calendar/date-core.ts:161](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L161)
+Defined in: [calendar/date-core.ts:162](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L162)
 
 #### Returns
 
@@ -209,7 +209,7 @@ Defined in: [calendar/date-core.ts:161](https://github.com/TanStack/time/blob/ma
 getDaysNames(weekday): string[];
 ```
 
-Defined in: [calendar/date-core.ts:243](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L243)
+Defined in: [calendar/date-core.ts:254](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L254)
 
 #### Parameters
 
@@ -229,7 +229,7 @@ Defined in: [calendar/date-core.ts:243](https://github.com/TanStack/time/blob/ma
 protected getFirstDayOfMonth(): PlainDate;
 ```
 
-Defined in: [calendar/date-core.ts:142](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L142)
+Defined in: [calendar/date-core.ts:143](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L143)
 
 #### Returns
 
@@ -243,7 +243,7 @@ Defined in: [calendar/date-core.ts:142](https://github.com/TanStack/time/blob/ma
 protected getFirstDayOfWeek(): PlainDate;
 ```
 
-Defined in: [calendar/date-core.ts:150](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L150)
+Defined in: [calendar/date-core.ts:151](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L151)
 
 #### Returns
 
@@ -257,7 +257,7 @@ Defined in: [calendar/date-core.ts:150](https://github.com/TanStack/time/blob/ma
 getWeekStartsOn(): number;
 ```
 
-Defined in: [calendar/date-core.ts:157](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L157)
+Defined in: [calendar/date-core.ts:158](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L158)
 
 #### Returns
 
@@ -271,7 +271,7 @@ Defined in: [calendar/date-core.ts:157](https://github.com/TanStack/time/blob/ma
 goToCurrentPeriod(): void;
 ```
 
-Defined in: [calendar/date-core.ts:347](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L347)
+Defined in: [calendar/date-core.ts:375](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L375)
 
 #### Returns
 
@@ -285,7 +285,7 @@ Defined in: [calendar/date-core.ts:347](https://github.com/TanStack/time/blob/ma
 goToNextPeriod(): void;
 ```
 
-Defined in: [calendar/date-core.ts:304](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L304)
+Defined in: [calendar/date-core.ts:327](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L327)
 
 #### Returns
 
@@ -299,7 +299,7 @@ Defined in: [calendar/date-core.ts:304](https://github.com/TanStack/time/blob/ma
 goToPreviousPeriod(): void;
 ```
 
-Defined in: [calendar/date-core.ts:261](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L261)
+Defined in: [calendar/date-core.ts:279](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L279)
 
 #### Returns
 
@@ -313,7 +313,7 @@ Defined in: [calendar/date-core.ts:261](https://github.com/TanStack/time/blob/ma
 goToSpecificPeriod(date): void;
 ```
 
-Defined in: [calendar/date-core.ts:360](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L360)
+Defined in: [calendar/date-core.ts:393](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L393)
 
 #### Parameters
 
