@@ -5,7 +5,7 @@ title: UseCalendarOptions
 
 # Interface: UseCalendarOptions\<TResource, TEvent\>
 
-Defined in: [useCalendar.ts:53](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L53)
+Defined in: [useCalendar.ts:57](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L57)
 
 ## Extends
 
@@ -29,4 +29,4 @@ Defined in: [useCalendar.ts:53](https://github.com/TanStack/time/blob/main/packa
 optional resize: ResizeOptions;
 ```
 
-Defined in: [useCalendar.ts:57](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L57)
+Defined in: [useCalendar.ts:61](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L61)

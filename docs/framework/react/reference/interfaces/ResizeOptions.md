@@ -5,7 +5,7 @@ title: ResizeOptions
 
 # Interface: ResizeOptions
 
-Defined in: [useCalendar.ts:36](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L36)
+Defined in: [useCalendar.ts:38](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L38)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [useCalendar.ts:36](https://github.com/TanStack/time/blob/main/packa
 optional constraints: ResizeConstraints;
 ```
 
-Defined in: [useCalendar.ts:39](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L39)
+Defined in: [useCalendar.ts:43](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L43)
 
 ***
 
@@ -25,7 +25,17 @@ Defined in: [useCalendar.ts:39](https://github.com/TanStack/time/blob/main/packa
 optional containerHeight: number;
 ```
 
-Defined in: [useCalendar.ts:38](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L38)
+Defined in: [useCalendar.ts:40](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L40)
+
+***
+
+### containerWidth?
+
+```ts
+optional containerWidth: number;
+```
+
+Defined in: [useCalendar.ts:41](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L41)
 
 ***
 
@@ -35,7 +45,7 @@ Defined in: [useCalendar.ts:38](https://github.com/TanStack/time/blob/main/packa
 optional enabled: boolean;
 ```
 
-Defined in: [useCalendar.ts:37](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L37)
+Defined in: [useCalendar.ts:39](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L39)
 
 ***
 
@@ -45,7 +55,7 @@ Defined in: [useCalendar.ts:37](https://github.com/TanStack/time/blob/main/packa
 optional onResizeEnd: (eventId, newStart, newEnd) => void;
 ```
 
-Defined in: [useCalendar.ts:41](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L41)
+Defined in: [useCalendar.ts:45](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L45)
 
 #### Parameters
 
@@ -73,7 +83,7 @@ Defined in: [useCalendar.ts:41](https://github.com/TanStack/time/blob/main/packa
 optional onResizeError: (error) => void;
 ```
 
-Defined in: [useCalendar.ts:42](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L42)
+Defined in: [useCalendar.ts:46](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L46)
 
 #### Parameters
 
@@ -93,7 +103,7 @@ Defined in: [useCalendar.ts:42](https://github.com/TanStack/time/blob/main/packa
 optional onResizeStart: (eventId, edge) => void;
 ```
 
-Defined in: [useCalendar.ts:40](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L40)
+Defined in: [useCalendar.ts:44](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L44)
 
 #### Parameters
 
@@ -108,3 +118,13 @@ Defined in: [useCalendar.ts:40](https://github.com/TanStack/time/blob/main/packa
 #### Returns
 
 `void`
+
+***
+
+### orientation?
+
+```ts
+optional orientation: "vertical" | "horizontal";
+```
+
+Defined in: [useCalendar.ts:42](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L42)
