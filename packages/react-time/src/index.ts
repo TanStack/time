@@ -15,6 +15,7 @@ export type {
 export {
   calculateGhostPreviewStyle,
   calculateSegmentResizePreview,
+  calculateTimelineResizePreview,
   formatEventTimeRange,
   getEventDisplayTimeRange,
   getSegmentInfo,
@@ -30,4 +31,6 @@ export type {
   ResizePreviewOptions,
   SegmentInfo,
   SegmentResizePreview,
+  TimelineResizePreviewOptions,
+  TimelineResizePreviewStyle,
 } from '@tanstack/time'

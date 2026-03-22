@@ -9,6 +9,7 @@ import ReactDOM from 'react-dom/client'
 import { useEffect, useState } from 'react'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { timeDevtoolsPlugin } from '@tanstack/react-time-devtools'
+import { toPlainDateTimeString } from '@tanstack/time'
 import type { Day, Event, ResizeError, Resource } from '@tanstack/time'
 
 import './index.css'
@@ -33,6 +34,61 @@ function formatDateToISO(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
+}
+
+function padTimePart(n: number): string {
+  return String(n).padStart(2, '0')
+}
+
+// Monday of the work week containing today, or upcoming Monday on Sat–Sun.
+function workWeekMonday(): Date {
+  const today = new Date()
+  const dow = today.getDay()
+  const monday = new Date(today)
+
+  if (dow === 0 || dow === 6) {
+    monday.setDate(today.getDate() + (dow === 0 ? 1 : 2))
+  } else {
+    monday.setDate(today.getDate() + (1 - dow))
+  }
+  monday.setHours(0, 0, 0, 0)
+  return monday
+}
+
+function weekdayAt(isoWeekday: 1 | 2 | 3 | 4 | 5): Date {
+  const monday = workWeekMonday()
+  const d = new Date(monday)
+  d.setDate(monday.getDate() + isoWeekday - 1)
+  return d
+}
+
+function dateTimeOnWeekday(
+  isoWeekday: 1 | 2 | 3 | 4 | 5,
+  hour: number,
+  minute: number,
+): string {
+  const d = weekdayAt(isoWeekday)
+  d.setHours(hour, minute, 0, 0)
+  return `${formatDateToISO(d)}T${padTimePart(hour)}:${padTimePart(minute)}:00`
+}
+
+function eventToSegmentInfoInput(
+  event: Event<Resource>,
+): Parameters<typeof getSegmentInfo>[0] {
+  const e = event as Event<Resource> & {
+    _originalStart?: string | Date | number
+    _originalEnd?: string | Date | number
+  }
+  return {
+    start: toPlainDateTimeString(e.start),
+    end: toPlainDateTimeString(e.end),
+    ...(e._originalStart != null
+      ? { _originalStart: toPlainDateTimeString(e._originalStart) }
+      : {}),
+    ...(e._originalEnd != null
+      ? { _originalEnd: toPlainDateTimeString(e._originalEnd) }
+      : {}),
+  }
 }
 
 const sampleResources: Array<Resource> = [
@@ -77,47 +133,40 @@ const sampleResources: Array<Resource> = [
   },
 ]
 
+/*
+  Every event uses both resources. Intersection of availability on Mon–Fri:
+  Resource1 Mon–Wed 08–17, Thu–Fri 00–24; Resource2 Mon–Fri 12–18 → 12:00–17:00.
+  Multi-day slots cannot cross midnight: Resource2 is off before 12:00 on each weekday,
+  so overnight segments would sit in unavailable time.
+*/
 function getSampleEvents(): Array<Event<Resource>> {
-  const today = new Date()
-  const tomorrow = new Date(today)
-  tomorrow.setDate(today.getDate() + 1)
-
-  const dayAfterTomorrow = new Date(today)
-  dayAfterTomorrow.setDate(today.getDate() + 2)
-
-  const threeDaysLater = new Date(today)
-  threeDaysLater.setDate(today.getDate() + 3)
-
-  const fourDaysLater = new Date(today)
-  fourDaysLater.setDate(today.getDate() + 4)
-
   return [
     {
       id: '1',
       title: 'Team Meeting',
-      start: `${formatDateToISO(tomorrow)}T10:00:00`,
-      end: `${formatDateToISO(tomorrow)}T11:00:00`,
+      start: dateTimeOnWeekday(2, 12, 0),
+      end: dateTimeOnWeekday(2, 13, 0),
       resources: sampleResources,
     },
     {
       id: '2',
       title: 'Project Review',
-      start: `${formatDateToISO(dayAfterTomorrow)}T14:00:00`,
-      end: `${formatDateToISO(dayAfterTomorrow)}T15:30:00`,
+      start: dateTimeOnWeekday(3, 14, 0),
+      end: dateTimeOnWeekday(3, 15, 30),
       resources: sampleResources,
     },
     {
       id: '3',
-      title: 'Multi-day Conference',
-      start: `${formatDateToISO(threeDaysLater)}T09:00:00`,
-      end: `${formatDateToISO(fourDaysLater)}T17:00:00`,
+      title: 'Workshop',
+      start: dateTimeOnWeekday(4, 12, 0),
+      end: dateTimeOnWeekday(4, 16, 30),
       resources: sampleResources,
     },
     {
       id: '4',
       title: 'Lunch Break',
-      start: `${formatDateToISO(threeDaysLater)}T12:00:00`,
-      end: `${formatDateToISO(threeDaysLater)}T13:00:00`,
+      start: dateTimeOnWeekday(5, 12, 0),
+      end: dateTimeOnWeekday(5, 13, 0),
       resources: sampleResources,
     },
   ]
@@ -421,7 +470,9 @@ function ScheduleView({
                         const eventProps = calendar.getEventProps(event)
                         const { style, isSplitEvent } = eventProps
 
-                        const segmentInfo = getSegmentInfo(event)
+                        const segmentInfo = getSegmentInfo(
+                          eventToSegmentInfoInput(event),
+                        )
                         const {
                           isFirstSegment,
                           isLastSegment,

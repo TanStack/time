@@ -1,6 +1,8 @@
 import type { Temporal } from '@js-temporal/polyfill'
 import type { DateInput } from '~/date'
 
+export type EventDateTimeInput = string | Date | number
+
 export interface Availability {
   /** Days of the week when available (ISO weekday: 1 = Monday, ..., 7 = Sunday) */
   weekdays: Array<number>
@@ -34,8 +36,8 @@ export interface ViewMode {
 
 export interface Event<TResource extends Resource = Resource> {
   id: string
-  start: string
-  end: string
+  start: EventDateTimeInput
+  end: EventDateTimeInput
   title: string
   resources?: Array<TResource>
   /** Original start time before splitting (only set on split segments of multi-day events) */
@@ -49,6 +51,8 @@ export type Day<
   TEvent extends Event<TResource> = Event<TResource>,
 > = {
   date: Temporal.PlainDate
+  /** Pre-computed ISO date string (YYYY-MM-DD) — use instead of manually formatting `date` */
+  isoDate: string
   events: Array<TEvent>
   isToday: boolean
   isInCurrentPeriod: boolean
@@ -144,4 +148,35 @@ export interface ResizeError {
 export interface ResizeValidationResult {
   valid: boolean
   error?: ResizeError
+}
+
+export interface TimelineEventLayout<
+  TResource extends Resource = Resource,
+  TEvent extends Event<TResource> = Event<TResource>,
+> {
+  event: TEvent
+  left: number
+  width: number
+  lane: number
+  /** True when the event starts before the first visible day (left edge is clipped) */
+  isStartClipped: boolean
+  /** True when the event ends after the last visible day (right edge is clipped) */
+  isEndClipped: boolean
+}
+
+export interface TimelineResourceRow<
+  TResource extends Resource = Resource,
+  TEvent extends Event<TResource> = Event<TResource>,
+> {
+  resource: TResource
+  events: Array<TimelineEventLayout<TResource, TEvent>>
+  laneCount: number
+}
+
+export interface TimelineLayout<
+  TResource extends Resource = Resource,
+  TEvent extends Event<TResource> = Event<TResource>,
+> {
+  rows: Array<TimelineResourceRow<TResource, TEvent>>
+  currentTimePosition: number | null
 }

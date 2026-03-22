@@ -136,3 +136,89 @@ export function parse(value: string | number | Date): Date | undefined {
   }
   return value
 }
+
+interface DateParts {
+  year: number
+  month: number
+  day: number
+  hour: number
+  minute: number
+  second: number
+}
+
+const pad = (n: number): string => String(n).padStart(2, '0')
+
+function extractDateParts(value: string | Date | number): DateParts {
+  if (value instanceof Date) {
+    return {
+      year: value.getFullYear(),
+      month: value.getMonth() + 1,
+      day: value.getDate(),
+      hour: value.getHours(),
+      minute: value.getMinutes(),
+      second: value.getSeconds(),
+    }
+  }
+
+  if (typeof value === 'number') {
+    return extractDateParts(parseEpochDateTime(value))
+  }
+
+  const match =
+    rfc3339DateTimeOptionalTimeRegex.exec(value) ?? dateOnlyRegex.exec(value)
+
+  if (!match?.groups) {
+    throw new Error(
+      `"${value}" is not a valid date/time string. Expected formats: YYYY-MM-DD, YYYY-MM-DDTHH:mm, or YYYY-MM-DDTHH:mm:ss`,
+    )
+  }
+
+  return {
+    year: Number(match.groups.year),
+    month: Number(match.groups.month ?? '01'),
+    day: Number(match.groups.day ?? '01'),
+    hour: Number(match.groups.hour ?? '00'),
+    minute: Number(match.groups.minute ?? '00'),
+    second: Number(match.groups.second ?? '00'),
+  }
+}
+
+/**
+ * toPlainDateTimeString
+ * Converts a flexible date/time input (string, Date, or epoch number)
+ * into a Temporal.PlainDateTime-compatible ISO string (YYYY-MM-DDTHH:mm:ss).
+ */
+export function toPlainDateTimeString(value: string | Date | number): string {
+  const { year, month, day, hour, minute, second } = extractDateParts(value)
+  return `${year}-${pad(month)}-${pad(day)}T${pad(hour)}:${pad(minute)}:${pad(second)}`
+}
+
+/**
+ * toPlainDateString
+ * Converts a flexible date/time input (string, Date, or epoch number)
+ * into a Temporal.PlainDate-compatible ISO string (YYYY-MM-DD).
+ */
+export function toPlainDateString(value: string | Date | number): string {
+  const { year, month, day } = extractDateParts(value)
+  return `${year}-${pad(month)}-${pad(day)}`
+}
+
+/**
+ * toPlainTimeString
+ * Converts a flexible date/time input (string, Date, or epoch number)
+ * into a time-only string (HH:mm).
+ */
+export function toPlainTimeString(value: string | Date | number): string {
+  const { hour, minute } = extractDateParts(value)
+  return `${pad(hour)}:${pad(minute)}`
+}
+
+/**
+ * toDate
+ * Converts a flexible date/time input (string, Date, or epoch number)
+ * into a local-time Date at midnight, extracting only the date portion.
+ */
+export function toDate(value: string | Date | number): Date {
+  const { year, month, day } = extractDateParts(value)
+  return new Date(year, month - 1, day)
+}

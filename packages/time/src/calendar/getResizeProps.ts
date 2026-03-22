@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill'
 
-export type ResizeEdge = 'top' | 'bottom'
+export type ResizeEdge = 'top' | 'bottom' | 'left' | 'right'
 
 export interface UnavailableTimeRange {
   /** Start time in minutes from midnight (0-1440) */
@@ -87,7 +87,10 @@ export function calculateResizedEvent(
     (range) => range.startMinutes === 0 && range.endMinutes >= MINUTES_IN_DAY,
   )
 
-  if (edge === 'top') {
+  const effectiveEdge =
+    edge === 'left' ? 'top' : edge === 'right' ? 'bottom' : edge
+
+  if (effectiveEdge === 'top') {
     newStartZdt = startZdt.add({ minutes: snappedDelta })
     const maxStartZdt = endZdt.subtract({ minutes: minDurationMinutes })
     if (Temporal.ZonedDateTime.compare(newStartZdt, maxStartZdt) > 0) {
@@ -167,6 +170,14 @@ export function calculateDeltaMinutesFromPixels(
   minutesInDay: number = 24 * 60,
 ): number {
   return (deltaPixels / containerHeight) * minutesInDay
+}
+
+export function calculateDeltaMinutesFromPixelsHorizontal(
+  deltaPixels: number,
+  containerWidth: number,
+  totalMinutesInView: number,
+): number {
+  return (deltaPixels / containerWidth) * totalMinutesInView
 }
 
 export interface ResizeHandleStyle {
@@ -420,6 +431,64 @@ export function calculateGhostPreviewStyle(
   return {
     top: `${ghostTop}%`,
     height: `${Math.max(ghostHeight, minHeightPercent)}%`,
+  }
+}
+
+export interface TimelineResizePreviewOptions {
+  previewStart: string
+  previewEnd: string
+  firstDayIso: string
+  totalDays: number
+}
+
+export interface TimelineResizePreviewStyle {
+  left: string
+  width: string
+}
+
+/**
+ * Calculates left/width percentages for timeline resize preview
+ */
+export function calculateTimelineResizePreview(
+  options: TimelineResizePreviewOptions,
+): TimelineResizePreviewStyle {
+  const { previewStart, previewEnd, firstDayIso, totalDays } = options
+
+  const startStr = previewStart
+  const endStr = previewEnd
+  const startDateStr = startStr.split('T')[0]!
+  const endDateStr = endStr.split('T')[0]!
+  const startTimeStr = startStr.split('T')[1] ?? '00:00:00'
+  const endTimeStr = endStr.split('T')[1] ?? '00:00:00'
+
+  const startTimeParts = startTimeStr.split(':').map(Number)
+  const endTimeParts = endTimeStr.split(':').map(Number)
+
+  const startDayOffset = Math.round(
+    (new Date(startDateStr).getTime() - new Date(firstDayIso).getTime()) /
+      (1000 * 60 * 60 * 24),
+  )
+  const endDayOffset = Math.round(
+    (new Date(endDateStr).getTime() - new Date(firstDayIso).getTime()) /
+      (1000 * 60 * 60 * 24),
+  )
+
+  const startHours =
+    startDayOffset * 24 +
+    (startTimeParts[0] ?? 0) +
+    (startTimeParts[1] ?? 0) / 60
+  const endHours =
+    endDayOffset * 24 + (endTimeParts[0] ?? 0) + (endTimeParts[1] ?? 0) / 60
+
+  const totalHours = totalDays * 24
+
+  const left = Math.max(0, (startHours / totalHours) * 100)
+  const right = Math.min(100, (endHours / totalHours) * 100)
+  const width = Math.max(0, right - left)
+
+  return {
+    left: `${left}%`,
+    width: `${width}%`,
   }
 }
 

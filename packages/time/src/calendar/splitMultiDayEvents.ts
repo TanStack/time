@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill'
 import type { Event, Resource } from './types'
-import { endOf, startOf } from '~/date'
+import { endOf, startOf, toPlainDateTimeString } from '~/date'
 
 export const splitMultiDayEvents = <
   TResource extends Resource = Resource,
@@ -9,12 +9,12 @@ export const splitMultiDayEvents = <
   event: TEvent,
   timeZone: Temporal.TimeZoneLike,
 ): Array<TEvent> => {
-  const startDate = Temporal.PlainDateTime.from(event.start).toZonedDateTime(
-    timeZone,
-  )
-  const endDate = Temporal.PlainDateTime.from(event.end).toZonedDateTime(
-    timeZone,
-  )
+  const startDate = Temporal.PlainDateTime.from(
+    toPlainDateTimeString(event.start),
+  ).toZonedDateTime(timeZone)
+  const endDate = Temporal.PlainDateTime.from(
+    toPlainDateTimeString(event.end),
+  ).toZonedDateTime(timeZone)
   const events: Array<TEvent> = []
 
   let currentDay = startDate

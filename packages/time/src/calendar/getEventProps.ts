@@ -1,5 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill'
-import type { CalendarStore, Event } from './types'
+import type { CalendarStore, Event, EventDateTimeInput } from './types'
+import { toPlainDateTimeString } from '~/date/parse'
 
 interface GetEventPropsOptions {
   timeZone: Temporal.TimeZoneLike
@@ -9,10 +10,12 @@ const MINUTES_IN_DAY = 24 * 60
 const MIN_EVENT_HEIGHT_MINUTES = 30
 
 const toZonedDateTime = (
-  dateString: string,
+  dateInput: EventDateTimeInput,
   timeZone: Temporal.TimeZoneLike,
 ): Temporal.ZonedDateTime =>
-  Temporal.PlainDateTime.from(dateString).toZonedDateTime(timeZone)
+  Temporal.PlainDateTime.from(toPlainDateTimeString(dateInput)).toZonedDateTime(
+    timeZone,
+  )
 
 const toMinutes = (date: Temporal.ZonedDateTime): number =>
   date.hour * 60 + date.minute
@@ -35,7 +38,10 @@ const getFullEventTimes = (
   fallback: Event,
 ): { start: string; end: string } => {
   if (segments.length <= 1) {
-    return { start: fallback.start, end: fallback.end }
+    return {
+      start: toPlainDateTimeString(fallback.start),
+      end: toPlainDateTimeString(fallback.end),
+    }
   }
 
   const sorted = [...segments].sort((a, b) =>
@@ -46,8 +52,8 @@ const getFullEventTimes = (
   )
 
   return {
-    start: sorted[0]?.start ?? fallback.start,
-    end: sorted[sorted.length - 1]?.end ?? fallback.end,
+    start: toPlainDateTimeString(sorted[0]?.start ?? fallback.start),
+    end: toPlainDateTimeString(sorted[sorted.length - 1]?.end ?? fallback.end),
   }
 }
 

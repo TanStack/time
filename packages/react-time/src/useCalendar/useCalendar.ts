@@ -10,6 +10,7 @@ import { useStore } from '@tanstack/react-store'
 import {
   CalendarCore,
   calculateDeltaMinutesFromPixels,
+  calculateDeltaMinutesFromPixelsHorizontal,
   getTimeClient,
 } from '@tanstack/time'
 import type {
@@ -28,6 +29,8 @@ export interface ResizeState {
   edge: ResizeEdge | null
   previewStart: string | null
   previewEnd: string | null
+  lastValidPreviewStart: string | null
+  lastValidPreviewEnd: string | null
   targetDayDate: string | null
   blocked: boolean
 }
@@ -35,6 +38,8 @@ export interface ResizeState {
 export interface ResizeOptions {
   enabled?: boolean
   containerHeight?: number
+  containerWidth?: number
+  orientation?: 'vertical' | 'horizontal'
   constraints?: ResizeConstraints
   onResizeStart?: (eventId: string, edge: ResizeEdge) => void
   onResizeEnd?: (eventId: string, newStart: string, newEnd: string) => void
@@ -62,6 +67,8 @@ const initialResizeState: ResizeState = {
   edge: null,
   previewStart: null,
   previewEnd: null,
+  lastValidPreviewStart: null,
+  lastValidPreviewEnd: null,
   targetDayDate: null,
   blocked: false,
 }
@@ -83,15 +90,19 @@ export const useCalendar = <
   getDayColumnProps: (dayDate: string) => DayColumnProps
 } => {
   const { resize, ...calendarOptions } = options
-  const resizeEnabled = resize?.enabled ?? true
-  const containerHeight = resize?.containerHeight ?? 0
-  const resizeConstraints = resize?.constraints
 
   const [calendarCore] = useState(
     () => new CalendarCore<TResource, TEvent>(calendarOptions),
   )
   const state = useStore(calendarCore.store)
   const [isPending, startTransition] = useTransition()
+
+  const resizeOptionsRef = useRef<ResizeOptions | undefined>(resize)
+  resizeOptionsRef.current = resize
+
+  const calendarOptionsRef =
+    useRef<CalendarCoreOptions<TResource, TEvent>>(calendarOptions)
+  calendarOptionsRef.current = calendarOptions
 
   const resizeStateRef = useRef<ResizeState>(initialResizeState)
   const resizeListenersRef = useRef<Set<() => void>>(new Set())
@@ -102,8 +113,10 @@ export const useCalendar = <
     end: string
     edge: ResizeEdge
     startY: number
+    startX: number
     originalDayDate: string
     currentDayDate: string
+    totalDaysInView: number
   } | null>(null)
   const lastEmittedErrorRef = useRef<{
     eventId: string
@@ -146,35 +159,66 @@ export const useCalendar = <
     return null
   }, [])
 
+  const getDayFromElement = useCallback(
+    (element: HTMLElement): string | null => {
+      for (const [dayDate, dayElement] of dayColumnRefsRef.current) {
+        if (dayElement.contains(element)) {
+          return dayDate
+        }
+      }
+      return null
+    },
+    [],
+  )
+
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
       if (!originalEventRef.current) return
 
-      const { id, start, end, edge, startY, originalDayDate } =
+      const resizeOpts = resizeOptionsRef.current
+      const containerHeight = resizeOpts?.containerHeight ?? 0
+      const containerWidth = resizeOpts?.containerWidth ?? 0
+      const orientation = resizeOpts?.orientation ?? 'vertical'
+      const constraints = resizeOpts?.constraints
+
+      const { id, start, end, edge, startY, startX, originalDayDate } =
         originalEventRef.current
-      const deltaY = e.clientY - startY
 
-      const deltaMinutes = calculateDeltaMinutesFromPixels(
-        deltaY,
-        containerHeight,
-      )
+      let targetDayDate: string
+      let totalDeltaMinutes: number
 
-      const targetDayDate = getDayFromPoint(e.clientX) ?? originalDayDate
-
-      let dayOffsetMinutes = 0
-      if (targetDayDate && targetDayDate !== originalDayDate) {
-        const originalDate = new Date(originalDayDate + 'T00:00:00')
-        const targetDate = new Date(targetDayDate + 'T00:00:00')
-        const dayDiff = Math.round(
-          (targetDate.getTime() - originalDate.getTime()) /
-            (1000 * 60 * 60 * 24),
+      if (orientation === 'horizontal') {
+        if (containerWidth === 0) return
+        const totalMinutesInView =
+          originalEventRef.current.totalDaysInView * 24 * 60
+        totalDeltaMinutes = calculateDeltaMinutesFromPixelsHorizontal(
+          e.clientX - startX,
+          containerWidth,
+          totalMinutesInView,
+        )
+        targetDayDate = originalDayDate
+      } else {
+        const deltaMinutes = calculateDeltaMinutesFromPixels(
+          e.clientY - startY,
+          containerHeight,
         )
 
-        dayOffsetMinutes = dayDiff * 24 * 60
-        originalEventRef.current.currentDayDate = targetDayDate
-      }
+        targetDayDate = getDayFromPoint(e.clientX) ?? originalDayDate
 
-      const totalDeltaMinutes = deltaMinutes + dayOffsetMinutes
+        let dayOffsetMinutes = 0
+        if (targetDayDate !== originalDayDate) {
+          const originalDate = new Date(originalDayDate + 'T00:00:00')
+          const targetDate = new Date(targetDayDate + 'T00:00:00')
+          const dayDiff = Math.round(
+            (targetDate.getTime() - originalDate.getTime()) /
+              (1000 * 60 * 60 * 24),
+          )
+          dayOffsetMinutes = dayDiff * 24 * 60
+          originalEventRef.current.currentDayDate = targetDayDate
+        }
+
+        totalDeltaMinutes = deltaMinutes + dayOffsetMinutes
+      }
 
       const validation = calendarCore.validateResize({
         eventId: id,
@@ -184,11 +228,13 @@ export const useCalendar = <
         totalDeltaMinutes,
         targetDayDate,
         originalDayDate,
-        constraints: resizeConstraints,
+        constraints,
       })
 
       if (validation.blocked && validation.error) {
-        const event = calendarOptions.events?.find((ev) => ev.id === id)
+        const event = calendarOptionsRef.current.events?.find(
+          (ev) => ev.id === id,
+        )
         const now = Date.now()
         const lastError = lastEmittedErrorRef.current
 
@@ -225,7 +271,7 @@ export const useCalendar = <
                 : undefined,
           })
 
-          resize?.onResizeError?.(resizeError)
+          resizeOpts?.onResizeError?.(resizeError)
 
           lastEmittedErrorRef.current = {
             eventId: id,
@@ -237,42 +283,54 @@ export const useCalendar = <
         lastEmittedErrorRef.current = null
       }
 
+      const currentState = resizeStateRef.current
+      const effectivePreviewStart = validation.blocked
+        ? (currentState.lastValidPreviewStart ?? start)
+        : validation.result.start
+      const effectivePreviewEnd = validation.blocked
+        ? (currentState.lastValidPreviewEnd ?? end)
+        : validation.result.end
+
       updateResizeState({
         eventId: id,
-        previewStart: validation.result.start,
-        previewEnd: validation.result.end,
+        previewStart: effectivePreviewStart,
+        previewEnd: effectivePreviewEnd,
+        ...(!validation.blocked && {
+          lastValidPreviewStart: validation.result.start,
+          lastValidPreviewEnd: validation.result.end,
+        }),
         targetDayDate: validation.targetDayDate,
         blocked: validation.blocked,
       })
     },
-    [
-      containerHeight,
-      calendarOptions.events,
-      calendarCore,
-      resizeConstraints,
-      resize,
-      getDayFromPoint,
-      updateResizeState,
-    ],
+    [calendarCore, getDayFromPoint, updateResizeState],
   )
 
   const handleMouseUp = useCallback(() => {
     const currentState = resizeStateRef.current
+    const original = originalEventRef.current
+
     if (
       currentState.eventId &&
       currentState.previewStart &&
-      currentState.previewEnd &&
-      !currentState.blocked
+      currentState.previewEnd
     ) {
-      calendarCore.updateEvent(currentState.eventId, {
-        start: currentState.previewStart,
-        end: currentState.previewEnd,
-      } as Partial<Omit<TEvent, 'id'>>)
-      resize?.onResizeEnd?.(
-        currentState.eventId,
-        currentState.previewStart,
-        currentState.previewEnd,
-      )
+      const hasChanged =
+        !original ||
+        currentState.previewStart !== original.start ||
+        currentState.previewEnd !== original.end
+
+      if (hasChanged) {
+        calendarCore.updateEvent(currentState.eventId, {
+          start: currentState.previewStart,
+          end: currentState.previewEnd,
+        } as Partial<Omit<TEvent, 'id'>>)
+        resizeOptionsRef.current?.onResizeEnd?.(
+          currentState.eventId,
+          currentState.previewStart,
+          currentState.previewEnd,
+        )
+      }
     }
 
     originalEventRef.current = null
@@ -281,19 +339,7 @@ export const useCalendar = <
 
     document.removeEventListener('mousemove', handleMouseMove)
     document.removeEventListener('mouseup', handleMouseUp)
-  }, [calendarCore, handleMouseMove, resize, updateResizeState])
-
-  const getDayFromElement = useCallback(
-    (element: HTMLElement): string | null => {
-      for (const [dayDate, dayElement] of dayColumnRefsRef.current) {
-        if (dayElement.contains(element)) {
-          return dayDate
-        }
-      }
-      return null
-    },
-    [],
-  )
+  }, [calendarCore, handleMouseMove, updateResizeState])
 
   const getResizeHandleProps = useCallback(
     (
@@ -303,12 +349,14 @@ export const useCalendar = <
       originalEnd: string,
     ): ResizeHandleHandlers => ({
       onMouseDown: (e: React.MouseEvent) => {
-        if (!resizeEnabled) return
+        if (!(resizeOptionsRef.current?.enabled ?? true)) return
 
         e.preventDefault()
         e.stopPropagation()
 
-        const dayDate = getDayFromElement(e.target as HTMLElement)
+        const dayDate =
+          getDayFromElement(e.target as HTMLElement) ??
+          getDayFromPoint(e.clientX)
         if (!dayDate) return
 
         originalEventRef.current = {
@@ -317,8 +365,10 @@ export const useCalendar = <
           end: originalEnd,
           edge,
           startY: e.clientY,
+          startX: e.clientX,
           originalDayDate: dayDate,
           currentDayDate: dayDate,
+          totalDaysInView: calendarCore.getDaysWithEvents().length,
         }
 
         updateResizeState({
@@ -327,21 +377,23 @@ export const useCalendar = <
           edge,
           previewStart: originalStart,
           previewEnd: originalEnd,
+          lastValidPreviewStart: originalStart,
+          lastValidPreviewEnd: originalEnd,
           targetDayDate: dayDate,
         })
 
-        resize?.onResizeStart?.(eventId, edge)
+        resizeOptionsRef.current?.onResizeStart?.(eventId, edge)
 
         document.addEventListener('mousemove', handleMouseMove)
         document.addEventListener('mouseup', handleMouseUp)
       },
     }),
     [
-      resizeEnabled,
+      calendarCore,
       getDayFromElement,
+      getDayFromPoint,
       handleMouseMove,
       handleMouseUp,
-      resize,
       updateResizeState,
     ],
   )
@@ -450,6 +502,8 @@ export const useCalendar = <
     [calendarCore],
   )
 
+  const containerHeight = resize?.containerHeight ?? 0
+
   const getUnavailableRanges = useCallback<
     typeof calendarCore.getUnavailableRanges
   >(
@@ -459,6 +513,20 @@ export const useCalendar = <
         resourceIds: options?.resourceIds,
       }),
     [calendarCore, containerHeight],
+  )
+
+  const getEventsByResource = useCallback<
+    typeof calendarCore.getEventsByResource
+  >(() => calendarCore.getEventsByResource(), [calendarCore])
+
+  const getTimelineLayout = useCallback<typeof calendarCore.getTimelineLayout>(
+    () => calendarCore.getTimelineLayout(),
+    [calendarCore],
+  )
+
+  const formatPeriodLabel = useCallback<typeof calendarCore.formatPeriodLabel>(
+    (options) => calendarCore.formatPeriodLabel(options),
+    [calendarCore],
   )
 
   const days = useMemo(() => {
@@ -491,5 +559,8 @@ export const useCalendar = <
     getResizeHandleProps,
     getDayColumnProps,
     getUnavailableRanges,
+    getEventsByResource,
+    getTimelineLayout,
+    formatPeriodLabel,
   }
 }

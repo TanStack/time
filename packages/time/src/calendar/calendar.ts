@@ -5,6 +5,7 @@ import { getEventProps } from './getEventProps'
 import { groupDaysBy } from './groupDaysBy'
 import { getTimeSlots } from './getTimeSlots'
 import { calculateResizedEvent } from './getResizeProps'
+import { toPlainDateString, toPlainDateTimeString } from '~/date/parse'
 import { DateCore } from './date-core'
 import type { DateCoreOptions, ParsedDateCoreOptions } from './date-core'
 import type {
@@ -19,6 +20,8 @@ import type {
   ResizeError,
   Resource,
   TimeSlot,
+  TimelineLayout,
+  TimelineResourceRow,
   UnavailableRange,
   ViewMode,
 } from './types'
@@ -111,6 +114,12 @@ interface CalendarActions<
       resourceIds?: Array<TResource['id']>
     },
   ) => Array<UnavailableRange>
+  /** Groups visible events by resource, merging multi-day segments back to full-span events. */
+  getEventsByResource: () => Map<TResource['id'], Array<TEvent>>
+  /** Computes horizontal timeline layout with event positions, lane assignments, and current time marker. */
+  getTimelineLayout: () => TimelineLayout<TResource, TEvent>
+  /** Returns a human-readable label for the currently visible date range. */
+  formatPeriodLabel: (options?: { locale?: string }) => string
 }
 
 interface CalendarState<
@@ -193,9 +202,19 @@ export class CalendarCore<
   constructor(options: CalendarCoreOptions<TResource, TEvent>) {
     super(options)
     Object.assign(this.options, {
-      events: options.events || null,
+      events: options.events?.map((e) => this.normalizeEvent(e)) || null,
       resources: options.resources || null,
     })
+  }
+
+  private normalizeEvent<
+    T extends { start: string | Date | number; end: string | Date | number },
+  >(event: T): T {
+    return {
+      ...event,
+      start: toPlainDateTimeString(event.start),
+      end: toPlainDateTimeString(event.end),
+    }
   }
 
   protected getCalendarDays() {
@@ -206,10 +225,10 @@ export class CalendarCore<
     const map = new Map<string, Array<TEvent>>()
     this.options.events?.forEach((event) => {
       const eventStartDate = Temporal.PlainDateTime.from(
-        event.start,
+        toPlainDateTimeString(event.start),
       ).toZonedDateTime(this.options.timeZone)
       const eventEndDate = Temporal.PlainDateTime.from(
-        event.end,
+        toPlainDateTimeString(event.end),
       ).toZonedDateTime(this.options.timeZone)
       const startPlainDate = eventStartDate.toPlainDate()
       const endPlainDate = eventEndDate.toPlainDate()
@@ -220,7 +239,9 @@ export class CalendarCore<
           this.options.timeZone,
         )
         splitEvents.forEach((splitEvent) => {
-          const dateKey = Temporal.PlainDateTime.from(splitEvent.start)
+          const dateKey = Temporal.PlainDateTime.from(
+            toPlainDateTimeString(splitEvent.start),
+          )
             .toPlainDate()
             .toString({ calendarName: 'never' })
           if (!map.has(dateKey)) map.set(dateKey, [])
@@ -236,12 +257,11 @@ export class CalendarCore<
   }
 
   getDaysWithEvents() {
-    console.log('getDaysWithEvents')
     const calendarDays = this.getCalendarDays()
     const eventMap = this.getEventMap()
     return calendarDays.map((day) => {
-      const dayKey = day.toString({ calendarName: 'never' })
-      const dailyEvents = eventMap.get(dayKey) ?? []
+      const isoDate = day.toString({ calendarName: 'never' })
+      const dailyEvents = eventMap.get(isoDate) ?? []
       const currentMonthRange = Array.from(
         { length: this.store.state.viewMode.value },
         (_, i) => this.store.state.currentPeriod.add({ months: i }).month,
@@ -249,12 +269,32 @@ export class CalendarCore<
       const isInCurrentPeriod = currentMonthRange.includes(day.month)
       return {
         date: day,
+        isoDate,
         events: dailyEvents,
         isToday:
           Temporal.PlainDate.compare(day, Temporal.Now.plainDateISO()) === 0,
         isInCurrentPeriod,
       }
     })
+  }
+
+  formatPeriodLabel(options?: { locale?: string }): string {
+    const days = this.getDaysWithEvents()
+    if (days.length === 0) return ''
+
+    const locale = options?.locale ?? this.options.locale
+    const first = days[0]!
+    const last = days[days.length - 1]!
+
+    const fmt = (d: Temporal.PlainDate) =>
+      new Date(d.year, d.month - 1, d.day).toLocaleDateString(locale, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+
+    if (days.length === 1) return fmt(first.date)
+    return `${fmt(first.date)} \u2014 ${fmt(last.date)}`
   }
 
   getEventProps(event: TEvent) {
@@ -297,17 +337,18 @@ export class CalendarCore<
     if (!this.options.events) {
       this.options.events = []
     }
-    this.options.events.push(event)
+    const normalized = this.normalizeEvent(event)
+    this.options.events.push(normalized)
     this.store.setState((prev) => ({
       ...prev,
       eventsVersion: prev.eventsVersion + 1,
     }))
 
     getTimeClient().emit('event:added', {
-      eventId: event.id,
-      eventTitle: event.title,
-      start: event.start,
-      end: event.end,
+      eventId: normalized.id,
+      eventTitle: normalized.title,
+      start: normalized.start,
+      end: normalized.end,
     })
   }
 
@@ -317,21 +358,33 @@ export class CalendarCore<
     const index = this.options.events.findIndex((e) => e.id === id)
     if (index === -1) return
 
+    const normalizedUpdates = {
+      ...updates,
+      ...(updates.start != null
+        ? { start: toPlainDateTimeString(updates.start) }
+        : {}),
+      ...(updates.end != null
+        ? { end: toPlainDateTimeString(updates.end) }
+        : {}),
+    }
+
     const existingEvent = this.options.events[index]
-    this.options.events[index] = { ...existingEvent, ...updates } as TEvent
+    this.options.events[index] = {
+      ...existingEvent,
+      ...normalizedUpdates,
+    } as TEvent
     this.store.setState((prev) => ({
       ...prev,
       eventsVersion: prev.eventsVersion + 1,
     }))
 
-    // Emit event to TimeClient
     if (existingEvent) {
       getTimeClient().emit('event:updated', {
         eventId: id,
         eventTitle: existingEvent.title,
         start: this.options.events[index].start,
         end: this.options.events[index].end,
-        updates: updates as Record<string, unknown>,
+        updates: normalizedUpdates as Record<string, unknown>,
       })
     }
   }
@@ -571,6 +624,158 @@ export class CalendarCore<
     return details
   }
 
+  private getMergedEventsByResource(
+    days: Array<Day<TResource, TEvent>>,
+  ): Map<TResource['id'], Array<TEvent>> {
+    const map = new Map<TResource['id'], Array<TEvent>>()
+    this.options.resources?.forEach((r) => map.set(r.id, []))
+
+    const allSegments = days.flatMap((d) => d.events)
+    const merged = new Map<string, TEvent>()
+    for (const segment of allSegments) {
+      if (!merged.has(segment.id)) {
+        merged.set(segment.id, {
+          ...segment,
+          start: segment._originalStart ?? segment.start,
+          end: segment._originalEnd ?? segment.end,
+        } as TEvent)
+      }
+    }
+
+    for (const event of merged.values()) {
+      const resourceIds = event.resources?.map((r) => r.id) ?? []
+      for (const rid of resourceIds) {
+        map.get(rid)?.push(event)
+      }
+    }
+
+    return map
+  }
+
+  getEventsByResource(): Map<TResource['id'], Array<TEvent>> {
+    return this.getMergedEventsByResource(this.getDaysWithEvents())
+  }
+
+  getTimelineLayout(): TimelineLayout<TResource, TEvent> {
+    const days = this.getDaysWithEvents()
+
+    if (days.length === 0) {
+      return { rows: [], currentTimePosition: null }
+    }
+
+    const firstDay = days[0]!.date
+    const totalDays = days.length
+    const eventsByResource = this.getMergedEventsByResource(days)
+
+    const rows: Array<TimelineResourceRow<TResource, TEvent>> = (
+      this.options.resources ?? []
+    ).map((resource) => {
+      const resourceEvents = eventsByResource.get(resource.id) ?? []
+
+      const positioned = resourceEvents
+        .map((event) => {
+          const pos = this.computeTimelineEventPosition(
+            event,
+            firstDay,
+            totalDays,
+          )
+          if (pos.width <= 0) return null
+          return { event, ...pos, right: pos.left + pos.width }
+        })
+        .filter((v): v is NonNullable<typeof v> => v !== null)
+
+      const lanes: Array<Array<{ left: number; right: number }>> = []
+      const withLanes = positioned.map((item) => {
+        let assignedLane = 0
+        for (assignedLane = 0; assignedLane < lanes.length; assignedLane++) {
+          const hasOverlap = lanes[assignedLane]!.some(
+            (existing) =>
+              item.left < existing.right && item.right > existing.left,
+          )
+          if (!hasOverlap) break
+        }
+        if (!lanes[assignedLane]) lanes[assignedLane] = []
+        lanes[assignedLane]!.push({ left: item.left, right: item.right })
+        return {
+          event: item.event,
+          left: item.left,
+          width: item.width,
+          lane: assignedLane,
+          isStartClipped: item.isStartClipped,
+          isEndClipped: item.isEndClipped,
+        }
+      })
+
+      return {
+        resource,
+        events: withLanes,
+        laneCount: Math.max(1, lanes.length),
+      }
+    })
+
+    let currentTimePosition: number | null = null
+    const now = Temporal.Now.zonedDateTimeISO(this.options.timeZone)
+    const todayStr = now.toPlainDate().toString({ calendarName: 'never' })
+    const todayIndex = days.findIndex(
+      (d) => d.date.toString({ calendarName: 'never' }) === todayStr,
+    )
+    if (todayIndex >= 0) {
+      const hourFraction = now.hour + now.minute / 60
+      const totalHours = totalDays * 24
+      currentTimePosition =
+        ((todayIndex * 24 + hourFraction) / totalHours) * 100
+    }
+
+    return { rows, currentTimePosition }
+  }
+
+  private computeTimelineEventPosition(
+    event: TEvent,
+    firstDay: Temporal.PlainDate,
+    totalDays: number,
+  ): { left: number; width: number } {
+    const startStr = toPlainDateTimeString(event.start)
+    const endStr = toPlainDateTimeString(event.end)
+
+    const startDateStr = startStr.split('T')[0]!
+    const endDateStr = endStr.split('T')[0]!
+    const startTimeStr = startStr.split('T')[1] ?? '00:00:00'
+    const endTimeStr = endStr.split('T')[1] ?? '00:00:00'
+
+    const startTimeParts = startTimeStr.split(':').map(Number)
+    const endTimeParts = endTimeStr.split(':').map(Number)
+
+    const firstDayIso = firstDay.toString({ calendarName: 'never' })
+    const startDayOffset = Temporal.PlainDate.from(firstDayIso).until(
+      Temporal.PlainDate.from(startDateStr),
+    ).days
+    const endDayOffset = Temporal.PlainDate.from(firstDayIso).until(
+      Temporal.PlainDate.from(endDateStr),
+    ).days
+
+    const startHours =
+      startDayOffset * 24 +
+      (startTimeParts[0] ?? 0) +
+      (startTimeParts[1] ?? 0) / 60
+    const endHours =
+      endDayOffset * 24 + (endTimeParts[0] ?? 0) + (endTimeParts[1] ?? 0) / 60
+
+    const totalHours = totalDays * 24
+
+    const rawLeft = (startHours / totalHours) * 100
+    const rawRight = (endHours / totalHours) * 100
+
+    const left = Math.max(0, rawLeft)
+    const right = Math.min(100, rawRight)
+
+    return {
+      left,
+      width: right - left,
+      isStartClipped: rawLeft < 0,
+      isEndClipped: rawRight > 100,
+    }
+  }
+
   private getUnavailableMinuteRanges(
     date: string,
     options?: { resourceIds?: Array<string> },
@@ -755,6 +960,9 @@ export class CalendarCore<
     const originalStartDate = originalStart.split('T')[0] ?? ''
     const originalEndDate = originalEnd.split('T')[0] ?? ''
 
+    const effectiveEdge =
+      edge === 'left' ? 'top' : edge === 'right' ? 'bottom' : edge
+
     let shouldBlockResize = false
     let blockReason: ResizeError['reason'] = 'blocked'
     let blockMessage = 'Resize blocked'
@@ -766,7 +974,7 @@ export class CalendarCore<
       return Math.round(minutes / snapToMinutes) * snapToMinutes
     }
 
-    if (edge === 'top' && targetDayDate < originalStartDate) {
+    if (effectiveEdge === 'top' && targetDayDate < originalStartDate) {
       const rawStartMinutes =
         new Date(originalStart).getHours() * 60 +
         new Date(originalStart).getMinutes() +
@@ -847,7 +1055,7 @@ export class CalendarCore<
           })
         }
       }
-    } else if (edge === 'bottom' && targetDayDate > originalEndDate) {
+    } else if (effectiveEdge === 'bottom' && targetDayDate > originalEndDate) {
       const rawEndMinutes =
         new Date(originalEnd).getHours() * 60 +
         new Date(originalEnd).getMinutes() +
@@ -938,11 +1146,11 @@ export class CalendarCore<
       const rawStartMinutes =
         new Date(originalStart).getHours() * 60 +
         new Date(originalStart).getMinutes() +
-        (edge === 'top' ? totalDeltaMinutes : 0)
+        (effectiveEdge === 'top' ? totalDeltaMinutes : 0)
       const rawEndMinutes =
         new Date(originalEnd).getHours() * 60 +
         new Date(originalEnd).getMinutes() +
-        (edge === 'bottom' ? totalDeltaMinutes : 0)
+        (effectiveEdge === 'bottom' ? totalDeltaMinutes : 0)
 
       const snappedStartMinutes = snapMins(
         ((rawStartMinutes % MINUTES_IN_DAY) + MINUTES_IN_DAY) % MINUTES_IN_DAY,
@@ -1010,6 +1218,92 @@ export class CalendarCore<
             .join(', ')
           blockMessage = `Unavailable: Event at ${formatMinutesToTime(snappedStartMinutes)}-${formatMinutesToTime(snappedEndMinutes)} conflicts with ${detailsText}`
           conflicts.push(...capacityConflicts)
+        }
+      }
+    }
+
+    // Comprehensive datetime-based check: catches multi-day event resizes and
+    // cases where the existing per-day-minute logic doesn't apply (e.g.
+    // horizontal timeline where targetDayDate is always the original day).
+    if (!shouldBlockResize && resourceIds?.length) {
+      const originalStartMs = new Date(originalStart).getTime()
+      const originalEndMs = new Date(originalEnd).getTime()
+      const snapMs = snapToMinutes * 60_000
+      const snappedDeltaMs =
+        Math.round((totalDeltaMinutes * 60_000) / snapMs) * snapMs
+
+      // Only check the *new territory* being added — shrinking is always fine.
+      let checkFromMs: number | null = null
+      let checkToMs: number | null = null
+
+      if (effectiveEdge === 'bottom') {
+        const newEndMs = originalEndMs + snappedDeltaMs
+        if (newEndMs > originalEndMs) {
+          checkFromMs = originalEndMs
+          checkToMs = newEndMs
+        }
+      } else if (effectiveEdge === 'top') {
+        const newStartMs = originalStartMs + snappedDeltaMs
+        if (newStartMs < originalStartMs) {
+          checkFromMs = newStartMs
+          checkToMs = originalStartMs
+        }
+      }
+
+      if (checkFromMs !== null && checkToMs !== null) {
+        const dayMs = 24 * 60 * 60 * 1_000
+        const cursor = new Date(checkFromMs)
+        cursor.setHours(0, 0, 0, 0)
+
+        while (cursor.getTime() < checkToMs && !shouldBlockResize) {
+          const dayStr = toPlainDateString(cursor)
+          const dayStartMs = cursor.getTime()
+          const dayEndMs = dayStartMs + dayMs
+
+          const overlapStartMs = Math.max(checkFromMs, dayStartMs)
+          const overlapEndMs = Math.min(checkToMs, dayEndMs)
+
+          if (overlapStartMs < overlapEndMs) {
+            const overlapStartMins = Math.floor(
+              (overlapStartMs - dayStartMs) / 60_000,
+            )
+            const overlapEndMins = Math.ceil(
+              (overlapEndMs - dayStartMs) / 60_000,
+            )
+
+            const details = this.getUnavailabilityDetails(
+              dayStr,
+              overlapStartMins,
+              overlapEndMins,
+              { resourceIds },
+            )
+
+            if (details.length > 0) {
+              shouldBlockResize = true
+              blockReason = 'unavailable-time'
+              const detailsText = details
+                .map((d) => `${d.resourceLabel} (${d.reason})`)
+                .join(', ')
+              blockMessage = `Unavailable: ${dayStr} ${formatMinutesToTime(overlapStartMins)}–${formatMinutesToTime(overlapEndMins)} conflicts with ${detailsText}`
+              conflicts.push({
+                date: dayStr,
+                conflictRange: {
+                  start: formatMinutesToTime(overlapStartMins),
+                  end: formatMinutesToTime(overlapEndMins),
+                },
+                resourceIds: details.map((d) => d.resourceId),
+                resourceDetails: details.map((d) => ({
+                  resourceId: d.resourceId,
+                  resourceLabel: d.resourceLabel,
+                  reason: d.reason,
+                  description: d.description,
+                })),
+                description: details.map((d) => d.description).join('; '),
+              })
+            }
+          }
+
+          cursor.setTime(cursor.getTime() + dayMs)
         }
       }
     }

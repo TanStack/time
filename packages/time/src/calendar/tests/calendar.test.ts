@@ -1,6 +1,7 @@
-import { describe, expect, test, beforeEach } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import { CalendarCore } from '../calendar'
 import type { Event, Resource } from '../types'
+import { toPlainDateTimeString } from '~/date/parse'
 
 type TestResource = Resource
 type TestEvent = Event<TestResource>
@@ -51,6 +52,55 @@ const noAvailabilityResource: TestResource = {
 const DATE_MON = '2024-03-18'
 const DATE_TUE = '2024-03-19'
 
+describe('toPlainDateTimeString', () => {
+  test('passes through full ISO datetime unchanged', () => {
+    expect(toPlainDateTimeString('2024-03-18T09:00:00')).toBe(
+      '2024-03-18T09:00:00',
+    )
+  })
+
+  test('adds midnight time to date-only string', () => {
+    expect(toPlainDateTimeString('2024-03-18')).toBe('2024-03-18T00:00:00')
+  })
+
+  test('fills in missing seconds from partial time', () => {
+    expect(toPlainDateTimeString('2024-03-18T09:30')).toBe(
+      '2024-03-18T09:30:00',
+    )
+  })
+
+  test('fills in missing minutes and seconds from hour-only time', () => {
+    expect(toPlainDateTimeString('2024-03-18T09')).toBe('2024-03-18T09:00:00')
+  })
+
+  test('handles space separator instead of T', () => {
+    expect(toPlainDateTimeString('2024-03-18 14:30:00')).toBe(
+      '2024-03-18T14:30:00',
+    )
+  })
+
+  test('strips timezone offset and returns plain datetime', () => {
+    expect(toPlainDateTimeString('2024-03-18T09:00:00Z')).toBe(
+      '2024-03-18T09:00:00',
+    )
+  })
+
+  test('converts Date object to ISO datetime string using local time', () => {
+    const date = new Date(2024, 2, 18, 10, 30, 0)
+    expect(toPlainDateTimeString(date)).toBe('2024-03-18T10:30:00')
+  })
+
+  test('converts epoch number to ISO datetime string', () => {
+    const date = new Date(2024, 2, 18, 0, 0, 0)
+    const result = toPlainDateTimeString(date.getTime())
+    expect(result).toBe(toPlainDateTimeString(date))
+  })
+
+  test('throws on invalid string input', () => {
+    expect(() => toPlainDateTimeString('not-a-date')).toThrow()
+  })
+})
+
 describe('CalendarCore', () => {
   describe('constructor', () => {
     test('initializes with events and resources', () => {
@@ -66,6 +116,53 @@ describe('CalendarCore', () => {
 
       expect(cal.options.events).toHaveLength(1)
       expect(cal.options.resources).toHaveLength(1)
+    })
+
+    test('normalizes date-only event start/end to full datetime', () => {
+      const events: Array<TestEvent> = [
+        {
+          id: '1',
+          title: 'Date-only',
+          start: DATE_MON,
+          end: DATE_TUE,
+        },
+      ]
+      const cal = createCalendar({ events })
+
+      expect(cal.options.events![0]!.start).toBe(`${DATE_MON}T00:00:00`)
+      expect(cal.options.events![0]!.end).toBe(`${DATE_TUE}T00:00:00`)
+    })
+
+    test('normalizes partial datetime event start/end', () => {
+      const events: Array<TestEvent> = [
+        {
+          id: '1',
+          title: 'Partial time',
+          start: `${DATE_MON}T09:30`,
+          end: `${DATE_MON}T17`,
+        },
+      ]
+      const cal = createCalendar({ events })
+
+      expect(cal.options.events![0]!.start).toBe(`${DATE_MON}T09:30:00`)
+      expect(cal.options.events![0]!.end).toBe(`${DATE_MON}T17:00:00`)
+    })
+
+    test('normalizes Date objects in event start/end', () => {
+      const startDate = new Date(2024, 2, 18, 9, 0, 0)
+      const endDate = new Date(2024, 2, 18, 17, 0, 0)
+      const events: Array<TestEvent> = [
+        {
+          id: '1',
+          title: 'Date objects',
+          start: startDate,
+          end: endDate,
+        },
+      ]
+      const cal = createCalendar({ events })
+
+      expect(cal.options.events![0]!.start).toBe(`${DATE_MON}T09:00:00`)
+      expect(cal.options.events![0]!.end).toBe(`${DATE_MON}T17:00:00`)
     })
   })
 
@@ -176,6 +273,34 @@ describe('CalendarCore', () => {
 
       expect(cal.store.state.eventsVersion).toBe(versionBefore + 1)
     })
+
+    test('normalizes date-only start/end when adding event', () => {
+      const cal = createCalendar()
+
+      cal.addEvent({
+        id: '1',
+        title: 'Date-only add',
+        start: DATE_MON,
+        end: DATE_TUE,
+      })
+
+      expect(cal.options.events![0]!.start).toBe(`${DATE_MON}T00:00:00`)
+      expect(cal.options.events![0]!.end).toBe(`${DATE_TUE}T00:00:00`)
+    })
+
+    test('normalizes Date objects when adding event', () => {
+      const cal = createCalendar()
+
+      cal.addEvent({
+        id: '1',
+        title: 'Date object add',
+        start: new Date(2024, 2, 18, 14, 0, 0),
+        end: new Date(2024, 2, 18, 15, 0, 0),
+      })
+
+      expect(cal.options.events![0]!.start).toBe(`${DATE_MON}T14:00:00`)
+      expect(cal.options.events![0]!.end).toBe(`${DATE_MON}T15:00:00`)
+    })
   })
 
   describe('updateEvent', () => {
@@ -215,6 +340,48 @@ describe('CalendarCore', () => {
 
       expect(cal.options.events![0]!.start).toBe(`${DATE_MON}T11:00:00`)
       expect(cal.options.events![0]!.end).toBe(`${DATE_MON}T12:00:00`)
+    })
+
+    test('normalizes date-only start/end when updating event', () => {
+      const cal = createCalendar({
+        events: [
+          {
+            id: '1',
+            title: 'E',
+            start: `${DATE_MON}T09:00:00`,
+            end: `${DATE_MON}T10:00:00`,
+          },
+        ],
+      })
+
+      cal.updateEvent('1', {
+        start: DATE_TUE,
+        end: DATE_TUE,
+      })
+
+      expect(cal.options.events![0]!.start).toBe(`${DATE_TUE}T00:00:00`)
+      expect(cal.options.events![0]!.end).toBe(`${DATE_TUE}T00:00:00`)
+    })
+
+    test('normalizes Date objects when updating event', () => {
+      const cal = createCalendar({
+        events: [
+          {
+            id: '1',
+            title: 'E',
+            start: `${DATE_MON}T09:00:00`,
+            end: `${DATE_MON}T10:00:00`,
+          },
+        ],
+      })
+
+      cal.updateEvent('1', {
+        start: new Date(2024, 2, 19, 11, 0, 0),
+        end: new Date(2024, 2, 19, 12, 0, 0),
+      })
+
+      expect(cal.options.events![0]!.start).toBe(`${DATE_TUE}T11:00:00`)
+      expect(cal.options.events![0]!.end).toBe(`${DATE_TUE}T12:00:00`)
     })
 
     test('does nothing when event not found', () => {
@@ -1276,6 +1443,163 @@ describe('CalendarCore', () => {
 
       const todayCount = days.filter((d) => d.isToday).length
       expect(todayCount).toBeLessThanOrEqual(1)
+    })
+  })
+
+  describe('validateResize — horizontal timeline (multi-day events)', () => {
+    const baseResizeOptions = {
+      constraints: { snapToMinutes: 15, minDurationMinutes: 15 },
+    }
+
+    // In horizontal timeline mode, targetDayDate is always the original day —
+    // so the per-day-minute checks in the existing cases don't fire for
+    // multi-day events.  The comprehensive datetime check must catch these.
+
+    test('blocks extending right edge of multi-day event into unavailable hours', () => {
+      const cal = createCalendar({
+        events: [
+          {
+            id: '1',
+            title: 'Spanning Event',
+            start: `${DATE_MON}T13:00:00`,
+            end: `${DATE_TUE}T17:00:00`,
+            resources: [weekdayResource],
+          },
+        ],
+        resources: [weekdayResource],
+      })
+
+      // Resize right edge: +120 min → new end = TUE 19:00 (past 17:00 limit)
+      const result = cal.validateResize({
+        eventId: '1',
+        originalStart: `${DATE_MON}T13:00:00`,
+        originalEnd: `${DATE_TUE}T17:00:00`,
+        edge: 'right',
+        totalDeltaMinutes: 120,
+        targetDayDate: DATE_MON,
+        originalDayDate: DATE_MON,
+        ...baseResizeOptions,
+      })
+
+      expect(result.blocked).toBe(true)
+      expect(result.error?.reason).toBe('unavailable-time')
+    })
+
+    test('allows extending right edge of multi-day event within available hours', () => {
+      const cal = createCalendar({
+        events: [
+          {
+            id: '1',
+            title: 'Spanning Event',
+            start: `${DATE_MON}T13:00:00`,
+            end: `${DATE_TUE}T15:00:00`,
+            resources: [weekdayResource],
+          },
+        ],
+        resources: [weekdayResource],
+      })
+
+      // Resize right edge: +60 min → new end = TUE 16:00 (within 08:00-17:00)
+      const result = cal.validateResize({
+        eventId: '1',
+        originalStart: `${DATE_MON}T13:00:00`,
+        originalEnd: `${DATE_TUE}T15:00:00`,
+        edge: 'right',
+        totalDeltaMinutes: 60,
+        targetDayDate: DATE_MON,
+        originalDayDate: DATE_MON,
+        ...baseResizeOptions,
+      })
+
+      expect(result.blocked).toBe(false)
+    })
+
+    test('blocks extending left edge of multi-day event into unavailable hours', () => {
+      const cal = createCalendar({
+        events: [
+          {
+            id: '1',
+            title: 'Spanning Event',
+            start: `${DATE_MON}T10:00:00`,
+            end: `${DATE_TUE}T12:00:00`,
+            resources: [weekdayResource],
+          },
+        ],
+        resources: [weekdayResource],
+      })
+
+      // Resize left edge: -180 min → new start = MON 07:00 (before 08:00 limit)
+      const result = cal.validateResize({
+        eventId: '1',
+        originalStart: `${DATE_MON}T10:00:00`,
+        originalEnd: `${DATE_TUE}T12:00:00`,
+        edge: 'left',
+        totalDeltaMinutes: -180,
+        targetDayDate: DATE_MON,
+        originalDayDate: DATE_MON,
+        ...baseResizeOptions,
+      })
+
+      expect(result.blocked).toBe(true)
+      expect(result.error?.reason).toBe('unavailable-time')
+    })
+
+    test('blocks large delta on single-day event that crosses midnight into next unavailable day', () => {
+      const cal = createCalendar({
+        events: [
+          {
+            id: '1',
+            title: 'Short Meeting',
+            start: `${DATE_MON}T09:00:00`,
+            end: `${DATE_MON}T11:00:00`,
+            resources: [weekdayResource],
+          },
+        ],
+        resources: [weekdayResource],
+      })
+
+      // Resize right edge by 10 hours → new end = MON 21:00 (past 17:00)
+      const result = cal.validateResize({
+        eventId: '1',
+        originalStart: `${DATE_MON}T09:00:00`,
+        originalEnd: `${DATE_MON}T11:00:00`,
+        edge: 'right',
+        totalDeltaMinutes: 600,
+        targetDayDate: DATE_MON,
+        originalDayDate: DATE_MON,
+        ...baseResizeOptions,
+      })
+
+      expect(result.blocked).toBe(true)
+    })
+
+    test('shrinking is always allowed regardless of availability', () => {
+      const cal = createCalendar({
+        events: [
+          {
+            id: '1',
+            title: 'Spanning Event',
+            start: `${DATE_MON}T13:00:00`,
+            end: `${DATE_TUE}T17:00:00`,
+            resources: [weekdayResource],
+          },
+        ],
+        resources: [weekdayResource],
+      })
+
+      // Shrink right edge: -60 min → new end = TUE 16:00 (still within availability)
+      const result = cal.validateResize({
+        eventId: '1',
+        originalStart: `${DATE_MON}T13:00:00`,
+        originalEnd: `${DATE_TUE}T17:00:00`,
+        edge: 'right',
+        totalDeltaMinutes: -60,
+        targetDayDate: DATE_MON,
+        originalDayDate: DATE_MON,
+        ...baseResizeOptions,
+      })
+
+      expect(result.blocked).toBe(false)
     })
   })
 

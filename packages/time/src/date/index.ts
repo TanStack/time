@@ -1,4 +1,10 @@
 export type * from './types'
+export {
+  toDate,
+  toPlainDateString,
+  toPlainDateTimeString,
+  toPlainTimeString,
+} from './parse'
 export * from './add'
 export * from './subtract'
 export * from './since'
