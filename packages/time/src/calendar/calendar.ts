@@ -130,6 +130,7 @@ interface CalendarActions<
     eventId: string,
     newStart: string,
     newEnd: string,
+    newResources?: Array<TResource>,
   ) => { blocked: boolean; blockedEventTitle?: string; message?: string }
   /**
    * Validates if placing an event with a specific start time satisfies all dependency constraints.
@@ -373,8 +374,8 @@ export class CalendarCore<
     getTimeClient().emit('event:added', {
       eventId: normalized.id,
       eventTitle: normalized.title,
-      start: normalized.start,
-      end: normalized.end,
+      start: normalized.start as string,
+      end: normalized.end as string,
     })
   }
 
@@ -424,8 +425,8 @@ export class CalendarCore<
     getTimeClient().emit('event:updated', {
       eventId: id,
       eventTitle: existingEvent.title,
-      start: this.options.events[index]!.start,
-      end: this.options.events[index]!.end,
+      start: this.options.events[index]!.start as string,
+      end: this.options.events[index]!.end as string,
       updates: normalizedUpdates as Record<string, unknown>,
     })
   }
@@ -565,8 +566,9 @@ export class CalendarCore<
     event: TEvent,
     newStart: string,
     newEnd: string,
+    newResources?: Array<TResource>,
   ): AvailabilityConflict | null {
-    const resources = event.resources
+    const resources = newResources || event.resources
     if (!resources?.length) return null
 
     const resourceIds = resources.map((r) => r.id)
@@ -644,13 +646,19 @@ export class CalendarCore<
     eventId: string,
     newStart: string,
     newEnd: string,
+    newResources?: Array<TResource>,
   ): { blocked: boolean; blockedEventTitle?: string; message?: string } {
     const event = this.options.events?.find(
       (e) => e.id === eventId && !e._originalStart,
     )
     if (!event) return { blocked: false }
 
-    const conflict = this.checkEventAvailability(event, newStart, newEnd)
+    const conflict = this.checkEventAvailability(
+      event,
+      newStart,
+      newEnd,
+      newResources,
+    )
     if (conflict) {
       return {
         blocked: true,
@@ -819,8 +827,8 @@ export class CalendarCore<
       getTimeClient().emit('event:removed', {
         eventId: id,
         eventTitle: removedEvent.title,
-        start: removedEvent.start,
-        end: removedEvent.end,
+        start: removedEvent.start as string,
+        end: removedEvent.end as string,
       })
     }
   }

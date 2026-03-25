@@ -9,6 +9,7 @@
     "test:types": "tsc"
   },
   "dependencies": {
+    "@dnd-kit/react": "^0.3.2",
     "@tanstack/react-devtools": "^0.9.5",
     "@tanstack/react-time": "^0.0.0",
     "@tanstack/react-time-devtools": "^0.0.0",
