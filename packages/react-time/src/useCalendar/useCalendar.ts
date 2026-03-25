@@ -524,6 +524,31 @@ export const useCalendar = <
     [calendarCore],
   )
 
+  const getEvents = useCallback<typeof calendarCore.getEvents>(
+    () => calendarCore.getEvents(),
+    [calendarCore],
+  )
+
+  const validateMove = useCallback<typeof calendarCore.validateMove>(
+    (eventId, newStart, newEnd) =>
+      calendarCore.validateMove(eventId, newStart, newEnd),
+    [calendarCore],
+  )
+
+  const validateEventDependencies = useCallback(
+    (
+      event: { id?: string; title: string; start: string; end: string },
+      dependsOn: Array<string>,
+    ) => calendarCore.validateEventDependencies(event, dependsOn),
+    [calendarCore],
+  )
+
+  const createDependency = useCallback(
+    (sourceId: string, targetId: string) =>
+      calendarCore.createDependency(sourceId, targetId),
+    [calendarCore],
+  )
+
   const formatPeriodLabel = useCallback<typeof calendarCore.formatPeriodLabel>(
     (options) => calendarCore.formatPeriodLabel(options),
     [calendarCore],
@@ -561,6 +586,10 @@ export const useCalendar = <
     getUnavailableRanges,
     getEventsByResource,
     getTimelineLayout,
+    getEvents,
+    validateMove,
+    validateEventDependencies,
+    createDependency,
     formatPeriodLabel,
   }
 }

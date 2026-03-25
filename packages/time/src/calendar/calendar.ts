@@ -5,7 +5,6 @@ import { getEventProps } from './getEventProps'
 import { groupDaysBy } from './groupDaysBy'
 import { getTimeSlots } from './getTimeSlots'
 import { calculateResizedEvent } from './getResizeProps'
-import { toPlainDateString, toPlainDateTimeString } from '~/date/parse'
 import { DateCore } from './date-core'
 import type { DateCoreOptions, ParsedDateCoreOptions } from './date-core'
 import type {
@@ -25,6 +24,7 @@ import type {
   UnavailableRange,
   ViewMode,
 } from './types'
+import { toPlainDateString, toPlainDateTimeString } from '~/date/parse'
 
 export type * from './types'
 export * from './date-core'
@@ -120,6 +120,32 @@ interface CalendarActions<
   getTimelineLayout: () => TimelineLayout<TResource, TEvent>
   /** Returns a human-readable label for the currently visible date range. */
   formatPeriodLabel: (options?: { locale?: string }) => string
+  /** Returns a snapshot of all events currently managed by the calendar (including those outside the visible range). */
+  getEvents: () => Array<TEvent>
+  /**
+   * Checks whether moving `eventId` to `[newStart, newEnd]` — and cascading
+   * all finish-to-start dependents — would violate any resource availability.
+   */
+  validateMove: (
+    eventId: string,
+    newStart: string,
+    newEnd: string,
+  ) => { blocked: boolean; blockedEventTitle?: string; message?: string }
+  /**
+   * Validates if placing an event with a specific start time satisfies all dependency constraints.
+   */
+  validateEventDependencies: (
+    event: { id?: string; title: string; start: string; end: string },
+    dependsOn: Array<string>,
+  ) => { valid: boolean; error?: ResizeError }
+  /**
+   * Creates a dependency link from source to target event.
+   * If the target event starts before the source event ends, it will optionally reschedule the target.
+   */
+  createDependency: (
+    sourceId: string,
+    targetId: string,
+  ) => { blocked: boolean; error?: ResizeError }
 }
 
 interface CalendarState<
@@ -358,6 +384,9 @@ export class CalendarCore<
     const index = this.options.events.findIndex((e) => e.id === id)
     if (index === -1) return
 
+    const existingEvent = this.options.events[index]!
+    const oldEndStr = toPlainDateTimeString(existingEvent.end)
+
     const normalizedUpdates = {
       ...updates,
       ...(updates.start != null
@@ -368,25 +397,409 @@ export class CalendarCore<
         : {}),
     }
 
-    const existingEvent = this.options.events[index]
     this.options.events[index] = {
       ...existingEvent,
       ...normalizedUpdates,
     } as TEvent
+
+    // Shared visited set prevents double-shifting when both end and start change.
+    const visited = new Set([id])
+
+    const newEnd = normalizedUpdates.end as string | undefined
+    if (newEnd && newEnd !== oldEndStr) {
+      const endDeltaMs = Temporal.PlainDateTime.from(oldEndStr)
+        .until(Temporal.PlainDateTime.from(newEnd))
+        .total('milliseconds')
+
+      if (endDeltaMs !== 0) {
+        this.propagateEndDelta(id, endDeltaMs, visited)
+      }
+    }
+
     this.store.setState((prev) => ({
       ...prev,
       eventsVersion: prev.eventsVersion + 1,
     }))
 
-    if (existingEvent) {
+    getTimeClient().emit('event:updated', {
+      eventId: id,
+      eventTitle: existingEvent.title,
+      start: this.options.events[index]!.start,
+      end: this.options.events[index]!.end,
+      updates: normalizedUpdates as Record<string, unknown>,
+    })
+  }
+
+  private propagateEndDelta(
+    sourceId: string,
+    _deltaMs: number,
+    visited: Set<string>,
+  ): void {
+    if (!this.options.events) return
+
+    const sourceEvent = this.options.events.find((e) => e.id === sourceId)
+    if (!sourceEvent) return
+
+    const sourceEndStr = toPlainDateTimeString(sourceEvent.end)
+    const sourceEndMs = Temporal.PlainDateTime.from(
+      sourceEndStr,
+    ).toZonedDateTime(this.options.timeZone).epochMilliseconds
+
+    const dependents = this.options.events.filter(
+      (event) => !visited.has(event.id) && event.dependsOn?.includes(sourceId),
+    )
+
+    for (const dependent of dependents) {
+      visited.add(dependent.id)
+
+      const eventIndex = this.options.events.findIndex(
+        (e) => e.id === dependent.id,
+      )
+      if (eventIndex === -1) continue
+
+      const currentEvent = this.options.events[eventIndex]!
+      const depStartStr = toPlainDateTimeString(currentEvent.start)
+      const depStartMs = Temporal.PlainDateTime.from(
+        depStartStr,
+      ).toZonedDateTime(this.options.timeZone).epochMilliseconds
+
+      const overflow = sourceEndMs - depStartMs
+      if (overflow <= 0) continue
+
+      const depEndStr = toPlainDateTimeString(currentEvent.end)
+      const shiftedStart = Temporal.PlainDateTime.from(depStartStr)
+        .add({ milliseconds: overflow })
+        .toString({ smallestUnit: 'second' })
+
+      const shiftedEnd = Temporal.PlainDateTime.from(depEndStr)
+        .add({ milliseconds: overflow })
+        .toString({ smallestUnit: 'second' })
+
+      this.options.events[eventIndex] = {
+        ...currentEvent,
+        start: shiftedStart,
+        end: shiftedEnd,
+      } as TEvent
+
       getTimeClient().emit('event:updated', {
-        eventId: id,
-        eventTitle: existingEvent.title,
-        start: this.options.events[index].start,
-        end: this.options.events[index].end,
-        updates: normalizedUpdates as Record<string, unknown>,
+        eventId: currentEvent.id,
+        eventTitle: currentEvent.title,
+        start: shiftedStart,
+        end: shiftedEnd,
+        updates: { start: shiftedStart, end: shiftedEnd } as Record<
+          string,
+          unknown
+        >,
       })
+
+      this.propagateEndDelta(dependent.id, overflow, visited)
     }
+  }
+
+  /** Simulate how deltaMs cascades forward through the dependency graph without mutating state.
+   * Only shifts a successor when the source's new end would exceed the successor's start (gap-aware). */
+  private getAffectedByDelta(
+    sourceId: string,
+    deltaMs: number,
+    visited: Set<string>,
+  ): Array<{ event: TEvent; newStart: string; newEnd: string }> {
+    if (!this.options.events || deltaMs === 0) return []
+
+    const affected: Array<{ event: TEvent; newStart: string; newEnd: string }> =
+      []
+
+    const projectedEndMap = new Map<string, number>()
+
+    const sourceEvent = this.options.events.find((e) => e.id === sourceId)
+    if (!sourceEvent) return []
+
+    const sourceEndStr = toPlainDateTimeString(sourceEvent.end)
+    const sourceEndMs =
+      Temporal.PlainDateTime.from(sourceEndStr).toZonedDateTime(
+        this.options.timeZone,
+      ).epochMilliseconds + deltaMs
+    projectedEndMap.set(sourceId, sourceEndMs)
+
+    const queue: Array<string> = [sourceId]
+
+    while (queue.length > 0) {
+      const currentId = queue.shift()!
+      const currentEndMs = projectedEndMap.get(currentId)!
+
+      const successors = this.options.events.filter(
+        (e) => !visited.has(e.id) && e.dependsOn?.includes(currentId),
+      )
+
+      for (const s of successors) {
+        const sStartStr = toPlainDateTimeString(s.start)
+        const sEndStr = toPlainDateTimeString(s.end)
+        const depStartMs = Temporal.PlainDateTime.from(
+          sStartStr,
+        ).toZonedDateTime(this.options.timeZone).epochMilliseconds
+        const depEndMs = Temporal.PlainDateTime.from(sEndStr).toZonedDateTime(
+          this.options.timeZone,
+        ).epochMilliseconds
+
+        const overflow = currentEndMs - depStartMs
+        if (overflow <= 0) continue
+
+        visited.add(s.id)
+        const newStart = Temporal.PlainDateTime.from(sStartStr)
+          .add({ milliseconds: overflow })
+          .toString({ smallestUnit: 'second' })
+        const newEnd = Temporal.PlainDateTime.from(sEndStr)
+          .add({ milliseconds: overflow })
+          .toString({ smallestUnit: 'second' })
+        affected.push({ event: s, newStart, newEnd })
+
+        projectedEndMap.set(s.id, depEndMs + overflow)
+        queue.push(s.id)
+      }
+    }
+
+    return affected
+  }
+
+  /** Check whether the [newStart, newEnd] range for event is within its resources' availability. */
+  private checkEventAvailability(
+    event: TEvent,
+    newStart: string,
+    newEnd: string,
+  ): AvailabilityConflict | null {
+    const resources = event.resources
+    if (!resources?.length) return null
+
+    const resourceIds = resources.map((r) => r.id)
+    const startDt = Temporal.PlainDateTime.from(newStart)
+    const endDt = Temporal.PlainDateTime.from(newEnd)
+
+    const startDate = startDt.toPlainDate()
+    const endDate = endDt.toPlainDate()
+    let cursorDate = startDate
+
+    while (Temporal.PlainDate.compare(cursorDate, endDate) <= 0) {
+      const dayStr = cursorDate.toString({ calendarName: 'never' })
+      const isSameAsStart =
+        Temporal.PlainDate.compare(cursorDate, startDate) === 0
+      const isSameAsEnd = Temporal.PlainDate.compare(cursorDate, endDate) === 0
+
+      const overlapStartMins = isSameAsStart
+        ? startDt.hour * 60 + startDt.minute
+        : 0
+      let overlapEndMins: number
+      if (isSameAsEnd) {
+        const endMins = endDt.hour * 60 + endDt.minute
+        overlapEndMins =
+          endMins === 0 && !isSameAsStart ? 0 : endMins || MINUTES_IN_DAY
+      } else {
+        overlapEndMins = MINUTES_IN_DAY
+      }
+
+      if (overlapStartMins < overlapEndMins) {
+        const details = this.getUnavailabilityDetails(
+          dayStr,
+          overlapStartMins,
+          overlapEndMins,
+          { resourceIds },
+        )
+
+        if (details.length > 0) {
+          return {
+            date: dayStr,
+            conflictRange: {
+              start: formatMinutesToTime(overlapStartMins),
+              end: formatMinutesToTime(overlapEndMins),
+            },
+            resourceIds,
+            resourceDetails: details.map((d) => ({
+              resourceId: d.resourceId,
+              resourceLabel: d.resourceLabel,
+              reason: d.reason,
+              description: `"${event.title}": ${d.description}`,
+            })),
+            description: `"${event.title}" would be pushed to unavailable time: ${details.map((d) => d.description).join('; ')}`,
+          }
+        }
+      }
+
+      cursorDate = cursorDate.add({ days: 1 })
+    }
+
+    return null
+  }
+
+  getEvents(): Array<TEvent> {
+    return this.options.events ? [...this.options.events] : []
+  }
+
+  /**
+   * Validates whether moving `eventId` to `[newStart, newEnd]` and cascading
+   * all finish-to-start dependents would violate any resource availability.
+   *
+   * Returns `{ blocked: false }` when the move is safe, or
+   * `{ blocked: true, message, blockedEventTitle }` when it would land in
+   * an unavailable zone (either for the event itself or for a downstream dependent).
+   */
+  validateMove(
+    eventId: string,
+    newStart: string,
+    newEnd: string,
+  ): { blocked: boolean; blockedEventTitle?: string; message?: string } {
+    const event = this.options.events?.find(
+      (e) => e.id === eventId && !e._originalStart,
+    )
+    if (!event) return { blocked: false }
+
+    const conflict = this.checkEventAvailability(event, newStart, newEnd)
+    if (conflict) {
+      return {
+        blocked: true,
+        blockedEventTitle: event.title,
+        message: `"${event.title}" cannot be placed here — it falls inside an unavailable zone.`,
+      }
+    }
+
+    const oldEndMs = Temporal.PlainDateTime.from(
+      toPlainDateTimeString(event.end),
+    ).toZonedDateTime(this.options.timeZone).epochMilliseconds
+    const newEndMs = Temporal.PlainDateTime.from(newEnd).toZonedDateTime(
+      this.options.timeZone,
+    ).epochMilliseconds
+    const deltaMs = newEndMs - oldEndMs
+
+    if (deltaMs > 0) {
+      const affected = this.getAffectedByDelta(
+        eventId,
+        deltaMs,
+        new Set([eventId]),
+      )
+      for (const {
+        event: dep,
+        newStart: depStart,
+        newEnd: depEnd,
+      } of affected) {
+        const depConflict = this.checkEventAvailability(dep, depStart, depEnd)
+        if (depConflict) {
+          return {
+            blocked: true,
+            blockedEventTitle: dep.title,
+            message: `"${dep.title}" would be pushed to unavailable time.`,
+          }
+        }
+      }
+    }
+
+    return { blocked: false }
+  }
+
+  validateEventDependencies(
+    event: { id?: string; title: string; start: string; end: string },
+    dependsOn: Array<string>,
+  ): { valid: boolean; error?: ResizeError } {
+    if (!this.options.events) return { valid: true }
+
+    const newStartMs = Temporal.PlainDateTime.from(event.start).toZonedDateTime(
+      this.options.timeZone,
+    ).epochMilliseconds
+
+    for (const predId of dependsOn) {
+      const pred = this.options.events.find((e) => e.id === predId)
+      if (!pred) continue
+
+      const predEndMs = Temporal.PlainDateTime.from(
+        toPlainDateTimeString(pred.end),
+      ).toZonedDateTime(this.options.timeZone).epochMilliseconds
+
+      if (newStartMs < predEndMs) {
+        return {
+          valid: false,
+          error: {
+            eventId: event.id ?? '',
+            eventTitle: event.title,
+            reason: 'blocked',
+            message: `"${event.title}" cannot start before "${pred.title}" ends`,
+            originalStart: event.start,
+            originalEnd: event.end,
+          },
+        }
+      }
+    }
+    return { valid: true }
+  }
+
+  createDependency(
+    sourceId: string,
+    targetId: string,
+  ): { blocked: boolean; error?: ResizeError } {
+    if (!this.options.events) return { blocked: false }
+
+    const sourceEvent = this.options.events.find((e) => e.id === sourceId)
+    const targetEvent = this.options.events.find((e) => e.id === targetId)
+    if (!sourceEvent || !targetEvent) return { blocked: false }
+
+    const currentDependsOn = targetEvent.dependsOn ?? []
+    if (currentDependsOn.includes(sourceId)) return { blocked: false }
+
+    const sourceEndStr = toPlainDateTimeString(sourceEvent.end)
+    const targetStartStr = toPlainDateTimeString(targetEvent.start)
+    const targetEndStr = toPlainDateTimeString(targetEvent.end)
+
+    const sourceEndMs = Temporal.PlainDateTime.from(
+      sourceEndStr,
+    ).toZonedDateTime(this.options.timeZone).epochMilliseconds
+    const targetStartMs = Temporal.PlainDateTime.from(
+      targetStartStr,
+    ).toZonedDateTime(this.options.timeZone).epochMilliseconds
+    const targetEndMs = Temporal.PlainDateTime.from(
+      targetEndStr,
+    ).toZonedDateTime(this.options.timeZone).epochMilliseconds
+
+    const durationMs = targetEndMs - targetStartMs
+    const needsReschedule = targetStartMs < sourceEndMs
+
+    let newTargetStart = targetStartStr
+    let newTargetEnd = targetEndStr
+
+    if (needsReschedule) {
+      newTargetStart = sourceEndStr
+      newTargetEnd = Temporal.PlainDateTime.from(sourceEndStr)
+        .add({ milliseconds: durationMs })
+        .toString({ smallestUnit: 'second' })
+
+      const validation = this.validateMove(
+        targetId,
+        newTargetStart,
+        newTargetEnd,
+      )
+
+      if (validation.blocked) {
+        return {
+          blocked: true,
+          error: {
+            eventId: targetId,
+            eventTitle: validation.blockedEventTitle ?? targetEvent.title,
+            reason: 'unavailable-time',
+            message:
+              validation.message ??
+              `Cannot connect: the resulting schedule would fall inside an unavailable zone.`,
+            originalStart: targetStartStr,
+            originalEnd: targetEndStr,
+            attemptedStart: newTargetStart,
+            attemptedEnd: newTargetEnd,
+          },
+        }
+      }
+    }
+
+    this.updateEvent(targetId, {
+      dependsOn: [...currentDependsOn, sourceId],
+      ...(needsReschedule && {
+        start: newTargetStart,
+        end: newTargetEnd,
+      }),
+    } as Partial<Omit<TEvent, 'id'>>)
+
+    return { blocked: false }
   }
 
   removeEvent(id: Event['id']): void {
@@ -1242,7 +1655,7 @@ export class CalendarCore<
           checkFromMs = originalEndMs
           checkToMs = newEndMs
         }
-      } else if (effectiveEdge === 'top') {
+      } else {
         const newStartMs = originalStartMs + snappedDeltaMs
         if (newStartMs < originalStartMs) {
           checkFromMs = newStartMs
@@ -1304,6 +1717,70 @@ export class CalendarCore<
           }
 
           cursor.setTime(cursor.getTime() + dayMs)
+        }
+      }
+    }
+
+    const snapMs = (constraints?.snapToMinutes ?? 1) * 60_000
+    const snappedDeltaMs =
+      Math.round((totalDeltaMinutes * 60_000) / snapMs) * snapMs
+
+    if (!shouldBlockResize && effectiveEdge === 'top' && this.options.events) {
+      const event = this.options.events.find((ev) => ev.id === eventId)
+      if (event?.dependsOn?.length) {
+        const proposedStartMs =
+          Temporal.PlainDateTime.from(originalStart).toZonedDateTime(
+            this.options.timeZone,
+          ).epochMilliseconds + snappedDeltaMs
+
+        for (const predId of event.dependsOn) {
+          const pred = this.options.events.find((ev) => ev.id === predId)
+          if (!pred) continue
+
+          const predEndMs = Temporal.PlainDateTime.from(
+            toPlainDateTimeString(pred.end),
+          ).toZonedDateTime(this.options.timeZone).epochMilliseconds
+
+          if (proposedStartMs < predEndMs) {
+            shouldBlockResize = true
+            blockReason = 'blocked'
+            blockMessage = `"${event.title}" cannot start before "${pred.title}" ends`
+            break
+          }
+        }
+      }
+    }
+
+    if (
+      !shouldBlockResize &&
+      effectiveEdge === 'bottom' &&
+      snappedDeltaMs > 0
+    ) {
+      const affected = this.getAffectedByDelta(
+        eventId,
+        snappedDeltaMs,
+        new Set([eventId]),
+      )
+
+      for (const { event: affectedEvent, newStart, newEnd } of affected) {
+        const alreadyConflicting = this.checkEventAvailability(
+          affectedEvent,
+          toPlainDateTimeString(affectedEvent.start),
+          toPlainDateTimeString(affectedEvent.end),
+        )
+        if (alreadyConflicting) continue
+
+        const conflict = this.checkEventAvailability(
+          affectedEvent,
+          newStart,
+          newEnd,
+        )
+        if (conflict) {
+          shouldBlockResize = true
+          blockReason = 'unavailable-time'
+          blockMessage = `Blocked: "${affectedEvent.title}" would be pushed to unavailable time`
+          conflicts.push(conflict)
+          break
         }
       }
     }

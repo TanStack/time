@@ -2,6 +2,22 @@ import {
   calculateTimelineResizePreview,
   useCalendar,
 } from '@tanstack/react-time'
+import { TanStackDevtools } from '@tanstack/react-devtools'
+import { timeDevtoolsPlugin } from '@tanstack/react-time-devtools'
+import {
+  toPlainDateString,
+  toPlainDateTimeString,
+  toPlainTimeString,
+} from '@tanstack/time'
+import {
+  Handle,
+  MarkerType,
+  Position,
+  ReactFlow,
+  useEdgesState,
+  useNodesState,
+} from '@xyflow/react'
+import '@xyflow/react/dist/style.css'
 import ReactDOM from 'react-dom/client'
 import React, {
   useCallback,
@@ -11,13 +27,6 @@ import React, {
   useRef,
   useState,
 } from 'react'
-import { TanStackDevtools } from '@tanstack/react-devtools'
-import { timeDevtoolsPlugin } from '@tanstack/react-time-devtools'
-import {
-  toPlainDateString,
-  toPlainDateTimeString,
-  toPlainTimeString,
-} from '@tanstack/time'
 import type {
   Day,
   Event,
@@ -25,6 +34,7 @@ import type {
   Resource,
   TimelineResourceRow,
 } from '@tanstack/time'
+import type { Connection, Edge, Node, NodeProps } from '@xyflow/react'
 
 import './index.css'
 
@@ -112,8 +122,6 @@ const sampleResources: Array<Resource> = [
   resourceDevOps,
 ]
 
-// Monday of the visible work week: Mon–Fri use the ISO week that contains today;
-// Sat–Sun use the upcoming Monday so sample data is not entirely in the past.
 function workWeekMonday(): Date {
   const today = new Date()
   const day = today.getDay()
@@ -128,7 +136,6 @@ function workWeekMonday(): Date {
   return monday
 }
 
-// isoWeekday: 1=Mon … 5=Fri (relative to workWeekMonday()).
 function weekdayAt(
   isoWeekday: 1 | 2 | 3 | 4 | 5,
   hour: number,
@@ -141,15 +148,6 @@ function weekdayAt(
   return date
 }
 
-/*
-  Sample times are chosen so every event stays inside availability on that weekday,
-  and (where it matters) inside the intersection across weekdays:
-  - Design: Mon–Thu 09–17, Fri 09–13 → use only 09:00–13:00 so any Mon–Fri slot is safe.
-  - Frontend: Mon–Fri 08–24.
-  - Backend: Mon–Wed 10–19, Thu–Fri 00–24 → single-day uses 10–19; Thu→Fri span uses full-day Thu/Fri.
-  - QA: Mon–Wed 09–17, Thu–Fri 10–15 → use 10:00–15:00 everywhere.
-  - DevOps: Mon–Fri 07–16.
-*/
 function getSampleEvents(): Array<Event<Resource>> {
   return [
     {
@@ -186,6 +184,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       start: weekdayAt(3, 10, 0),
       end: weekdayAt(3, 15, 0),
       resources: [resourceQA],
+      dependsOn: ['3'],
     },
     {
       id: '6',
@@ -200,6 +199,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       start: weekdayAt(3, 10, 0),
       end: weekdayAt(3, 12, 30),
       resources: [resourceDesign],
+      dependsOn: ['1'],
     },
     {
       id: '8',
@@ -207,6 +207,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       start: weekdayAt(4, 0, 0),
       end: weekdayAt(5, 10, 0),
       resources: [resourceBackend],
+      dependsOn: ['3'],
     },
     {
       id: '9',
@@ -214,6 +215,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       start: weekdayAt(4, 10, 30),
       end: weekdayAt(4, 14, 30),
       resources: [resourceQA],
+      dependsOn: ['8'],
     },
     {
       id: '10',
@@ -221,6 +223,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       start: weekdayAt(5, 7, 30),
       end: weekdayAt(5, 13, 0),
       resources: [resourceDevOps],
+      dependsOn: ['6'],
     },
   ]
 }
@@ -234,6 +237,7 @@ interface EventFormData {
   endDate: string
   endTime: string
   resourceId: string
+  dependsOn: Array<string>
 }
 
 const emptyFormData: EventFormData = {
@@ -243,6 +247,7 @@ const emptyFormData: EventFormData = {
   endDate: toPlainDateString(new Date()),
   endTime: '10:00',
   resourceId: resourceDesign.id,
+  dependsOn: [],
 }
 
 function EventModal({
@@ -367,6 +372,7 @@ function EventModal({
               />
             </div>
           </div>
+
           <div className="flex justify-between pt-4">
             <div>
               {mode === 'edit' && onDelete && (
@@ -453,13 +459,14 @@ function ResizeErrorToast({
           <div className="text-red-400 text-lg">!</div>
           <div className="flex-1 min-w-0">
             <div className="font-semibold text-red-100 mb-1">
-              Cannot Resize Event
+              Cannot Resize{' '}
+              <span className="italic">&ldquo;{error.eventTitle}&rdquo;</span>
             </div>
             <div className="text-sm text-red-200/80 mb-2">{error.message}</div>
             {error.conflicts && error.conflicts.length > 0 && (
               <div className="mt-2 space-y-1">
                 <div className="text-xs text-red-300/70 font-medium uppercase tracking-wide">
-                  Conflicts:
+                  Dependency conflicts:
                 </div>
                 {error.conflicts.map((conflict, idx) => (
                   <div
@@ -467,11 +474,11 @@ function ResizeErrorToast({
                     className="text-xs text-red-200/70 bg-red-950/50 rounded px-2 py-1.5 border border-red-800/30"
                   >
                     <div className="font-medium text-red-200/90">
-                      {conflict.date}
-                    </div>
-                    <div className="text-red-300/60">
-                      {conflict.conflictRange.start} -{' '}
-                      {conflict.conflictRange.end}
+                      {conflict.date}{' '}
+                      <span className="text-red-400">
+                        {conflict.conflictRange.start}–
+                        {conflict.conflictRange.end}
+                      </span>
                     </div>
                     <div className="text-red-300/50 mt-0.5">
                       {conflict.description}
@@ -480,9 +487,6 @@ function ResizeErrorToast({
                 ))}
               </div>
             )}
-            <div className="text-xs text-red-300/60 mt-2">
-              {error.eventTitle}
-            </div>
           </div>
           <button
             onClick={onDismiss}
@@ -497,6 +501,222 @@ function ResizeErrorToast({
 }
 
 const EVENT_GAP_PX = 3
+const DEP_HANDLE_STYLE: React.CSSProperties = {
+  width: 10,
+  height: 10,
+  background: '#f59e0b',
+  border: '2px solid #78350f',
+  borderRadius: '50%',
+  pointerEvents: 'all',
+  cursor: 'crosshair',
+  opacity: 0.85,
+  zIndex: 40,
+}
+
+interface HandlePosition {
+  eventId: string
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+function DepCanvasNode({ data }: NodeProps) {
+  const { handlePositions } = data as { handlePositions: Array<HandlePosition> }
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+      }}
+    >
+      {handlePositions.map(({ eventId, x, y, width, height }) => (
+        <React.Fragment key={eventId}>
+          <Handle
+            type="target"
+            position={Position.Left}
+            id={`${eventId}-target`}
+            style={{
+              ...DEP_HANDLE_STYLE,
+              position: 'absolute',
+              left: x,
+              right: 'auto',
+              top: y + height / 2,
+              bottom: 'auto',
+              transform: 'translate(-50%, -50%)',
+            }}
+          />
+          <Handle
+            type="source"
+            position={Position.Right}
+            id={`${eventId}-source`}
+            style={{
+              ...DEP_HANDLE_STYLE,
+              position: 'absolute',
+              left: x + width,
+              right: 'auto',
+              top: y + height / 2,
+              bottom: 'auto',
+              transform: 'translate(-50%, -50%)',
+            }}
+          />
+        </React.Fragment>
+      ))}
+    </div>
+  )
+}
+
+const DEP_CANVAS_NODE_TYPES = { depCanvas: DepCanvasNode }
+const CANVAS_NODE_ID = '__dep_canvas__'
+
+function buildTimelineEdges(events: Array<Event<Resource>>): Array<Edge> {
+  return events.flatMap((event) =>
+    (event.dependsOn ?? []).map((sourceId) => ({
+      id: `dep-${sourceId}-${event.id}`,
+      source: CANVAS_NODE_ID,
+      sourceHandle: `${sourceId}-source`,
+      target: CANVAS_NODE_ID,
+      targetHandle: `${event.id}-target`,
+      type: 'smoothstep',
+      animated: true,
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#f59e0b' },
+      style: { stroke: '#f59e0b', strokeWidth: 2 },
+    })),
+  )
+}
+
+interface TimelineDependencyOverlayProps {
+  calendarEvents: Array<Event<Resource>>
+  eventBarRefs: React.MutableRefObject<Map<string, HTMLDivElement>>
+  rowsContainerRef: React.RefObject<HTMLDivElement | null>
+  resizeState: {
+    isResizing: boolean
+    eventId: string | null
+    previewStart: string | null
+    previewEnd: string | null
+  }
+  onDependencyCreate: (sourceId: string, targetId: string) => void
+}
+
+function TimelineDependencyOverlay({
+  calendarEvents,
+  eventBarRefs,
+  rowsContainerRef,
+  resizeState,
+  onDependencyCreate,
+}: TimelineDependencyOverlayProps) {
+  const [rfNodes, setRfNodes, onNodesChangeBase] = useNodesState<Node>([])
+  const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState<Edge>([])
+  const isConnectingRef = useRef(false)
+
+  const lockScroll = useCallback(() => {
+    isConnectingRef.current = true
+  }, [])
+
+  const unlockScroll = useCallback(() => {
+    isConnectingRef.current = false
+  }, [])
+
+  const onNodesChange = useCallback(
+    (changes: Parameters<typeof onNodesChangeBase>[0]) => {
+      const filtered = changes.filter(
+        (c) => !('id' in c && c.id === CANVAS_NODE_ID),
+      )
+      if (filtered.length > 0) onNodesChangeBase(filtered)
+    },
+    [onNodesChangeBase],
+  )
+
+  const updatePositions = useCallback(() => {
+    const container = rowsContainerRef.current
+    if (!container) return
+
+    const containerRect = container.getBoundingClientRect()
+    const positions: Array<HandlePosition> = []
+
+    for (const [eventId, el] of eventBarRefs.current) {
+      const rect = el.getBoundingClientRect()
+      positions.push({
+        eventId,
+        x: rect.left - containerRect.left,
+        y: rect.top - containerRect.top,
+        width: rect.width,
+        height: rect.height,
+      })
+    }
+
+    setRfNodes([
+      {
+        id: CANVAS_NODE_ID,
+        type: 'depCanvas',
+        position: { x: 0, y: 0 },
+        width: containerRect.width,
+        height: containerRect.height,
+        style: { width: containerRect.width, height: containerRect.height },
+        data: { handlePositions: positions },
+        selectable: false,
+        draggable: false,
+      },
+    ])
+    setRfEdges(buildTimelineEdges(calendarEvents))
+  }, [calendarEvents, eventBarRefs, rowsContainerRef, setRfNodes, setRfEdges])
+
+  useLayoutEffect(() => {
+    updatePositions()
+  }, [updatePositions, resizeState])
+
+  useEffect(() => {
+    const container = rowsContainerRef.current
+    if (!container) return
+
+    const observer = new ResizeObserver(() => updatePositions())
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [rowsContainerRef, updatePositions])
+
+  const handleConnect = useCallback(
+    (connection: Connection) => {
+      const sourceEventId = connection.sourceHandle?.replace(/-source$/, '')
+      const targetEventId = connection.targetHandle?.replace(/-target$/, '')
+      if (!sourceEventId || !targetEventId) return
+      if (sourceEventId === targetEventId) return
+      onDependencyCreate(sourceEventId, targetEventId)
+    },
+    [onDependencyCreate],
+  )
+
+  return (
+    <>
+      <ReactFlow
+        className="timeline-dep-flow"
+        nodes={rfNodes}
+        edges={rfEdges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={handleConnect}
+        onConnectStart={lockScroll}
+        onConnectEnd={unlockScroll}
+        nodeTypes={DEP_CANVAS_NODE_TYPES}
+        defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+        panOnDrag={false}
+        zoomOnScroll={false}
+        panOnScroll={false}
+        zoomOnPinch={false}
+        zoomOnDoubleClick={false}
+        nodesDraggable={false}
+        nodesConnectable={true}
+        elementsSelectable={false}
+        preventScrolling={true}
+        autoPanOnConnect={false}
+        style={{ background: 'transparent', overflow: 'hidden' }}
+        proOptions={{ hideAttribution: true }}
+        autoPanOnNodeDrag={false}
+      />
+    </>
+  )
+}
 
 function timeStringToFraction(time: string): number {
   const parts = time.split(':')
@@ -719,12 +939,18 @@ function TimelineDemo() {
     return map
   }, [])
 
+  const calendarEvents = useMemo(
+    () => calendar.getEvents(),
+    [calendar.days, calendar],
+  )
+
   const timelineLayout = useMemo(
     () => calendar.getTimelineLayout(),
     [calendar.days],
   )
 
   const eventBarRefsMap = useRef<Map<string, HTMLDivElement>>(new Map())
+  const rowsContainerRef = useRef<HTMLDivElement>(null)
 
   const firstDayIso = useMemo(
     () => calendar.days[0]?.isoDate ?? '',
@@ -777,6 +1003,16 @@ function TimelineDemo() {
     prevResizedIdRef.current = resizeState.eventId
   }, [resizeState, firstDayIso, totalDays])
 
+  const handleDependencyCreate = useCallback(
+    (sourceId: string, targetId: string) => {
+      const result = calendar.createDependency(sourceId, targetId)
+      if (result.blocked && result.error) {
+        setResizeError(result.error)
+      }
+    },
+    [calendar],
+  )
+
   const openAddModal = () =>
     setModalState({ isOpen: true, mode: 'add', initialData: emptyFormData })
 
@@ -792,17 +1028,33 @@ function TimelineDemo() {
         endDate: toPlainDateString(event.end),
         endTime: toPlainTimeString(event.end),
         resourceId: event.resources?.[0]?.id ?? resourceDesign.id,
+        dependsOn: event.dependsOn ?? [],
       },
     })
   }, [])
 
   const handleSave = (data: EventFormData) => {
-    const resource = sampleResources.find((r) => r.id === data.resourceId)
-    const eventData = {
+    const eventBaseData = {
       title: data.title,
       start: `${data.startDate}T${data.startTime}:00`,
       end: `${data.endDate}T${data.endTime}:00`,
+    }
+
+    const validation = calendar.validateEventDependencies(
+      { id: modalState.eventId, ...eventBaseData },
+      data.dependsOn,
+    )
+
+    if (!validation.valid && validation.error) {
+      setResizeError(validation.error)
+      return
+    }
+
+    const resource = sampleResources.find((r) => r.id === data.resourceId)
+    const eventData = {
+      ...eventBaseData,
       resources: resource ? [resource] : [],
+      dependsOn: data.dependsOn,
     }
 
     if (modalState.mode === 'add') {
@@ -1005,7 +1257,7 @@ function TimelineDemo() {
                 </div>
               </div>
 
-              <div className="relative">
+              <div ref={rowsContainerRef} className="relative">
                 {timelineLayout.currentTimePosition !== null && (
                   <div
                     className="absolute top-0 bottom-0 w-px bg-red-500 z-20 pointer-events-none"
@@ -1030,6 +1282,18 @@ function TimelineDemo() {
                     eventBarRefs={eventBarRefsMap}
                   />
                 ))}
+                <div
+                  className="absolute inset-0 z-20 pointer-events-none"
+                  style={{ overflow: 'hidden' }}
+                >
+                  <TimelineDependencyOverlay
+                    calendarEvents={calendarEvents}
+                    eventBarRefs={eventBarRefsMap}
+                    rowsContainerRef={rowsContainerRef}
+                    resizeState={resizeState}
+                    onDependencyCreate={handleDependencyCreate}
+                  />
+                </div>
               </div>
             </div>
           </div>

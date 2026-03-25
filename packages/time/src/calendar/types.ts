@@ -40,6 +40,9 @@ export interface Event<TResource extends Resource = Resource> {
   end: EventDateTimeInput
   title: string
   resources?: Array<TResource>
+  /** IDs of events this event immediately follows (finish-to-start dependency).
+   * When a predecessor's end time shifts, this event shifts by the same delta. */
+  dependsOn?: Array<string>
   /** Original start time before splitting (only set on split segments of multi-day events) */
   _originalStart?: string
   /** Original end time before splitting (only set on split segments of multi-day events) */

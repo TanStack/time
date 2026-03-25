@@ -1603,6 +1603,653 @@ describe('CalendarCore', () => {
     })
   })
 
+  describe('getEvents', () => {
+    test('returns a shallow copy of all events', () => {
+      const events: Array<TestEvent> = [
+        {
+          id: '1',
+          title: 'A',
+          start: `${DATE_MON}T09:00:00`,
+          end: `${DATE_MON}T10:00:00`,
+        },
+      ]
+      const cal = createCalendar({ events })
+      const out = cal.getEvents()
+
+      expect(out).toEqual(events)
+      expect(out).not.toBe(cal.options.events)
+    })
+
+    test('returns empty array when no events configured', () => {
+      const cal = createCalendar({ events: null })
+      expect(cal.getEvents()).toEqual([])
+    })
+  })
+
+  describe('updateEvent — dependsOn cascade (propagateEndDelta)', () => {
+    test('shifts dependent forward when predecessor end extends past dependent start', () => {
+      const cal = createCalendar({
+        timeZone: 'UTC',
+        events: [
+          {
+            id: '1',
+            title: 'A',
+            start: `${DATE_MON}T10:00:00`,
+            end: `${DATE_MON}T11:00:00`,
+            resources: [weekdayResource],
+          },
+          {
+            id: '2',
+            title: 'B',
+            start: `${DATE_MON}T11:30:00`,
+            end: `${DATE_MON}T12:30:00`,
+            resources: [weekdayResource],
+            dependsOn: ['1'],
+          },
+        ],
+        resources: [weekdayResource],
+      })
+
+      cal.updateEvent('1', { end: `${DATE_MON}T12:00:00` })
+
+      const b = cal.options.events!.find((e) => e.id === '2')!
+      expect(b.start).toBe(`${DATE_MON}T12:00:00`)
+      expect(b.end).toBe(`${DATE_MON}T13:00:00`)
+    })
+
+    test('does not shift dependent when predecessor end still ends before dependent start', () => {
+      const cal = createCalendar({
+        timeZone: 'UTC',
+        events: [
+          {
+            id: '1',
+            title: 'A',
+            start: `${DATE_MON}T10:00:00`,
+            end: `${DATE_MON}T11:00:00`,
+            resources: [weekdayResource],
+          },
+          {
+            id: '2',
+            title: 'B',
+            start: `${DATE_MON}T14:00:00`,
+            end: `${DATE_MON}T15:00:00`,
+            resources: [weekdayResource],
+            dependsOn: ['1'],
+          },
+        ],
+        resources: [weekdayResource],
+      })
+
+      cal.updateEvent('1', { end: `${DATE_MON}T11:30:00` })
+
+      const b = cal.options.events!.find((e) => e.id === '2')!
+      expect(b.start).toBe(`${DATE_MON}T14:00:00`)
+      expect(b.end).toBe(`${DATE_MON}T15:00:00`)
+    })
+
+    test('propagates through a chain A → B → C', () => {
+      const cal = createCalendar({
+        timeZone: 'UTC',
+        events: [
+          {
+            id: '1',
+            title: 'A',
+            start: `${DATE_MON}T09:00:00`,
+            end: `${DATE_MON}T10:00:00`,
+            resources: [weekdayResource],
+          },
+          {
+            id: '2',
+            title: 'B',
+            start: `${DATE_MON}T10:00:00`,
+            end: `${DATE_MON}T11:00:00`,
+            resources: [weekdayResource],
+            dependsOn: ['1'],
+          },
+          {
+            id: '3',
+            title: 'C',
+            start: `${DATE_MON}T11:00:00`,
+            end: `${DATE_MON}T12:00:00`,
+            resources: [weekdayResource],
+            dependsOn: ['2'],
+          },
+        ],
+        resources: [weekdayResource],
+      })
+
+      cal.updateEvent('1', { end: `${DATE_MON}T11:00:00` })
+
+      const b = cal.options.events!.find((e) => e.id === '2')!
+      const c = cal.options.events!.find((e) => e.id === '3')!
+      expect(b.start).toBe(`${DATE_MON}T11:00:00`)
+      expect(b.end).toBe(`${DATE_MON}T12:00:00`)
+      expect(c.start).toBe(`${DATE_MON}T12:00:00`)
+      expect(c.end).toBe(`${DATE_MON}T13:00:00`)
+    })
+
+    test('shifts multiple dependents of the same predecessor', () => {
+      const cal = createCalendar({
+        timeZone: 'UTC',
+        events: [
+          {
+            id: '1',
+            title: 'A',
+            start: `${DATE_MON}T10:00:00`,
+            end: `${DATE_MON}T11:00:00`,
+            resources: [weekdayResource],
+          },
+          {
+            id: '2',
+            title: 'B',
+            start: `${DATE_MON}T11:15:00`,
+            end: `${DATE_MON}T12:00:00`,
+            resources: [weekdayResource],
+            dependsOn: ['1'],
+          },
+          {
+            id: '3',
+            title: 'C',
+            start: `${DATE_MON}T11:20:00`,
+            end: `${DATE_MON}T12:30:00`,
+            resources: [weekdayResource],
+            dependsOn: ['1'],
+          },
+        ],
+        resources: [weekdayResource],
+      })
+
+      cal.updateEvent('1', { end: `${DATE_MON}T12:00:00` })
+
+      const b = cal.options.events!.find((e) => e.id === '2')!
+      const c = cal.options.events!.find((e) => e.id === '3')!
+      expect(b.start).toBe(`${DATE_MON}T12:00:00`)
+      expect(c.start).toBe(`${DATE_MON}T12:00:00`)
+    })
+
+    test('does not cascade when only start changes (end unchanged)', () => {
+      const cal = createCalendar({
+        timeZone: 'UTC',
+        events: [
+          {
+            id: '1',
+            title: 'A',
+            start: `${DATE_MON}T10:00:00`,
+            end: `${DATE_MON}T11:00:00`,
+            resources: [weekdayResource],
+          },
+          {
+            id: '2',
+            title: 'B',
+            start: `${DATE_MON}T11:30:00`,
+            end: `${DATE_MON}T12:30:00`,
+            resources: [weekdayResource],
+            dependsOn: ['1'],
+          },
+        ],
+        resources: [weekdayResource],
+      })
+
+      cal.updateEvent('1', { start: `${DATE_MON}T09:30:00` })
+
+      const b = cal.options.events!.find((e) => e.id === '2')!
+      expect(b.start).toBe(`${DATE_MON}T11:30:00`)
+    })
+  })
+
+  describe('validateMove', () => {
+    test('returns blocked:false for unknown event id', () => {
+      const cal = createCalendar({
+        events: [
+          {
+            id: '1',
+            title: 'A',
+            start: `${DATE_MON}T10:00:00`,
+            end: `${DATE_MON}T11:00:00`,
+            resources: [weekdayResource],
+          },
+        ],
+        resources: [weekdayResource],
+      })
+
+      expect(
+        cal.validateMove(
+          'missing',
+          `${DATE_MON}T12:00:00`,
+          `${DATE_MON}T13:00:00`,
+        ),
+      ).toEqual({ blocked: false })
+    })
+
+    test('allows move fully inside availability', () => {
+      const cal = createCalendar({
+        timeZone: 'UTC',
+        events: [
+          {
+            id: '1',
+            title: 'A',
+            start: `${DATE_MON}T10:00:00`,
+            end: `${DATE_MON}T11:00:00`,
+            resources: [weekdayResource],
+          },
+        ],
+        resources: [weekdayResource],
+      })
+
+      expect(
+        cal.validateMove('1', `${DATE_MON}T13:00:00`, `${DATE_MON}T14:00:00`),
+      ).toEqual({ blocked: false })
+    })
+
+    test('blocks when the moved range overlaps unavailable hours', () => {
+      const cal = createCalendar({
+        timeZone: 'UTC',
+        events: [
+          {
+            id: '1',
+            title: 'A',
+            start: `${DATE_MON}T10:00:00`,
+            end: `${DATE_MON}T11:00:00`,
+            resources: [weekdayResource],
+          },
+        ],
+        resources: [weekdayResource],
+      })
+
+      const r = cal.validateMove(
+        '1',
+        `${DATE_MON}T18:00:00`,
+        `${DATE_MON}T19:00:00`,
+      )
+      expect(r.blocked).toBe(true)
+      expect(r.blockedEventTitle).toBe('A')
+      expect(r.message).toContain('unavailable zone')
+    })
+
+    test('allows move when event has no resources (no availability to violate)', () => {
+      const cal = createCalendar({
+        timeZone: 'UTC',
+        events: [
+          {
+            id: '1',
+            title: 'A',
+            start: `${DATE_MON}T10:00:00`,
+            end: `${DATE_MON}T11:00:00`,
+          },
+        ],
+      })
+
+      expect(
+        cal.validateMove('1', `${DATE_MON}T22:00:00`, `${DATE_MON}T23:00:00`),
+      ).toEqual({ blocked: false })
+    })
+
+    test('blocks when extending end pushes a dependent into unavailable time', () => {
+      const cal = createCalendar({
+        timeZone: 'UTC',
+        events: [
+          {
+            id: '1',
+            title: 'A',
+            start: `${DATE_MON}T10:00:00`,
+            end: `${DATE_MON}T11:00:00`,
+            resources: [weekdayResource],
+          },
+          {
+            id: '2',
+            title: 'B',
+            start: `${DATE_MON}T11:00:00`,
+            end: `${DATE_MON}T16:30:00`,
+            resources: [weekdayResource],
+            dependsOn: ['1'],
+          },
+        ],
+        resources: [weekdayResource],
+      })
+
+      const r = cal.validateMove(
+        '1',
+        `${DATE_MON}T10:00:00`,
+        `${DATE_MON}T13:00:00`,
+      )
+      expect(r.blocked).toBe(true)
+      expect(r.blockedEventTitle).toBe('B')
+      expect(r.message).toContain('pushed to unavailable')
+    })
+
+    test('blocks transitive dependent when cascade would violate availability', () => {
+      const cal = createCalendar({
+        timeZone: 'UTC',
+        events: [
+          {
+            id: '1',
+            title: 'A',
+            start: `${DATE_MON}T10:00:00`,
+            end: `${DATE_MON}T11:00:00`,
+            resources: [weekdayResource],
+          },
+          {
+            id: '2',
+            title: 'B',
+            start: `${DATE_MON}T11:00:00`,
+            end: `${DATE_MON}T12:00:00`,
+            resources: [weekdayResource],
+            dependsOn: ['1'],
+          },
+          {
+            id: '3',
+            title: 'C',
+            start: `${DATE_MON}T12:00:00`,
+            end: `${DATE_MON}T16:00:00`,
+            resources: [weekdayResource],
+            dependsOn: ['2'],
+          },
+        ],
+        resources: [weekdayResource],
+      })
+
+      const r = cal.validateMove(
+        '2',
+        `${DATE_MON}T15:00:00`,
+        `${DATE_MON}T16:00:00`,
+      )
+      expect(r.blocked).toBe(true)
+      expect(r.blockedEventTitle).toBe('C')
+    })
+
+    test('does not run downstream availability check when new end is not extended', () => {
+      const cal = createCalendar({
+        timeZone: 'UTC',
+        events: [
+          {
+            id: '1',
+            title: 'A',
+            start: `${DATE_MON}T10:00:00`,
+            end: `${DATE_MON}T11:00:00`,
+            resources: [weekdayResource],
+          },
+          {
+            id: '2',
+            title: 'B',
+            start: `${DATE_MON}T11:00:00`,
+            end: `${DATE_MON}T16:30:00`,
+            resources: [weekdayResource],
+            dependsOn: ['1'],
+          },
+        ],
+        resources: [weekdayResource],
+      })
+
+      expect(
+        cal.validateMove('1', `${DATE_MON}T10:00:00`, `${DATE_MON}T10:30:00`),
+      ).toEqual({ blocked: false })
+    })
+
+    test('treats split multi-day segment rows as non-targets (no _originalStart match)', () => {
+      const cal = createCalendar({
+        timeZone: 'UTC',
+        events: [
+          {
+            id: '1',
+            title: 'A',
+            start: `${DATE_MON}T14:00:00`,
+            end: `${DATE_MON}T18:00:00`,
+            resources: [weekdayResource],
+            _originalStart: `${DATE_MON}T14:00:00`,
+            _originalEnd: `${DATE_TUE}T10:00:00`,
+          },
+        ],
+        resources: [weekdayResource],
+      })
+
+      expect(
+        cal.validateMove('1', `${DATE_MON}T18:00:00`, `${DATE_MON}T19:00:00`),
+      ).toEqual({ blocked: false })
+    })
+  })
+
+  describe('validateResize — dependsOn (finish-to-start)', () => {
+    const baseResizeOptions = {
+      constraints: { snapToMinutes: 15, minDurationMinutes: 15 },
+    }
+
+    test('blocks moving dependent start before predecessor end (edge left → top)', () => {
+      const cal = createCalendar({
+        timeZone: 'UTC',
+        events: [
+          {
+            id: '1',
+            title: 'A',
+            start: `${DATE_MON}T10:00:00`,
+            end: `${DATE_MON}T11:00:00`,
+            resources: [weekdayResource],
+          },
+          {
+            id: '2',
+            title: 'B',
+            start: `${DATE_MON}T12:00:00`,
+            end: `${DATE_MON}T13:00:00`,
+            resources: [weekdayResource],
+            dependsOn: ['1'],
+          },
+        ],
+        resources: [weekdayResource],
+      })
+
+      const result = cal.validateResize({
+        eventId: '2',
+        originalStart: `${DATE_MON}T12:00:00`,
+        originalEnd: `${DATE_MON}T13:00:00`,
+        edge: 'left',
+        totalDeltaMinutes: -90,
+        targetDayDate: DATE_MON,
+        originalDayDate: DATE_MON,
+        ...baseResizeOptions,
+      })
+
+      expect(result.blocked).toBe(true)
+      expect(result.error?.reason).toBe('blocked')
+      expect(result.error?.message).toContain('cannot start before')
+    })
+
+    test('blocks extending predecessor when dependent would enter unavailable time', () => {
+      const cal = createCalendar({
+        timeZone: 'UTC',
+        events: [
+          {
+            id: '1',
+            title: 'A',
+            start: `${DATE_MON}T10:00:00`,
+            end: `${DATE_MON}T11:00:00`,
+            resources: [weekdayResource],
+          },
+          {
+            id: '2',
+            title: 'B',
+            start: `${DATE_MON}T11:00:00`,
+            end: `${DATE_MON}T16:30:00`,
+            resources: [weekdayResource],
+            dependsOn: ['1'],
+          },
+        ],
+        resources: [weekdayResource],
+      })
+
+      const result = cal.validateResize({
+        eventId: '1',
+        originalStart: `${DATE_MON}T10:00:00`,
+        originalEnd: `${DATE_MON}T11:00:00`,
+        edge: 'right',
+        totalDeltaMinutes: 120,
+        targetDayDate: DATE_MON,
+        originalDayDate: DATE_MON,
+        ...baseResizeOptions,
+      })
+
+      expect(result.blocked).toBe(true)
+      expect(result.error?.reason).toBe('unavailable-time')
+      expect(result.error?.message).toContain('B')
+    })
+
+    test('allows extending predecessor when dependent stays inside availability', () => {
+      const cal = createCalendar({
+        timeZone: 'UTC',
+        events: [
+          {
+            id: '1',
+            title: 'A',
+            start: `${DATE_MON}T10:00:00`,
+            end: `${DATE_MON}T11:00:00`,
+            resources: [weekdayResource],
+          },
+          {
+            id: '2',
+            title: 'B',
+            start: `${DATE_MON}T11:00:00`,
+            end: `${DATE_MON}T12:00:00`,
+            resources: [weekdayResource],
+            dependsOn: ['1'],
+          },
+        ],
+        resources: [weekdayResource],
+      })
+
+      const result = cal.validateResize({
+        eventId: '1',
+        originalStart: `${DATE_MON}T10:00:00`,
+        originalEnd: `${DATE_MON}T11:00:00`,
+        edge: 'right',
+        totalDeltaMinutes: 60,
+        targetDayDate: DATE_MON,
+        originalDayDate: DATE_MON,
+        ...baseResizeOptions,
+      })
+
+      expect(result.blocked).toBe(false)
+    })
+
+    test('blocks when transitive dependent would leave availability', () => {
+      const cal = createCalendar({
+        timeZone: 'UTC',
+        events: [
+          {
+            id: '1',
+            title: 'A',
+            start: `${DATE_MON}T10:00:00`,
+            end: `${DATE_MON}T11:00:00`,
+            resources: [weekdayResource],
+          },
+          {
+            id: '2',
+            title: 'B',
+            start: `${DATE_MON}T11:00:00`,
+            end: `${DATE_MON}T12:00:00`,
+            resources: [weekdayResource],
+            dependsOn: ['1'],
+          },
+          {
+            id: '3',
+            title: 'C',
+            start: `${DATE_MON}T12:00:00`,
+            end: `${DATE_MON}T16:00:00`,
+            resources: [weekdayResource],
+            dependsOn: ['2'],
+          },
+        ],
+        resources: [weekdayResource],
+      })
+
+      const result = cal.validateResize({
+        eventId: '1',
+        originalStart: `${DATE_MON}T10:00:00`,
+        originalEnd: `${DATE_MON}T11:00:00`,
+        edge: 'right',
+        totalDeltaMinutes: 240,
+        targetDayDate: DATE_MON,
+        originalDayDate: DATE_MON,
+        ...baseResizeOptions,
+      })
+
+      expect(result.blocked).toBe(true)
+      expect(result.error?.reason).toBe('unavailable-time')
+    })
+
+    test('skips cascade availability check when dependent is already outside hours', () => {
+      const cal = createCalendar({
+        timeZone: 'UTC',
+        events: [
+          {
+            id: '1',
+            title: 'A',
+            start: `${DATE_MON}T10:00:00`,
+            end: `${DATE_MON}T11:00:00`,
+            resources: [weekdayResource],
+          },
+          {
+            id: '2',
+            title: 'B',
+            start: `${DATE_MON}T17:00:00`,
+            end: `${DATE_MON}T18:00:00`,
+            resources: [weekdayResource],
+            dependsOn: ['1'],
+          },
+        ],
+        resources: [weekdayResource],
+      })
+
+      const result = cal.validateResize({
+        eventId: '1',
+        originalStart: `${DATE_MON}T10:00:00`,
+        originalEnd: `${DATE_MON}T11:00:00`,
+        edge: 'right',
+        totalDeltaMinutes: 60,
+        targetDayDate: DATE_MON,
+        originalDayDate: DATE_MON,
+        ...baseResizeOptions,
+      })
+
+      expect(result.blocked).toBe(false)
+    })
+
+    test('same cascade rule applies with edge bottom (vertical resize)', () => {
+      const cal = createCalendar({
+        timeZone: 'UTC',
+        events: [
+          {
+            id: '1',
+            title: 'A',
+            start: `${DATE_MON}T10:00:00`,
+            end: `${DATE_MON}T11:00:00`,
+            resources: [weekdayResource],
+          },
+          {
+            id: '2',
+            title: 'B',
+            start: `${DATE_MON}T11:00:00`,
+            end: `${DATE_MON}T16:30:00`,
+            resources: [weekdayResource],
+            dependsOn: ['1'],
+          },
+        ],
+        resources: [weekdayResource],
+      })
+
+      const result = cal.validateResize({
+        eventId: '1',
+        originalStart: `${DATE_MON}T10:00:00`,
+        originalEnd: `${DATE_MON}T11:00:00`,
+        edge: 'bottom',
+        totalDeltaMinutes: 120,
+        targetDayDate: DATE_MON,
+        originalDayDate: DATE_MON,
+        ...baseResizeOptions,
+      })
+
+      expect(result.blocked).toBe(true)
+      expect(result.error?.reason).toBe('unavailable-time')
+    })
+  })
+
   describe('groupDaysBy', () => {
     test('groups days into weeks', () => {
       const cal = createCalendar({ viewMode: { value: 1, unit: 'month' } })
