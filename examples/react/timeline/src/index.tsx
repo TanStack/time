@@ -5,6 +5,7 @@ import {
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { timeDevtoolsPlugin } from '@tanstack/react-time-devtools'
 import {
+  getTimeClient,
   toPlainDateString,
   toPlainDateTimeString,
   toPlainTimeString,
@@ -38,6 +39,7 @@ import type {
   Event,
   ResizeError,
   Resource,
+  TimelineLayout,
   TimelineResourceRow,
 } from '@tanstack/time'
 import type { Connection, Edge, Node, NodeProps } from '@xyflow/react'
@@ -190,7 +192,6 @@ function getSampleEvents(): Array<Event<Resource>> {
       start: weekdayAt(3, 10, 0),
       end: weekdayAt(3, 15, 0),
       resources: [resourceQA],
-      dependsOn: ['3'],
     },
     {
       id: '6',
@@ -205,15 +206,13 @@ function getSampleEvents(): Array<Event<Resource>> {
       start: weekdayAt(3, 10, 0),
       end: weekdayAt(3, 12, 30),
       resources: [resourceDesign],
-      dependsOn: ['1'],
     },
     {
       id: '8',
       title: 'Auth Module',
-      start: weekdayAt(4, 0, 0),
+      start: weekdayAt(5, 6, 0),
       end: weekdayAt(5, 10, 0),
       resources: [resourceBackend],
-      dependsOn: ['3'],
     },
     {
       id: '9',
@@ -221,7 +220,6 @@ function getSampleEvents(): Array<Event<Resource>> {
       start: weekdayAt(4, 10, 30),
       end: weekdayAt(4, 14, 30),
       resources: [resourceQA],
-      dependsOn: ['8'],
     },
     {
       id: '10',
@@ -229,7 +227,6 @@ function getSampleEvents(): Array<Event<Resource>> {
       start: weekdayAt(5, 7, 30),
       end: weekdayAt(5, 13, 0),
       resources: [resourceDevOps],
-      dependsOn: ['6'],
     },
   ]
 }
@@ -578,8 +575,14 @@ const DEP_CANVAS_NODE_TYPES = { depCanvas: DepCanvasNode }
 const CANVAS_NODE_ID = '__dep_canvas__'
 
 function buildTimelineEdges(events: Array<Event<Resource>>): Array<Edge> {
-  return events.flatMap((event) =>
-    (event.dependsOn ?? []).map((sourceId) => ({
+  const visibleEventIds = new Set(events.map((e) => e.id))
+
+  return events.flatMap((event) => {
+    const deps = (event.dependsOn ?? []).filter((sourceId) =>
+      visibleEventIds.has(sourceId),
+    )
+
+    return deps.map((sourceId) => ({
       id: `dep-${sourceId}-${event.id}`,
       source: CANVAS_NODE_ID,
       sourceHandle: `${sourceId}-source`,
@@ -589,12 +592,12 @@ function buildTimelineEdges(events: Array<Event<Resource>>): Array<Edge> {
       animated: true,
       markerEnd: { type: MarkerType.ArrowClosed, color: '#f59e0b' },
       style: { stroke: '#f59e0b', strokeWidth: 2 },
-    })),
-  )
+    }))
+  })
 }
 
 interface TimelineDependencyOverlayProps {
-  calendarEvents: Array<Event<Resource>>
+  timelineLayout: TimelineLayout<Resource, Event<Resource>>
   eventBarRefs: React.MutableRefObject<Map<string, HTMLDivElement>>
   rowsContainerRef: React.RefObject<HTMLDivElement | null>
   resizeState: {
@@ -608,12 +611,12 @@ interface TimelineDependencyOverlayProps {
 }
 
 function TimelineDependencyOverlay({
-  calendarEvents,
-  eventBarRefs,
+  timelineLayout,
   rowsContainerRef,
   resizeState,
   activeDragEvent,
   onDependencyCreate,
+  eventBarRefs,
 }: TimelineDependencyOverlayProps) {
   const [rfNodes, setRfNodes, onNodesChangeBase] = useNodesState<Node>([])
   const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState<Edge>([])
@@ -644,16 +647,24 @@ function TimelineDependencyOverlay({
     const containerRect = container.getBoundingClientRect()
     const positions: Array<HandlePosition> = []
 
-    for (const [eventId, el] of eventBarRefs.current) {
-      const rect = el.getBoundingClientRect()
-      positions.push({
-        eventId,
-        x: rect.left - containerRect.left,
-        y: rect.top - containerRect.top,
-        width: rect.width,
-        height: rect.height,
+    // Use actual event-bar DOM rects so handles follow resize previews
+    // (resize updates styles on the event bar element, while timelineLayout
+    // may remain based on the committed start/end).
+    timelineLayout.rows.forEach((row: TimelineResourceRow) => {
+      row.events.forEach((e: any) => {
+        const el = eventBarRefs.current.get(e.event.id)
+        if (!el) return
+
+        const rect = el.getBoundingClientRect()
+        positions.push({
+          eventId: e.event.id,
+          x: rect.left - containerRect.left,
+          y: rect.top - containerRect.top,
+          width: rect.width,
+          height: rect.height,
+        })
       })
-    }
+    })
 
     setRfNodes([
       {
@@ -668,8 +679,15 @@ function TimelineDependencyOverlay({
         draggable: false,
       },
     ])
-    setRfEdges(buildTimelineEdges(calendarEvents))
-  }, [calendarEvents, eventBarRefs, rowsContainerRef, setRfNodes, setRfEdges])
+    const allEvents = Array.from(
+      new Map(
+        timelineLayout.rows
+          .flatMap((r: any) => r.events.map((e: any) => e.event))
+          .map((e: any) => [e.id, e]),
+      ).values(),
+    )
+    setRfEdges(buildTimelineEdges(allEvents))
+  }, [timelineLayout, rowsContainerRef, eventBarRefs, setRfNodes, setRfEdges])
 
   useLayoutEffect(() => {
     updatePositions()
@@ -1013,11 +1031,6 @@ function TimelineDemo() {
     return map
   }, [])
 
-  const calendarEvents = useMemo(
-    () => calendar.getEvents(),
-    [calendar.days, calendar],
-  )
-
   const timelineLayout = useMemo(
     () => calendar.getTimelineLayout(),
     [calendar.days],
@@ -1189,6 +1202,18 @@ function TimelineDemo() {
       )
 
       if (validation.blocked) {
+        getTimeClient().emit('event:update:error', {
+          eventId: draggedEvent.id,
+          eventTitle: draggedEvent.title,
+          reason: 'unavailable-time',
+          message:
+            validation.message ?? 'This move is blocked by availability.',
+          originalStart: draggedEvent.start,
+          originalEnd: draggedEvent.end,
+          attemptedStart: nextStart,
+          attemptedEnd: nextEnd,
+        })
+
         setResizeError({
           eventId: draggedEvent.id,
           eventTitle: draggedEvent.title,
@@ -1432,7 +1457,7 @@ function TimelineDemo() {
                     style={{ overflow: 'hidden' }}
                   >
                     <TimelineDependencyOverlay
-                      calendarEvents={calendarEvents}
+                      timelineLayout={timelineLayout}
                       eventBarRefs={eventBarRefsMap}
                       rowsContainerRef={rowsContainerRef}
                       resizeState={resizeState}

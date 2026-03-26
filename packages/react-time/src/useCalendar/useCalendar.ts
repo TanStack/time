@@ -258,7 +258,7 @@ export const useCalendar = <
                 : undefined,
           }
 
-          getTimeClient().emit('event:resize:error', {
+          getTimeClient().emit('event:update:error', {
             eventId: id,
             eventTitle: event?.title ?? 'Unknown Event',
             reason: validation.error.reason,
@@ -530,8 +530,8 @@ export const useCalendar = <
   )
 
   const validateMove = useCallback<typeof calendarCore.validateMove>(
-    (eventId, newStart, newEnd) =>
-      calendarCore.validateMove(eventId, newStart, newEnd),
+    (eventId, newStart, newEnd, newResources) =>
+      calendarCore.validateMove(eventId, newStart, newEnd, newResources),
     [calendarCore],
   )
 

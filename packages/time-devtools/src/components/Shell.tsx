@@ -45,8 +45,8 @@ const getEventTypeLabel = (
       return { text: 'Removed', color: 'red' }
     case 'time:event:resized':
       return { text: 'Resized', color: 'yellow' }
-    case 'time:event:resize:error':
-      return { text: 'Resize Error', color: 'red' }
+    case 'time:event:update:error':
+      return { text: 'Update Error', color: 'red' }
     case 'time:calendar:navigate':
       return { text: 'Navigate', color: 'purple' }
     case 'time:calendar:viewMode:changed':
@@ -68,7 +68,7 @@ const getEventDescription = (entry: ActivityLogEntry): string => {
       return `${details.eventTitle || 'Event'}`
     case 'time:event:resized':
       return `Resized to ${String(details.start)} - ${String(details.end)}`
-    case 'time:event:resize:error':
+    case 'time:event:update:error':
       return `${details.eventTitle || 'Event'} - ${String(details.message)}`
     case 'time:calendar:navigate':
       return `${String(details.direction)} → ${String(details.targetDate)}`

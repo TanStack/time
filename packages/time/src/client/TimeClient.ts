@@ -33,7 +33,7 @@ export interface TimeEventMap {
     start: string
     end: string
   }
-  'time:event:resize:error': {
+  'time:event:update:error': {
     eventId: string
     eventTitle: string
     reason: 'unavailable-time' | 'invalid-time' | 'min-duration' | 'blocked'
