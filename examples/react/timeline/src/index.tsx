@@ -231,7 +231,15 @@ function getSampleEvents(): Array<Event<Resource>> {
   ]
 }
 
-const sampleEvents = getSampleEvents()
+const MOCK_DB = getSampleEvents()
+
+function getEventColor(eventId: string) {
+  const hash = String(eventId)
+    .split('')
+    .reduce((acc, char) => acc + char.charCodeAt(0), 0)
+  const colorIdx = hash % EVENT_COLORS.length
+  return EVENT_COLORS[colorIdx] ?? EVENT_COLORS[0]
+}
 
 interface EventFormData {
   title: string
@@ -855,7 +863,6 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
 const HorizontalTimelineRow = React.memo(function HorizontalTimelineRow({
   row,
   days,
-  colorMap,
   resourceColorIndex,
   onEventClick,
   getResizeHandleProps,
@@ -865,7 +872,6 @@ const HorizontalTimelineRow = React.memo(function HorizontalTimelineRow({
 }: {
   row: TimelineResourceRow<Resource, Event<Resource>>
   days: Array<Day<Resource, Event<Resource>>>
-  colorMap: Map<string, number>
   resourceColorIndex: number
   onEventClick: (event: Event<Resource>) => void
   getResizeHandleProps: ReturnType<
@@ -951,9 +957,7 @@ const HorizontalTimelineRow = React.memo(function HorizontalTimelineRow({
       })}
       {row.events.map(
         ({ event, left, width, lane, isStartClipped, isEndClipped }) => {
-          const colorIdx = colorMap.get(event.id) ?? 0
-          const color =
-            EVENT_COLORS[colorIdx % EVENT_COLORS.length] ?? EVENT_COLORS[0]
+          const color = getEventColor(event.id)
 
           return (
             <DraggableTimelineEvent
@@ -1006,9 +1010,22 @@ function TimelineDemo() {
 
   const calendar = useCalendar<Resource, Event<Resource>>({
     viewMode: { value: 1, unit: 'day' },
-    events: sampleEvents,
+    events: [],
     resources: sampleResources,
     timeZone: 'UTC',
+    fetchEvents: async ({ start, end }) => {
+      // Simulate network latency
+      await new Promise((resolve) => setTimeout(resolve, 800))
+
+      const startDate = new Date(start)
+      const endDate = new Date(end)
+
+      return MOCK_DB.filter((e) => {
+        const eStart = new Date(e.start as string)
+        const eEnd = new Date(e.end as string)
+        return eStart <= endDate && eEnd >= startDate
+      })
+    },
     resize: {
       enabled: true,
       get containerWidth() {
@@ -1024,12 +1041,6 @@ function TimelineDemo() {
       },
     },
   })
-
-  const colorMap = useMemo(() => {
-    const map = new Map<string, number>()
-    sampleEvents.forEach((event, i) => map.set(event.id, i))
-    return map
-  }, [])
 
   const timelineLayout = useMemo(
     () => calendar.getTimelineLayout(),
@@ -1443,7 +1454,6 @@ function TimelineDemo() {
                       key={row.resource.id}
                       row={row}
                       days={calendar.days}
-                      colorMap={colorMap}
                       resourceColorIndex={rowIdx}
                       onEventClick={openEditModal}
                       getResizeHandleProps={calendar.getResizeHandleProps}
@@ -1473,10 +1483,8 @@ function TimelineDemo() {
 
         <div className="mt-4 flex flex-wrap gap-x-6 gap-y-3">
           <div className="flex flex-wrap gap-3">
-            {sampleEvents.map((event) => {
-              const colorIdx = colorMap.get(event.id) ?? 0
-              const color =
-                EVENT_COLORS[colorIdx % EVENT_COLORS.length] ?? EVENT_COLORS[0]
+            {calendar.getEvents().map((event) => {
+              const color = getEventColor(event.id)
               return (
                 <div key={event.id} className="flex items-center gap-1.5">
                   <div

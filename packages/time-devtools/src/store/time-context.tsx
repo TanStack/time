@@ -1,7 +1,8 @@
-import { createContext, useContext, onMount, onCleanup } from 'solid-js'
+import { createContext, onCleanup, onMount, useContext } from 'solid-js'
 import { createStore } from 'solid-js/store'
+import { getTimeClient } from '@tanstack/time'
+import type { TimeEventMap } from '@tanstack/time'
 import type { ParentComponent } from 'solid-js'
-import { getTimeClient, type TimeEventMap } from '@tanstack/time'
 
 export interface ActivityLogEntry {
   id: string
@@ -13,6 +14,10 @@ export interface ActivityLogEntry {
 interface TimeStoreState {
   activityLog: Array<ActivityLogEntry>
   isConnected: boolean
+  events: Record<
+    string,
+    { id: string; title: string; start: string; end: string }
+  >
 }
 
 interface TimeContextValue {
@@ -38,6 +43,7 @@ export const TimeProvider: ParentComponent = (props) => {
   const [state, setState] = createStore<TimeStoreState>({
     activityLog: [],
     isConnected: false,
+    events: {},
   })
 
   const clearLog = () => {
@@ -60,11 +66,55 @@ export const TimeProvider: ParentComponent = (props) => {
       }
 
       setState('activityLog', (prev) => [entry, ...prev].slice(0, 100))
+
+      // Track the live map of events
+      if (
+        event.type === 'time:event:added' ||
+        event.type === 'time:event:updated'
+      ) {
+        const payload = event.payload as {
+          eventId: string
+          eventTitle: string
+          start: string
+          end: string
+        }
+        setState('events', payload.eventId, {
+          id: payload.eventId,
+          title: payload.eventTitle,
+          start: payload.start,
+          end: payload.end,
+        })
+      } else if (event.type === 'time:event:removed') {
+        const payload = event.payload as { eventId: string }
+        setState('events', payload.eventId, undefined!)
+      } else if (event.type === 'time:events:set') {
+        const payload = event.payload as {
+          events: Array<{
+            eventId: string
+            eventTitle: string
+            start: string
+            end: string
+          }>
+        }
+        setState('events', (prev) => {
+          const next = { ...prev }
+          for (const ev of payload.events) {
+            next[ev.eventId] = {
+              id: ev.eventId,
+              title: ev.eventTitle,
+              start: ev.start,
+              end: ev.end,
+            }
+          }
+          return next
+        })
+      }
     })
 
     onCleanup(() => {
       unsubscribe()
       setState('isConnected', false)
+      setState('events', {})
     })
   })
 

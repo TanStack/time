@@ -48,6 +48,13 @@ export interface CalendarCoreOptions<
   events?: Array<TEvent> | null
   /** Optional resources to be used in the calendar. */
   resources?: Array<TResource> | null
+  /**
+   * Optional async callback for lazy/on-demand event loading.
+   * Called whenever the current viewport window is not yet fully loaded.
+   * The returned events are merged into the internal indices automatically.
+   * When omitted the calendar operates in fully-eager mode (no change in behaviour).
+   */
+  fetchEvents?: (range: { start: string; end: string }) => Promise<Array<TEvent>>
 }
 
 /**
@@ -215,6 +222,7 @@ type ParsedCalendarCoreOptions<
 > = ParsedDateCoreOptions & {
   events: Array<TEvent> | null
   resources: Array<TResource> | null
+  fetchEvents?: (range: { start: string; end: string }) => Promise<Array<TEvent>>
 }
 
 export class CalendarCore<
@@ -226,13 +234,134 @@ export class CalendarCore<
 {
   declare options: ParsedCalendarCoreOptions<TResource, TEvent>
 
+  // ─── O(1) index structures ──────────────────────────────────────────────────
+  /** id → normalized TEvent (master record) */
+  private _eventMap = new Map<string, TEvent>()
+  /** id → Set of event IDs whose `dependsOn` includes this id (reverse dep graph) */
+  private _dependentsMap = new Map<string, Set<string>>()
+  /** 'YYYY-MM-DD' → Set of event IDs that start on that date */
+  private _dateIndex = new Map<string, Set<string>>()
+  /** Ranges already fetched by fetchEvents (sorted, non-overlapping after merge) */
+  private _loadedRanges: Array<{ start: string; end: string }> = []
+  // ────────────────────────────────────────────────────────────────────────────
+
   constructor(options: CalendarCoreOptions<TResource, TEvent>) {
     super(options)
     Object.assign(this.options, {
       events: options.events?.map((e) => this.normalizeEvent(e)) || null,
       resources: options.resources || null,
+      fetchEvents: options.fetchEvents,
     })
+    // Build indices from initial events
+    this.options.events?.forEach((e) => this._indexAddEvent(e))
   }
+
+  // ─── Index helpers ──────────────────────────────────────────────────────────
+
+  /** Return the ISO start-date key for a normalized event. */
+  private _eventDateKey(event: TEvent): string {
+    const startStr = event.start as string
+    return startStr.split('T')[0] ?? startStr
+  }
+
+  /** Insert one event into all three indices. */
+  private _indexAddEvent(event: TEvent): void {
+    this._eventMap.set(event.id, event)
+    // date index
+    const dk = this._eventDateKey(event)
+    if (!this._dateIndex.has(dk)) this._dateIndex.set(dk, new Set())
+    this._dateIndex.get(dk)!.add(event.id)
+    // reverse dependency graph
+    for (const predId of event.dependsOn ?? []) {
+      if (!this._dependentsMap.has(predId)) this._dependentsMap.set(predId, new Set())
+      this._dependentsMap.get(predId)!.add(event.id)
+    }
+  }
+
+  /** Remove one event from all three indices. */
+  private _indexRemoveEvent(event: TEvent): void {
+    this._eventMap.delete(event.id)
+    // date index
+    const dk = this._eventDateKey(event)
+    const bucket = this._dateIndex.get(dk)
+    if (bucket) {
+      bucket.delete(event.id)
+      if (bucket.size === 0) this._dateIndex.delete(dk)
+    }
+    // reverse dependency graph — remove this event as a dependent of its predecessors
+    for (const predId of event.dependsOn ?? []) {
+      this._dependentsMap.get(predId)?.delete(event.id)
+    }
+    // also remove its own forward entry (for events that depended on it)
+    this._dependentsMap.delete(event.id)
+  }
+
+  /**
+   * Patch the indices when an event changes.
+   * Only touches the structures that actually changed.
+   */
+  private _indexUpdateEvent(prev: TEvent, next: TEvent): void {
+    this._eventMap.set(next.id, next)
+
+    // date index: only rebuild if start date changed
+    const prevDk = this._eventDateKey(prev)
+    const nextDk = this._eventDateKey(next)
+    if (prevDk !== nextDk) {
+      const old = this._dateIndex.get(prevDk)
+      if (old) {
+        old.delete(prev.id)
+        if (old.size === 0) this._dateIndex.delete(prevDk)
+      }
+      if (!this._dateIndex.has(nextDk)) this._dateIndex.set(nextDk, new Set())
+      this._dateIndex.get(nextDk)!.add(next.id)
+    }
+
+    // reverse dependency graph: rebuild only diff
+    const prevDeps = new Set(prev.dependsOn ?? [])
+    const nextDeps = new Set(next.dependsOn ?? [])
+    for (const predId of prevDeps) {
+      if (!nextDeps.has(predId)) {
+        this._dependentsMap.get(predId)?.delete(next.id)
+      }
+    }
+    for (const predId of nextDeps) {
+      if (!prevDeps.has(predId)) {
+        if (!this._dependentsMap.has(predId)) this._dependentsMap.set(predId, new Set())
+        this._dependentsMap.get(predId)!.add(next.id)
+      }
+    }
+  }
+
+  /**
+   * Check whether the given [start, end] viewport is already fully covered by
+   * previously fetched ranges. Returns true when no fetch is needed.
+   */
+  private _isRangeLoaded(start: string, end: string): boolean {
+    for (const r of this._loadedRanges) {
+      if (r.start <= start && r.end >= end) return true
+    }
+    return false
+  }
+
+  /**
+   * Merge a newly loaded range into `_loadedRanges` (sorted, non-overlapping).
+   */
+  private _markRangeLoaded(start: string, end: string): void {
+    this._loadedRanges.push({ start, end })
+    this._loadedRanges.sort((a, b) => (a.start < b.start ? -1 : 1))
+    // merge overlapping/adjacent
+    const merged: Array<{ start: string; end: string }> = []
+    for (const r of this._loadedRanges) {
+      const last = merged[merged.length - 1]
+      if (last && r.start <= last.end) {
+        last.end = last.end > r.end ? last.end : r.end
+      } else {
+        merged.push({ ...r })
+      }
+    }
+    this._loadedRanges = merged
+  }
+  // ────────────────────────────────────────────────────────────────────────────
 
   private normalizeEvent<
     T extends { start: string | Date | number; end: string | Date | number },
@@ -248,17 +377,24 @@ export class CalendarCore<
     return super.getCalendarDays()
   }
 
+  /**
+   * Builds a date → [event segments] map used by getDaysWithEvents and getEventProps.
+   * Multi-day events are split here (segments are not stored in the indices).
+   * Single-day events are sourced directly from _eventMap via _dateIndex — O(k) where
+   * k is the number of distinct dates that have events (≪ total event count).
+   */
   private getEventMap() {
     const map = new Map<string, Array<TEvent>>()
-    this.options.events?.forEach((event) => {
-      const eventStartDate = Temporal.PlainDateTime.from(
-        toPlainDateTimeString(event.start),
-      ).toZonedDateTime(this.options.timeZone)
-      const eventEndDate = Temporal.PlainDateTime.from(
-        toPlainDateTimeString(event.end),
-      ).toZonedDateTime(this.options.timeZone)
-      const startPlainDate = eventStartDate.toPlainDate()
-      const endPlainDate = eventEndDate.toPlainDate()
+
+    // Visit every event only once, via the master map
+    for (const event of this._eventMap.values()) {
+      const startStr = event.start as string
+      const endStr = event.end as string
+
+      const startDt = Temporal.PlainDateTime.from(startStr)
+      const endDt = Temporal.PlainDateTime.from(endStr)
+      const startPlainDate = startDt.toPlainDate()
+      const endPlainDate = endDt.toPlainDate()
 
       if (Temporal.PlainDate.compare(startPlainDate, endPlainDate) !== 0) {
         const splitEvents = splitMultiDayEvents<TResource, TEvent>(
@@ -272,15 +408,79 @@ export class CalendarCore<
             .toPlainDate()
             .toString({ calendarName: 'never' })
           if (!map.has(dateKey)) map.set(dateKey, [])
-          map.get(dateKey)?.push(splitEvent)
+          map.get(dateKey)!.push(splitEvent)
         })
       } else {
         const dateKey = startPlainDate.toString({ calendarName: 'never' })
         if (!map.has(dateKey)) map.set(dateKey, [])
-        map.get(dateKey)?.push(event)
+        map.get(dateKey)!.push(event)
       }
-    })
+    }
     return map
+  }
+
+  /**
+   * Triggers the lazy-loading flow if the current viewport haven't been fetched yet.
+   * This is intended to be used by side-effect hooks (like useEffect in React)
+   * to avoid triggering fetches during the render cycle.
+   */
+  ensureRangeLoaded(): void {
+    const calendarDays = this.getCalendarDays()
+
+    // Lazy loading: if a fetchEvents callback is configured and the current
+    // viewport window hasn't been fetched yet, kick off the fetch asynchronously.
+    if (this.options.fetchEvents && calendarDays.length > 0) {
+      const first = calendarDays[0]!
+      const last = calendarDays[calendarDays.length - 1]!
+      const rangeStart = first.toString({ calendarName: 'never' })
+      // Use the start of the NEXT day as the range end to provide a standard exclusive range [start, end)
+      const rangeEnd = last.add({ days: 1 }).toString({ calendarName: 'never' })
+
+      if (!this._isRangeLoaded(rangeStart, rangeEnd)) {
+        // Mark as loaded immediately to prevent concurrent duplicate fetches
+        this._markRangeLoaded(rangeStart, rangeEnd)
+        // Set isPending while fetching
+        this.store.setState((prev) => ({ ...prev, isPending: true }))
+        this.options.fetchEvents({ start: rangeStart, end: rangeEnd })
+          .then((fetchedEvents) => {
+            if (fetchedEvents.length > 0) {
+              if (!this.options.events) this.options.events = []
+              const newlyFetchedEvents: Array<{ eventId: string; eventTitle: string; start: string; end: string }> = []
+              for (const raw of fetchedEvents) {
+                // Skip duplicates (event may already be known)
+                if (this._eventMap.has(raw.id)) continue
+                const normalized = this.normalizeEvent(raw)
+                this.options.events.push(normalized)
+                this._indexAddEvent(normalized)
+                newlyFetchedEvents.push({
+                   eventId: normalized.id,
+                   eventTitle: normalized.title,
+                   start: normalized.start as string,
+                   end: normalized.end as string,
+                })
+              }
+              if (newlyFetchedEvents.length > 0) {
+                 getTimeClient().emit('events:set', { events: newlyFetchedEvents })
+              }
+            }
+            this.store.setState((prev) => ({
+              ...prev,
+              isPending: false,
+              eventsVersion:
+                fetchedEvents.length > 0
+                  ? prev.eventsVersion + 1
+                  : prev.eventsVersion,
+            }))
+          })
+          .catch(() => {
+            // On error, unmark the range so the next render can retry
+            this._loadedRanges = this._loadedRanges.filter(
+              (r) => !(r.start === rangeStart && r.end === rangeEnd),
+            )
+            this.store.setState((prev) => ({ ...prev, isPending: false }))
+          })
+      }
+    }
   }
 
   getDaysWithEvents() {
@@ -303,6 +503,11 @@ export class CalendarCore<
         isInCurrentPeriod,
       }
     })
+  }
+
+  /** Returns the list of date ranges that have already been fetched. Useful for testing. */
+  getLoadedRanges(): ReadonlyArray<{ start: string; end: string }> {
+    return this._loadedRanges
   }
 
   formatPeriodLabel(options?: { locale?: string }): string {
@@ -352,10 +557,17 @@ export class CalendarCore<
     return getTimeSlots(this.options.locale, options)
   }
 
+  /**
+   * Retrieves events for a specific date.
+   * Uses _dateIndex for O(1) date lookup, then resolves each id via _eventMap.
+   * Multi-day events that span onto this date are still found via getEventMap.
+   */
   getEventsByDate(date: string): Array<TEvent> {
     const targetDate = Temporal.PlainDate.from(date).toString({
       calendarName: 'never',
     })
+    // Fast path: delegate to the same map used by getDaysWithEvents so that
+    // multi-day split segments are included too.
     const eventMap = this.getEventMap()
     return eventMap.get(targetDate) ?? []
   }
@@ -366,6 +578,8 @@ export class CalendarCore<
     }
     const normalized = this.normalizeEvent(event)
     this.options.events.push(normalized)
+    // Update indices in O(1)
+    this._indexAddEvent(normalized)
     this.store.setState((prev) => ({
       ...prev,
       eventsVersion: prev.eventsVersion + 1,
@@ -382,10 +596,14 @@ export class CalendarCore<
   updateEvent(id: Event['id'], updates: Partial<Omit<TEvent, 'id'>>): void {
     if (!this.options.events) return
 
-    const index = this.options.events.findIndex((e) => e.id === id)
+    // O(1) lookup via index
+    const existingEvent = this._eventMap.get(id)
+    if (!existingEvent) return
+
+    const index = this.options.events.indexOf(existingEvent)
     if (index === -1) return
 
-    const existingEvent = this.options.events[index]!
+    const oldStartStr = toPlainDateTimeString(existingEvent.start)
     const oldEndStr = toPlainDateTimeString(existingEvent.end)
 
     const normalizedUpdates = {
@@ -398,13 +616,21 @@ export class CalendarCore<
         : {}),
     }
 
-    this.options.events[index] = {
+    const nextEvent = {
       ...existingEvent,
       ...normalizedUpdates,
     } as TEvent
+    this.options.events[index] = nextEvent
+    // Update all three indices atomically
+    this._indexUpdateEvent(existingEvent, nextEvent)
 
     // Shared visited set prevents double-shifting when both end and start change.
     const visited = new Set([id])
+
+    const newStart = normalizedUpdates.start as string | undefined
+    if (newStart && newStart !== oldStartStr) {
+      this.propagateStartDeltaBackward(id, visited)
+    }
 
     const newEnd = normalizedUpdates.end as string | undefined
     if (newEnd && newEnd !== oldEndStr) {
@@ -425,20 +651,84 @@ export class CalendarCore<
     getTimeClient().emit('event:updated', {
       eventId: id,
       eventTitle: existingEvent.title,
-      start: this.options.events[index]!.start as string,
-      end: this.options.events[index]!.end as string,
+      start: toPlainDateTimeString(nextEvent.start),
+      end: toPlainDateTimeString(nextEvent.end),
       updates: normalizedUpdates as Record<string, unknown>,
     })
   }
 
+  /**
+   * Walk the predecessor chain backward and push each predecessor earlier when
+   * the source event's new start would violate a finish-to-start constraint.
+   * Uses _eventMap for O(1) lookups — no array scans.
+   */
+  private propagateStartDeltaBackward(sourceId: string, visited: Set<string>) {
+    const sourceEvent = this._eventMap.get(sourceId)
+    if (!sourceEvent?.dependsOn?.length) return
+
+    const sourceStartStr = toPlainDateTimeString(sourceEvent.start)
+    const sourceStartMs = Temporal.PlainDateTime.from(
+      sourceStartStr,
+    ).toZonedDateTime(this.options.timeZone).epochMilliseconds
+
+    for (const predId of sourceEvent.dependsOn) {
+      if (visited.has(predId)) continue
+
+      const pred = this._eventMap.get(predId)
+      if (!pred) continue
+      const predArr = this.options.events
+      if (!predArr) continue
+      const predIndex = predArr.indexOf(pred)
+      if (predIndex === -1) continue
+
+      const predEndStr = toPlainDateTimeString(pred.end)
+      const predEndMs = Temporal.PlainDateTime.from(predEndStr).toZonedDateTime(
+        this.options.timeZone,
+      ).epochMilliseconds
+
+      const overlap = predEndMs - sourceStartMs
+      if (overlap <= 0) continue
+
+      visited.add(predId)
+
+      const predStartStr = toPlainDateTimeString(pred.start)
+      const shiftedStart = Temporal.PlainDateTime.from(predStartStr)
+        .subtract({ milliseconds: overlap })
+        .toString({ smallestUnit: 'second' })
+      const shiftedEnd = Temporal.PlainDateTime.from(predEndStr)
+        .subtract({ milliseconds: overlap })
+        .toString({ smallestUnit: 'second' })
+
+      const updated = { ...pred, start: shiftedStart, end: shiftedEnd } as TEvent
+      predArr[predIndex] = updated
+      this._indexUpdateEvent(pred, updated)
+
+      getTimeClient().emit('event:updated', {
+        eventId: pred.id,
+        eventTitle: pred.title,
+        start: shiftedStart,
+        end: shiftedEnd,
+        updates: { start: shiftedStart, end: shiftedEnd } as Record<
+          string,
+          unknown
+        >,
+      })
+
+      this.propagateStartDeltaBackward(predId, visited)
+    }
+  }
+
+  /**
+   * Walk the successor (dependent) chain forward and shift each successor when
+   * the source event's new end would overflow into the successor's start time.
+   * Uses _dependentsMap for O(degree) traversal — no full array scan.
+   */
   private propagateEndDelta(
     sourceId: string,
     _deltaMs: number,
     visited: Set<string>,
   ): void {
-    if (!this.options.events) return
-
-    const sourceEvent = this.options.events.find((e) => e.id === sourceId)
+    const sourceEvent = this._eventMap.get(sourceId)
     if (!sourceEvent) return
 
     const sourceEndStr = toPlainDateTimeString(sourceEvent.end)
@@ -446,20 +736,25 @@ export class CalendarCore<
       sourceEndStr,
     ).toZonedDateTime(this.options.timeZone).epochMilliseconds
 
-    const dependents = this.options.events.filter(
-      (event) => !visited.has(event.id) && event.dependsOn?.includes(sourceId),
-    )
+    // O(degree) — only the direct dependents of sourceId
+    const dependentIds = this._dependentsMap.get(sourceId)
+    if (!dependentIds || dependentIds.size === 0) return
 
-    for (const dependent of dependents) {
+    const eventsArr = this.options.events
+    if (!eventsArr) return
+
+    for (const depId of dependentIds) {
+      if (visited.has(depId)) continue
+
+      const dependent = this._eventMap.get(depId)
+      if (!dependent) continue
+
       visited.add(dependent.id)
 
-      const eventIndex = this.options.events.findIndex(
-        (e) => e.id === dependent.id,
-      )
+      const eventIndex = eventsArr.indexOf(dependent)
       if (eventIndex === -1) continue
 
-      const currentEvent = this.options.events[eventIndex]!
-      const depStartStr = toPlainDateTimeString(currentEvent.start)
+      const depStartStr = toPlainDateTimeString(dependent.start)
       const depStartMs = Temporal.PlainDateTime.from(
         depStartStr,
       ).toZonedDateTime(this.options.timeZone).epochMilliseconds
@@ -467,7 +762,7 @@ export class CalendarCore<
       const overflow = sourceEndMs - depStartMs
       if (overflow <= 0) continue
 
-      const depEndStr = toPlainDateTimeString(currentEvent.end)
+      const depEndStr = toPlainDateTimeString(dependent.end)
       const shiftedStart = Temporal.PlainDateTime.from(depStartStr)
         .add({ milliseconds: overflow })
         .toString({ smallestUnit: 'second' })
@@ -476,15 +771,13 @@ export class CalendarCore<
         .add({ milliseconds: overflow })
         .toString({ smallestUnit: 'second' })
 
-      this.options.events[eventIndex] = {
-        ...currentEvent,
-        start: shiftedStart,
-        end: shiftedEnd,
-      } as TEvent
+      const updated = { ...dependent, start: shiftedStart, end: shiftedEnd } as TEvent
+      eventsArr[eventIndex] = updated
+      this._indexUpdateEvent(dependent, updated)
 
       getTimeClient().emit('event:updated', {
-        eventId: currentEvent.id,
-        eventTitle: currentEvent.title,
+        eventId: dependent.id,
+        eventTitle: dependent.title,
         start: shiftedStart,
         end: shiftedEnd,
         updates: { start: shiftedStart, end: shiftedEnd } as Record<
@@ -497,21 +790,23 @@ export class CalendarCore<
     }
   }
 
-  /** Simulate how deltaMs cascades forward through the dependency graph without mutating state.
-   * Only shifts a successor when the source's new end would exceed the successor's start (gap-aware). */
+  /**
+   * Simulate how deltaMs cascades forward through the dependency graph without mutating state.
+   * Uses _dependentsMap for O(degree) BFS — no full array scan per step.
+   */
   private getAffectedByDelta(
     sourceId: string,
     deltaMs: number,
     visited: Set<string>,
   ): Array<{ event: TEvent; newStart: string; newEnd: string }> {
-    if (!this.options.events || deltaMs === 0) return []
+    if (deltaMs === 0) return []
 
     const affected: Array<{ event: TEvent; newStart: string; newEnd: string }> =
       []
 
     const projectedEndMap = new Map<string, number>()
 
-    const sourceEvent = this.options.events.find((e) => e.id === sourceId)
+    const sourceEvent = this._eventMap.get(sourceId)
     if (!sourceEvent) return []
 
     const sourceEndStr = toPlainDateTimeString(sourceEvent.end)
@@ -527,11 +822,15 @@ export class CalendarCore<
       const currentId = queue.shift()!
       const currentEndMs = projectedEndMap.get(currentId)!
 
-      const successors = this.options.events.filter(
-        (e) => !visited.has(e.id) && e.dependsOn?.includes(currentId),
-      )
+      // O(degree) — only direct dependents via reverse map
+      const successorIds = this._dependentsMap.get(currentId)
+      if (!successorIds || successorIds.size === 0) continue
 
-      for (const s of successors) {
+      for (const sId of successorIds) {
+        if (visited.has(sId)) continue
+        const s = this._eventMap.get(sId)
+        if (!s) continue
+
         const sStartStr = toPlainDateTimeString(s.start)
         const sEndStr = toPlainDateTimeString(s.end)
         const depStartMs = Temporal.PlainDateTime.from(
@@ -544,7 +843,7 @@ export class CalendarCore<
         const overflow = currentEndMs - depStartMs
         if (overflow <= 0) continue
 
-        visited.add(s.id)
+        visited.add(sId)
         const newStart = Temporal.PlainDateTime.from(sStartStr)
           .add({ milliseconds: overflow })
           .toString({ smallestUnit: 'second' })
@@ -553,8 +852,8 @@ export class CalendarCore<
           .toString({ smallestUnit: 'second' })
         affected.push({ event: s, newStart, newEnd })
 
-        projectedEndMap.set(s.id, depEndMs + overflow)
-        queue.push(s.id)
+        projectedEndMap.set(sId, depEndMs + overflow)
+        queue.push(sId)
       }
     }
 
@@ -648,10 +947,9 @@ export class CalendarCore<
     newEnd: string,
     newResources?: Array<TResource>,
   ): { blocked: boolean; blockedEventTitle?: string; message?: string } {
-    const event = this.options.events?.find(
-      (e) => e.id === eventId && !e._originalStart,
-    )
-    if (!event) return { blocked: false }
+    // O(1) lookup — skip split segments (_originalStart set on them)
+    const event = this._eventMap.get(eventId)
+    if (!event || event._originalStart) return { blocked: false }
 
     const conflict = this.checkEventAvailability(
       event,
@@ -674,6 +972,70 @@ export class CalendarCore<
       this.options.timeZone,
     ).epochMilliseconds
     const deltaMs = newEndMs - oldEndMs
+
+    // If moving the event earlier would cause it to start before any predecessor ends,
+    // we will "pull" predecessors left to maintain finish-to-start dependencies.
+    // Validate that those pulled predecessors would not violate availability.
+    if (event.dependsOn?.length) {
+      const newStartMs = Temporal.PlainDateTime.from(newStart).toZonedDateTime(
+        this.options.timeZone,
+      ).epochMilliseconds
+
+      const visited = new Set<string>([eventId])
+      const queue: Array<{ id: string; startMs: number }> = [
+        { id: eventId, startMs: newStartMs },
+      ]
+
+      while (queue.length > 0) {
+        const current = queue.shift()!
+        // O(1) lookup
+        const currentEvent = this._eventMap.get(current.id)
+        if (!currentEvent?.dependsOn?.length) continue
+
+        for (const predId of currentEvent.dependsOn) {
+          if (visited.has(predId)) continue
+          // O(1) lookup
+          const pred = this._eventMap.get(predId)
+          if (!pred) continue
+
+          const predStartStr = toPlainDateTimeString(pred.start)
+          const predEndStr = toPlainDateTimeString(pred.end)
+          const predStartMs = Temporal.PlainDateTime.from(
+            predStartStr,
+          ).toZonedDateTime(this.options.timeZone).epochMilliseconds
+          const predEndMs = Temporal.PlainDateTime.from(
+            predEndStr,
+          ).toZonedDateTime(this.options.timeZone).epochMilliseconds
+
+          const overlap = predEndMs - current.startMs
+          if (overlap <= 0) continue
+
+          visited.add(predId)
+
+          const shiftedStart = Temporal.PlainDateTime.from(predStartStr)
+            .subtract({ milliseconds: overlap })
+            .toString({ smallestUnit: 'second' })
+          const shiftedEnd = Temporal.PlainDateTime.from(predEndStr)
+            .subtract({ milliseconds: overlap })
+            .toString({ smallestUnit: 'second' })
+
+          const predConflict = this.checkEventAvailability(
+            pred,
+            shiftedStart,
+            shiftedEnd,
+          )
+          if (predConflict) {
+            return {
+              blocked: true,
+              blockedEventTitle: pred.title,
+              message: `"${pred.title}" would be pulled into unavailable time.`,
+            }
+          }
+
+          queue.push({ id: predId, startMs: predStartMs - overlap })
+        }
+      }
+    }
 
     if (deltaMs > 0) {
       const affected = this.getAffectedByDelta(
@@ -704,14 +1066,15 @@ export class CalendarCore<
     event: { id?: string; title: string; start: string; end: string },
     dependsOn: Array<string>,
   ): { valid: boolean; error?: ResizeError } {
-    if (!this.options.events) return { valid: true }
+    if (this._eventMap.size === 0) return { valid: true }
 
     const newStartMs = Temporal.PlainDateTime.from(event.start).toZonedDateTime(
       this.options.timeZone,
     ).epochMilliseconds
 
     for (const predId of dependsOn) {
-      const pred = this.options.events.find((e) => e.id === predId)
+      // O(1) lookup
+      const pred = this._eventMap.get(predId)
       if (!pred) continue
 
       const predEndMs = Temporal.PlainDateTime.from(
@@ -739,10 +1102,9 @@ export class CalendarCore<
     sourceId: string,
     targetId: string,
   ): { blocked: boolean; error?: ResizeError } {
-    if (!this.options.events) return { blocked: false }
-
-    const sourceEvent = this.options.events.find((e) => e.id === sourceId)
-    const targetEvent = this.options.events.find((e) => e.id === targetId)
+    // O(1) lookups
+    const sourceEvent = this._eventMap.get(sourceId)
+    const targetEvent = this._eventMap.get(targetId)
     if (!sourceEvent || !targetEvent) return { blocked: false }
 
     const currentDependsOn = targetEvent.dependsOn ?? []
@@ -813,24 +1175,27 @@ export class CalendarCore<
   removeEvent(id: Event['id']): void {
     if (!this.options.events) return
 
-    const index = this.options.events.findIndex((e) => e.id === id)
+    // O(1) lookup via _eventMap
+    const removedEvent = this._eventMap.get(id)
+    if (!removedEvent) return
+
+    const index = this.options.events.indexOf(removedEvent)
     if (index === -1) return
 
-    const removedEvent = this.options.events[index]
     this.options.events.splice(index, 1)
+    // Remove from all three indices
+    this._indexRemoveEvent(removedEvent)
     this.store.setState((prev) => ({
       ...prev,
       eventsVersion: prev.eventsVersion + 1,
     }))
 
-    if (removedEvent) {
-      getTimeClient().emit('event:removed', {
-        eventId: id,
-        eventTitle: removedEvent.title,
-        start: removedEvent.start as string,
-        end: removedEvent.end as string,
-      })
-    }
+    getTimeClient().emit('event:removed', {
+      eventId: id,
+      eventTitle: removedEvent.title,
+      start: removedEvent.start as string,
+      end: removedEvent.end as string,
+    })
   }
 
   getUnavailableRanges(
@@ -1154,7 +1519,12 @@ export class CalendarCore<
     event: TEvent,
     firstDay: Temporal.PlainDate,
     totalDays: number,
-  ): { left: number; width: number } {
+  ): {
+    left: number
+    width: number
+    isStartClipped: boolean
+    isEndClipped: boolean
+  } {
     const startStr = toPlainDateTimeString(event.start)
     const endStr = toPlainDateTimeString(event.end)
 

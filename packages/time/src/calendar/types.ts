@@ -21,6 +21,8 @@ export interface Resource {
     before?: number
     after?: number
   }
+
+  // fractions: Array<number>
 }
 
 /**
@@ -40,6 +42,7 @@ export interface Event<TResource extends Resource = Resource> {
   end: EventDateTimeInput
   title: string
   resources?: Array<TResource>
+  fractions?: Array<number>
   /** IDs of events this event immediately follows (finish-to-start dependency).
    * When a predecessor's end time shifts, this event shifts by the same delta. */
   dependsOn?: Array<string>
@@ -88,6 +91,8 @@ export interface CalendarStore {
   activeDate: Temporal.PlainDate
   viewMode: ViewMode
   eventsVersion: number
+  /** True while an async fetchEvents call is in-flight for the current viewport. */
+  isPending: boolean
 }
 
 /**

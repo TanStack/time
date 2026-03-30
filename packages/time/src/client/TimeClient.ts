@@ -14,6 +14,14 @@ export interface TimeEventMap {
     start: string
     end: string
   }
+  'time:events:set': {
+    events: Array<{
+      eventId: string
+      eventTitle: string
+      start: string
+      end: string
+    }>
+  }
   'time:event:updated': {
     eventId: string
     eventTitle: string

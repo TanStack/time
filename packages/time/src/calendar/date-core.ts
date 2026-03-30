@@ -120,11 +120,12 @@ export abstract class DateCore {
       range: this.options.range,
     })
 
-    this.store = new Store({
+    this.store = new Store<CalendarStore>({
       currentPeriod: initialDate,
       activeDate: initialDate,
       viewMode: options.viewMode,
       eventsVersion: 0,
+      isPending: false,
     })
   }
 

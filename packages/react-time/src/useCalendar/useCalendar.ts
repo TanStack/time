@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -95,7 +96,15 @@ export const useCalendar = <
     () => new CalendarCore<TResource, TEvent>(calendarOptions),
   )
   const state = useStore(calendarCore.store)
-  const [isPending, startTransition] = useTransition()
+  const [isTransitionPending, startTransition] = useTransition()
+  // Combine React's transition pending with the async fetch pending from the store
+  const isPending = isTransitionPending || state.isPending
+
+  // Trigger lazy loading when the period or view mode changes.
+  // This must be done in an effect to avoid triggering fetches/state updates during render.
+  useEffect(() => {
+    calendarCore.ensureRangeLoaded()
+  }, [calendarCore, state.currentPeriod, state.viewMode, state.activeDate])
 
   const resizeOptionsRef = useRef<ResizeOptions | undefined>(resize)
   resizeOptionsRef.current = resize
