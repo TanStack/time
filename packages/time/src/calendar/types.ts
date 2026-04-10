@@ -16,13 +16,11 @@ export interface Resource {
   id: string
   label: string
   availability?: Array<Availability>
-  capacity?: number
+  capacity?: Array<number>
   buffer?: {
     before?: number
     after?: number
   }
-
-  // fractions: Array<number>
 }
 
 /**
@@ -42,7 +40,7 @@ export interface Event<TResource extends Resource = Resource> {
   end: EventDateTimeInput
   title: string
   resources?: Array<TResource>
-  fractions?: Array<number>
+  consumption?: Array<number>
   /** IDs of events this event immediately follows (finish-to-start dependency).
    * When a predecessor's end time shifts, this event shifts by the same delta. */
   dependsOn?: Array<string>

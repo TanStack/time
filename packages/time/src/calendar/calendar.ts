@@ -1669,7 +1669,8 @@ export class CalendarCore<
 
     for (const resourceId of resourceIds) {
       const resource = this.options.resources?.find((r) => r.id === resourceId)
-      if (!resource || !resource.capacity) continue
+      if (!resource || !resource.capacity || resource.capacity.length === 0)
+        continue
 
       const getOverlappingEvents = (
         checkStartMins: number,
@@ -1696,11 +1697,23 @@ export class CalendarCore<
         origEndMins,
       )
 
-      const currentUsage = overlappingEvents.length
-      const previousUsage = previouslyOverlapping.length
-      const maxCapacity = resource.capacity
+      const getSum = (events: Array<TEvent>) =>
+        events.reduce((acc, e) => {
+          const f = e.consumption || [1]
+          return acc + f.reduce((a, b) => a + b, 0)
+        }, 0)
 
-      if (currentUsage > previousUsage && currentUsage >= maxCapacity) {
+      const currentUsage = getSum(overlappingEvents)
+      const previousUsage = getSum(previouslyOverlapping)
+      const resourceCapacitySum = resource.capacity.reduce(
+        (a, b) => a + b,
+        0,
+      )
+
+      if (
+        currentUsage > previousUsage &&
+        currentUsage >= resourceCapacitySum
+      ) {
         conflicts.push({
           date: dayDate,
           conflictRange: {
@@ -1713,15 +1726,15 @@ export class CalendarCore<
               resourceId: resource.id,
               resourceLabel: resource.label,
               reason: 'capacity',
-              description: `${resource.label}: Capacity exceeded (${currentUsage}/${maxCapacity} slots used)`,
+              description: `${resource.label}: Capacity exceeded (${currentUsage}/${resourceCapacitySum} units used)`,
               capacityInfo: {
-                max: maxCapacity,
+                max: resourceCapacitySum,
                 used: currentUsage,
                 remaining: 0,
               },
             },
           ],
-          description: `${resource.label}: Capacity exceeded (${currentUsage}/${maxCapacity} slots used)`,
+          description: `${resource.label}: Capacity exceeded (${currentUsage}/${resourceCapacitySum} units used)`,
         })
       }
     }

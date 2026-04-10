@@ -4,6 +4,7 @@ import {
 } from '@tanstack/react-time'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { timeDevtoolsPlugin } from '@tanstack/react-time-devtools'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
   getTimeClient,
   toPlainDateString,
@@ -34,6 +35,9 @@ import React, {
   useRef,
   useState,
 } from 'react'
+import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools'
+import { X } from 'lucide-react'
+
 import type {
   Day,
   Event,
@@ -43,6 +47,27 @@ import type {
   TimelineResourceRow,
 } from '@tanstack/time'
 import type { Connection, Edge, Node, NodeProps } from '@xyflow/react'
+
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 
 import './index.css'
 
@@ -100,6 +125,7 @@ const resourceFrontend: Resource = {
 const resourceBackend: Resource = {
   id: 'backend',
   label: 'Backend',
+  capacity: [2, 3, 5],
   availability: [
     { weekdays: [1, 2, 3], startTime: '10:00', endTime: '19:00' },
     { weekdays: [4, 5], startTime: '00:00', endTime: '24:00' },
@@ -178,6 +204,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       start: weekdayAt(2, 11, 0),
       end: weekdayAt(2, 18, 0),
       resources: [resourceBackend],
+      consumption: [3],
     },
     {
       id: '4',
@@ -185,6 +212,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       start: weekdayAt(1, 11, 0),
       end: weekdayAt(1, 16, 0),
       resources: [resourceBackend],
+      consumption: [5],
     },
     {
       id: '5',
@@ -278,7 +306,9 @@ function EventModal({
 }) {
   const [formData, setFormData] = useState<EventFormData>(initialData)
 
-  if (!isOpen) return null
+  useEffect(() => {
+    setFormData(initialData)
+  }, [initialData, isOpen])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -287,137 +317,128 @@ function EventModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-      <div className="bg-neutral-950 border border-neutral-800 rounded-lg w-full max-w-md p-6">
-        <h2 className="text-xl font-semibold text-white mb-4">
-          {mode === 'add' ? 'Add Event' : 'Edit Event'}
-        </h2>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            {mode === 'add' ? 'Add Event' : 'Edit Event'}
+          </DialogTitle>
+          <DialogDescription>
+            {mode === 'add'
+              ? 'Create a new event on the timeline.'
+              : 'Make changes to your event here.'}
+          </DialogDescription>
+        </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-neutral-400 mb-1">
-              Title
-            </label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="title">Title</Label>
+            <Input
+              id="title"
               type="text"
               value={formData.title}
               onChange={(e) =>
                 setFormData({ ...formData, title: e.target.value })
               }
-              className="w-full px-3 py-2 bg-black border border-neutral-800 rounded-md text-white placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-neutral-600"
+              placeholder="Event title"
               required
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-400 mb-1">
-              Resource
-            </label>
-            <select
+          <div className="space-y-2">
+            <Label htmlFor="resource">Resource</Label>
+            <Select
               value={formData.resourceId}
-              onChange={(e) =>
-                setFormData({ ...formData, resourceId: e.target.value })
+              onValueChange={(value) =>
+                setFormData({ ...formData, resourceId: value })
               }
-              className="w-full px-3 py-2 bg-black border border-neutral-800 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-neutral-600"
             >
-              {sampleResources.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger id="resource">
+                <SelectValue placeholder="Select a resource" />
+              </SelectTrigger>
+              <SelectContent>
+                {sampleResources.map((r) => (
+                  <SelectItem key={r.id} value={r.id}>
+                    {r.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-neutral-400 mb-1">
-                Start Date
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="startDate">Start Date</Label>
+              <Input
+                id="startDate"
                 type="date"
                 value={formData.startDate}
                 onChange={(e) =>
                   setFormData({ ...formData, startDate: e.target.value })
                 }
-                className="w-full px-3 py-2 bg-black border border-neutral-800 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-neutral-600"
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-neutral-400 mb-1">
-                Start Time
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="startTime">Start Time</Label>
+              <Input
+                id="startTime"
                 type="time"
                 value={formData.startTime}
                 onChange={(e) =>
                   setFormData({ ...formData, startTime: e.target.value })
                 }
-                className="w-full px-3 py-2 bg-black border border-neutral-800 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-neutral-600"
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-neutral-400 mb-1">
-                End Date
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="endDate">End Date</Label>
+              <Input
+                id="endDate"
                 type="date"
                 value={formData.endDate}
                 onChange={(e) =>
                   setFormData({ ...formData, endDate: e.target.value })
                 }
-                className="w-full px-3 py-2 bg-black border border-neutral-800 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-neutral-600"
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-neutral-400 mb-1">
-                End Time
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="endTime">End Time</Label>
+              <Input
+                id="endTime"
                 type="time"
                 value={formData.endTime}
                 onChange={(e) =>
                   setFormData({ ...formData, endTime: e.target.value })
                 }
-                className="w-full px-3 py-2 bg-black border border-neutral-800 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-neutral-600"
                 required
               />
             </div>
           </div>
 
-          <div className="flex justify-between pt-4">
+          <DialogFooter className="flex justify-between pt-4">
             <div>
               {mode === 'edit' && onDelete && (
-                <button
+                <Button
                   type="button"
+                  variant="destructive"
                   onClick={() => {
                     onDelete()
                     onClose()
                   }}
-                  className="px-4 py-2 text-red-400 hover:text-red-300 rounded-md"
                 >
                   Delete
-                </button>
+                </Button>
               )}
             </div>
             <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 border border-neutral-700 rounded-md text-neutral-300 hover:bg-neutral-800"
-              >
+              <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-white text-black rounded-md font-medium hover:bg-neutral-200"
-              >
-                {mode === 'add' ? 'Add' : 'Save'}
-              </button>
+              </Button>
+              <Button type="submit">{mode === 'add' ? 'Add' : 'Save'}</Button>
             </div>
-          </div>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -465,48 +486,54 @@ function ResizeErrorToast({
 
   return (
     <div className="fixed bottom-5 right-5 z-50 animate-in slide-in-from-bottom-2 fade-in duration-200">
-      <div className="bg-red-950/90 border border-red-700/50 text-red-200 rounded-lg px-4 py-3 shadow-lg max-w-md">
-        <div className="flex items-start gap-3">
-          <div className="text-red-400 text-lg">!</div>
-          <div className="flex-1 min-w-0">
-            <div className="font-semibold text-red-100 mb-1">
-              Cannot Resize{' '}
-              <span className="italic">&ldquo;{error.eventTitle}&rdquo;</span>
-            </div>
-            <div className="text-sm text-red-200/80 mb-2">{error.message}</div>
-            {error.conflicts && error.conflicts.length > 0 && (
-              <div className="mt-2 space-y-1">
-                <div className="text-xs text-red-300/70 font-medium uppercase tracking-wide">
-                  Dependency conflicts:
-                </div>
-                {error.conflicts.map((conflict, idx) => (
-                  <div
-                    key={idx}
-                    className="text-xs text-red-200/70 bg-red-950/50 rounded px-2 py-1.5 border border-red-800/30"
-                  >
-                    <div className="font-medium text-red-200/90">
-                      {conflict.date}{' '}
-                      <span className="text-red-400">
-                        {conflict.conflictRange.start}–
-                        {conflict.conflictRange.end}
-                      </span>
-                    </div>
-                    <div className="text-red-300/50 mt-0.5">
-                      {conflict.description}
-                    </div>
-                  </div>
-                ))}
+      <Card className="max-w-md border-destructive/50 bg-destructive/10">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <div className="text-destructive text-lg">!</div>
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-destructive-foreground mb-1">
+                Cannot Resize{' '}
+                <span className="italic">&ldquo;{error.eventTitle}&rdquo;</span>
               </div>
-            )}
+              <div className="text-sm text-destructive-foreground/80 mb-2">
+                {error.message}
+              </div>
+              {error.conflicts && error.conflicts.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  <div className="text-xs text-destructive-foreground/70 font-medium uppercase tracking-wide">
+                    Dependency conflicts:
+                  </div>
+                  {error.conflicts.map((conflict, idx) => (
+                    <div
+                      key={idx}
+                      className="text-xs text-destructive-foreground/70 bg-destructive/20 rounded px-2 py-1.5 border border-destructive/30"
+                    >
+                      <div className="font-medium text-destructive-foreground/90">
+                        {conflict.date}{' '}
+                        <span className="text-destructive">
+                          {conflict.conflictRange.start}–
+                          {conflict.conflictRange.end}
+                        </span>
+                      </div>
+                      <div className="text-destructive-foreground/50 mt-0.5">
+                        {conflict.description}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onDismiss}
+              className="h-6 w-6 text-destructive/60 hover:text-destructive hover:bg-destructive/20"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
-          <button
-            onClick={onDismiss}
-            className="text-red-400/60 hover:text-red-200 transition-colors"
-          >
-            x
-          </button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
@@ -742,9 +769,13 @@ function TimelineDependencyOverlay({
         nodesDraggable={false}
         nodesConnectable={true}
         elementsSelectable={false}
-        preventScrolling={true}
+        preventScrolling={false}
         autoPanOnConnect={false}
-        style={{ background: 'transparent', overflow: 'hidden' }}
+        style={{
+          background: 'transparent',
+          overflow: 'hidden',
+          pointerEvents: 'none',
+        }}
         proOptions={{ hideAttribution: true }}
         autoPanOnNodeDrag={false}
       />
@@ -804,7 +835,7 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
       data-event-id={event.id}
       data-left={left}
       data-width={width}
-      className={`group absolute border ${color.bg} ${color.border} ${color.text} flex items-center text-xs font-medium overflow-hidden shadow-sm z-10 cursor-pointer hover:brightness-110 transition-[filter] ${
+      className={`group absolute border ${color.bg} ${color.border} ${color.text} flex items-center text-xs font-medium overflow-hidden shadow-sm z-30 cursor-pointer hover:brightness-110 transition-[filter] pointer-events-auto ${
         isDragging ? 'opacity-40 shadow-xl z-50' : ''
       } ${
         !isStartClipped && !isEndClipped
@@ -823,7 +854,11 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
       }}
       title={`${event.title} (${toPlainDateString(event.start)}T${toPlainTimeString(event.start)} \u2192 ${toPlainDateString(event.end)}T${toPlainTimeString(event.end)})`}
       onClick={(e) => {
-        if (!(e.target as HTMLElement).closest('[data-resize-handle]')) {
+        if (
+          !(e.target as HTMLElement).closest('[data-drag-handle]') &&
+          !(e.target as HTMLElement).closest('[data-resize-handle]')
+        ) {
+          e.stopPropagation()
           onEventClick(event)
         }
       }}
@@ -841,8 +876,23 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
       )}
       <div
         ref={setDragHandleRef}
-        className="flex-1 h-full min-w-0 flex items-center px-2.5"
+        data-drag-handle
+        className="relative ml-3 w-4 h-full flex items-center justify-center cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-60 hover:opacity-100 transition-opacity z-40"
+        title="Drag to move"
       >
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+          <circle cx="2" cy="2" r="1.5" />
+          <circle cx="6" cy="2" r="1.5" />
+          <circle cx="10" cy="2" r="1.5" />
+          <circle cx="2" cy="6" r="1.5" />
+          <circle cx="6" cy="6" r="1.5" />
+          <circle cx="10" cy="6" r="1.5" />
+          <circle cx="2" cy="10" r="1.5" />
+          <circle cx="6" cy="10" r="1.5" />
+          <circle cx="10" cy="10" r="1.5" />
+        </svg>
+      </div>
+      <div className="flex-1 h-full min-w-0 flex items-center px-2.5 cursor-pointer">
         <span className="truncate">{event.title}</span>
       </div>
       {!isEndClipped && (
@@ -1197,6 +1247,12 @@ function TimelineDemo() {
       const snapShift = Math.round(hoursShift / 0.25) * 0.25
       const msShift = snapShift * 3600 * 1000
 
+      const resourceChanged =
+        targetData?.resource &&
+        targetData.resource.id !== draggedEvent.resources?.[0]?.id
+
+      if (snapShift === 0 && !resourceChanged) return
+
       const newStart = new Date(
         new Date(draggedEvent.start).getTime() + msShift,
       )
@@ -1260,41 +1316,28 @@ function TimelineDemo() {
           </h1>
 
           <div className="flex gap-3 items-center mb-4 flex-wrap">
-            <button
+            <Button
+              variant="outline"
               onClick={calendar.goToPreviousPeriod}
               disabled={!calendar.canGoPreviousPeriod() || calendar.isPending}
-              className={`px-4 py-2 border rounded-md ${
-                calendar.canGoPreviousPeriod() && !calendar.isPending
-                  ? 'border-neutral-600 text-neutral-200 hover:bg-neutral-800'
-                  : 'border-neutral-800 text-neutral-600 cursor-not-allowed'
-              }`}
             >
               ← Previous
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
               onClick={calendar.goToCurrentPeriod}
               disabled={calendar.isPending}
-              className="px-4 py-2 border border-neutral-600 rounded-md text-neutral-200 hover:bg-neutral-800"
             >
               Today
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
               onClick={calendar.goToNextPeriod}
               disabled={!calendar.canGoNextPeriod() || calendar.isPending}
-              className={`px-4 py-2 border rounded-md ${
-                calendar.canGoNextPeriod() && !calendar.isPending
-                  ? 'border-neutral-600 text-neutral-200 hover:bg-neutral-800'
-                  : 'border-neutral-800 text-neutral-600 cursor-not-allowed'
-              }`}
             >
               Next →
-            </button>
-            <button
-              onClick={openAddModal}
-              className="px-4 py-2 bg-white text-black rounded-md font-medium hover:bg-neutral-200"
-            >
-              + Add Event
-            </button>
+            </Button>
+            <Button onClick={openAddModal}>+ Add Event</Button>
 
             <div className="ml-auto flex gap-2">
               {viewModeOptions.map((opt) => {
@@ -1302,22 +1345,19 @@ function TimelineDemo() {
                   calendar.viewMode.value === opt.value &&
                   calendar.viewMode.unit === opt.unit
                 return (
-                  <button
+                  <Button
                     key={opt.label}
+                    variant={isActive ? 'default' : 'outline'}
+                    size="sm"
                     onClick={() =>
                       calendar.changeViewMode({
                         value: opt.value,
                         unit: opt.unit,
                       })
                     }
-                    className={`px-3 py-1.5 rounded-md border ${
-                      isActive
-                        ? 'border-neutral-500 bg-neutral-800 text-white'
-                        : 'border-neutral-700 text-neutral-400 hover:text-neutral-200 hover:border-neutral-600'
-                    }`}
                   >
                     {opt.label}
-                  </button>
+                  </Button>
                 )
               })}
             </div>
@@ -1482,48 +1522,59 @@ function TimelineDemo() {
         </div>
 
         <div className="mt-4 flex flex-wrap gap-x-6 gap-y-3">
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2">
             {calendar.getEvents().map((event) => {
               const color = getEventColor(event.id)
               return (
-                <div key={event.id} className="flex items-center gap-1.5">
+                <Badge
+                  key={event.id}
+                  variant="outline"
+                  className="gap-1.5 font-normal"
+                >
                   <div
-                    className={`w-3 h-3 rounded-sm ${color.bg} ${color.border} border`}
+                    className={`w-2.5 h-2.5 rounded-sm ${color.bg} ${color.border} border`}
                   />
-                  <span className="text-xs text-neutral-400">
-                    {event.title}
-                  </span>
-                </div>
+                  <span className="text-muted-foreground">{event.title}</span>
+                </Badge>
               )
             })}
           </div>
 
-          <div className="flex flex-wrap gap-3 border-l border-neutral-800 pl-6">
+          <div className="flex flex-wrap gap-2 border-l border-border pl-6">
             {sampleResources.map((resource, idx) => {
               const zoneColor =
                 RESOURCE_ZONE_COLORS[idx % RESOURCE_ZONE_COLORS.length] ??
                 RESOURCE_ZONE_COLORS[0]
               return (
-                <div key={resource.id} className="flex items-center gap-1.5">
+                <Badge
+                  key={resource.id}
+                  variant="secondary"
+                  className="gap-1.5 font-normal"
+                >
                   <div
-                    className="w-3 h-3 rounded-sm bg-[length:6px_6px]"
+                    className="w-2.5 h-2.5 rounded-sm bg-[length:6px_6px]"
                     style={{
                       backgroundImage: `repeating-linear-gradient(315deg, ${zoneColor} 0, ${zoneColor} 1px, transparent 0, transparent 50%)`,
                       backgroundColor: zoneColor,
                     }}
                   />
-                  <span className="text-xs text-neutral-500">
+                  <span className="text-muted-foreground">
                     {resource.label} — unavailable
                   </span>
-                </div>
+                </Badge>
               )
             })}
           </div>
         </div>
 
         {calendar.isPending && (
-          <div className="fixed top-5 right-5 px-5 py-3 bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-md text-sm font-medium">
-            Loading...
+          <div className="fixed top-5 right-5">
+            <Badge
+              variant="secondary"
+              className="px-5 py-3 text-sm font-medium"
+            >
+              Loading...
+            </Badge>
           </div>
         )}
 
@@ -1562,11 +1613,21 @@ function TimelineDemo() {
 }
 
 function App() {
+  const queryClient = new QueryClient()
+
   return (
-    <>
-      <TanStackDevtools plugins={[timeDevtoolsPlugin()]} />
+    <QueryClientProvider client={queryClient}>
+      <TanStackDevtools
+        plugins={[
+          timeDevtoolsPlugin(),
+          {
+            name: 'TanStack Query',
+            render: <ReactQueryDevtoolsPanel />,
+          },
+        ]}
+      />
       <TimelineDemo />
-    </>
+    </QueryClientProvider>
   )
 }
 

@@ -11,6 +11,16 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import { timeDevtoolsPlugin } from '@tanstack/react-time-devtools'
 import { toPlainDateTimeString } from '@tanstack/time'
 import type { Day, Event, ResizeError, Resource } from '@tanstack/time'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
 
 import './index.css'
 
@@ -95,7 +105,7 @@ const sampleResources: Array<Resource> = [
   {
     id: '1',
     label: 'Resource 1',
-    capacity: 1,
+    capacity: [1],
     availability: [
       {
         weekdays: [1, 2, 3],
@@ -117,7 +127,7 @@ const sampleResources: Array<Resource> = [
   {
     id: '2',
     label: 'Resource 2',
-    capacity: 1,
+    capacity: [1],
     availability: [
       {
         weekdays: [1, 2, 3, 4, 5],
@@ -207,8 +217,6 @@ function EventModal({
 }) {
   const [formData, setFormData] = useState<EventFormData>(initialData)
 
-  if (!isOpen) return null
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onSave(formData)
@@ -216,82 +224,75 @@ function EventModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-      <div className="bg-neutral-950 border border-neutral-800 rounded-lg w-full max-w-md p-6">
-        <h2 className="text-xl font-semibold text-white mb-4">
-          {mode === 'add' ? 'Add Event' : 'Edit Event'}
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-neutral-400 mb-1">
-              Title
-            </label>
-            <input
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md bg-card border-border">
+        <DialogHeader>
+          <DialogTitle>
+            {mode === 'add' ? 'Add Event' : 'Edit Event'}
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Title</Label>
+            <Input
+              id="title"
               type="text"
               value={formData.title}
               onChange={(e) =>
                 setFormData({ ...formData, title: e.target.value })
               }
-              className="w-full px-3 py-2 bg-black border border-neutral-800 rounded-md text-white placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-neutral-600 focus:border-neutral-600"
+              placeholder="Event title"
               required
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-neutral-400 mb-1">
-                Start Date
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="startDate">Start Date</Label>
+              <Input
+                id="startDate"
                 type="date"
                 value={formData.startDate}
                 onChange={(e) =>
                   setFormData({ ...formData, startDate: e.target.value })
                 }
-                className="w-full px-3 py-2 bg-black border border-neutral-800 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-neutral-600 focus:border-neutral-600"
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-neutral-400 mb-1">
-                Start Time
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="startTime">Start Time</Label>
+              <Input
+                id="startTime"
                 type="time"
                 value={formData.startTime}
                 onChange={(e) =>
                   setFormData({ ...formData, startTime: e.target.value })
                 }
-                className="w-full px-3 py-2 bg-black border border-neutral-800 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-neutral-600 focus:border-neutral-600"
                 required
               />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-neutral-400 mb-1">
-                End Date
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="endDate">End Date</Label>
+              <Input
+                id="endDate"
                 type="date"
                 value={formData.endDate}
                 onChange={(e) =>
                   setFormData({ ...formData, endDate: e.target.value })
                 }
-                className="w-full px-3 py-2 bg-black border border-neutral-800 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-neutral-600 focus:border-neutral-600"
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-neutral-400 mb-1">
-                End Time
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="endTime">End Time</Label>
+              <Input
+                id="endTime"
                 type="time"
                 value={formData.endTime}
                 onChange={(e) =>
                   setFormData({ ...formData, endTime: e.target.value })
                 }
-                className="w-full px-3 py-2 bg-black border border-neutral-800 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-neutral-600 focus:border-neutral-600"
                 required
               />
             </div>
@@ -299,37 +300,28 @@ function EventModal({
           <div className="flex justify-between pt-4">
             <div>
               {mode === 'edit' && onDelete && (
-                <button
+                <Button
                   type="button"
+                  variant="destructive"
                   onClick={() => {
                     onDelete()
                     onClose()
                   }}
-                  className="px-4 py-2 text-red-400 hover:text-red-300 rounded-md"
                 >
                   Delete
-                </button>
+                </Button>
               )}
             </div>
             <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 border border-neutral-700 rounded-md text-neutral-300 hover:bg-neutral-800 hover:border-neutral-600"
-              >
+              <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-white text-black rounded-md font-medium hover:bg-neutral-200"
-              >
-                {mode === 'add' ? 'Add' : 'Save'}
-              </button>
+              </Button>
+              <Button type="submit">{mode === 'add' ? 'Add' : 'Save'}</Button>
             </div>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -665,12 +657,14 @@ function ResizeErrorToast({
               {error.eventTitle}
             </div>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onDismiss}
-            className="text-red-400/60 hover:text-red-200 transition-colors"
+            className="text-destructive-foreground/60 hover:text-destructive-foreground h-6 w-6"
           >
             ✕
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -787,82 +781,64 @@ function CalendarView() {
         </h1>
 
         <div className="flex gap-3 items-center mb-4 flex-wrap">
-          <button
+          <Button
             onClick={calendar.goToPreviousPeriod}
             disabled={!calendar.canGoPreviousPeriod() || calendar.isPending}
-            className={`px-4 py-2 border rounded-md ${
-              calendar.canGoPreviousPeriod() && !calendar.isPending
-                ? 'border-neutral-600 text-neutral-200 hover:bg-neutral-800 hover:border-neutral-500'
-                : 'border-neutral-800 text-neutral-600 cursor-not-allowed'
-            }`}
+            variant="outline"
           >
             ← Previous
-          </button>
+          </Button>
 
-          <button
+          <Button
             onClick={calendar.goToCurrentPeriod}
             disabled={calendar.isPending}
-            className={`px-4 py-2 border border-neutral-600 rounded-md text-neutral-200 hover:bg-neutral-800 hover:border-neutral-500 ${
-              calendar.isPending ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
+            variant="outline"
           >
             Today
-          </button>
+          </Button>
 
-          <button
+          <Button
             onClick={calendar.goToNextPeriod}
             disabled={!calendar.canGoNextPeriod() || calendar.isPending}
-            className={`px-4 py-2 border rounded-md ${
-              calendar.canGoNextPeriod() && !calendar.isPending
-                ? 'border-neutral-600 text-neutral-200 hover:bg-neutral-800 hover:border-neutral-500'
-                : 'border-neutral-800 text-neutral-600 cursor-not-allowed'
-            }`}
+            variant="outline"
           >
             Next →
-          </button>
+          </Button>
 
-          <button
-            onClick={openAddModal}
-            className="px-4 py-2 bg-white text-black rounded-md font-medium hover:bg-neutral-200"
-          >
-            + Add Event
-          </button>
+          <Button onClick={openAddModal}>+ Add Event</Button>
 
           <div className="ml-auto flex gap-2">
-            <button
+            <Button
               onClick={() =>
                 calendar.changeViewMode({ value: 1, unit: 'month' })
               }
-              className={`px-3 py-1.5 rounded-md border ${
-                calendar.viewMode.unit === 'month'
-                  ? 'border-neutral-500 bg-neutral-800 text-white'
-                  : 'border-neutral-700 text-neutral-400 hover:text-neutral-200 hover:border-neutral-600'
-              }`}
+              variant={
+                calendar.viewMode.unit === 'month' ? 'secondary' : 'outline'
+              }
+              size="sm"
             >
               Month
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() =>
                 calendar.changeViewMode({ value: 1, unit: 'week' })
               }
-              className={`px-3 py-1.5 rounded-md border ${
-                calendar.viewMode.unit === 'week'
-                  ? 'border-neutral-500 bg-neutral-800 text-white'
-                  : 'border-neutral-700 text-neutral-400 hover:text-neutral-200 hover:border-neutral-600'
-              }`}
+              variant={
+                calendar.viewMode.unit === 'week' ? 'secondary' : 'outline'
+              }
+              size="sm"
             >
               Week
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => calendar.changeViewMode({ value: 1, unit: 'day' })}
-              className={`px-3 py-1.5 rounded-md border ${
-                calendar.viewMode.unit === 'day'
-                  ? 'border-neutral-500 bg-neutral-800 text-white'
-                  : 'border-neutral-700 text-neutral-400 hover:text-neutral-200 hover:border-neutral-600'
-              }`}
+              variant={
+                calendar.viewMode.unit === 'day' ? 'secondary' : 'outline'
+              }
+              size="sm"
             >
               Day
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -959,14 +935,15 @@ function CalendarView() {
                       </div>
                       <div className="flex flex-col gap-1">
                         {day.events.map((event) => (
-                          <div
+                          <Badge
                             key={event.id}
-                            className="px-1.5 py-1 bg-neutral-800 text-neutral-200 rounded text-xs font-medium cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap hover:bg-neutral-700 border border-neutral-700 transition-colors"
+                            variant="secondary"
+                            className="cursor-pointer justify-start hover:bg-muted"
                             title={event.title}
                             onClick={() => openEditModal(event)}
                           >
                             {event.title}
-                          </div>
+                          </Badge>
                         ))}
                       </div>
                     </div>
@@ -978,7 +955,7 @@ function CalendarView() {
       )}
 
       {calendar.isPending && (
-        <div className="fixed top-5 right-5 px-5 py-3 bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-md text-sm font-medium">
+        <div className="fixed top-5 right-5 px-5 py-3 bg-card border border-border text-foreground rounded-md text-sm font-medium">
           Loading...
         </div>
       )}

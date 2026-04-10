@@ -1,12 +1,13 @@
-import { For, Show, createSignal } from 'solid-js'
+import { For, Show, createMemo, createSignal } from 'solid-js'
 import {
   Button,
   Header,
   HeaderLogo,
+  Input,
+  JsonTree,
   MainPanel,
-  Section,
-  SectionTitle,
   Tag,
+  X,
 } from '@tanstack/devtools-ui'
 import { useStyles } from '../styles/use-styles'
 import { TimeProvider, useTimeStore } from '../store/time-context'
@@ -92,11 +93,47 @@ function DevtoolsContent() {
   const styles = useStyles()
   const [activeTab, setActiveTab] = createSignal<'log' | 'events'>('log')
 
+  const [selectedId, setSelectedId] = createSignal<string | null>(null)
+  const [search, setSearch] = createSignal('')
+
+  const filteredLog = createMemo(() => {
+    const s = search().toLowerCase()
+    return state.activityLog.filter((entry) => {
+      if (!s) return true
+      return (
+        entry.type.toLowerCase().includes(s) ||
+        getEventDescription(entry).toLowerCase().includes(s)
+      )
+    })
+  })
+
+  const filteredEvents = createMemo(() => {
+    const s = search().toLowerCase()
+    return (Object.values(state.events).filter(Boolean) as Array<any>).filter(
+      (event) => {
+        if (!s) return true
+        return (
+          event.title.toLowerCase().includes(s) ||
+          event.id.toLowerCase().includes(s)
+        )
+      },
+    )
+  })
+
+  const selectedEntry = createMemo(() => {
+    const id = selectedId()
+    if (!id) return null
+    if (activeTab() === 'log') {
+      return state.activityLog.find((e) => e.id === id)
+    }
+    return state.events[id]
+  })
+
   return (
-    <MainPanel>
+    <MainPanel class={styles().shellRoot}>
       <Header>
         <HeaderLogo flavor={{ light: '#9dec48', dark: '#9dec48' }}>
-          TanStack Time
+          TanStack Time v0
         </HeaderLogo>
         <div
           style={{
@@ -109,22 +146,52 @@ function DevtoolsContent() {
           <Show
             when={activeTab() === 'log'}
             fallback={
-              <Button onClick={() => setActiveTab('log')} variant="primary">
+              <Button
+                onClick={() => {
+                  setActiveTab('log')
+                  setSelectedId(null)
+                }}
+                variant="primary"
+                outline
+              >
                 Activity
               </Button>
             }
           >
-            <Button variant="secondary">Activity</Button>
+            <Button
+              onClick={() => {
+                setActiveTab('log')
+                setSelectedId(null)
+              }}
+              variant="primary"
+            >
+              Activity
+            </Button>
           </Show>
           <Show
             when={activeTab() === 'events'}
             fallback={
-              <Button onClick={() => setActiveTab('events')} variant="primary">
-                Current Events
+              <Button
+                onClick={() => {
+                  setActiveTab('events')
+                  setSelectedId(null)
+                }}
+                variant="primary"
+                outline
+              >
+                Events
               </Button>
             }
           >
-            <Button variant="secondary">Current Events</Button>
+            <Button
+              onClick={() => {
+                setActiveTab('events')
+                setSelectedId(null)
+              }}
+              variant="primary"
+            >
+              Events
+            </Button>
           </Show>
         </div>
         <Show when={state.isConnected}>
@@ -135,29 +202,40 @@ function DevtoolsContent() {
         </Show>
       </Header>
 
-      <Show when={activeTab() === 'log'}>
-        <Section>
-          <div class={styles().sectionHeader}>
-            <SectionTitle>Activity Log</SectionTitle>
-            <Button onClick={clearLog} variant="secondary">
-              Clear
-            </Button>
+      <div class={styles().container}>
+        <div class={styles().sidebar}>
+          <div class={styles().searchArea}>
+            <Input
+              placeholder={`Filter ${activeTab() === 'log' ? 'activity' : 'events'}...`}
+              value={search()}
+              onChange={(val) => setSearch(val)}
+            />
           </div>
 
-          <Show
-            when={state.activityLog.length > 0}
-            fallback={
-              <div class={styles().emptyState}>
-                No activity yet. Start interacting with the calendar!
+          <div class={styles().list}>
+            <Show when={activeTab() === 'log'}>
+              <div class={styles().sectionHeader}>
+                <span style={{ 'font-size': '11px', color: '#9ca3af' }}>
+                  {filteredLog().length} Entries
+                </span>
+                <Button onClick={clearLog} variant="secondary">
+                  Clear
+                </Button>
               </div>
-            }
-          >
-            <div class={styles().activityList}>
-              <For each={state.activityLog}>
+              <For
+                each={filteredLog()}
+                fallback={
+                  <div class={styles().emptyState}>No activity found.</div>
+                }
+              >
                 {(entry) => {
                   const label = getEventTypeLabel(entry.type)
                   return (
-                    <div class={styles().activityEntry}>
+                    <div
+                      class={styles().listItem}
+                      classList={{ active: selectedId() === entry.id }}
+                      onClick={() => setSelectedId(entry.id)}
+                    >
                       <span class={styles().timestamp}>
                         {formatTime(entry.timestamp)}
                       </span>
@@ -169,63 +247,142 @@ function DevtoolsContent() {
                   )
                 }}
               </For>
-            </div>
-          </Show>
-        </Section>
-      </Show>
+            </Show>
 
-      <Show when={activeTab() === 'events'}>
-        <Section>
-          <div class={styles().sectionHeader}>
-            <SectionTitle>
-              Loaded Events ({Object.keys(state.events).length})
-            </SectionTitle>
-          </div>
-          <Show
-            when={Object.keys(state.events).length > 0}
-            fallback={
-              <div class={styles().emptyState}>
-                No events currently loaded into the calendar scope.
+            <Show when={activeTab() === 'events'}>
+              <div class={styles().sectionHeader}>
+                <span style={{ 'font-size': '11px', color: '#9ca3af' }}>
+                  {filteredEvents().length} Events
+                </span>
               </div>
-            }
-          >
-            <div class={styles().activityList}>
-              <For each={Object.values(state.events).filter(Boolean)}>
+              <For
+                each={filteredEvents()}
+                fallback={
+                  <div class={styles().emptyState}>No events found.</div>
+                }
+              >
                 {(event) => (
                   <div
-                    class={styles().activityEntry}
-                    style={{
-                      'flex-direction': 'column',
-                      'align-items': 'flex-start',
-                      gap: '0.25rem',
-                      padding: '0.75rem',
-                    }}
+                    class={styles().listItem}
+                    classList={{ active: selectedId() === event.id }}
+                    onClick={() => setSelectedId(event.id)}
                   >
-                    <div style={{ 'font-weight': 600 }}>{event.title}</div>
                     <div
                       style={{
-                        'font-size': '0.85em',
-                        color: 'var(--tg-gray-500)',
+                        display: 'flex',
+                        'flex-direction': 'column',
+                        gap: '2px',
                       }}
                     >
-                      {event.start} &rarr; {event.end}
-                    </div>
-                    <div
-                      style={{
-                        'font-size': '0.75em',
-                        color: 'var(--tg-gray-600)',
-                        'font-family': 'monospace',
-                      }}
-                    >
-                      ID: {event.id}
+                      <div style={{ 'font-weight': 600 }}>{event.title}</div>
+                      <div style={{ 'font-size': '10px', color: '#9ca3af' }}>
+                        {event.start.split('T')[0]} → {event.end.split('T')[0]}
+                      </div>
                     </div>
                   </div>
                 )}
               </For>
-            </div>
+            </Show>
+          </div>
+        </div>
+
+        {/* Details Panel */}
+        <div class={styles().details}>
+          <Show
+            when={selectedEntry()}
+            fallback={
+              <div class={styles().emptyState}>
+                Select an item to view details
+              </div>
+            }
+          >
+            {(entry) => (
+              <>
+                <div class={styles().detailsHeader}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      'align-items': 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <Show when={activeTab() === 'log'}>
+                      <Tag
+                        label={
+                          getEventTypeLabel((entry() as ActivityLogEntry).type)
+                            .text
+                        }
+                        color={
+                          getEventTypeLabel((entry() as ActivityLogEntry).type)
+                            .color
+                        }
+                      />
+                    </Show>
+                    <span style={{ 'font-weight': 600 }}>
+                      {activeTab() === 'log'
+                        ? (entry() as ActivityLogEntry).type
+                        : (entry() as any).title}
+                    </span>
+                  </div>
+                  <Button
+                    onClick={() => setSelectedId(null)}
+                    variant="secondary"
+                    style={{ padding: '4px' }}
+                  >
+                    <X />
+                  </Button>
+                </div>
+                <div class={styles().detailsContent}>
+                  <div style={{ 'margin-bottom': '16px' }}>
+                    <div
+                      style={{
+                        'font-size': '11px',
+                        color: '#9ca3af',
+                        'margin-bottom': '4px',
+                      }}
+                    >
+                      Raw Data
+                    </div>
+                    <div class={styles().jsonTreeContainer}>
+                      <JsonTree
+                        value={
+                          activeTab() === 'log'
+                            ? (entry() as ActivityLogEntry).details
+                            : entry()
+                        }
+                        defaultExpansionDepth={1}
+                      />
+                    </div>
+                  </div>
+
+                  <Show when={activeTab() === 'log'}>
+                    <div
+                      style={{
+                        'font-size': '11px',
+                        color: '#9ca3af',
+                        'margin-bottom': '4px',
+                      }}
+                    >
+                      Metadata
+                    </div>
+                    <div class={styles().jsonTreeContainer}>
+                      <JsonTree
+                        value={{
+                          id: (entry() as ActivityLogEntry).id,
+                          timestamp: (entry() as ActivityLogEntry).timestamp,
+                          formattedTime: formatTime(
+                            (entry() as ActivityLogEntry).timestamp,
+                          ),
+                        }}
+                      />
+                    </div>
+                  </Show>
+                </div>
+              </>
+            )}
           </Show>
-        </Section>
-      </Show>
+        </div>
+      </div>
     </MainPanel>
   )
 }

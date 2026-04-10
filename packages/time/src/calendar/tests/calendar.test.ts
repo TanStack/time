@@ -21,7 +21,7 @@ function createCalendar(
 const weekdayResource: TestResource = {
   id: 'r1',
   label: 'Weekday Room',
-  capacity: 2,
+  capacity: [2],
   availability: [
     { weekdays: [1, 2, 3, 4, 5], startTime: '08:00', endTime: '17:00' },
   ],
@@ -30,7 +30,7 @@ const weekdayResource: TestResource = {
 const afternoonResource: TestResource = {
   id: 'r2',
   label: 'Afternoon Room',
-  capacity: 1,
+  capacity: [1],
   availability: [
     { weekdays: [1, 2, 3, 4, 5], startTime: '12:00', endTime: '18:00' },
   ],
@@ -789,7 +789,7 @@ describe('CalendarCore', () => {
         const resource: TestResource = {
           id: 'cap1',
           label: 'Cap Room',
-          capacity: 1,
+          capacity: [1],
           availability: [
             { weekdays: [1, 2, 3, 4, 5], startTime: '08:00', endTime: '17:00' },
           ],
@@ -832,7 +832,7 @@ describe('CalendarCore', () => {
         const resource: TestResource = {
           id: 'cap1',
           label: 'Cap Room',
-          capacity: 1,
+          capacity: [1],
           availability: [
             { weekdays: [1, 2, 3, 4, 5], startTime: '08:00', endTime: '17:00' },
           ],
@@ -887,7 +887,7 @@ describe('CalendarCore', () => {
         const resource: TestResource = {
           id: 'cap2',
           label: 'Big Room',
-          capacity: 3,
+          capacity: [3],
           availability: [
             { weekdays: [1, 2, 3, 4, 5], startTime: '08:00', endTime: '17:00' },
           ],
