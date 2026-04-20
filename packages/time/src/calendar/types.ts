@@ -3,6 +3,38 @@ import type { DateInput } from '~/date'
 
 export type EventDateTimeInput = string | Date | number
 
+/** How often a recurring event repeats. */
+export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly'
+
+/**
+ * Defines the repetition rule for a recurring event.
+ * Occurrences are expanded automatically by the calendar within the current viewport.
+ */
+export interface RecurrenceRule {
+  /** How often the event repeats. */
+  frequency: RecurrenceFrequency
+  /**
+   * Repeat every N frequencies (default 1).
+   * E.g. `{ frequency: 'weekly', interval: 2 }` = every other week.
+   */
+  interval?: number
+  /**
+   * ISO date string (YYYY-MM-DD) — no occurrences start on or after this date.
+   * Takes precedence over `count`.
+   */
+  until?: string
+  /**
+   * Maximum total occurrences to generate (including the original).
+   * Only used when `until` is not set.
+   */
+  count?: number
+  /**
+   * For `weekly` frequency: ISO weekdays (1 = Mon … 7 = Sun) to repeat on.
+   * Defaults to the weekday of the original event start.
+   */
+  byWeekday?: Array<number>
+}
+
 export interface Availability {
   /** Days of the week when available (ISO weekday: 1 = Monday, ..., 7 = Sunday) */
   weekdays: Array<number>
@@ -44,10 +76,19 @@ export interface Event<TResource extends Resource = Resource> {
   /** IDs of events this event immediately follows (finish-to-start dependency).
    * When a predecessor's end time shifts, this event shifts by the same delta. */
   dependsOn?: Array<string>
+  /** Defines how and when this event repeats. */
+  recurrence?: RecurrenceRule
   /** Original start time before splitting (only set on split segments of multi-day events) */
   _originalStart?: string
   /** Original end time before splitting (only set on split segments of multi-day events) */
   _originalEnd?: string
+  /**
+   * ID of the master recurring event this occurrence was generated from.
+   * Only present on ephemeral occurrence instances (index > 0).
+   */
+  _recurringMasterId?: string
+  /** 0-based index of this occurrence within the recurring series. */
+  _occurrenceIndex?: number
 }
 
 export type Day<

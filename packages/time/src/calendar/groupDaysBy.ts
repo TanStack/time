@@ -59,10 +59,12 @@ export const groupDaysBy = <
           if (day) {
             const dayOfWeek = (day.date.dayOfWeek - weekStartsOn + 7) % 7
             for (let i = 0; i < dayOfWeek; i++) {
+              const newDate = day.date.subtract({ days: dayOfWeek - i })
               currentWeek.push(
                 fillMissingDays
                   ? {
-                      date: day.date.subtract({ days: dayOfWeek - i }),
+                      date: newDate,
+                      isoDate: newDate.toString({ calendarName: 'never' }),
                       events: [],
                       isToday: false,
                       isInCurrentPeriod: false,
@@ -84,10 +86,12 @@ export const groupDaysBy = <
           const lastDate =
             currentWeek[currentWeek.length - 1]?.date ??
             Temporal.PlainDate.from('2024-01-01')
+          const newDate = lastDate.add({ days: 1 })
           currentWeek.push(
             fillMissingDays
               ? {
-                  date: lastDate.add({ days: 1 }),
+                  date: newDate,
+                  isoDate: newDate.toString({ calendarName: 'never' }),
                   events: [],
                   isToday: false,
                   isInCurrentPeriod: false,
@@ -119,6 +123,7 @@ export const groupDaysBy = <
                   fillMissingDays
                     ? {
                         date: newDay,
+                        isoDate: newDay.toString({ calendarName: 'never' }),
                         events: [],
                         isToday: false,
                         isInCurrentPeriod: false,
@@ -149,6 +154,7 @@ export const groupDaysBy = <
               fillMissingDays
                 ? {
                     date: nextDate,
+                    isoDate: nextDate.toString({ calendarName: 'never' }),
                     events: [],
                     isToday: false,
                     isInCurrentPeriod: false,

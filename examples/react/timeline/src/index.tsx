@@ -1058,6 +1058,8 @@ function TimelineDemo() {
     return () => observer.disconnect()
   }, [])
 
+
+
   const calendar = useCalendar<Resource, Event<Resource>>({
     viewMode: { value: 1, unit: 'day' },
     events: [],
@@ -1091,6 +1093,47 @@ function TimelineDemo() {
       },
     },
   })
+
+  // ── Horizontal infinite scroll ────────────────────────────────────────────
+  // When the user scrolls within 8 px of the right edge → go to next period
+  // and snap scroll back to the left so they can keep scrolling.
+  // When within 8 px of the left edge (and the container is scrollable) →
+  // go to previous period and snap to the right edge.
+  // A cooldown ref prevents re-triggering while the new period is rendering.
+  const horizNavCooldownRef = useRef(false)
+
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    const onScroll = () => {
+      if (horizNavCooldownRef.current) return
+      const { scrollLeft, scrollWidth, clientWidth } = container
+
+      if (scrollLeft + clientWidth >= scrollWidth - 8 && calendar.canGoNextPeriod()) {
+        horizNavCooldownRef.current = true
+        calendar.goToNextPeriod()
+        requestAnimationFrame(() => {
+          container.scrollLeft = 0
+          setTimeout(() => { horizNavCooldownRef.current = false }, 1000)
+        })
+      } else if (
+        scrollLeft <= 8 &&
+        scrollWidth > clientWidth &&
+        calendar.canGoPreviousPeriod()
+      ) {
+        horizNavCooldownRef.current = true
+        calendar.goToPreviousPeriod()
+        requestAnimationFrame(() => {
+          container.scrollLeft = container.scrollWidth - container.clientWidth
+          setTimeout(() => { horizNavCooldownRef.current = false }, 1000)
+        })
+      }
+    }
+
+    container.addEventListener('scroll', onScroll, { passive: true })
+    return () => container.removeEventListener('scroll', onScroll)
+  }, [calendar])
 
   const timelineLayout = useMemo(
     () => calendar.getTimelineLayout(),

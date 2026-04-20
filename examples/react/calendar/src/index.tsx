@@ -4,13 +4,14 @@ import {
   formatEventTimeRange,
   getSegmentInfo,
   useCalendar,
+  useInfiniteScroll,
 } from '@tanstack/react-time'
 import ReactDOM from 'react-dom/client'
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { timeDevtoolsPlugin } from '@tanstack/react-time-devtools'
 import { toPlainDateTimeString } from '@tanstack/time'
-import type { Day, Event, ResizeError, Resource } from '@tanstack/time'
+import type { Day, Event, RecurrenceFrequency, RecurrenceRule, ResizeError, Resource } from '@tanstack/time'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -179,6 +180,44 @@ function getSampleEvents(): Array<Event<Resource>> {
       end: dateTimeOnWeekday(5, 13, 0),
       resources: sampleResources,
     },
+    // ── Recurring events ────────────────────────────────────────────────────
+    {
+      id: 'r-standup',
+      title: '☀ Daily Stand-up',
+      start: dateTimeOnWeekday(1, 9, 0),
+      end: dateTimeOnWeekday(1, 9, 15),
+      resources: sampleResources,
+      recurrence: {
+        frequency: 'daily',
+        interval: 1,
+        // Mon–Fri only
+        byWeekday: undefined,
+      },
+    },
+    {
+      id: 'r-sync',
+      title: '🔄 Weekly Sync',
+      start: dateTimeOnWeekday(1, 10, 0),
+      end: dateTimeOnWeekday(1, 10, 30),
+      resources: sampleResources,
+      recurrence: {
+        frequency: 'weekly',
+        interval: 1,
+        byWeekday: [1], // every Monday
+      },
+    },
+    {
+      id: 'r-report',
+      title: '📊 Monthly Report',
+      // Use first Monday of the current work week at 14:00
+      start: dateTimeOnWeekday(1, 14, 0),
+      end: dateTimeOnWeekday(1, 15, 0),
+      resources: sampleResources,
+      recurrence: {
+        frequency: 'monthly',
+        interval: 1,
+      },
+    },
   ]
 }
 
@@ -190,6 +229,8 @@ interface EventFormData {
   startTime: string
   endDate: string
   endTime: string
+  recurrenceFrequency: RecurrenceFrequency | 'none'
+  recurrenceUntil: string
 }
 
 const emptyFormData: EventFormData = {
@@ -198,6 +239,8 @@ const emptyFormData: EventFormData = {
   startTime: '09:00',
   endDate: formatDateToISO(new Date()),
   endTime: '10:00',
+  recurrenceFrequency: 'none',
+  recurrenceUntil: '',
 }
 
 function EventModal({
@@ -222,6 +265,14 @@ function EventModal({
     onSave(formData)
     onClose()
   }
+
+  const recurrencyOptions: Array<{ value: RecurrenceFrequency | 'none'; label: string }> = [
+    { value: 'none', label: 'Does not repeat' },
+    { value: 'daily', label: 'Daily' },
+    { value: 'weekly', label: 'Weekly' },
+    { value: 'monthly', label: 'Monthly' },
+    { value: 'yearly', label: 'Yearly' },
+  ]
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -297,6 +348,43 @@ function EventModal({
               />
             </div>
           </div>
+
+          {/* ── Recurrence ───────────────────────────────────────────── */}
+          <div className="space-y-2">
+            <Label htmlFor="recurrenceFrequency">Repeat</Label>
+            <select
+              id="recurrenceFrequency"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              value={formData.recurrenceFrequency}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  recurrenceFrequency: e.target.value as RecurrenceFrequency | 'none',
+                })
+              }
+            >
+              {recurrencyOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {formData.recurrenceFrequency !== 'none' && (
+            <div className="space-y-2">
+              <Label htmlFor="recurrenceUntil">Repeat until (optional)</Label>
+              <Input
+                id="recurrenceUntil"
+                type="date"
+                value={formData.recurrenceUntil}
+                onChange={(e) =>
+                  setFormData({ ...formData, recurrenceUntil: e.target.value })
+                }
+              />
+            </div>
+          )}
+
           <div className="flex justify-between pt-4">
             <div>
               {mode === 'edit' && onDelete && (
@@ -369,6 +457,47 @@ function ScheduleView({
     getUnavailableRanges,
   } = calendar
 
+  // ── Horizontal infinite scroll: auto-navigate when the user scrolls to
+  // the left or right edge of the schedule (week/day view). We use a plain
+  // scroll event listener rather than sentinels because the scroll container
+  // here is not a fixed-height viewport.
+  const scheduleScrollRef = useRef<HTMLDivElement>(null)
+  const horizCooldownRef = useRef(false)
+
+  useEffect(() => {
+    const el = scheduleScrollRef.current
+    if (!el) return
+
+    const onScroll = () => {
+      if (horizCooldownRef.current) return
+      const { scrollLeft, scrollWidth, clientWidth } = el
+      const atRightEdge = scrollLeft + clientWidth >= scrollWidth - 4
+      const atLeftEdge = scrollLeft <= 4
+
+      if (atRightEdge && calendar.canGoNextPeriod()) {
+        horizCooldownRef.current = true
+        calendar.goToNextPeriod()
+        // Reset to left edge for the new period
+        requestAnimationFrame(() => {
+          el.scrollLeft = 0
+          setTimeout(() => { horizCooldownRef.current = false }, 900)
+        })
+      } else if (atLeftEdge && scrollWidth > clientWidth && calendar.canGoPreviousPeriod()) {
+        // Only fire when actually scrollable and we’ve deliberately scrolled left
+        horizCooldownRef.current = true
+        calendar.goToPreviousPeriod()
+        // Reset to right edge for the new (previous) period
+        requestAnimationFrame(() => {
+          el.scrollLeft = el.scrollWidth - el.clientWidth
+          setTimeout(() => { horizCooldownRef.current = false }, 900)
+        })
+      }
+    }
+
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [calendar])
+
   return (
     <div className="border border-neutral-800 rounded-lg overflow-hidden bg-black">
       <div className="border-b border-neutral-800 bg-neutral-950 px-4 py-3">
@@ -410,7 +539,8 @@ function ScheduleView({
             </div>
           ))}
         </div>
-        <div className="flex-1 overflow-x-auto">
+        {/* Horizontal-scrollable schedule body — sentinels auto-navigate on edge */}
+        <div ref={scheduleScrollRef} className="flex-1 overflow-x-auto">
           <div
             className="grid min-w-full"
             style={{ gridTemplateColumns: `repeat(${days.length}, 1fr)` }}
@@ -544,6 +674,9 @@ function ScheduleView({
                               />
                             )}
                             <div className="font-semibold pt-1">
+                              {(event._recurringMasterId || event.recurrence) && (
+                                <span className="mr-1 opacity-60" title="Recurring event">↻</span>
+                              )}
                               {event.title}
                             </div>
                             {displayStyle &&
@@ -704,11 +837,6 @@ function CalendarView() {
   })
 
   const dayNames = calendar.getDaysNames('short')
-  const groupedDays = calendar.groupDaysBy({
-    days: calendar.days,
-    unit: 'week',
-    fillMissingDays: true,
-  })
 
   const isScheduleView =
     calendar.viewMode.unit === 'week' || calendar.viewMode.unit === 'day'
@@ -721,6 +849,86 @@ function CalendarView() {
       : calendar.days
     : []
 
+  // ── Month-view infinite scroll ───────────────────────────────────────────
+  // We accumulate days from multiple months in a stable Map<isoDate, Day>.
+  // Navigation direction is tracked via a ref so the accumulation effect
+  // knows whether to prepend or append.
+  const monthScrollRef = useRef<HTMLDivElement>(null)
+  const daysAccumRef = useRef<Map<string, Day<Resource, Event<Resource>>>>(null as any)
+  if (daysAccumRef.current === null) {
+    // Lazy-init: populate from the initial period on first render
+    daysAccumRef.current = new Map(
+      calendar.days.map((d) => [d.isoDate, d]),
+    )
+  }
+
+  const navDirectionRef = useRef<'none' | 'forward' | 'backward'>('none')
+  const prevPeriodRef = useRef(calendar.currentPeriod)
+  const prevScrollHeightRef = useRef(0)
+  const needsScrollAdjRef = useRef(false)
+  const [accumVersion, setAccumVersion] = useState(0)
+
+  // When the calendar navigates to a new period, fold its days into the map.
+  useEffect(() => {
+    if (navDirectionRef.current === 'none') return
+    if (calendar.currentPeriod === prevPeriodRef.current) return
+    prevPeriodRef.current = calendar.currentPeriod
+
+    const direction = navDirectionRef.current
+    navDirectionRef.current = 'none'
+
+    for (const day of calendar.days) {
+      daysAccumRef.current.set(day.isoDate, day)
+    }
+
+    if (direction === 'backward') {
+      // Schedule a scrollTop correction after the next DOM paint
+      prevScrollHeightRef.current = monthScrollRef.current?.scrollHeight ?? 0
+      needsScrollAdjRef.current = true
+    }
+
+    // Bump version to trigger re-render with the updated map
+    setAccumVersion((v) => v + 1)
+  }, [calendar.currentPeriod, calendar.days])
+
+  // Correct scroll position after prepending new weeks (backward nav)
+  // so the currently-visible rows don’t jump.
+  useLayoutEffect(() => {
+    if (!needsScrollAdjRef.current) return
+    needsScrollAdjRef.current = false
+    const el = monthScrollRef.current
+    if (el) {
+      el.scrollTop += el.scrollHeight - prevScrollHeightRef.current
+    }
+  })
+
+  // Sorted unique days from the accumulator map → grouped into weeks for rendering
+  const bufferedWeekGroups = useMemo(() => {
+    const sorted = Array.from(daysAccumRef.current.values()).sort((a, b) =>
+      a.isoDate < b.isoDate ? -1 : 1,
+    )
+    return calendar.groupDaysBy({ days: sorted, unit: 'week', fillMissingDays: true })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accumVersion, calendar.groupDaysBy])
+
+  const { startSentinelRef: monthTopRef, endSentinelRef: monthBottomRef } =
+    useInfiniteScroll({
+      root: monthScrollRef,
+      rootMargin: '120px 0px', // prefetch slightly before edge
+      cooldownMs: 1000,
+      onReachStart: () => {
+        if (!calendar.canGoPreviousPeriod() || calendar.isPending) return
+        navDirectionRef.current = 'backward'
+        calendar.goToPreviousPeriod()
+      },
+      onReachEnd: () => {
+        if (!calendar.canGoNextPeriod() || calendar.isPending) return
+        navDirectionRef.current = 'forward'
+        calendar.goToNextPeriod()
+      },
+      disabled: isScheduleView,
+    })
+
   const openAddModal = () => {
     setModalState({
       isOpen: true,
@@ -730,20 +938,28 @@ function CalendarView() {
   }
 
   const openEditModal = (event: Event<Resource>) => {
-    const eventProps = calendar.getEventProps(event)
+    // For recurring occurrences, always open the master event for editing
+    const masterEvent = event._recurringMasterId
+      ? calendar.getEvents().find((e) => e.id === event._recurringMasterId) ?? event
+      : event
+    const eventProps = calendar.getEventProps(masterEvent)
     const startDate = new Date(eventProps.start)
     const endDate = new Date(eventProps.end)
+
+    const rule = (masterEvent as Event<Resource>).recurrence
 
     setModalState({
       isOpen: true,
       mode: 'edit',
-      eventId: event.id,
+      eventId: masterEvent.id,
       initialData: {
-        title: event.title,
+        title: masterEvent.title,
         startDate: formatDateToISO(startDate),
         startTime: startDate.toTimeString().slice(0, 5),
         endDate: formatDateToISO(endDate),
         endTime: endDate.toTimeString().slice(0, 5),
+        recurrenceFrequency: rule?.frequency ?? 'none',
+        recurrenceUntil: rule?.until ?? '',
       },
     })
   }
@@ -753,10 +969,19 @@ function CalendarView() {
   }
 
   const handleSave = (data: EventFormData) => {
+    const recurrence: RecurrenceRule | undefined =
+      data.recurrenceFrequency !== 'none'
+        ? {
+            frequency: data.recurrenceFrequency,
+            ...(data.recurrenceUntil ? { until: data.recurrenceUntil } : {}),
+          }
+        : undefined
+
     const eventData = {
       title: data.title,
       start: `${data.startDate}T${data.startTime}:00`,
       end: `${data.endDate}T${data.endTime}:00`,
+      recurrence,
     }
 
     if (modalState.mode === 'add') {
@@ -855,8 +1080,9 @@ function CalendarView() {
         />
       ) : (
         <div className="border border-neutral-800 rounded-lg overflow-hidden bg-black">
+          {/* Sticky day-name header */}
           <div
-            className="grid border-b border-neutral-800 bg-neutral-950"
+            className="grid border-b border-neutral-800 bg-neutral-950 sticky top-0 z-10"
             style={{ gridTemplateColumns: `repeat(${dayNames.length}, 1fr)` }}
           >
             {dayNames.map((dayName: string, index: number) => (
@@ -873,83 +1099,91 @@ function CalendarView() {
             ))}
           </div>
 
+          {/* Scrollable month body — sentinels trigger period navigation */}
           <div
-            className="grid"
-            style={{ gridTemplateColumns: `repeat(${dayNames.length}, 1fr)` }}
+            ref={monthScrollRef}
+            className="overflow-y-auto"
+            style={{ maxHeight: 'calc(100vh - 260px)' }}
           >
-            {groupedDays.map(
-              (
-                week: Array<Day<Resource, Event<Resource>> | null>,
-                weekIndex: number,
-              ) =>
-                week.map((day, dayIndex) => {
-                  if (!day) {
+            {/* Top sentinel: triggers goToPreviousPeriod */}
+            <div ref={monthTopRef} style={{ height: 1 }} aria-hidden />
+
+            <div
+              className="grid"
+              style={{ gridTemplateColumns: `repeat(${dayNames.length}, 1fr)` }}
+            >
+              {bufferedWeekGroups.map(
+                (week: Array<Day<Resource, Event<Resource>> | null>, weekIndex: number) => {
+                  const weekKey =
+                    week.find((d) => d !== null)?.isoDate ?? `w-${weekIndex}`
+                  return week.map((day, dayIndex) => {
+                    if (!day) {
+                      return (
+                        <div
+                          key={`empty-${weekKey}-${dayIndex}`}
+                          className={`min-h-[120px] bg-neutral-950/50 ${
+                            dayIndex < dayNames.length - 1
+                              ? 'border-r border-neutral-800'
+                              : ''
+                          } border-b border-neutral-800`}
+                        />
+                      )
+                    }
+
+                    const isToday = day.isToday
+                    const isInCurrentPeriod = day.isInCurrentPeriod
+
                     return (
                       <div
-                        key={`empty-${weekIndex}-${dayIndex}`}
-                        className={`min-h-[120px] bg-neutral-950/50 ${
+                        key={day.isoDate}
+                        className={`min-h-[120px] p-2 relative ${
                           dayIndex < dayNames.length - 1
                             ? 'border-r border-neutral-800'
                             : ''
-                        } ${
-                          weekIndex < groupedDays.length - 1
-                            ? 'border-b border-neutral-800'
-                            : ''
-                        }`}
-                      />
-                    )
-                  }
-
-                  const isToday = day.isToday
-                  const isInCurrentPeriod = day.isInCurrentPeriod
-
-                  return (
-                    <div
-                      key={day.date.toString()}
-                      className={`min-h-[120px] p-2 relative ${
-                        dayIndex < dayNames.length - 1
-                          ? 'border-r border-neutral-800'
-                          : ''
-                      } ${
-                        weekIndex < groupedDays.length - 1
-                          ? 'border-b border-neutral-800'
-                          : ''
-                      } ${
-                        isToday
-                          ? 'bg-neutral-900'
-                          : isInCurrentPeriod
-                            ? 'bg-black'
-                            : 'bg-neutral-950/50'
-                      }`}
-                    >
-                      <div
-                        className={`text-sm mb-1 ${
+                        } border-b border-neutral-800 ${
                           isToday
-                            ? 'font-bold text-white'
+                            ? 'bg-neutral-900'
                             : isInCurrentPeriod
-                              ? 'font-medium text-neutral-200'
-                              : 'font-medium text-neutral-500'
+                              ? 'bg-black'
+                              : 'bg-neutral-950/50'
                         }`}
                       >
-                        {day.date.day}
+                        <div
+                          className={`text-sm mb-1 ${
+                            isToday
+                              ? 'font-bold text-white'
+                              : isInCurrentPeriod
+                                ? 'font-medium text-neutral-200'
+                                : 'font-medium text-neutral-500'
+                          }`}
+                        >
+                          {day.date.day}
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          {day.events.map((event) => (
+                            <Badge
+                              key={event.id}
+                              variant="secondary"
+                              className="cursor-pointer justify-start hover:bg-muted"
+                              title={event.title}
+                              onClick={() => openEditModal(event)}
+                            >
+                              {(event._recurringMasterId || event.recurrence) && (
+                                <span className="mr-1 opacity-60" title="Recurring event">↻</span>
+                              )}
+                              {event.title}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex flex-col gap-1">
-                        {day.events.map((event) => (
-                          <Badge
-                            key={event.id}
-                            variant="secondary"
-                            className="cursor-pointer justify-start hover:bg-muted"
-                            title={event.title}
-                            onClick={() => openEditModal(event)}
-                          >
-                            {event.title}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                }),
-            )}
+                    )
+                  })
+                },
+              )}
+            </div>
+
+            {/* Bottom sentinel: triggers goToNextPeriod */}
+            <div ref={monthBottomRef} style={{ height: 1 }} aria-hidden />
           </div>
         </div>
       )}
