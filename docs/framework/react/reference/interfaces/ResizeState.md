@@ -5,7 +5,7 @@ title: ResizeState
 
 # Interface: ResizeState
 
-Defined in: [useCalendar.ts:27](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L27)
+Defined in: [useCalendar/useCalendar.ts:27](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L27)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [useCalendar.ts:27](https://github.com/TanStack/time/blob/main/packa
 blocked: boolean;
 ```
 
-Defined in: [useCalendar.ts:36](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L36)
+Defined in: [useCalendar/useCalendar.ts:36](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L36)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [useCalendar.ts:36](https://github.com/TanStack/time/blob/main/packa
 edge: ResizeEdge | null;
 ```
 
-Defined in: [useCalendar.ts:30](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L30)
+Defined in: [useCalendar/useCalendar.ts:30](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L30)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [useCalendar.ts:30](https://github.com/TanStack/time/blob/main/packa
 eventId: string | null;
 ```
 
-Defined in: [useCalendar.ts:29](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L29)
+Defined in: [useCalendar/useCalendar.ts:29](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L29)
 
 ***
 
@@ -45,7 +45,7 @@ Defined in: [useCalendar.ts:29](https://github.com/TanStack/time/blob/main/packa
 isResizing: boolean;
 ```
 
-Defined in: [useCalendar.ts:28](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L28)
+Defined in: [useCalendar/useCalendar.ts:28](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L28)
 
 ***
 
@@ -55,7 +55,7 @@ Defined in: [useCalendar.ts:28](https://github.com/TanStack/time/blob/main/packa
 lastValidPreviewEnd: string | null;
 ```
 
-Defined in: [useCalendar.ts:34](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L34)
+Defined in: [useCalendar/useCalendar.ts:34](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L34)
 
 ***
 
@@ -65,7 +65,7 @@ Defined in: [useCalendar.ts:34](https://github.com/TanStack/time/blob/main/packa
 lastValidPreviewStart: string | null;
 ```
 
-Defined in: [useCalendar.ts:33](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L33)
+Defined in: [useCalendar/useCalendar.ts:33](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L33)
 
 ***
 
@@ -75,7 +75,7 @@ Defined in: [useCalendar.ts:33](https://github.com/TanStack/time/blob/main/packa
 previewEnd: string | null;
 ```
 
-Defined in: [useCalendar.ts:32](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L32)
+Defined in: [useCalendar/useCalendar.ts:32](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L32)
 
 ***
 
@@ -85,7 +85,7 @@ Defined in: [useCalendar.ts:32](https://github.com/TanStack/time/blob/main/packa
 previewStart: string | null;
 ```
 
-Defined in: [useCalendar.ts:31](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L31)
+Defined in: [useCalendar/useCalendar.ts:31](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L31)
 
 ***
 
@@ -95,4 +95,4 @@ Defined in: [useCalendar.ts:31](https://github.com/TanStack/time/blob/main/packa
 targetDayDate: string | null;
 ```
 
-Defined in: [useCalendar.ts:35](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L35)
+Defined in: [useCalendar/useCalendar.ts:35](https://github.com/TanStack/time/blob/main/packages/react-time/src/useCalendar/useCalendar.ts#L35)

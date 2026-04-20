@@ -11,7 +11,14 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { timeDevtoolsPlugin } from '@tanstack/react-time-devtools'
 import { toPlainDateTimeString } from '@tanstack/time'
-import type { Day, Event, RecurrenceFrequency, RecurrenceRule, ResizeError, Resource } from '@tanstack/time'
+import type {
+  Day,
+  Event,
+  RecurrenceFrequency,
+  RecurrenceRule,
+  ResizeError,
+  Resource,
+} from '@tanstack/time'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -266,7 +273,10 @@ function EventModal({
     onClose()
   }
 
-  const recurrencyOptions: Array<{ value: RecurrenceFrequency | 'none'; label: string }> = [
+  const recurrencyOptions: Array<{
+    value: RecurrenceFrequency | 'none'
+    label: string
+  }> = [
     { value: 'none', label: 'Does not repeat' },
     { value: 'daily', label: 'Daily' },
     { value: 'weekly', label: 'Weekly' },
@@ -359,7 +369,9 @@ function EventModal({
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  recurrenceFrequency: e.target.value as RecurrenceFrequency | 'none',
+                  recurrenceFrequency: e.target.value as
+                    | RecurrenceFrequency
+                    | 'none',
                 })
               }
             >
@@ -480,16 +492,24 @@ function ScheduleView({
         // Reset to left edge for the new period
         requestAnimationFrame(() => {
           el.scrollLeft = 0
-          setTimeout(() => { horizCooldownRef.current = false }, 900)
+          setTimeout(() => {
+            horizCooldownRef.current = false
+          }, 900)
         })
-      } else if (atLeftEdge && scrollWidth > clientWidth && calendar.canGoPreviousPeriod()) {
+      } else if (
+        atLeftEdge &&
+        scrollWidth > clientWidth &&
+        calendar.canGoPreviousPeriod()
+      ) {
         // Only fire when actually scrollable and we’ve deliberately scrolled left
         horizCooldownRef.current = true
         calendar.goToPreviousPeriod()
         // Reset to right edge for the new (previous) period
         requestAnimationFrame(() => {
           el.scrollLeft = el.scrollWidth - el.clientWidth
-          setTimeout(() => { horizCooldownRef.current = false }, 900)
+          setTimeout(() => {
+            horizCooldownRef.current = false
+          }, 900)
         })
       }
     }
@@ -674,8 +694,14 @@ function ScheduleView({
                               />
                             )}
                             <div className="font-semibold pt-1">
-                              {(event._recurringMasterId || event.recurrence) && (
-                                <span className="mr-1 opacity-60" title="Recurring event">↻</span>
+                              {(event._recurringMasterId ||
+                                event.recurrence) && (
+                                <span
+                                  className="mr-1 opacity-60"
+                                  title="Recurring event"
+                                >
+                                  ↻
+                                </span>
                               )}
                               {event.title}
                             </div>
@@ -854,12 +880,12 @@ function CalendarView() {
   // Navigation direction is tracked via a ref so the accumulation effect
   // knows whether to prepend or append.
   const monthScrollRef = useRef<HTMLDivElement>(null)
-  const daysAccumRef = useRef<Map<string, Day<Resource, Event<Resource>>>>(null as any)
+  const daysAccumRef = useRef<Map<string, Day<Resource, Event<Resource>>>>(
+    null as any,
+  )
   if (daysAccumRef.current === null) {
     // Lazy-init: populate from the initial period on first render
-    daysAccumRef.current = new Map(
-      calendar.days.map((d) => [d.isoDate, d]),
-    )
+    daysAccumRef.current = new Map(calendar.days.map((d) => [d.isoDate, d]))
   }
 
   const navDirectionRef = useRef<'none' | 'forward' | 'backward'>('none')
@@ -907,8 +933,12 @@ function CalendarView() {
     const sorted = Array.from(daysAccumRef.current.values()).sort((a, b) =>
       a.isoDate < b.isoDate ? -1 : 1,
     )
-    return calendar.groupDaysBy({ days: sorted, unit: 'week', fillMissingDays: true })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return calendar.groupDaysBy({
+      days: sorted,
+      unit: 'week',
+      fillMissingDays: true,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accumVersion, calendar.groupDaysBy])
 
   const { startSentinelRef: monthTopRef, endSentinelRef: monthBottomRef } =
@@ -940,7 +970,8 @@ function CalendarView() {
   const openEditModal = (event: Event<Resource>) => {
     // For recurring occurrences, always open the master event for editing
     const masterEvent = event._recurringMasterId
-      ? calendar.getEvents().find((e) => e.id === event._recurringMasterId) ?? event
+      ? (calendar.getEvents().find((e) => e.id === event._recurringMasterId) ??
+        event)
       : event
     const eventProps = calendar.getEventProps(masterEvent)
     const startDate = new Date(eventProps.start)
@@ -1113,7 +1144,10 @@ function CalendarView() {
               style={{ gridTemplateColumns: `repeat(${dayNames.length}, 1fr)` }}
             >
               {bufferedWeekGroups.map(
-                (week: Array<Day<Resource, Event<Resource>> | null>, weekIndex: number) => {
+                (
+                  week: Array<Day<Resource, Event<Resource>> | null>,
+                  weekIndex: number,
+                ) => {
                   const weekKey =
                     week.find((d) => d !== null)?.isoDate ?? `w-${weekIndex}`
                   return week.map((day, dayIndex) => {
@@ -1168,8 +1202,14 @@ function CalendarView() {
                               title={event.title}
                               onClick={() => openEditModal(event)}
                             >
-                              {(event._recurringMasterId || event.recurrence) && (
-                                <span className="mr-1 opacity-60" title="Recurring event">↻</span>
+                              {(event._recurringMasterId ||
+                                event.recurrence) && (
+                                <span
+                                  className="mr-1 opacity-60"
+                                  title="Recurring event"
+                                >
+                                  ↻
+                                </span>
                               )}
                               {event.title}
                             </Badge>

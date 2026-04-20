@@ -22,11 +22,7 @@ import type { Event, Resource } from './types'
 export function expandRecurringEvent<
   TResource extends Resource = Resource,
   TEvent extends Event<TResource> = Event<TResource>,
->(
-  event: TEvent,
-  windowStart: string,
-  windowEnd: string,
-): Array<TEvent> {
+>(event: TEvent, windowStart: string, windowEnd: string): Array<TEvent> {
   const rule = (event as Event<TResource>).recurrence
   if (!rule) return []
 
@@ -47,9 +43,7 @@ export function expandRecurringEvent<
   const windowEndDate = Temporal.PlainDate.from(windowEnd)
 
   // Hard ceiling from rule.until
-  const untilDate = rule.until
-    ? Temporal.PlainDate.from(rule.until)
-    : null
+  const untilDate = rule.until ? Temporal.PlainDate.from(rule.until) : null
 
   const frequency = rule.frequency
 
@@ -118,7 +112,10 @@ export function expandRecurringEvent<
     const candidateDate = candidateStart.toPlainDate()
 
     // Past rule.until → stop entirely
-    if (untilDate && Temporal.PlainDate.compare(candidateDate, untilDate) >= 0) {
+    if (
+      untilDate &&
+      Temporal.PlainDate.compare(candidateDate, untilDate) >= 0
+    ) {
       break
     }
 
@@ -175,7 +172,11 @@ function addSafeMonths(
   month = ((month - 1) % 12) + 1
 
   // Clamp day to last valid day in target month
-  const daysInMonth = Temporal.PlainDate.from({ year, month, day: 1 }).daysInMonth
+  const daysInMonth = Temporal.PlainDate.from({
+    year,
+    month,
+    day: 1,
+  }).daysInMonth
   const day = Math.min(dt.day, daysInMonth)
 
   return Temporal.PlainDateTime.from({

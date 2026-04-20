@@ -407,9 +407,9 @@ export class CalendarCore<
         : null
     const windowEnd =
       calendarDays.length > 0
-        ? calendarDays[calendarDays.length - 1]!
-            .add({ days: 1 })
-            .toString({ calendarName: 'never' })
+        ? calendarDays[calendarDays.length - 1]!.add({ days: 1 }).toString({
+            calendarName: 'never',
+          })
         : null
 
     /** Place a single event (or split segment) into the correct date bucket. */
@@ -469,14 +469,13 @@ export class CalendarCore<
           windowEnd,
         )
         for (const occ of occurrences) {
-          const conflict =
-            occ.resources?.length
-              ? this.checkEventAvailability(
-                  occ,
-                  occ.start as string,
-                  occ.end as string,
-                )
-              : null
+          const conflict = occ.resources?.length
+            ? this.checkEventAvailability(
+                occ,
+                occ.start as string,
+                occ.end as string,
+              )
+            : null
           if (!conflict) {
             placeEvent(occ)
           }

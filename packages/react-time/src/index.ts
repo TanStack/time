@@ -7,7 +7,6 @@ export type {
 export { useInfiniteScroll } from './useInfiniteScroll'
 export type { UseInfiniteScrollOptions } from './useInfiniteScroll'
 
-
 // Re-export ResizeError and AvailabilityConflict from core package
 export type {
   ResizeError,

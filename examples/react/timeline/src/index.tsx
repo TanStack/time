@@ -1058,8 +1058,6 @@ function TimelineDemo() {
     return () => observer.disconnect()
   }, [])
 
-
-
   const calendar = useCalendar<Resource, Event<Resource>>({
     viewMode: { value: 1, unit: 'day' },
     events: [],
@@ -1110,12 +1108,17 @@ function TimelineDemo() {
       if (horizNavCooldownRef.current) return
       const { scrollLeft, scrollWidth, clientWidth } = container
 
-      if (scrollLeft + clientWidth >= scrollWidth - 8 && calendar.canGoNextPeriod()) {
+      if (
+        scrollLeft + clientWidth >= scrollWidth - 8 &&
+        calendar.canGoNextPeriod()
+      ) {
         horizNavCooldownRef.current = true
         calendar.goToNextPeriod()
         requestAnimationFrame(() => {
           container.scrollLeft = 0
-          setTimeout(() => { horizNavCooldownRef.current = false }, 1000)
+          setTimeout(() => {
+            horizNavCooldownRef.current = false
+          }, 1000)
         })
       } else if (
         scrollLeft <= 8 &&
@@ -1126,7 +1129,9 @@ function TimelineDemo() {
         calendar.goToPreviousPeriod()
         requestAnimationFrame(() => {
           container.scrollLeft = container.scrollWidth - container.clientWidth
-          setTimeout(() => { horizNavCooldownRef.current = false }, 1000)
+          setTimeout(() => {
+            horizNavCooldownRef.current = false
+          }, 1000)
         })
       }
     }
