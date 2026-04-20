@@ -55,7 +55,10 @@ export interface CalendarCoreOptions<
    * The returned events are merged into the internal indices automatically.
    * When omitted the calendar operates in fully-eager mode (no change in behaviour).
    */
-  fetchEvents?: (range: { start: string; end: string }) => Promise<Array<TEvent>>
+  fetchEvents?: (range: {
+    start: string
+    end: string
+  }) => Promise<Array<TEvent>>
 }
 
 /**
@@ -223,7 +226,10 @@ type ParsedCalendarCoreOptions<
 > = ParsedDateCoreOptions & {
   events: Array<TEvent> | null
   resources: Array<TResource> | null
-  fetchEvents?: (range: { start: string; end: string }) => Promise<Array<TEvent>>
+  fetchEvents?: (range: {
+    start: string
+    end: string
+  }) => Promise<Array<TEvent>>
 }
 
 export class CalendarCore<
@@ -274,7 +280,8 @@ export class CalendarCore<
     this._dateIndex.get(dk)!.add(event.id)
     // reverse dependency graph
     for (const predId of event.dependsOn ?? []) {
-      if (!this._dependentsMap.has(predId)) this._dependentsMap.set(predId, new Set())
+      if (!this._dependentsMap.has(predId))
+        this._dependentsMap.set(predId, new Set())
       this._dependentsMap.get(predId)!.add(event.id)
     }
   }
@@ -327,7 +334,8 @@ export class CalendarCore<
     }
     for (const predId of nextDeps) {
       if (!prevDeps.has(predId)) {
-        if (!this._dependentsMap.has(predId)) this._dependentsMap.set(predId, new Set())
+        if (!this._dependentsMap.has(predId))
+          this._dependentsMap.set(predId, new Set())
         this._dependentsMap.get(predId)!.add(next.id)
       }
     }
@@ -500,11 +508,17 @@ export class CalendarCore<
         this._markRangeLoaded(rangeStart, rangeEnd)
         // Set isPending while fetching
         this.store.setState((prev) => ({ ...prev, isPending: true }))
-        this.options.fetchEvents({ start: rangeStart, end: rangeEnd })
+        this.options
+          .fetchEvents({ start: rangeStart, end: rangeEnd })
           .then((fetchedEvents) => {
             if (fetchedEvents.length > 0) {
               if (!this.options.events) this.options.events = []
-              const newlyFetchedEvents: Array<{ eventId: string; eventTitle: string; start: string; end: string }> = []
+              const newlyFetchedEvents: Array<{
+                eventId: string
+                eventTitle: string
+                start: string
+                end: string
+              }> = []
               for (const raw of fetchedEvents) {
                 // Skip duplicates (event may already be known)
                 if (this._eventMap.has(raw.id)) continue
@@ -512,14 +526,16 @@ export class CalendarCore<
                 this.options.events.push(normalized)
                 this._indexAddEvent(normalized)
                 newlyFetchedEvents.push({
-                   eventId: normalized.id,
-                   eventTitle: normalized.title,
-                   start: normalized.start as string,
-                   end: normalized.end as string,
+                  eventId: normalized.id,
+                  eventTitle: normalized.title,
+                  start: normalized.start as string,
+                  end: normalized.end as string,
                 })
               }
               if (newlyFetchedEvents.length > 0) {
-                 getTimeClient().emit('events:set', { events: newlyFetchedEvents })
+                getTimeClient().emit('events:set', {
+                  events: newlyFetchedEvents,
+                })
               }
             }
             this.store.setState((prev) => ({
@@ -758,7 +774,11 @@ export class CalendarCore<
         .subtract({ milliseconds: overlap })
         .toString({ smallestUnit: 'second' })
 
-      const updated = { ...pred, start: shiftedStart, end: shiftedEnd } as TEvent
+      const updated = {
+        ...pred,
+        start: shiftedStart,
+        end: shiftedEnd,
+      } as TEvent
       predArr[predIndex] = updated
       this._indexUpdateEvent(pred, updated)
 
@@ -830,7 +850,11 @@ export class CalendarCore<
         .add({ milliseconds: overflow })
         .toString({ smallestUnit: 'second' })
 
-      const updated = { ...dependent, start: shiftedStart, end: shiftedEnd } as TEvent
+      const updated = {
+        ...dependent,
+        start: shiftedStart,
+        end: shiftedEnd,
+      } as TEvent
       eventsArr[eventIndex] = updated
       this._indexUpdateEvent(dependent, updated)
 
@@ -1764,15 +1788,9 @@ export class CalendarCore<
 
       const currentUsage = getSum(overlappingEvents)
       const previousUsage = getSum(previouslyOverlapping)
-      const resourceCapacitySum = resource.capacity.reduce(
-        (a, b) => a + b,
-        0,
-      )
+      const resourceCapacitySum = resource.capacity.reduce((a, b) => a + b, 0)
 
-      if (
-        currentUsage > previousUsage &&
-        currentUsage >= resourceCapacitySum
-      ) {
+      if (currentUsage > previousUsage && currentUsage >= resourceCapacitySum) {
         conflicts.push({
           date: dayDate,
           conflictRange: {
