@@ -4,8 +4,8 @@ import {
   formatEventTimeRange,
   getSegmentInfo,
   useCalendar,
-  useInfiniteScroll,
 } from '@tanstack/react-time'
+import { useInfiniteScroll } from './lib/useInfiniteScroll'
 import ReactDOM from 'react-dom/client'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { TanStackDevtools } from '@tanstack/react-devtools'
@@ -456,10 +456,18 @@ function ScheduleView({
   calendar,
   days,
   onEventClick,
+  scrollRef,
+  leftSentinelRef,
+  rightSentinelRef,
+  periodDayCount,
 }: {
   calendar: ReturnType<typeof useCalendar<Resource, Event<Resource>>>
   days: Array<Day<Resource, Event<Resource>>>
   onEventClick: (event: Event<Resource>) => void
+  scrollRef: React.RefObject<HTMLDivElement | null>
+  leftSentinelRef: React.RefObject<HTMLDivElement | null>
+  rightSentinelRef: React.RefObject<HTMLDivElement | null>
+  periodDayCount: number
 }) {
   const timeSlots = calendar.getTimeSlots()
   const {
@@ -468,55 +476,6 @@ function ScheduleView({
     getDayColumnProps,
     getUnavailableRanges,
   } = calendar
-
-  // ── Horizontal infinite scroll: auto-navigate when the user scrolls to
-  // the left or right edge of the schedule (week/day view). We use a plain
-  // scroll event listener rather than sentinels because the scroll container
-  // here is not a fixed-height viewport.
-  const scheduleScrollRef = useRef<HTMLDivElement>(null)
-  const horizCooldownRef = useRef(false)
-
-  useEffect(() => {
-    const el = scheduleScrollRef.current
-    if (!el) return
-
-    const onScroll = () => {
-      if (horizCooldownRef.current) return
-      const { scrollLeft, scrollWidth, clientWidth } = el
-      const atRightEdge = scrollLeft + clientWidth >= scrollWidth - 4
-      const atLeftEdge = scrollLeft <= 4
-
-      if (atRightEdge && calendar.canGoNextPeriod()) {
-        horizCooldownRef.current = true
-        calendar.goToNextPeriod()
-        // Reset to left edge for the new period
-        requestAnimationFrame(() => {
-          el.scrollLeft = 0
-          setTimeout(() => {
-            horizCooldownRef.current = false
-          }, 900)
-        })
-      } else if (
-        atLeftEdge &&
-        scrollWidth > clientWidth &&
-        calendar.canGoPreviousPeriod()
-      ) {
-        // Only fire when actually scrollable and we’ve deliberately scrolled left
-        horizCooldownRef.current = true
-        calendar.goToPreviousPeriod()
-        // Reset to right edge for the new (previous) period
-        requestAnimationFrame(() => {
-          el.scrollLeft = el.scrollWidth - el.clientWidth
-          setTimeout(() => {
-            horizCooldownRef.current = false
-          }, 900)
-        })
-      }
-    }
-
-    el.addEventListener('scroll', onScroll, { passive: true })
-    return () => el.removeEventListener('scroll', onScroll)
-  }, [calendar])
 
   return (
     <div className="border border-neutral-800 rounded-lg overflow-hidden bg-black">
@@ -560,11 +519,15 @@ function ScheduleView({
           ))}
         </div>
         {/* Horizontal-scrollable schedule body — sentinels auto-navigate on edge */}
-        <div ref={scheduleScrollRef} className="flex-1 overflow-x-auto">
+        <div ref={scrollRef} className="flex-1 overflow-x-auto">
           <div
-            className="grid min-w-full"
-            style={{ gridTemplateColumns: `repeat(${days.length}, 1fr)` }}
+            className="grid"
+            style={{
+              gridTemplateColumns: `1px repeat(${days.length}, 1fr) 1px`,
+              minWidth: `${(days.length / periodDayCount) * 100}%`,
+            }}
           >
+            <div ref={leftSentinelRef} style={{ width: 1 }} aria-hidden />
             <div className="contents">
               {days.map((day) => {
                 const dayDate = `${day.date.year}-${String(day.date.month).padStart(2, '0')}-${String(day.date.day).padStart(2, '0')}`
@@ -759,6 +722,7 @@ function ScheduleView({
                 )
               })}
             </div>
+            <div ref={rightSentinelRef} style={{ width: 1 }} aria-hidden />
           </div>
         </div>
       </div>
@@ -947,6 +911,8 @@ function CalendarView() {
       rootMargin: '120px 0px', // prefetch slightly before edge
       cooldownMs: 1000,
       onReachStart: () => {
+        const el = monthScrollRef.current
+        if (!el || el.scrollHeight <= el.clientHeight) return
         if (!calendar.canGoPreviousPeriod() || calendar.isPending) return
         navDirectionRef.current = 'backward'
         calendar.goToPreviousPeriod()
@@ -958,6 +924,124 @@ function CalendarView() {
       },
       disabled: isScheduleView,
     })
+
+  // ── Schedule-view horizontal infinite scroll ─────────────────────
+  const scheduleScrollRef = useRef<HTMLDivElement>(null)
+  const scheduleDaysAccumRef = useRef<Map<
+    string,
+    Day<Resource, Event<Resource>>
+  > | null>(null)
+  const scheduleNavDirectionRef = useRef<'none' | 'forward' | 'backward'>(
+    'none',
+  )
+  const prevSchedulePeriodRef = useRef(calendar.currentPeriod)
+  const prevScheduleScrollWidthRef = useRef(0)
+  const needsScheduleScrollAdjRef = useRef(false)
+  const [scheduleAccumVersion, setScheduleAccumVersion] = useState(0)
+  const prevViewModeUnitRef = useRef(calendar.viewMode.unit)
+
+  // Reset accumulators when view mode unit changes
+  if (prevViewModeUnitRef.current !== calendar.viewMode.unit) {
+    prevViewModeUnitRef.current = calendar.viewMode.unit
+    scheduleDaysAccumRef.current = null
+    prevSchedulePeriodRef.current = calendar.currentPeriod
+    // Also reset the month accumulator on view mode change
+    daysAccumRef.current = new Map(calendar.days.map((d) => [d.isoDate, d]))
+  }
+
+  // Lazy-init: populate from the current period's schedule days
+  if (isScheduleView && scheduleDaysAccumRef.current === null) {
+    scheduleDaysAccumRef.current = new Map(
+      scheduleDays.map((d) => [d.isoDate, d]),
+    )
+  }
+
+  // When the calendar navigates to a new period in schedule view, fold days into the map
+  useEffect(() => {
+    if (!isScheduleView) return
+    if (calendar.currentPeriod === prevSchedulePeriodRef.current) return
+    prevSchedulePeriodRef.current = calendar.currentPeriod
+
+    // Compute current period's schedule days
+    let currentDays: typeof calendar.days
+    if (calendar.viewMode.unit === 'day') {
+      const currentDateStr = calendar.currentPeriod.split('[')[0]
+      currentDays = calendar.days.filter(
+        (day) =>
+          day.date.toString({ calendarName: 'never' }) === currentDateStr,
+      )
+    } else {
+      currentDays = calendar.days
+    }
+
+    if (scheduleNavDirectionRef.current === 'none') {
+      // Button-triggered navigation: reset accumulator to the current period
+      scheduleDaysAccumRef.current = new Map(
+        currentDays.map((d) => [d.isoDate, d]),
+      )
+    } else {
+      const direction = scheduleNavDirectionRef.current
+      scheduleNavDirectionRef.current = 'none'
+      for (const day of currentDays) {
+        scheduleDaysAccumRef.current!.set(day.isoDate, day)
+      }
+      if (direction === 'backward') {
+        prevScheduleScrollWidthRef.current =
+          scheduleScrollRef.current?.scrollWidth ?? 0
+        needsScheduleScrollAdjRef.current = true
+      }
+    }
+
+    setScheduleAccumVersion((v) => v + 1)
+  }, [
+    calendar.currentPeriod,
+    isScheduleView,
+    calendar.viewMode.unit,
+    calendar.days,
+  ])
+
+  // Correct scroll position after prepending schedule days (backward nav)
+  useLayoutEffect(() => {
+    if (!needsScheduleScrollAdjRef.current) return
+    needsScheduleScrollAdjRef.current = false
+    const el = scheduleScrollRef.current
+    if (el) {
+      el.scrollLeft += el.scrollWidth - prevScheduleScrollWidthRef.current
+    }
+  })
+
+  // Sorted accumulated days for schedule view rendering
+  const bufferedScheduleDays = useMemo(() => {
+    if (!scheduleDaysAccumRef.current) return scheduleDays
+    return Array.from(scheduleDaysAccumRef.current.values()).sort((a, b) =>
+      a.isoDate < b.isoDate ? -1 : 1,
+    )
+  }, [scheduleAccumVersion, scheduleDays])
+
+  const periodDayCount =
+    calendar.viewMode.unit === 'day' ? 1 : scheduleDays.length || 7
+
+  const {
+    startSentinelRef: scheduleLeftRef,
+    endSentinelRef: scheduleRightRef,
+  } = useInfiniteScroll({
+    root: scheduleScrollRef,
+    rootMargin: '0px 50%',
+    cooldownMs: 300,
+    onReachStart: () => {
+      const el = scheduleScrollRef.current
+      if (!el || el.scrollWidth <= el.clientWidth) return
+      if (!calendar.canGoPreviousPeriod() || calendar.isPending) return
+      scheduleNavDirectionRef.current = 'backward'
+      calendar.goToPreviousPeriod()
+    },
+    onReachEnd: () => {
+      if (!calendar.canGoNextPeriod() || calendar.isPending) return
+      scheduleNavDirectionRef.current = 'forward'
+      calendar.goToNextPeriod()
+    },
+    disabled: !isScheduleView,
+  })
 
   const openAddModal = () => {
     setModalState({
@@ -1106,8 +1190,12 @@ function CalendarView() {
       {isScheduleView ? (
         <ScheduleView
           calendar={calendar}
-          days={scheduleDays}
+          days={bufferedScheduleDays}
           onEventClick={openEditModal}
+          scrollRef={scheduleScrollRef}
+          leftSentinelRef={scheduleLeftRef}
+          rightSentinelRef={scheduleRightRef}
+          periodDayCount={periodDayCount}
         />
       ) : (
         <div className="border border-neutral-800 rounded-lg overflow-hidden bg-black">
