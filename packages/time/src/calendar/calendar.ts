@@ -1105,7 +1105,24 @@ export class CalendarCore<
         }
 
         // Capacity / consumption check per resource for this day's overlap window.
-        const eventsOnDay = this.getEventsByDate(dayStr)
+        // NOTE: iterate _eventMap directly — calling getEventsByDate / getEventMap here
+        // would cause infinite recursion since getEventMap also invokes checkEventAvailability.
+        const eventsOnDay: Array<TEvent> = []
+        for (const candidate of this._eventMap.values()) {
+          if (candidate._originalStart) continue
+          const cStart = Temporal.PlainDateTime.from(
+            toPlainDateTimeString(candidate.start),
+          ).toPlainDate()
+          const cEnd = Temporal.PlainDateTime.from(
+            toPlainDateTimeString(candidate.end),
+          ).toPlainDate()
+          if (
+            Temporal.PlainDate.compare(cursorDate, cStart) >= 0 &&
+            Temporal.PlainDate.compare(cursorDate, cEnd) <= 0
+          ) {
+            eventsOnDay.push(candidate)
+          }
+        }
         for (const resource of resources) {
           if (!resource.capacity || resource.capacity.length === 0) continue
           const capacitySum = resource.capacity.reduce((a, b) => a + b, 0)
