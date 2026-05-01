@@ -723,21 +723,23 @@ function ScheduleView({
                                 )}
                               />
                             )}
-                            <div className="font-semibold pt-1">
-                              {(event._recurringMasterId ||
-                                event.recurrence) && (
-                                <span
-                                  className="mr-1 opacity-60"
-                                  title="Recurring event"
-                                >
-                                  ↻
-                                </span>
-                              )}
-                              {event.title}
+                            <div className="font-semibold pt-1 flex items-center gap-1.5">
+                              <span className="flex items-center gap-1 min-w-0">
+                                {(event._recurringMasterId ||
+                                  event.recurrence) && (
+                                  <span
+                                    className="opacity-60 flex-shrink-0"
+                                    title="Recurring event"
+                                  >
+                                    ↻
+                                  </span>
+                                )}
+                                <span className="truncate">{event.title}</span>
+                              </span>
                               {event.consumption &&
                                 event.consumption.length > 0 && (
                                   <span
-                                    className="ml-1.5 inline-block text-[10px] leading-none rounded bg-black/40 px-1 py-0.5 font-semibold align-middle"
+                                    className="text-[10px] leading-none rounded bg-black/40 px-1 py-0.5 font-semibold flex-shrink-0"
                                     title="Consumption"
                                   >
                                     {event.consumption.reduce(
@@ -1416,7 +1418,7 @@ function CalendarView() {
                       return (
                         <div
                           key={`empty-${weekKey}-${dayIndex}`}
-                          className={`min-h-[120px] bg-neutral-950/50 ${
+                          className={`h-[120px] bg-neutral-950/50 ${
                             dayIndex < dayNames.length - 1
                               ? 'border-r border-neutral-800'
                               : ''
@@ -1431,7 +1433,7 @@ function CalendarView() {
                     return (
                       <div
                         key={day.isoDate}
-                        className={`min-h-[120px] p-2 relative ${
+                        className={`h-[120px] p-2 relative flex flex-col overflow-hidden ${
                           dayIndex < dayNames.length - 1
                             ? 'border-r border-neutral-800'
                             : ''
@@ -1444,7 +1446,7 @@ function CalendarView() {
                         }`}
                       >
                         <div
-                          className={`text-sm mb-1 ${
+                          className={`text-sm mb-1 flex-shrink-0 ${
                             isToday
                               ? 'font-bold text-white'
                               : isInCurrentPeriod
@@ -1454,29 +1456,31 @@ function CalendarView() {
                         >
                           {day.date.day}
                         </div>
-                        <div className="flex flex-col gap-1">
-                          {day.events.map((event) => (
+                        <div className="flex flex-col gap-1 overflow-hidden flex-1 min-h-0">
+                          {day.events.slice(0, 3).map((event) => (
                             <Badge
                               key={event.id}
                               variant="secondary"
-                              className="cursor-pointer justify-start hover:bg-muted"
+                              className="cursor-pointer hover:bg-muted flex items-center gap-1.5 max-w-full flex-shrink-0"
                               title={event.title}
                               onClick={() => openEditModal(event)}
                             >
-                              {(event._recurringMasterId ||
-                                event.recurrence) && (
-                                <span
-                                  className="mr-1 opacity-60"
-                                  title="Recurring event"
-                                >
-                                  ↻
-                                </span>
-                              )}
-                              {event.title}
+                              <span className="flex items-center gap-1 min-w-0">
+                                {(event._recurringMasterId ||
+                                  event.recurrence) && (
+                                  <span
+                                    className="opacity-60 flex-shrink-0"
+                                    title="Recurring event"
+                                  >
+                                    ↻
+                                  </span>
+                                )}
+                                <span className="truncate">{event.title}</span>
+                              </span>
                               {event.consumption &&
                                 event.consumption.length > 0 && (
                                   <span
-                                    className="ml-1.5 text-[10px] leading-none rounded bg-black/40 px-1 py-0.5 font-semibold"
+                                    className="text-[10px] leading-none rounded bg-black/40 px-1 py-0.5 font-semibold flex-shrink-0"
                                     title="Consumption"
                                   >
                                     {event.consumption.reduce(
@@ -1487,6 +1491,11 @@ function CalendarView() {
                                 )}
                             </Badge>
                           ))}
+                          {day.events.length > 3 && (
+                            <div className="text-[10px] text-neutral-400 px-1 flex-shrink-0">
+                              +{day.events.length - 3} more
+                            </div>
+                          )}
                         </div>
                       </div>
                     )
