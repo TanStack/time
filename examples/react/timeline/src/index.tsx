@@ -36,6 +36,7 @@ import React, {
   useState,
 } from 'react'
 import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { X } from 'lucide-react'
 
 import type {
@@ -49,6 +50,7 @@ import type {
 import type { Connection, Edge, Node, NodeProps } from '@xyflow/react'
 
 import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Dialog,
   DialogContent,
@@ -715,9 +717,6 @@ function TimelineDependencyOverlay({
     const containerRect = container.getBoundingClientRect()
     const positions: Array<HandlePosition> = []
 
-    // Use actual event-bar DOM rects so handles follow resize previews
-    // (resize updates styles on the event bar element, while timelineLayout
-    // may remain based on the committed start/end).
     timelineLayout.rows.forEach((row: TimelineResourceRow) => {
       row.events.forEach((e: any) => {
         const el = eventBarRefs.current.get(e.event.id)
@@ -960,6 +959,8 @@ const HorizontalTimelineRow = React.memo(function HorizontalTimelineRow({
   getDayColumnProps,
   getUnavailableRanges,
   eventBarRefs,
+  rowWidthPx,
+  style,
 }: {
   row: TimelineResourceRow<Resource, Event<Resource>>
   days: Array<Day<Resource, Event<Resource>>>
@@ -975,6 +976,8 @@ const HorizontalTimelineRow = React.memo(function HorizontalTimelineRow({
     typeof useCalendar<Resource, Event<Resource>>
   >['getUnavailableRanges']
   eventBarRefs: React.MutableRefObject<Map<string, HTMLDivElement>>
+  rowWidthPx: number
+  style?: React.CSSProperties
 }) {
   const { ref: setDroppableRef } = useDroppable({
     id: `resource-${row.resource.id}`,
@@ -1001,7 +1004,7 @@ const HorizontalTimelineRow = React.memo(function HorizontalTimelineRow({
     <div
       ref={setDroppableRef}
       className="relative border-b border-neutral-800/50"
-      style={{ minHeight: '56px' }}
+      style={{ minHeight: '56px', width: rowWidthPx, ...style }}
     >
       {days.map((day, i) => {
         const unavailableRanges = getUnavailableRanges(day.isoDate, {
@@ -1084,23 +1087,23 @@ function TimelineDemo() {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const timelineContentRef = useRef<HTMLDivElement>(null)
   const containerWidthRef = useRef(0)
+  const MIN_DAY_WIDTH_PX = 1600
+  const ROW_HEIGHT_PX = 56
+  const [viewportWidth, setViewportWidth] = useState(0)
 
   useEffect(() => {
     const measure = () => {
-      const el = timelineContentRef.current ?? scrollContainerRef.current
-      if (el) {
-        containerWidthRef.current = el.getBoundingClientRect().width
-      }
+      const el = scrollContainerRef.current
+      if (el) setViewportWidth(el.clientWidth)
     }
     measure()
     const observer = new ResizeObserver(measure)
-    const el = timelineContentRef.current ?? scrollContainerRef.current
-    if (el) observer.observe(el)
+    if (scrollContainerRef.current) observer.observe(scrollContainerRef.current)
     return () => observer.disconnect()
   }, [])
 
   const calendar = useCalendar<Resource, Event<Resource>>({
-    viewMode: { value: 1, unit: 'day' },
+    viewMode: { value: 1, unit: 'week' },
     events: [],
     resources: sampleResources,
     timeZone: 'UTC',
@@ -1133,12 +1136,6 @@ function TimelineDemo() {
     },
   })
 
-  // ── Horizontal infinite scroll ────────────────────────────────────────────
-  // When the user scrolls within 8 px of the right edge → go to next period
-  // and snap scroll back to the left so they can keep scrolling.
-  // When within 8 px of the left edge (and the container is scrollable) →
-  // go to previous period and snap to the right edge.
-  // A cooldown ref prevents re-triggering while the new period is rendering.
   const horizNavCooldownRef = useRef(false)
 
   useEffect(() => {
@@ -1185,6 +1182,38 @@ function TimelineDemo() {
     () => calendar.getTimelineLayout(),
     [calendar.days],
   )
+
+  const dayWidthPx = Math.max(
+    MIN_DAY_WIDTH_PX,
+    viewportWidth > 0 && calendar.days.length > 0
+      ? viewportWidth / calendar.days.length
+      : MIN_DAY_WIDTH_PX,
+  )
+  const totalContentWidthPx = calendar.days.length * dayWidthPx
+
+  const columnVirtualizer = useVirtualizer({
+    horizontal: true,
+    count: calendar.days.length,
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: () => dayWidthPx,
+    overscan: 2,
+  })
+
+  useLayoutEffect(() => {
+    columnVirtualizer.measure()
+  }, [dayWidthPx, columnVirtualizer])
+
+  const rowVirtualizer = useVirtualizer({
+    count: timelineLayout.rows.length,
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: () => ROW_HEIGHT_PX,
+    overscan: 3,
+  })
+
+  // Keep containerWidthRef synced with virtualized total width so px math (drag/resize) stays correct.
+  useEffect(() => {
+    containerWidthRef.current = totalContentWidthPx
+  }, [totalContentWidthPx])
 
   const eventBarRefsMap = useRef<Map<string, HTMLDivElement>>(new Map())
   const rowsContainerRef = useRef<HTMLDivElement>(null)
@@ -1408,10 +1437,13 @@ function TimelineDemo() {
   }
 
   const viewModeOptions = [
-    { label: 'Day', value: 1, unit: 'day' as const },
     { label: 'Week', value: 1, unit: 'week' as const },
     { label: '2 Weeks', value: 2, unit: 'week' as const },
   ]
+
+  const virtualColumns = columnVirtualizer.getVirtualItems()
+  const virtualRows = rowVirtualizer.getVirtualItems()
+  const rowsTotalHeight = rowVirtualizer.getTotalSize()
 
   return (
     <DragDropProvider onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -1515,11 +1547,28 @@ function TimelineDemo() {
               })}
             </div>
 
-            <div ref={scrollContainerRef} className="flex-1 overflow-x-auto">
-              <div ref={timelineContentRef} className="min-w-[800px] w-full">
-                <div>
-                  <div className="h-10 border-b border-neutral-800/50 bg-neutral-950 flex">
-                    {calendar.days.map((day) => {
+            <ScrollArea
+              viewportRef={scrollContainerRef}
+              viewportClassName="max-h-[600px] [&>div]:!block"
+              className="flex-1 min-w-0"
+            >
+              <div
+                ref={timelineContentRef}
+                style={{
+                  width: totalContentWidthPx,
+                  position: 'relative',
+                }}
+              >
+                <div
+                  className="sticky top-0 z-30 bg-neutral-950"
+                  style={{ width: totalContentWidthPx }}
+                >
+                  <div
+                    className="h-10 border-b border-neutral-800/50 relative"
+                    style={{ width: totalContentWidthPx }}
+                  >
+                    {virtualColumns.map((vc) => {
+                      const day = calendar.days[vc.index]
                       const localDate = new Date(
                         day.date.year,
                         day.date.month - 1,
@@ -1531,17 +1580,18 @@ function TimelineDemo() {
                       const dayNum = day.date.day
                       const monthName = localDate.toLocaleDateString(
                         undefined,
-                        {
-                          month: 'short',
-                        },
+                        { month: 'short' },
                       )
-
                       return (
                         <div
                           key={day.isoDate}
-                          className={`flex-1 border-r border-neutral-800/50 flex items-center justify-center gap-1.5 ${
+                          className={`absolute top-0 bottom-0 border-r border-neutral-800/50 flex items-center justify-center gap-1.5 ${
                             day.isToday ? 'bg-neutral-800/30' : ''
                           }`}
+                          style={{
+                            left: vc.start,
+                            width: vc.size,
+                          }}
                         >
                           <span className="text-[10px] text-neutral-500 uppercase">
                             {dayName}
@@ -1560,17 +1610,17 @@ function TimelineDemo() {
                       )
                     })}
                   </div>
-                  <div className="h-8 border-b border-neutral-800 bg-neutral-950 flex relative">
-                    {calendar.days.map((day, i) => {
-                      const dayPercentage = 100 / calendar.days.length
+                  <div
+                    className="h-8 border-b border-neutral-800 relative"
+                    style={{ width: totalContentWidthPx }}
+                  >
+                    {virtualColumns.map((vc) => {
+                      const day = calendar.days[vc.index]
                       return (
                         <div
                           key={day.isoDate + '-hours'}
-                          className="absolute top-0 bottom-0 border-r border-neutral-800/50 flex"
-                          style={{
-                            left: `${i * dayPercentage}%`,
-                            width: `${dayPercentage}%`,
-                          }}
+                          className="absolute top-0 bottom-0 border-r border-neutral-800/50"
+                          style={{ left: vc.start, width: vc.size }}
                         >
                           {Array.from({ length: 24 }, (_, h) => (
                             <div
@@ -1592,7 +1642,14 @@ function TimelineDemo() {
                   </div>
                 </div>
 
-                <div ref={rowsContainerRef} className="relative">
+                <div
+                  ref={rowsContainerRef}
+                  className="relative"
+                  style={{
+                    height: rowsTotalHeight,
+                    width: totalContentWidthPx,
+                  }}
+                >
                   {timelineLayout.currentTimePosition !== null && (
                     <div
                       className="absolute top-0 bottom-0 w-px bg-red-500 z-20 pointer-events-none"
@@ -1603,19 +1660,30 @@ function TimelineDemo() {
                       <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-red-500 rounded-full" />
                     </div>
                   )}
-                  {timelineLayout.rows.map((row, rowIdx) => (
-                    <HorizontalTimelineRow
-                      key={row.resource.id}
-                      row={row}
-                      days={calendar.days}
-                      resourceColorIndex={rowIdx}
-                      onEventClick={openEditModal}
-                      getResizeHandleProps={calendar.getResizeHandleProps}
-                      getDayColumnProps={calendar.getDayColumnProps}
-                      getUnavailableRanges={calendar.getUnavailableRanges}
-                      eventBarRefs={eventBarRefsMap}
-                    />
-                  ))}
+                  {virtualRows.map((vr) => {
+                    const row = timelineLayout.rows[vr.index]
+                    return (
+                      <HorizontalTimelineRow
+                        key={row.resource.id}
+                        row={row}
+                        days={calendar.days}
+                        resourceColorIndex={vr.index}
+                        onEventClick={openEditModal}
+                        getResizeHandleProps={calendar.getResizeHandleProps}
+                        getDayColumnProps={calendar.getDayColumnProps}
+                        getUnavailableRanges={calendar.getUnavailableRanges}
+                        eventBarRefs={eventBarRefsMap}
+                        rowWidthPx={totalContentWidthPx}
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          height: vr.size,
+                          transform: `translateY(${vr.start}px)`,
+                        }}
+                      />
+                    )
+                  })}
                   <div
                     className="absolute inset-0 z-20 pointer-events-none"
                     style={{ overflow: 'hidden' }}
@@ -1631,7 +1699,7 @@ function TimelineDemo() {
                   </div>
                 </div>
               </div>
-            </div>
+            </ScrollArea>
           </div>
         </div>
 

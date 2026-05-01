@@ -7,7 +7,9 @@ import { groupDaysBy } from './groupDaysBy'
 import { getTimeSlots } from './getTimeSlots'
 import { calculateResizedEvent } from './getResizeProps'
 import { DateCore } from './date-core'
+import { ResizeController } from './resizeController'
 import type { DateCoreOptions, ParsedDateCoreOptions } from './date-core'
+import type { ResizeControllerOptions } from './resizeController'
 import type {
   ResizeConstraints,
   ResizeEdge,
@@ -276,7 +278,6 @@ export class CalendarCore<
 {
   declare options: ParsedCalendarCoreOptions<TResource, TEvent>
 
-  // ─── O(1) index structures ──────────────────────────────────────────────────
   /** id → normalized TEvent (master record) */
   private _eventMap = new Map<string, TEvent>()
   /** id → Set of event IDs whose `dependsOn` includes this id (reverse dep graph) */
@@ -285,7 +286,24 @@ export class CalendarCore<
   private _dateIndex = new Map<string, Set<string>>()
   /** Ranges already fetched by fetchEvents (sorted, non-overlapping after merge) */
   private _loadedRanges: Array<{ start: string; end: string }> = []
-  // ────────────────────────────────────────────────────────────────────────────
+
+  /** `${resourceId}:${weekday}` → merged available + unavailable minute ranges */
+  private _resourceDayAvailCache = new Map<
+    string,
+    {
+      available: Array<{ startMinutes: number; endMinutes: number }>
+      unavailable: Array<{ startMinutes: number; endMinutes: number }>
+      hasAvailability: boolean
+      slotsForWeekday: Array<{ startMinutes: number; endMinutes: number }>
+    }
+  >()
+  /** `${sortedResourceIds}|${date}` → merged unavailable minute ranges */
+  private _mergedUnavailMinuteCache = new Map<
+    string,
+    Array<{ startMinutes: number; endMinutes: number }>
+  >()
+  /** `YYYY-MM-DD` → ISO weekday (1..7) */
+  private _weekdayCache = new Map<string, number>()
 
   constructor(options: CalendarCoreOptions<TResource, TEvent>) {
     super(options)
@@ -294,26 +312,20 @@ export class CalendarCore<
       resources: options.resources || null,
       fetchEvents: options.fetchEvents,
     })
-    // Build indices from initial events
     this.options.events?.forEach((e) => this._indexAddEvent(e))
   }
 
-  // ─── Index helpers ──────────────────────────────────────────────────────────
-
-  /** Return the ISO start-date key for a normalized event. */
   private _eventDateKey(event: TEvent): string {
     const startStr = event.start as string
     return startStr.split('T')[0] ?? startStr
   }
 
-  /** Insert one event into all three indices. */
   private _indexAddEvent(event: TEvent): void {
     this._eventMap.set(event.id, event)
-    // date index
     const dk = this._eventDateKey(event)
     if (!this._dateIndex.has(dk)) this._dateIndex.set(dk, new Set())
     this._dateIndex.get(dk)!.add(event.id)
-    // reverse dependency graph
+
     for (const predId of event.dependsOn ?? []) {
       if (!this._dependentsMap.has(predId))
         this._dependentsMap.set(predId, new Set())
@@ -321,32 +333,23 @@ export class CalendarCore<
     }
   }
 
-  /** Remove one event from all three indices. */
   private _indexRemoveEvent(event: TEvent): void {
     this._eventMap.delete(event.id)
-    // date index
     const dk = this._eventDateKey(event)
     const bucket = this._dateIndex.get(dk)
     if (bucket) {
       bucket.delete(event.id)
       if (bucket.size === 0) this._dateIndex.delete(dk)
     }
-    // reverse dependency graph — remove this event as a dependent of its predecessors
     for (const predId of event.dependsOn ?? []) {
       this._dependentsMap.get(predId)?.delete(event.id)
     }
-    // also remove its own forward entry (for events that depended on it)
     this._dependentsMap.delete(event.id)
   }
 
-  /**
-   * Patch the indices when an event changes.
-   * Only touches the structures that actually changed.
-   */
   private _indexUpdateEvent(prev: TEvent, next: TEvent): void {
     this._eventMap.set(next.id, next)
 
-    // date index: only rebuild if start date changed
     const prevDk = this._eventDateKey(prev)
     const nextDk = this._eventDateKey(next)
     if (prevDk !== nextDk) {
@@ -359,7 +362,6 @@ export class CalendarCore<
       this._dateIndex.get(nextDk)!.add(next.id)
     }
 
-    // reverse dependency graph: rebuild only diff
     const prevDeps = new Set(prev.dependsOn ?? [])
     const nextDeps = new Set(next.dependsOn ?? [])
     for (const predId of prevDeps) {
@@ -376,10 +378,6 @@ export class CalendarCore<
     }
   }
 
-  /**
-   * Check whether the given [start, end] viewport is already fully covered by
-   * previously fetched ranges. Returns true when no fetch is needed.
-   */
   private _isRangeLoaded(start: string, end: string): boolean {
     for (const r of this._loadedRanges) {
       if (r.start <= start && r.end >= end) return true
@@ -387,14 +385,11 @@ export class CalendarCore<
     return false
   }
 
-  /**
-   * Merge a newly loaded range into `_loadedRanges` (sorted, non-overlapping).
-   */
   private _markRangeLoaded(start: string, end: string): void {
     this._loadedRanges.push({ start, end })
     this._loadedRanges.sort((a, b) => (a.start < b.start ? -1 : 1))
-    // merge overlapping/adjacent
     const merged: Array<{ start: string; end: string }> = []
+
     for (const r of this._loadedRanges) {
       const last = merged[merged.length - 1]
       if (last && r.start <= last.end) {
@@ -405,7 +400,82 @@ export class CalendarCore<
     }
     this._loadedRanges = merged
   }
-  // ────────────────────────────────────────────────────────────────────────────
+
+  private _getWeekday(date: string): number {
+    const cached = this._weekdayCache.get(date)
+    if (cached !== undefined) return cached
+    const y = +date.slice(0, 4)
+    const m = +date.slice(5, 7)
+    const d = +date.slice(8, 10)
+    const jsDow = new Date(Date.UTC(y, m - 1, d)).getUTCDay()
+    const iso = jsDow === 0 ? 7 : jsDow
+    this._weekdayCache.set(date, iso)
+    return iso
+  }
+
+  private _parseHmToMinutes(hm: string): number {
+    const h = (hm.charCodeAt(0) - 48) * 10 + (hm.charCodeAt(1) - 48)
+    const mi = (hm.charCodeAt(3) - 48) * 10 + (hm.charCodeAt(4) - 48)
+    return h * 60 + mi
+  }
+
+  private _getResourceDayAvail(
+    resource: TResource,
+    weekday: number,
+  ): {
+    available: Array<{ startMinutes: number; endMinutes: number }>
+    unavailable: Array<{ startMinutes: number; endMinutes: number }>
+    hasAvailability: boolean
+    slotsForWeekday: Array<{ startMinutes: number; endMinutes: number }>
+  } {
+    const key = `${resource.id}:${weekday}`
+    const cached = this._resourceDayAvailCache.get(key)
+    if (cached) return cached
+
+    const slotsForWeekday: Array<{ startMinutes: number; endMinutes: number }> =
+      []
+    if (resource.availability) {
+      for (const slot of resource.availability) {
+        if (!slot.weekdays.includes(weekday)) continue
+        slotsForWeekday.push({
+          startMinutes: this._parseHmToMinutes(slot.startTime),
+          endMinutes: this._parseHmToMinutes(slot.endTime),
+        })
+      }
+    }
+
+    slotsForWeekday.sort((a, b) => a.startMinutes - b.startMinutes)
+    const available: Array<{ startMinutes: number; endMinutes: number }> = []
+    for (const r of slotsForWeekday) {
+      const last = available[available.length - 1]
+      if (last && r.startMinutes <= last.endMinutes) {
+        last.endMinutes = Math.max(last.endMinutes, r.endMinutes)
+      } else {
+        available.push({ ...r })
+      }
+    }
+
+    const unavailable: Array<{ startMinutes: number; endMinutes: number }> = []
+    let cursor = 0
+    for (const a of available) {
+      if (cursor < a.startMinutes) {
+        unavailable.push({ startMinutes: cursor, endMinutes: a.startMinutes })
+      }
+      cursor = a.endMinutes
+    }
+    if (cursor < MINUTES_IN_DAY) {
+      unavailable.push({ startMinutes: cursor, endMinutes: MINUTES_IN_DAY })
+    }
+
+    const result = {
+      available,
+      unavailable,
+      hasAvailability: !!resource.availability,
+      slotsForWeekday,
+    }
+    this._resourceDayAvailCache.set(key, result)
+    return result
+  }
 
   private normalizeEvent<
     T extends { start: string | Date | number; end: string | Date | number },
@@ -1231,6 +1301,19 @@ export class CalendarCore<
   }
 
   /**
+   * Create a framework-agnostic resize controller bound to this calendar.
+   * Owns the resize state machine, rAF coalescing, day-column registry, and
+   * delegates validation/commit to this `CalendarCore`.
+   *
+   * UI bindings (React, Solid, etc.) wrap this with their reactivity primitive.
+   */
+  createResizeController(
+    options: ResizeControllerOptions = {},
+  ): ResizeController<TResource, TEvent> {
+    return new ResizeController<TResource, TEvent>(this, options)
+  }
+
+  /**
    * Validates whether moving `eventId` to `[newStart, newEnd]` and cascading
    * all finish-to-start dependents would violate any resource availability.
    *
@@ -1737,104 +1820,94 @@ export class CalendarCore<
     },
   ): Array<UnavailableRange> {
     const containerHeight = options?.containerHeight ?? 1440
-    const resources = options?.resourceIds
-      ? this.options.resources?.filter((resource) =>
-          options.resourceIds?.includes(resource.id),
-        )
-      : this.options.resources
-    if (!resources || resources.length === 0) {
-      return []
-    }
+    const merged = this._getMergedUnavailableMinuteRanges(
+      date,
+      options?.resourceIds,
+    )
+    if (merged === null) return []
 
-    const plainDate = Temporal.PlainDate.from(date)
-    const weekday = plainDate.dayOfWeek
+    const dayEndMinutes = MINUTES_IN_DAY
+    const scale = containerHeight / dayEndMinutes
 
+    return merged.map((range) => ({
+      top: range.startMinutes * scale,
+      height: (range.endMinutes - range.startMinutes) * scale,
+      startTime: formatMinutesToTime(range.startMinutes),
+      endTime: formatMinutesToTime(range.endMinutes),
+    }))
+  }
+
+  /**
+   * Merged unavailable minute ranges across the requested resources for `date`.
+   * Returns `null` when no resources match (caller decides empty vs full-day).
+   * Cached by `(sortedResourceIds, date)`.
+   */
+  private _getMergedUnavailableMinuteRanges(
+    date: string,
+    resourceIds?: Array<TResource['id']>,
+  ): Array<{ startMinutes: number; endMinutes: number }> | null {
+    const allResources = this.options.resources
+    if (!allResources || allResources.length === 0) return null
+
+    const resources = resourceIds
+      ? allResources.filter((r) => resourceIds.includes(r.id))
+      : allResources
+    if (resources.length === 0) return null
+
+    const sortedIds = resources
+      .map((r) => r.id)
+      .slice()
+      .sort()
+      .join(',')
+    const cacheKey = `${sortedIds}|${date}`
+    const cached = this._mergedUnavailMinuteCache.get(cacheKey)
+    if (cached) return cached
+
+    const weekday = this._getWeekday(date)
+
+    // Collect all available ranges across resources, then merge.
+    // Mirrors original semantics: only resources that declare `availability`
+    // contribute. If none contribute any ranges for this weekday, the entire
+    // day is considered unavailable.
     const availableRanges: Array<{ startMinutes: number; endMinutes: number }> =
       []
-
     for (const resource of resources) {
       if (!resource.availability) continue
-
-      for (const slot of resource.availability) {
-        if (!slot.weekdays.includes(weekday)) continue
-
-        const startParts = slot.startTime.split(':').map(Number)
-        const endParts = slot.endTime.split(':').map(Number)
-        const startHour = startParts[0] ?? 0
-        const startMin = startParts[1] ?? 0
-        const endHour = endParts[0] ?? 0
-        const endMin = endParts[1] ?? 0
-
-        const startMinutes = startHour * 60 + startMin
-        const endMinutes = endHour * 60 + endMin
-
-        availableRanges.push({ startMinutes, endMinutes })
-      }
+      const info = this._getResourceDayAvail(resource, weekday)
+      for (const a of info.available) availableRanges.push(a)
     }
 
     if (availableRanges.length === 0) {
-      return [
-        {
-          top: 0,
-          height: containerHeight,
-          startTime: '00:00',
-          endTime: '24:00',
-        },
-      ]
+      const fullDay = [{ startMinutes: 0, endMinutes: MINUTES_IN_DAY }]
+      this._mergedUnavailMinuteCache.set(cacheKey, fullDay)
+      return fullDay
     }
 
     availableRanges.sort((a, b) => a.startMinutes - b.startMinutes)
-
-    const mergedAvailable: Array<{ startMinutes: number; endMinutes: number }> =
-      []
+    const mergedAvail: Array<{ startMinutes: number; endMinutes: number }> = []
     for (const range of availableRanges) {
-      const last = mergedAvailable[mergedAvailable.length - 1]
+      const last = mergedAvail[mergedAvail.length - 1]
       if (last && range.startMinutes <= last.endMinutes) {
         last.endMinutes = Math.max(last.endMinutes, range.endMinutes)
       } else {
-        mergedAvailable.push({ ...range })
+        mergedAvail.push({ ...range })
       }
     }
 
-    const unavailableRanges: Array<{
-      startMinutes: number
-      endMinutes: number
-    }> = []
-    let currentMinute = 0
-    const dayEndMinutes = 24 * 60
-
-    for (const available of mergedAvailable) {
-      if (currentMinute < available.startMinutes) {
-        unavailableRanges.push({
-          startMinutes: currentMinute,
-          endMinutes: available.startMinutes,
-        })
+    const unavailable: Array<{ startMinutes: number; endMinutes: number }> = []
+    let cursor = 0
+    for (const a of mergedAvail) {
+      if (cursor < a.startMinutes) {
+        unavailable.push({ startMinutes: cursor, endMinutes: a.startMinutes })
       }
-      currentMinute = available.endMinutes
+      cursor = a.endMinutes
+    }
+    if (cursor < MINUTES_IN_DAY) {
+      unavailable.push({ startMinutes: cursor, endMinutes: MINUTES_IN_DAY })
     }
 
-    if (currentMinute < dayEndMinutes) {
-      unavailableRanges.push({
-        startMinutes: currentMinute,
-        endMinutes: dayEndMinutes,
-      })
-    }
-
-    const minutesToPixels = (minutes: number) =>
-      (minutes / dayEndMinutes) * containerHeight
-
-    const formatTime = (minutes: number): string => {
-      const hours = Math.floor(minutes / 60)
-      const mins = minutes % 60
-      return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`
-    }
-
-    return unavailableRanges.map((range) => ({
-      top: minutesToPixels(range.startMinutes),
-      height: minutesToPixels(range.endMinutes - range.startMinutes),
-      startTime: formatTime(range.startMinutes),
-      endTime: formatTime(range.endMinutes),
-    }))
+    this._mergedUnavailMinuteCache.set(cacheKey, unavailable)
+    return unavailable
   }
 
   /**
@@ -1864,8 +1937,7 @@ export class CalendarCore<
       return []
     }
 
-    const plainDate = Temporal.PlainDate.from(date)
-    const weekday = plainDate.dayOfWeek
+    const weekday = this._getWeekday(date)
 
     const details: Array<{
       resourceId: string
@@ -1885,9 +1957,8 @@ export class CalendarCore<
         continue
       }
 
-      const availableSlots = resource.availability.filter((slot) =>
-        slot.weekdays.includes(weekday),
-      )
+      const info = this._getResourceDayAvail(resource, weekday)
+      const availableSlots = info.slotsForWeekday
 
       if (availableSlots.length === 0) {
         details.push({
@@ -1899,41 +1970,31 @@ export class CalendarCore<
         continue
       }
 
-      const isWithinAvailability = availableSlots.some((slot) => {
-        const slotStartParts = slot.startTime.split(':').map(Number)
-        const slotEndParts = slot.endTime.split(':').map(Number)
-        const slotStartMinutes =
-          (slotStartParts[0] ?? 0) * 60 + (slotStartParts[1] ?? 0)
-        const slotEndMinutes =
-          (slotEndParts[0] ?? 0) * 60 + (slotEndParts[1] ?? 0)
-
-        return startMinutes >= slotStartMinutes && endMinutes <= slotEndMinutes
-      })
+      let isWithinAvailability = false
+      for (const slot of availableSlots) {
+        if (
+          startMinutes >= slot.startMinutes &&
+          endMinutes <= slot.endMinutes
+        ) {
+          isWithinAvailability = true
+          break
+        }
+      }
 
       if (!isWithinAvailability) {
-        const timeRanges = availableSlots
-          .map((slot) => {
-            const slotStartParts = slot.startTime.split(':').map(Number)
-            const slotEndParts = slot.endTime.split(':').map(Number)
-            return {
-              start: (slotStartParts[0] ?? 0) * 60 + (slotStartParts[1] ?? 0),
-              end: (slotEndParts[0] ?? 0) * 60 + (slotEndParts[1] ?? 0),
-            }
-          })
-          .sort((a, b) => a.start - b.start)
-
-        const formatTime = (mins: number) =>
-          `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`
-
-        const availabilityWindow = timeRanges
-          .map((r) => `${formatTime(r.start)}-${formatTime(r.end)}`)
-          .join(', ')
+        // `availableSlots` from cache is already merged + sorted; safe to read directly.
+        let availabilityWindow = ''
+        for (let i = 0; i < availableSlots.length; i++) {
+          const r = availableSlots[i]!
+          if (i > 0) availabilityWindow += ', '
+          availabilityWindow += `${formatMinutesToTime(r.startMinutes)}-${formatMinutesToTime(r.endMinutes)}`
+        }
 
         details.push({
           resourceId: resource.id,
           resourceLabel: resource.label,
           reason: 'outside-hours',
-          description: `${resource.label}: Available ${availabilityWindow}, but event is ${formatTime(startMinutes)}-${formatTime(endMinutes)}`,
+          description: `${resource.label}: Available ${availabilityWindow}, but event is ${formatMinutesToTime(startMinutes)}-${formatMinutesToTime(endMinutes)}`,
         })
       }
     }
@@ -2102,18 +2163,17 @@ export class CalendarCore<
     date: string,
     options?: { resourceIds?: Array<string> },
   ): Array<UnavailableTimeRange> {
-    const rawRanges = this.getUnavailableRanges(date, {
-      containerHeight: MINUTES_IN_DAY,
-      resourceIds: options?.resourceIds,
-    })
-    return rawRanges.map((range) => {
-      const startParts = range.startTime.split(':').map(Number)
-      const endParts = range.endTime.split(':').map(Number)
-      return {
-        startMinutes: (startParts[0] ?? 0) * 60 + (startParts[1] ?? 0),
-        endMinutes: (endParts[0] ?? 0) * 60 + (endParts[1] ?? 0),
-      }
-    })
+    const merged = this._getMergedUnavailableMinuteRanges(
+      date,
+      options?.resourceIds,
+    )
+    if (!merged) return []
+    // Cached array is shared with `getUnavailableRanges`; return a shallow copy
+    // so callers can't mutate the cache.
+    return merged.map((r) => ({
+      startMinutes: r.startMinutes,
+      endMinutes: r.endMinutes,
+    }))
   }
 
   private getResizeConflicts(
@@ -2135,8 +2195,7 @@ export class CalendarCore<
       resourceIds,
     })
 
-    const plainDate = Temporal.PlainDate.from(dayDate)
-    const weekday = plainDate.dayOfWeek
+    const weekday = this._getWeekday(dayDate)
 
     for (const range of unavailableRangesForDay) {
       if (startMins < range.endMinutes && endMins > range.startMinutes) {
@@ -2146,24 +2205,20 @@ export class CalendarCore<
           )
           if (!resource) return false
 
-          const resourceAvailableSlots =
-            resource.availability?.filter((slot) =>
-              slot.weekdays.includes(weekday),
-            ) || []
+          const resourceAvailableSlots = this._getResourceDayAvail(
+            resource,
+            weekday,
+          ).slotsForWeekday
 
           if (resourceAvailableSlots.length === 0) return true
 
-          return !resourceAvailableSlots.some((slot) => {
-            const slotStartParts = slot.startTime.split(':').map(Number)
-            const slotEndParts = slot.endTime.split(':').map(Number)
-            const slotStart =
-              (slotStartParts[0] ?? 0) * 60 + (slotStartParts[1] ?? 0)
-            const slotEnd = (slotEndParts[0] ?? 0) * 60 + (slotEndParts[1] ?? 0)
-
-            return !(
-              range.endMinutes <= slotStart || range.startMinutes >= slotEnd
-            )
-          })
+          return !resourceAvailableSlots.some(
+            (slot) =>
+              !(
+                range.endMinutes <= slot.startMinutes ||
+                range.startMinutes >= slot.endMinutes
+              ),
+          )
         })
 
         if (overlappingDetails.length > 0) {
@@ -2289,6 +2344,21 @@ export class CalendarCore<
     const originalStartDate = originalStart.split('T')[0] ?? ''
     const originalEndDate = originalEnd.split('T')[0] ?? ''
 
+    // Parse HH:MM from ISO strings once (charcode math, no Date allocation).
+    // ISO format: "YYYY-MM-DDTHH:MM..." → hours at offsets 11,12; mins at 14,15.
+    const origStartHourMins =
+      ((originalStart.charCodeAt(11) - 48) * 10 +
+        (originalStart.charCodeAt(12) - 48)) *
+        60 +
+      (originalStart.charCodeAt(14) - 48) * 10 +
+      (originalStart.charCodeAt(15) - 48)
+    const origEndHourMins =
+      ((originalEnd.charCodeAt(11) - 48) * 10 +
+        (originalEnd.charCodeAt(12) - 48)) *
+        60 +
+      (originalEnd.charCodeAt(14) - 48) * 10 +
+      (originalEnd.charCodeAt(15) - 48)
+
     const effectiveEdge =
       edge === 'left' ? 'top' : edge === 'right' ? 'bottom' : edge
 
@@ -2304,16 +2374,11 @@ export class CalendarCore<
     }
 
     if (effectiveEdge === 'top' && targetDayDate < originalStartDate) {
-      const rawStartMinutes =
-        new Date(originalStart).getHours() * 60 +
-        new Date(originalStart).getMinutes() +
-        totalDeltaMinutes
+      const rawStartMinutes = origStartHourMins + totalDeltaMinutes
       const targetStartMinutes =
         ((rawStartMinutes % MINUTES_IN_DAY) + MINUTES_IN_DAY) % MINUTES_IN_DAY
       const snappedTargetStartMinutes = snapMins(targetStartMinutes)
-      const currentStartMinutes =
-        new Date(originalStart).getHours() * 60 +
-        new Date(originalStart).getMinutes()
+      const currentStartMinutes = origStartHourMins
 
       if (resourceIds?.length) {
         const unavailabilityDetails = this.getUnavailabilityDetails(
@@ -2385,16 +2450,11 @@ export class CalendarCore<
         }
       }
     } else if (effectiveEdge === 'bottom' && targetDayDate > originalEndDate) {
-      const rawEndMinutes =
-        new Date(originalEnd).getHours() * 60 +
-        new Date(originalEnd).getMinutes() +
-        totalDeltaMinutes
+      const rawEndMinutes = origEndHourMins + totalDeltaMinutes
       const targetEndMinutes =
         ((rawEndMinutes % MINUTES_IN_DAY) + MINUTES_IN_DAY) % MINUTES_IN_DAY
       const snappedTargetEndMinutes = snapMins(targetEndMinutes)
-      const currentEndMinutes =
-        new Date(originalEnd).getHours() * 60 +
-        new Date(originalEnd).getMinutes()
+      const currentEndMinutes = origEndHourMins
 
       if (resourceIds?.length) {
         const unavailabilityDetails = this.getUnavailabilityDetails(
@@ -2473,13 +2533,9 @@ export class CalendarCore<
       targetDayDate === originalEndDate
     ) {
       const rawStartMinutes =
-        new Date(originalStart).getHours() * 60 +
-        new Date(originalStart).getMinutes() +
-        (effectiveEdge === 'top' ? totalDeltaMinutes : 0)
+        origStartHourMins + (effectiveEdge === 'top' ? totalDeltaMinutes : 0)
       const rawEndMinutes =
-        new Date(originalEnd).getHours() * 60 +
-        new Date(originalEnd).getMinutes() +
-        (effectiveEdge === 'bottom' ? totalDeltaMinutes : 0)
+        origEndHourMins + (effectiveEdge === 'bottom' ? totalDeltaMinutes : 0)
 
       const snappedStartMinutes = snapMins(
         ((rawStartMinutes % MINUTES_IN_DAY) + MINUTES_IN_DAY) % MINUTES_IN_DAY,

@@ -8,44 +8,25 @@ import {
   useTransition,
 } from 'react'
 import { useStore } from '@tanstack/react-store'
-import {
-  CalendarCore,
-  calculateDeltaMinutesFromPixels,
-  calculateDeltaMinutesFromPixelsHorizontal,
-  getTimeClient,
-} from '@tanstack/time'
+import { CalendarCore } from '@tanstack/time'
 import type {
   CalendarApi,
   CalendarCoreOptions,
   Event,
-  ResizeConstraints,
+  ResizeController,
+  ResizeControllerOptions,
   ResizeEdge,
-  ResizeError,
+  ResizeState,
   Resource,
 } from '@tanstack/time'
 
-export interface ResizeState {
-  isResizing: boolean
-  eventId: string | null
-  edge: ResizeEdge | null
-  previewStart: string | null
-  previewEnd: string | null
-  lastValidPreviewStart: string | null
-  lastValidPreviewEnd: string | null
-  targetDayDate: string | null
-  blocked: boolean
-}
+export type { ResizeState } from '@tanstack/time'
 
-export interface ResizeOptions {
-  enabled?: boolean
-  containerHeight?: number
-  containerWidth?: number
-  orientation?: 'vertical' | 'horizontal'
-  constraints?: ResizeConstraints
-  onResizeStart?: (eventId: string, edge: ResizeEdge) => void
-  onResizeEnd?: (eventId: string, newStart: string, newEnd: string) => void
-  onResizeError?: (error: ResizeError) => void
-}
+/**
+ * Hook-level resize options. Identical to `ResizeControllerOptions` from core
+ * but re-exported under a React-friendly name for backwards compatibility.
+ */
+export type ResizeOptions = ResizeControllerOptions
 
 interface ResizeHandleHandlers {
   onMouseDown: (e: React.MouseEvent) => void
@@ -60,18 +41,6 @@ export interface UseCalendarOptions<
   TEvent extends Event<TResource>,
 > extends CalendarCoreOptions<TResource, TEvent> {
   resize?: ResizeOptions
-}
-
-const initialResizeState: ResizeState = {
-  isResizing: false,
-  eventId: null,
-  edge: null,
-  previewStart: null,
-  previewEnd: null,
-  lastValidPreviewStart: null,
-  lastValidPreviewEnd: null,
-  targetDayDate: null,
-  blocked: false,
 }
 
 export const useCalendar = <
@@ -97,258 +66,36 @@ export const useCalendar = <
   )
   const state = useStore(calendarCore.store)
   const [isTransitionPending, startTransition] = useTransition()
-  // Combine React's transition pending with the async fetch pending from the store
   const isPending = isTransitionPending || state.isPending
 
-  // Trigger lazy loading when the period or view mode changes.
-  // This must be done in an effect to avoid triggering fetches/state updates during render.
   useEffect(() => {
     calendarCore.ensureRangeLoaded()
   }, [calendarCore, state.currentPeriod, state.viewMode, state.activeDate])
 
-  const resizeOptionsRef = useRef<ResizeOptions | undefined>(resize)
-  resizeOptionsRef.current = resize
-
-  const calendarOptionsRef =
-    useRef<CalendarCoreOptions<TResource, TEvent>>(calendarOptions)
-  calendarOptionsRef.current = calendarOptions
-
-  const resizeStateRef = useRef<ResizeState>(initialResizeState)
-  const resizeListenersRef = useRef<Set<() => void>>(new Set())
-  const dayColumnRefsRef = useRef<Map<string, HTMLElement>>(new Map())
-  const originalEventRef = useRef<{
-    id: string
-    start: string
-    end: string
-    edge: ResizeEdge
-    startY: number
-    startX: number
-    originalDayDate: string
-    currentDayDate: string
-    totalDaysInView: number
-  } | null>(null)
-  const lastEmittedErrorRef = useRef<{
-    eventId: string
-    message: string
-    timestamp: number
-  } | null>(null)
-
-  const subscribeResize = useCallback((listener: () => void) => {
-    resizeListenersRef.current.add(listener)
-    return () => resizeListenersRef.current.delete(listener)
-  }, [])
-
-  const getResizeSnapshot = useCallback(() => resizeStateRef.current, [])
-
-  const notifyResizeListeners = useCallback(() => {
-    resizeListenersRef.current.forEach((listener) => listener())
-  }, [])
-
-  const updateResizeState = useCallback(
-    (newState: Partial<ResizeState>) => {
-      resizeStateRef.current = { ...resizeStateRef.current, ...newState }
-      notifyResizeListeners()
-    },
-    [notifyResizeListeners],
+  const [resizeController] = useState<ResizeController<TResource, TEvent>>(() =>
+    calendarCore.createResizeController(resize),
   )
+
+  useEffect(() => {
+    resizeController.setOptions(resize ?? {})
+  }, [resizeController, resize])
+
+  useEffect(() => {
+    return () => {
+      resizeController.destroy()
+    }
+  }, [resizeController])
 
   const resizeState = useSyncExternalStore(
-    subscribeResize,
-    getResizeSnapshot,
-    getResizeSnapshot,
+    resizeController.subscribe,
+    resizeController.getSnapshot,
+    resizeController.getSnapshot,
   )
 
-  const getDayFromPoint = useCallback((x: number): string | null => {
-    for (const [dayDate, element] of dayColumnRefsRef.current) {
-      const rect = element.getBoundingClientRect()
-      if (x >= rect.left && x <= rect.right) {
-        return dayDate
-      }
-    }
-    return null
-  }, [])
-
-  const getDayFromElement = useCallback(
-    (element: HTMLElement): string | null => {
-      for (const [dayDate, dayElement] of dayColumnRefsRef.current) {
-        if (dayElement.contains(element)) {
-          return dayDate
-        }
-      }
-      return null
-    },
-    [],
+  const resizeHandlePropsCacheRef = useRef(
+    new Map<string, ResizeHandleHandlers>(),
   )
-
-  const handleMouseMove = useCallback(
-    (e: MouseEvent) => {
-      if (!originalEventRef.current) return
-
-      const resizeOpts = resizeOptionsRef.current
-      const containerHeight = resizeOpts?.containerHeight ?? 0
-      const containerWidth = resizeOpts?.containerWidth ?? 0
-      const orientation = resizeOpts?.orientation ?? 'vertical'
-      const constraints = resizeOpts?.constraints
-
-      const { id, start, end, edge, startY, startX, originalDayDate } =
-        originalEventRef.current
-
-      let targetDayDate: string
-      let totalDeltaMinutes: number
-
-      if (orientation === 'horizontal') {
-        if (containerWidth === 0) return
-        const totalMinutesInView =
-          originalEventRef.current.totalDaysInView * 24 * 60
-        totalDeltaMinutes = calculateDeltaMinutesFromPixelsHorizontal(
-          e.clientX - startX,
-          containerWidth,
-          totalMinutesInView,
-        )
-        targetDayDate = originalDayDate
-      } else {
-        const deltaMinutes = calculateDeltaMinutesFromPixels(
-          e.clientY - startY,
-          containerHeight,
-        )
-
-        targetDayDate = getDayFromPoint(e.clientX) ?? originalDayDate
-
-        let dayOffsetMinutes = 0
-        if (targetDayDate !== originalDayDate) {
-          const originalDate = new Date(originalDayDate + 'T00:00:00')
-          const targetDate = new Date(targetDayDate + 'T00:00:00')
-          const dayDiff = Math.round(
-            (targetDate.getTime() - originalDate.getTime()) /
-              (1000 * 60 * 60 * 24),
-          )
-          dayOffsetMinutes = dayDiff * 24 * 60
-          originalEventRef.current.currentDayDate = targetDayDate
-        }
-
-        totalDeltaMinutes = deltaMinutes + dayOffsetMinutes
-      }
-
-      const validation = calendarCore.validateResize({
-        eventId: id,
-        originalStart: start,
-        originalEnd: end,
-        edge,
-        totalDeltaMinutes,
-        targetDayDate,
-        originalDayDate,
-        constraints,
-      })
-
-      if (validation.blocked && validation.error) {
-        const event = calendarOptionsRef.current.events?.find(
-          (ev) => ev.id === id,
-        )
-        const now = Date.now()
-        const lastError = lastEmittedErrorRef.current
-
-        const shouldEmitError =
-          !lastError ||
-          lastError.eventId !== id ||
-          lastError.message !== validation.error.message ||
-          now - lastError.timestamp > 500
-
-        if (shouldEmitError) {
-          const resizeError: ResizeError = {
-            eventId: id,
-            eventTitle: event?.title ?? 'Unknown Event',
-            reason: validation.error.reason,
-            message: validation.error.message,
-            originalStart: start,
-            originalEnd: end,
-            conflicts:
-              validation.error.conflicts.length > 0
-                ? validation.error.conflicts
-                : undefined,
-          }
-
-          getTimeClient().emit('event:update:error', {
-            eventId: id,
-            eventTitle: event?.title ?? 'Unknown Event',
-            reason: validation.error.reason,
-            message: validation.error.message,
-            originalStart: start,
-            originalEnd: end,
-            conflicts:
-              validation.error.conflicts.length > 0
-                ? validation.error.conflicts
-                : undefined,
-          })
-
-          resizeOpts?.onResizeError?.(resizeError)
-
-          lastEmittedErrorRef.current = {
-            eventId: id,
-            message: validation.error.message,
-            timestamp: now,
-          }
-        }
-      } else {
-        lastEmittedErrorRef.current = null
-      }
-
-      const currentState = resizeStateRef.current
-      const effectivePreviewStart = validation.blocked
-        ? (currentState.lastValidPreviewStart ?? start)
-        : validation.result.start
-      const effectivePreviewEnd = validation.blocked
-        ? (currentState.lastValidPreviewEnd ?? end)
-        : validation.result.end
-
-      updateResizeState({
-        eventId: id,
-        previewStart: effectivePreviewStart,
-        previewEnd: effectivePreviewEnd,
-        ...(!validation.blocked && {
-          lastValidPreviewStart: validation.result.start,
-          lastValidPreviewEnd: validation.result.end,
-        }),
-        targetDayDate: validation.targetDayDate,
-        blocked: validation.blocked,
-      })
-    },
-    [calendarCore, getDayFromPoint, updateResizeState],
-  )
-
-  const handleMouseUp = useCallback(() => {
-    const currentState = resizeStateRef.current
-    const original = originalEventRef.current
-
-    if (
-      currentState.eventId &&
-      currentState.previewStart &&
-      currentState.previewEnd
-    ) {
-      const hasChanged =
-        !original ||
-        currentState.previewStart !== original.start ||
-        currentState.previewEnd !== original.end
-
-      if (hasChanged) {
-        calendarCore.commitUpdate(currentState.eventId, {
-          start: currentState.previewStart,
-          end: currentState.previewEnd,
-        } as Partial<Omit<TEvent, 'id'>>)
-        resizeOptionsRef.current?.onResizeEnd?.(
-          currentState.eventId,
-          currentState.previewStart,
-          currentState.previewEnd,
-        )
-      }
-    }
-
-    originalEventRef.current = null
-    lastEmittedErrorRef.current = null
-    updateResizeState(initialResizeState)
-
-    document.removeEventListener('mousemove', handleMouseMove)
-    document.removeEventListener('mouseup', handleMouseUp)
-  }, [calendarCore, handleMouseMove, updateResizeState])
+  const dayColumnPropsCacheRef = useRef(new Map<string, DayColumnProps>())
 
   const getResizeHandleProps = useCallback(
     (
@@ -356,68 +103,50 @@ export const useCalendar = <
       edge: ResizeEdge,
       originalStart: string,
       originalEnd: string,
-    ): ResizeHandleHandlers => ({
-      onMouseDown: (e: React.MouseEvent) => {
-        if (!(resizeOptionsRef.current?.enabled ?? true)) return
+    ): ResizeHandleHandlers => {
+      const key = `${eventId}|${edge}|${originalStart}|${originalEnd}`
+      const cache = resizeHandlePropsCacheRef.current
+      const cached = cache.get(key)
+      if (cached) return cached
 
-        e.preventDefault()
-        e.stopPropagation()
+      const handlers: ResizeHandleHandlers = {
+        onMouseDown: (e: React.MouseEvent) => {
+          const started = resizeController.start({
+            eventId,
+            edge,
+            originalStart,
+            originalEnd,
+            clientX: e.clientX,
+            clientY: e.clientY,
+            target: e.target as HTMLElement | null,
+          })
+          if (!started) return
 
-        const dayDate =
-          getDayFromElement(e.target as HTMLElement) ??
-          getDayFromPoint(e.clientX)
-        if (!dayDate) return
+          e.preventDefault()
+          e.stopPropagation()
+        },
+      }
 
-        originalEventRef.current = {
-          id: eventId,
-          start: originalStart,
-          end: originalEnd,
-          edge,
-          startY: e.clientY,
-          startX: e.clientX,
-          originalDayDate: dayDate,
-          currentDayDate: dayDate,
-          totalDaysInView: calendarCore.getDaysWithEvents().length,
-        }
-
-        updateResizeState({
-          isResizing: true,
-          eventId,
-          edge,
-          previewStart: originalStart,
-          previewEnd: originalEnd,
-          lastValidPreviewStart: originalStart,
-          lastValidPreviewEnd: originalEnd,
-          targetDayDate: dayDate,
-        })
-
-        resizeOptionsRef.current?.onResizeStart?.(eventId, edge)
-
-        document.addEventListener('mousemove', handleMouseMove)
-        document.addEventListener('mouseup', handleMouseUp)
-      },
-    }),
-    [
-      calendarCore,
-      getDayFromElement,
-      getDayFromPoint,
-      handleMouseMove,
-      handleMouseUp,
-      updateResizeState,
-    ],
+      cache.set(key, handlers)
+      return handlers
+    },
+    [resizeController],
   )
 
   const getDayColumnProps = useCallback(
-    (dayDate: string): DayColumnProps => ({
-      ref: (element: HTMLElement | null) => {
-        if (element) {
-          dayColumnRefsRef.current.set(dayDate, element)
-        } else {
-          dayColumnRefsRef.current.delete(dayDate)
-        }
-      },
-    }),
-    [],
+    (dayDate: string): DayColumnProps => {
+      const cache = dayColumnPropsCacheRef.current
+      const cached = cache.get(dayDate)
+      if (cached) return cached
+      const props: DayColumnProps = {
+        ref: (element: HTMLElement | null) => {
+          resizeController.registerDayColumn(dayDate, element)
+        },
+      }
+      cache.set(dayDate, props)
+      return props
+    },
+    [resizeController],
   )
 
   const goToPreviousPeriod = useCallback<
@@ -478,7 +207,7 @@ export const useCalendar = <
   )
 
   const getTimeSlots = useCallback<typeof calendarCore.getTimeSlots>(
-    (options) => calendarCore.getTimeSlots(options),
+    (slotOptions) => calendarCore.getTimeSlots(slotOptions),
     [calendarCore],
   )
 
@@ -497,13 +226,13 @@ export const useCalendar = <
   )
 
   const addEvent = useCallback<typeof calendarCore.addEvent>(
-    (event, options) => calendarCore.addEvent(event, options),
+    (event, addOptions) => calendarCore.addEvent(event, addOptions),
     [calendarCore],
   )
 
   const editEvent = useCallback<typeof calendarCore.editEvent>(
-    (eventId, updates, options) =>
-      calendarCore.editEvent(eventId, updates, options),
+    (eventId, updates, editOptions) =>
+      calendarCore.editEvent(eventId, updates, editOptions),
     [calendarCore],
   )
 
@@ -517,10 +246,10 @@ export const useCalendar = <
   const getUnavailableRanges = useCallback<
     typeof calendarCore.getUnavailableRanges
   >(
-    (date, options) =>
+    (date, rangeOptions) =>
       calendarCore.getUnavailableRanges(date, {
-        containerHeight: options?.containerHeight ?? containerHeight,
-        resourceIds: options?.resourceIds,
+        containerHeight: rangeOptions?.containerHeight ?? containerHeight,
+        resourceIds: rangeOptions?.resourceIds,
       }),
     [calendarCore, containerHeight],
   )
@@ -571,7 +300,7 @@ export const useCalendar = <
   >((event) => calendarCore.validateEventPlacement(event), [calendarCore])
 
   const formatPeriodLabel = useCallback<typeof calendarCore.formatPeriodLabel>(
-    (options) => calendarCore.formatPeriodLabel(options),
+    (labelOptions) => calendarCore.formatPeriodLabel(labelOptions),
     [calendarCore],
   )
 
