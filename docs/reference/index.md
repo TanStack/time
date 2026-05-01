@@ -84,6 +84,7 @@ title: "@tanstack/time"
 - [RecurrenceFrequency](type-aliases/RecurrenceFrequency.md)
 - [ResizeEdge](type-aliases/ResizeEdge.md)
 - [RoundUnit](type-aliases/RoundUnit.md)
+- [SaveEventResult](type-aliases/SaveEventResult.md)
 - [StartOfUnit](type-aliases/StartOfUnit.md)
 
 ## Functions
