@@ -222,7 +222,7 @@ describe('CalendarCore', () => {
     })
   })
 
-  describe('addEvent', () => {
+  describe('commitAdd', () => {
     test('adds an event to an empty calendar', () => {
       const cal = createCalendar()
       const event: TestEvent = {
@@ -232,7 +232,7 @@ describe('CalendarCore', () => {
         end: `${DATE_MON}T10:00:00`,
       }
 
-      cal.addEvent(event)
+      cal.commitAdd(event)
 
       expect(cal.options.events).toHaveLength(1)
       expect(cal.getEventsByDate(DATE_MON)).toHaveLength(1)
@@ -250,7 +250,7 @@ describe('CalendarCore', () => {
         ],
       })
 
-      cal.addEvent({
+      cal.commitAdd({
         id: '2',
         title: 'New',
         start: `${DATE_MON}T11:00:00`,
@@ -264,7 +264,7 @@ describe('CalendarCore', () => {
       const cal = createCalendar()
       const versionBefore = cal.store.state.eventsVersion
 
-      cal.addEvent({
+      cal.commitAdd({
         id: '1',
         title: 'E',
         start: `${DATE_MON}T09:00:00`,
@@ -277,7 +277,7 @@ describe('CalendarCore', () => {
     test('normalizes date-only start/end when adding event', () => {
       const cal = createCalendar()
 
-      cal.addEvent({
+      cal.commitAdd({
         id: '1',
         title: 'Date-only add',
         start: DATE_MON,
@@ -291,7 +291,7 @@ describe('CalendarCore', () => {
     test('normalizes Date objects when adding event', () => {
       const cal = createCalendar()
 
-      cal.addEvent({
+      cal.commitAdd({
         id: '1',
         title: 'Date object add',
         start: new Date(2024, 2, 18, 14, 0, 0),
@@ -303,7 +303,7 @@ describe('CalendarCore', () => {
     })
   })
 
-  describe('updateEvent', () => {
+  describe('commitUpdate', () => {
     test('updates an existing event', () => {
       const cal = createCalendar({
         events: [
@@ -316,7 +316,7 @@ describe('CalendarCore', () => {
         ],
       })
 
-      cal.updateEvent('1', { title: 'New Title' })
+      cal.commitUpdate('1', { title: 'New Title' })
 
       expect(cal.options.events![0]!.title).toBe('New Title')
     })
@@ -333,7 +333,7 @@ describe('CalendarCore', () => {
         ],
       })
 
-      cal.updateEvent('1', {
+      cal.commitUpdate('1', {
         start: `${DATE_MON}T11:00:00`,
         end: `${DATE_MON}T12:00:00`,
       })
@@ -354,7 +354,7 @@ describe('CalendarCore', () => {
         ],
       })
 
-      cal.updateEvent('1', {
+      cal.commitUpdate('1', {
         start: DATE_TUE,
         end: DATE_TUE,
       })
@@ -375,7 +375,7 @@ describe('CalendarCore', () => {
         ],
       })
 
-      cal.updateEvent('1', {
+      cal.commitUpdate('1', {
         start: new Date(2024, 2, 19, 11, 0, 0),
         end: new Date(2024, 2, 19, 12, 0, 0),
       })
@@ -397,7 +397,7 @@ describe('CalendarCore', () => {
       })
       const versionBefore = cal.store.state.eventsVersion
 
-      cal.updateEvent('nonexistent', { title: 'X' })
+      cal.commitUpdate('nonexistent', { title: 'X' })
 
       expect(cal.store.state.eventsVersion).toBe(versionBefore)
       expect(cal.options.events![0]!.title).toBe('E')
@@ -406,7 +406,7 @@ describe('CalendarCore', () => {
     test('does nothing when events is null', () => {
       const cal = createCalendar()
 
-      cal.updateEvent('1', { title: 'X' })
+      cal.commitUpdate('1', { title: 'X' })
 
       expect(cal.options.events).toBeNull()
     })
@@ -1626,7 +1626,7 @@ describe('CalendarCore', () => {
     })
   })
 
-  describe('updateEvent — dependsOn cascade (propagateEndDelta)', () => {
+  describe('commitUpdate — dependsOn cascade (propagateEndDelta)', () => {
     test('shifts dependent forward when predecessor end extends past dependent start', () => {
       const cal = createCalendar({
         timeZone: 'UTC',
@@ -1650,7 +1650,7 @@ describe('CalendarCore', () => {
         resources: [weekdayResource],
       })
 
-      cal.updateEvent('1', { end: `${DATE_MON}T12:00:00` })
+      cal.commitUpdate('1', { end: `${DATE_MON}T12:00:00` })
 
       const b = cal.options.events!.find((e) => e.id === '2')!
       expect(b.start).toBe(`${DATE_MON}T12:00:00`)
@@ -1680,7 +1680,7 @@ describe('CalendarCore', () => {
         resources: [weekdayResource],
       })
 
-      cal.updateEvent('1', { end: `${DATE_MON}T11:30:00` })
+      cal.commitUpdate('1', { end: `${DATE_MON}T11:30:00` })
 
       const b = cal.options.events!.find((e) => e.id === '2')!
       expect(b.start).toBe(`${DATE_MON}T14:00:00`)
@@ -1718,7 +1718,7 @@ describe('CalendarCore', () => {
         resources: [weekdayResource],
       })
 
-      cal.updateEvent('1', { end: `${DATE_MON}T11:00:00` })
+      cal.commitUpdate('1', { end: `${DATE_MON}T11:00:00` })
 
       const b = cal.options.events!.find((e) => e.id === '2')!
       const c = cal.options.events!.find((e) => e.id === '3')!
@@ -1759,7 +1759,7 @@ describe('CalendarCore', () => {
         resources: [weekdayResource],
       })
 
-      cal.updateEvent('1', { end: `${DATE_MON}T12:00:00` })
+      cal.commitUpdate('1', { end: `${DATE_MON}T12:00:00` })
 
       const b = cal.options.events!.find((e) => e.id === '2')!
       const c = cal.options.events!.find((e) => e.id === '3')!
@@ -1790,7 +1790,7 @@ describe('CalendarCore', () => {
         resources: [weekdayResource],
       })
 
-      cal.updateEvent('1', { start: `${DATE_MON}T09:30:00` })
+      cal.commitUpdate('1', { start: `${DATE_MON}T09:30:00` })
 
       const b = cal.options.events!.find((e) => e.id === '2')!
       expect(b.start).toBe(`${DATE_MON}T11:30:00`)
@@ -2260,6 +2260,640 @@ describe('CalendarCore', () => {
       expect(grouped.length).toBeGreaterThan(0)
       grouped.forEach((week) => {
         expect(week.length).toBeLessThanOrEqual(7)
+      })
+    })
+  })
+
+  describe('capacity / consumption', () => {
+    const capResource: TestResource = {
+      id: 'cap',
+      label: 'Cap Room',
+      capacity: [3],
+      availability: [
+        { weekdays: [1, 2, 3, 4, 5], startTime: '08:00', endTime: '20:00' },
+      ],
+    }
+
+    describe('addEvent', () => {
+      test('blocks add when consumption + existing usage exceeds capacity', async () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'e1',
+              title: 'Existing',
+              start: '2024-03-18T09:00:00',
+              end: '2024-03-18T11:00:00',
+              resources: [capResource],
+              consumption: [2],
+            },
+          ],
+          resources: [capResource],
+        })
+
+        const result = await cal.addEvent({
+          id: 'new',
+          title: 'New',
+          start: '2024-03-18T10:00:00',
+          end: '2024-03-18T10:30:00',
+          resources: [capResource],
+          consumption: [2],
+        })
+
+        expect(result.success).toBe(false)
+        if (!result.success) {
+          expect(result.error.reason).toBe('blocked')
+          expect(result.error.message).toMatch(/capacity/i)
+        }
+        expect(cal.getEvents()).toHaveLength(1)
+      })
+
+      test('allows add when consumption + existing usage equals capacity', async () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'e1',
+              title: 'Existing',
+              start: '2024-03-18T09:00:00',
+              end: '2024-03-18T11:00:00',
+              resources: [capResource],
+              consumption: [2],
+            },
+          ],
+          resources: [capResource],
+        })
+
+        const result = await cal.addEvent({
+          id: 'new',
+          title: 'New',
+          start: '2024-03-18T10:00:00',
+          end: '2024-03-18T10:30:00',
+          resources: [capResource],
+          consumption: [1],
+        })
+
+        expect(result.success).toBe(true)
+        expect(cal.getEvents()).toHaveLength(2)
+      })
+
+      test('allows add at capacity when ranges do not overlap', async () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'e1',
+              title: 'Morning',
+              start: '2024-03-18T09:00:00',
+              end: '2024-03-18T10:00:00',
+              resources: [capResource],
+              consumption: [3],
+            },
+          ],
+          resources: [capResource],
+        })
+
+        const result = await cal.addEvent({
+          id: 'new',
+          title: 'Afternoon',
+          start: '2024-03-18T14:00:00',
+          end: '2024-03-18T15:00:00',
+          resources: [capResource],
+          consumption: [3],
+        })
+
+        expect(result.success).toBe(true)
+      })
+
+      test('treats missing consumption as 1', async () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'e1',
+              title: 'Existing',
+              start: '2024-03-18T09:00:00',
+              end: '2024-03-18T10:00:00',
+              resources: [capResource],
+              consumption: [3],
+            },
+          ],
+          resources: [capResource],
+        })
+
+        const result = await cal.addEvent({
+          id: 'new',
+          title: 'No consumption',
+          start: '2024-03-18T09:30:00',
+          end: '2024-03-18T09:45:00',
+          resources: [capResource],
+        })
+
+        expect(result.success).toBe(false)
+      })
+
+      test('blocks when single new event consumption alone exceeds capacity', async () => {
+        const cal = createCalendar({
+          events: [],
+          resources: [capResource],
+        })
+
+        const result = await cal.addEvent({
+          id: 'new',
+          title: 'Big',
+          start: '2024-03-18T09:00:00',
+          end: '2024-03-18T10:00:00',
+          resources: [capResource],
+          consumption: [4],
+        })
+
+        expect(result.success).toBe(false)
+      })
+
+      test('allows add when resource has no capacity configured', async () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'e1',
+              title: 'Existing',
+              start: '2024-03-18T09:00:00',
+              end: '2024-03-18T11:00:00',
+              resources: [allDayResource],
+              consumption: [99],
+            },
+          ],
+          resources: [allDayResource],
+        })
+
+        const result = await cal.addEvent({
+          id: 'new',
+          title: 'Anything',
+          start: '2024-03-18T10:00:00',
+          end: '2024-03-18T10:30:00',
+          resources: [allDayResource],
+          consumption: [99],
+        })
+
+        expect(result.success).toBe(true)
+      })
+
+      test('sums multi-segment capacity array', async () => {
+        const multiCapResource: TestResource = {
+          id: 'mc',
+          label: 'Multi Cap',
+          capacity: [2, 3],
+          availability: [
+            { weekdays: [1, 2, 3, 4, 5], startTime: '08:00', endTime: '20:00' },
+          ],
+        }
+
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'e1',
+              title: 'Existing',
+              start: '2024-03-18T09:00:00',
+              end: '2024-03-18T11:00:00',
+              resources: [multiCapResource],
+              consumption: [4],
+            },
+          ],
+          resources: [multiCapResource],
+        })
+
+        const ok = await cal.addEvent({
+          id: 'fits',
+          title: 'Fits',
+          start: '2024-03-18T10:00:00',
+          end: '2024-03-18T10:30:00',
+          resources: [multiCapResource],
+          consumption: [1],
+        })
+        expect(ok.success).toBe(true)
+
+        const blocked = await cal.addEvent({
+          id: 'blocked',
+          title: 'Blocked',
+          start: '2024-03-18T10:00:00',
+          end: '2024-03-18T10:30:00',
+          resources: [multiCapResource],
+          consumption: [1],
+        })
+        expect(blocked.success).toBe(false)
+      })
+
+      test('checks capacity per day for multi-day events', async () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'e1',
+              title: 'Tue Heavy',
+              start: '2024-03-19T09:00:00',
+              end: '2024-03-19T11:00:00',
+              resources: [capResource],
+              consumption: [3],
+            },
+          ],
+          resources: [capResource],
+        })
+
+        const result = await cal.addEvent({
+          id: 'multi',
+          title: 'Multi Day',
+          start: '2024-03-18T09:00:00',
+          end: '2024-03-19T10:00:00',
+          resources: [capResource],
+          consumption: [1],
+        })
+
+        expect(result.success).toBe(false)
+      })
+
+      test('does not double-count split multi-day segments', async () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'e1',
+              title: 'Spanning',
+              start: '2024-03-18T09:00:00',
+              end: '2024-03-19T11:00:00',
+              resources: [capResource],
+              consumption: [2],
+            },
+          ],
+          resources: [capResource],
+        })
+
+        const result = await cal.addEvent({
+          id: 'new',
+          title: 'Adds 1',
+          start: '2024-03-18T10:00:00',
+          end: '2024-03-18T10:30:00',
+          resources: [capResource],
+          consumption: [1],
+        })
+
+        expect(result.success).toBe(true)
+      })
+    })
+
+    describe('editEvent', () => {
+      test('allows shrinking consumption that previously consumed full capacity', async () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'a',
+              title: 'A',
+              start: '2024-03-18T09:00:00',
+              end: '2024-03-18T11:00:00',
+              resources: [capResource],
+              consumption: [3],
+            },
+            {
+              id: 'b',
+              title: 'B',
+              start: '2024-03-18T10:00:00',
+              end: '2024-03-18T10:30:00',
+              resources: [capResource],
+              consumption: [1],
+            },
+          ],
+          resources: [capResource],
+        })
+
+        // First add 'b' against initial 'a' would have been blocked, but it
+        // is already in the store (capacity at 4 / 3). Now reduce a → 2 so
+        // total fits exactly.
+        const result = await cal.editEvent('a', { consumption: [2] })
+        expect(result.success).toBe(true)
+        const updated = cal.getEvents().find((e) => e.id === 'a')!
+        expect(updated.consumption).toEqual([2])
+      })
+
+      test('blocks editing event consumption past capacity vs. siblings', async () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'a',
+              title: 'A',
+              start: '2024-03-18T09:00:00',
+              end: '2024-03-18T11:00:00',
+              resources: [capResource],
+              consumption: [1],
+            },
+            {
+              id: 'b',
+              title: 'B',
+              start: '2024-03-18T10:00:00',
+              end: '2024-03-18T10:30:00',
+              resources: [capResource],
+              consumption: [2],
+            },
+          ],
+          resources: [capResource],
+        })
+
+        const result = await cal.editEvent('a', { consumption: [3] })
+        expect(result.success).toBe(false)
+        if (!result.success) {
+          expect(result.error.message).toMatch(/capacity/i)
+        }
+      })
+
+      test('does not count the edited event itself when validating', async () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'a',
+              title: 'A',
+              start: '2024-03-18T09:00:00',
+              end: '2024-03-18T11:00:00',
+              resources: [capResource],
+              consumption: [3],
+            },
+          ],
+          resources: [capResource],
+        })
+
+        // Same event, just retitled — capacity should not be a problem.
+        const result = await cal.editEvent('a', { title: 'A renamed' })
+        expect(result.success).toBe(true)
+      })
+
+      test('blocks moving event into a capacity-saturated slot', async () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'big',
+              title: 'Big',
+              start: '2024-03-18T13:00:00',
+              end: '2024-03-18T15:00:00',
+              resources: [capResource],
+              consumption: [3],
+            },
+            {
+              id: 'me',
+              title: 'Me',
+              start: '2024-03-18T09:00:00',
+              end: '2024-03-18T10:00:00',
+              resources: [capResource],
+              consumption: [2],
+            },
+          ],
+          resources: [capResource],
+        })
+
+        const result = await cal.editEvent('me', {
+          start: '2024-03-18T13:30:00',
+          end: '2024-03-18T14:00:00',
+        })
+
+        expect(result.success).toBe(false)
+        if (!result.success) {
+          expect(result.error.message).toMatch(/capacity/i)
+        }
+      })
+
+      test('allows moving event when target slot has capacity', async () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'big',
+              title: 'Big',
+              start: '2024-03-18T13:00:00',
+              end: '2024-03-18T15:00:00',
+              resources: [capResource],
+              consumption: [1],
+            },
+            {
+              id: 'me',
+              title: 'Me',
+              start: '2024-03-18T09:00:00',
+              end: '2024-03-18T10:00:00',
+              resources: [capResource],
+              consumption: [2],
+            },
+          ],
+          resources: [capResource],
+        })
+
+        const result = await cal.editEvent('me', {
+          start: '2024-03-18T13:30:00',
+          end: '2024-03-18T14:00:00',
+        })
+
+        expect(result.success).toBe(true)
+      })
+
+      test('blocks resource swap that pushes target resource over capacity', async () => {
+        const otherCap: TestResource = {
+          id: 'other',
+          label: 'Other',
+          capacity: [2],
+          availability: [
+            { weekdays: [1, 2, 3, 4, 5], startTime: '08:00', endTime: '20:00' },
+          ],
+        }
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'fill',
+              title: 'Fill',
+              start: '2024-03-18T09:00:00',
+              end: '2024-03-18T11:00:00',
+              resources: [otherCap],
+              consumption: [2],
+            },
+            {
+              id: 'me',
+              title: 'Me',
+              start: '2024-03-18T09:30:00',
+              end: '2024-03-18T10:00:00',
+              resources: [capResource],
+              consumption: [1],
+            },
+          ],
+          resources: [capResource, otherCap],
+        })
+
+        const result = await cal.editEvent('me', { resources: [otherCap] })
+        expect(result.success).toBe(false)
+      })
+    })
+
+    describe('validateMove', () => {
+      test('blocks move when destination overlap exceeds capacity', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'big',
+              title: 'Big',
+              start: '2024-03-18T13:00:00',
+              end: '2024-03-18T15:00:00',
+              resources: [capResource],
+              consumption: [3],
+            },
+            {
+              id: 'me',
+              title: 'Me',
+              start: '2024-03-18T09:00:00',
+              end: '2024-03-18T10:00:00',
+              resources: [capResource],
+              consumption: [1],
+            },
+          ],
+          resources: [capResource],
+        })
+
+        const r = cal.validateMove(
+          'me',
+          '2024-03-18T13:30:00',
+          '2024-03-18T14:00:00',
+        )
+        expect(r.blocked).toBe(true)
+        expect(r.message).toMatch(/capacity/i)
+      })
+
+      test('allows move when self consumption would still fit', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'a',
+              title: 'A',
+              start: '2024-03-18T13:00:00',
+              end: '2024-03-18T15:00:00',
+              resources: [capResource],
+              consumption: [1],
+            },
+            {
+              id: 'me',
+              title: 'Me',
+              start: '2024-03-18T09:00:00',
+              end: '2024-03-18T10:00:00',
+              resources: [capResource],
+              consumption: [2],
+            },
+          ],
+          resources: [capResource],
+        })
+
+        const r = cal.validateMove(
+          'me',
+          '2024-03-18T13:30:00',
+          '2024-03-18T14:00:00',
+        )
+        expect(r.blocked).toBe(false)
+      })
+
+      test('uses passed-in newConsumption over event.consumption', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'fill',
+              title: 'Fill',
+              start: '2024-03-18T09:00:00',
+              end: '2024-03-18T11:00:00',
+              resources: [capResource],
+              consumption: [2],
+            },
+            {
+              id: 'me',
+              title: 'Me',
+              start: '2024-03-18T13:00:00',
+              end: '2024-03-18T13:30:00',
+              resources: [capResource],
+              consumption: [1],
+            },
+          ],
+          resources: [capResource],
+        })
+
+        const r = cal.validateMove(
+          'me',
+          '2024-03-18T09:30:00',
+          '2024-03-18T10:00:00',
+          [capResource],
+          [2],
+        )
+        expect(r.blocked).toBe(true)
+      })
+    })
+
+    describe('validateEventPlacement', () => {
+      test('blocks placeholder placement that exceeds capacity', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'a',
+              title: 'A',
+              start: '2024-03-18T09:00:00',
+              end: '2024-03-18T11:00:00',
+              resources: [capResource],
+              consumption: [3],
+            },
+          ],
+          resources: [capResource],
+        })
+
+        const r = cal.validateEventPlacement({
+          title: 'New',
+          start: '2024-03-18T09:30:00',
+          end: '2024-03-18T10:00:00',
+          resources: [capResource],
+          consumption: [1],
+        })
+
+        expect(r.blocked).toBe(true)
+        expect(r.message).toMatch(/capacity/i)
+      })
+
+      test('allows placeholder placement that fits within capacity', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'a',
+              title: 'A',
+              start: '2024-03-18T09:00:00',
+              end: '2024-03-18T11:00:00',
+              resources: [capResource],
+              consumption: [1],
+            },
+          ],
+          resources: [capResource],
+        })
+
+        const r = cal.validateEventPlacement({
+          title: 'New',
+          start: '2024-03-18T09:30:00',
+          end: '2024-03-18T10:00:00',
+          resources: [capResource],
+          consumption: [2],
+        })
+
+        expect(r.blocked).toBe(false)
+      })
+
+      test('skips own id when validating an existing event', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'self',
+              title: 'Self',
+              start: '2024-03-18T09:00:00',
+              end: '2024-03-18T11:00:00',
+              resources: [capResource],
+              consumption: [3],
+            },
+          ],
+          resources: [capResource],
+        })
+
+        const r = cal.validateEventPlacement({
+          id: 'self',
+          title: 'Self',
+          start: '2024-03-18T09:00:00',
+          end: '2024-03-18T11:00:00',
+          resources: [capResource],
+          consumption: [3],
+        })
+
+        expect(r.blocked).toBe(false)
       })
     })
   })

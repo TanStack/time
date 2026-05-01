@@ -19,6 +19,7 @@ import type {
   Event,
   ResizeError,
   Resource,
+  SaveEventResult,
   TimeSlot,
   TimelineLayout,
   TimelineResourceRow,
@@ -111,10 +112,25 @@ interface CalendarActions<
   ) => Array<TimeSlot>
   /** Retrieves events for a specific date. */
   getEventsByDate: (date: string) => Array<TEvent>
-  /** Adds a new event to the calendar. */
-  addEvent: (event: TEvent) => void
-  /** Updates an existing event by ID. */
-  updateEvent: (id: Event['id'], updates: Partial<Omit<TEvent, 'id'>>) => void
+  /**
+   * Fetches events for the event's date range, validates placement
+   * constraints, and adds the event if valid. Returns a result
+   * indicating success or a validation error.
+   */
+  addEvent: (
+    event: TEvent,
+    options?: { dependsOn?: Array<string> },
+  ) => Promise<SaveEventResult>
+  /**
+   * Fetches events for the event's date range, validates move constraints
+   * (and cascading dependents), and updates the event if valid.
+   * Returns a result indicating success or a validation error.
+   */
+  editEvent: (
+    eventId: string,
+    updates: Partial<Omit<TEvent, 'id'>>,
+    options?: { dependsOn?: Array<string> },
+  ) => Promise<SaveEventResult>
   /** Removes an event by ID. */
   removeEvent: (id: Event['id']) => void
   /** Retrieves unavailable time ranges for a specific date based on resource availability. */
@@ -142,6 +158,7 @@ interface CalendarActions<
     newStart: string,
     newEnd: string,
     newResources?: Array<TResource>,
+    newConsumption?: Array<number>,
   ) => { blocked: boolean; blockedEventTitle?: string; message?: string }
   /**
    * Validates if placing an event with a specific start time satisfies all dependency constraints.
@@ -158,6 +175,24 @@ interface CalendarActions<
     sourceId: string,
     targetId: string,
   ) => { blocked: boolean; error?: ResizeError }
+  /**
+   * Fetches events for an arbitrary date range from the configured
+   * `fetchEvents` callback and merges them into the calendar.
+   * Resolves immediately if `fetchEvents` is not configured or the range
+   * is already loaded.
+   */
+  fetchEventsForRange: (start: string, end: string) => Promise<void>
+  /**
+   * Validates whether a new event (not yet added to the calendar) can be
+   * placed at the given time slot without violating resource availability.
+   * Use this for standalone validation before manually committing events.
+   */
+  validateEventPlacement: (event: {
+    title: string
+    start: string
+    end: string
+    resources?: Array<TResource>
+  }) => { blocked: boolean; message?: string }
 }
 
 interface CalendarState<
@@ -584,6 +619,63 @@ export class CalendarCore<
     return this._loadedRanges
   }
 
+  /**
+   * Fetches events for an arbitrary date range from the configured
+   * `fetchEvents` callback and merges them into the calendar.
+   * Deduplicates by event ID. Resolves immediately if `fetchEvents`
+   * is not configured or the range is already loaded.
+   */
+  async fetchEventsForRange(start: string, end: string): Promise<void> {
+    if (!this.options.fetchEvents) return
+    if (this._isRangeLoaded(start, end)) return
+
+    this._markRangeLoaded(start, end)
+    this.store.setState((prev) => ({ ...prev, isPending: true }))
+
+    try {
+      const fetchedEvents = await this.options.fetchEvents({ start, end })
+      if (fetchedEvents.length > 0) {
+        if (!this.options.events) this.options.events = []
+        const newlyFetchedEvents: Array<{
+          eventId: string
+          eventTitle: string
+          start: string
+          end: string
+        }> = []
+        for (const raw of fetchedEvents) {
+          if (this._eventMap.has(raw.id)) continue
+          const normalized = this.normalizeEvent(raw)
+          this.options.events.push(normalized)
+          this._indexAddEvent(normalized)
+          newlyFetchedEvents.push({
+            eventId: normalized.id,
+            eventTitle: normalized.title,
+            start: normalized.start as string,
+            end: normalized.end as string,
+          })
+        }
+        if (newlyFetchedEvents.length > 0) {
+          getTimeClient().emit('events:set', {
+            events: newlyFetchedEvents,
+          })
+        }
+      }
+      this.store.setState((prev) => ({
+        ...prev,
+        isPending: false,
+        eventsVersion:
+          fetchedEvents.length > 0
+            ? prev.eventsVersion + 1
+            : prev.eventsVersion,
+      }))
+    } catch {
+      this._loadedRanges = this._loadedRanges.filter(
+        (r) => !(r.start === start && r.end === end),
+      )
+      this.store.setState((prev) => ({ ...prev, isPending: false }))
+    }
+  }
+
   formatPeriodLabel(options?: { locale?: string }): string {
     const days = this.getDaysWithEvents()
     if (days.length === 0) return ''
@@ -646,7 +738,9 @@ export class CalendarCore<
     return eventMap.get(targetDate) ?? []
   }
 
-  addEvent(event: TEvent): void {
+  /** Low-level commit — adds the event without validation or fetching.
+   * Used internally by `addEvent` and by resize handlers that validate separately. */
+  commitAdd(event: TEvent): void {
     if (!this.options.events) {
       this.options.events = []
     }
@@ -667,7 +761,9 @@ export class CalendarCore<
     })
   }
 
-  updateEvent(id: Event['id'], updates: Partial<Omit<TEvent, 'id'>>): void {
+  /** Low-level commit — updates the event without validation or fetching.
+   * Used internally by `editEvent` and by resize handlers that validate separately. */
+  commitUpdate(id: Event['id'], updates: Partial<Omit<TEvent, 'id'>>): void {
     if (!this.options.events) return
 
     // O(1) lookup via index
@@ -948,6 +1044,7 @@ export class CalendarCore<
     newStart: string,
     newEnd: string,
     newResources?: Array<TResource>,
+    newConsumption?: Array<number>,
   ): AvailabilityConflict | null {
     const resources = newResources || event.resources
     if (!resources?.length) return null
@@ -959,6 +1056,9 @@ export class CalendarCore<
     const startDate = startDt.toPlainDate()
     const endDate = endDt.toPlainDate()
     let cursorDate = startDate
+
+    const eventConsumptionArr = newConsumption ?? event.consumption ?? [1]
+    const eventConsumptionSum = eventConsumptionArr.reduce((a, b) => a + b, 0)
 
     while (Temporal.PlainDate.compare(cursorDate, endDate) <= 0) {
       const dayStr = cursorDate.toString({ calendarName: 'never' })
@@ -1003,6 +1103,104 @@ export class CalendarCore<
             description: `"${event.title}" would be pushed to unavailable time: ${details.map((d) => d.description).join('; ')}`,
           }
         }
+
+        // Capacity / consumption check per resource for this day's overlap window.
+        const eventsOnDay = this.getEventsByDate(dayStr)
+        for (const resource of resources) {
+          if (!resource.capacity || resource.capacity.length === 0) continue
+          const capacitySum = resource.capacity.reduce((a, b) => a + b, 0)
+          if (capacitySum <= 0) continue
+
+          const overlappingEvents = eventsOnDay.filter((e) => {
+            // Skip the event being validated (avoid counting its prior position).
+            // Also skip ephemeral split segments referencing the same master event.
+            const masterId = e._recurringMasterId ?? e.id
+            const selfId = event.id
+            if (e.id === selfId || masterId === selfId) return false
+
+            const eventResourceIds = e.resources?.map((r) => r.id) ?? []
+            if (!eventResourceIds.includes(resource.id)) return false
+
+            // Use the original (un-split) range when present so multi-day
+            // segments are counted only once per their true window.
+            const eOrigStart = (e._originalStart ?? e.start) as
+              | string
+              | Date
+              | number
+            const eOrigEnd = (e._originalEnd ?? e.end) as string | Date | number
+            const eStartDt = Temporal.PlainDateTime.from(
+              toPlainDateTimeString(eOrigStart),
+            )
+            const eEndDt = Temporal.PlainDateTime.from(
+              toPlainDateTimeString(eOrigEnd),
+            )
+
+            // Compute this event's overlap window on this day in minutes.
+            const eStartDate = eStartDt.toPlainDate()
+            const eEndDate = eEndDt.toPlainDate()
+            const cursorIsStart =
+              Temporal.PlainDate.compare(cursorDate, eStartDate) === 0
+            const cursorIsEnd =
+              Temporal.PlainDate.compare(cursorDate, eEndDate) === 0
+            const cursorAfterStart =
+              Temporal.PlainDate.compare(cursorDate, eStartDate) >= 0
+            const cursorBeforeEnd =
+              Temporal.PlainDate.compare(cursorDate, eEndDate) <= 0
+            if (!cursorAfterStart || !cursorBeforeEnd) return false
+
+            const eStartMins = cursorIsStart
+              ? eStartDt.hour * 60 + eStartDt.minute
+              : 0
+            let eEndMins: number
+            if (cursorIsEnd) {
+              const m = eEndDt.hour * 60 + eEndDt.minute
+              eEndMins = m === 0 && !cursorIsStart ? 0 : m || MINUTES_IN_DAY
+            } else {
+              eEndMins = MINUTES_IN_DAY
+            }
+
+            return overlapStartMins < eEndMins && overlapEndMins > eStartMins
+          })
+
+          // Deduplicate by master id (recurring expansions share the same
+          // consumption budget per occurrence; we still want one count per
+          // physical occurrence — already guaranteed by getEventsByDate).
+          const seen = new Set<string>()
+          let usedByOthers = 0
+          for (const oe of overlappingEvents) {
+            const key = oe.id
+            if (seen.has(key)) continue
+            seen.add(key)
+            const c = oe.consumption ?? [1]
+            usedByOthers += c.reduce((a, b) => a + b, 0)
+          }
+
+          const totalUsage = usedByOthers + eventConsumptionSum
+          if (totalUsage > capacitySum) {
+            return {
+              date: dayStr,
+              conflictRange: {
+                start: formatMinutesToTime(overlapStartMins),
+                end: formatMinutesToTime(overlapEndMins),
+              },
+              resourceIds: [resource.id],
+              resourceDetails: [
+                {
+                  resourceId: resource.id,
+                  resourceLabel: resource.label,
+                  reason: 'capacity',
+                  description: `"${event.title}": ${resource.label} capacity exceeded (${totalUsage}/${capacitySum} units used)`,
+                  capacityInfo: {
+                    max: capacitySum,
+                    used: totalUsage,
+                    remaining: Math.max(0, capacitySum - usedByOthers),
+                  },
+                },
+              ],
+              description: `"${event.title}" exceeds ${resource.label} capacity (${totalUsage}/${capacitySum})`,
+            }
+          }
+        }
       }
 
       cursorDate = cursorDate.add({ days: 1 })
@@ -1028,6 +1226,7 @@ export class CalendarCore<
     newStart: string,
     newEnd: string,
     newResources?: Array<TResource>,
+    newConsumption?: Array<number>,
   ): { blocked: boolean; blockedEventTitle?: string; message?: string } {
     // O(1) lookup — skip split segments (_originalStart set on them)
     const event = this._eventMap.get(eventId)
@@ -1038,12 +1237,19 @@ export class CalendarCore<
       newStart,
       newEnd,
       newResources,
+      newConsumption,
     )
     if (conflict) {
+      const isCapacity = conflict.resourceDetails.some(
+        (d) => d.reason === 'capacity',
+      )
+      const message = isCapacity
+        ? `"${event.title}" cannot be placed here — ${conflict.description}.`
+        : `"${event.title}" cannot be placed here — it falls inside an unavailable zone.`
       return {
         blocked: true,
         blockedEventTitle: event.title,
-        message: `"${event.title}" cannot be placed here — it falls inside an unavailable zone.`,
+        message,
       }
     }
 
@@ -1180,6 +1386,232 @@ export class CalendarCore<
     return { valid: true }
   }
 
+  /**
+   * Validates whether a new event (not yet added to the calendar) can be
+   * placed at the given time slot without violating resource availability.
+   * Use this before calling `addEvent` to check for conflicts.
+   */
+  validateEventPlacement(event: {
+    id?: string
+    title: string
+    start: string
+    end: string
+    resources?: Array<TResource>
+    consumption?: Array<number>
+  }): { blocked: boolean; message?: string } {
+    const placeholderEvent = {
+      id: event.id ?? '__validate_placement__',
+      title: event.title,
+      start: event.start,
+      end: event.end,
+      resources: event.resources,
+      consumption: event.consumption,
+    } as TEvent
+
+    const conflict = this.checkEventAvailability(
+      placeholderEvent,
+      event.start,
+      event.end,
+      event.resources,
+      event.consumption,
+    )
+
+    if (conflict) {
+      const isCapacity = conflict.resourceDetails.some(
+        (d) => d.reason === 'capacity',
+      )
+      const message = isCapacity
+        ? `Cannot place "${event.title}" here — ${conflict.description}.`
+        : `Cannot place "${event.title}" here — it falls inside an unavailable zone.`
+      return {
+        blocked: true,
+        message,
+      }
+    }
+
+    return { blocked: false }
+  }
+
+  /**
+   * Fetches events for the event's date range, validates placement
+   * constraints, and adds the event if valid.
+   *
+   * If `fetchEvents` is configured, triggers a fetch for the relevant date
+   * range first, ensuring validation runs against up-to-date data.
+   * If `dependsOn` is provided, validates dependency constraints before
+   * committing.
+   */
+  async addEvent(
+    event: TEvent,
+    options?: { dependsOn?: Array<string> },
+  ): Promise<SaveEventResult> {
+    const dependsOn = options?.dependsOn
+    const startStr = event.start as string
+    const endStr = event.end as string
+
+    // Compute date range for fetching (exclusive end = end date + 1 day)
+    const startDateStr = startStr.slice(0, 10)
+    const endDate = Temporal.PlainDate.from(endStr.slice(0, 10)).add({
+      days: 1,
+    })
+    const endDateStr = endDate.toString({ calendarName: 'never' })
+
+    // Fetch events for the range to ensure up-to-date data
+    await this.fetchEventsForRange(startDateStr, endDateStr)
+
+    // Validate dependency constraints if provided
+    if (dependsOn && dependsOn.length > 0) {
+      const depValidation = this.validateEventDependencies(
+        { id: event.id, title: event.title, start: startStr, end: endStr },
+        dependsOn,
+      )
+      if (!depValidation.valid && depValidation.error) {
+        return { success: false, error: depValidation.error }
+      }
+    }
+
+    // Validate that the event fits within resource availability
+    const placementValidation = this.validateEventPlacement({
+      id: event.id,
+      title: event.title,
+      start: startStr,
+      end: endStr,
+      resources: event.resources,
+      consumption: event.consumption,
+    })
+    if (placementValidation.blocked) {
+      return {
+        success: false,
+        error: {
+          eventId: event.id,
+          eventTitle: event.title,
+          reason: 'blocked',
+          message:
+            placementValidation.message ??
+            `Cannot place "${event.title}" here.`,
+          originalStart: startStr,
+          originalEnd: endStr,
+        },
+      }
+    }
+
+    this.commitAdd(event)
+    return { success: true }
+  }
+
+  /**
+   * Fetches events for the event's date range, validates move constraints
+   * (and cascading dependents), and updates the event if valid.
+   *
+   * Skips move validation if start/end are unchanged.
+   * If `fetchEvents` is configured, triggers a fetch for the relevant date
+   * range first, ensuring validation runs against up-to-date data.
+   * If `dependsOn` is provided, validates dependency constraints before
+   * committing.
+   */
+  async editEvent(
+    eventId: string,
+    updates: Partial<Omit<TEvent, 'id'>>,
+    options?: { dependsOn?: Array<string> },
+  ): Promise<SaveEventResult> {
+    const dependsOn = options?.dependsOn
+    const existingEvent = this._eventMap.get(eventId)
+    if (!existingEvent) {
+      return {
+        success: false,
+        error: {
+          eventId,
+          eventTitle: '',
+          reason: 'blocked',
+          message: `Event "${eventId}" not found.`,
+          originalStart: '',
+          originalEnd: '',
+        },
+      }
+    }
+
+    // Compute the effective start/end after applying updates
+    const effectiveStart =
+      (updates.start as string | undefined) ?? (existingEvent.start as string)
+    const effectiveEnd =
+      (updates.end as string | undefined) ?? (existingEvent.end as string)
+
+    // Compute date range for fetching (cover both old and new positions)
+    const oldStartDateStr = (existingEvent.start as string).slice(0, 10)
+    const newStartDateStr = effectiveStart.slice(0, 10)
+    const rangeStart =
+      oldStartDateStr < newStartDateStr ? oldStartDateStr : newStartDateStr
+
+    const oldEndDate = Temporal.PlainDate.from(
+      (existingEvent.end as string).slice(0, 10),
+    ).add({ days: 1 })
+    const newEndDate = Temporal.PlainDate.from(effectiveEnd.slice(0, 10)).add({
+      days: 1,
+    })
+    const rangeEndPlain =
+      Temporal.PlainDate.compare(oldEndDate, newEndDate) > 0
+        ? oldEndDate
+        : newEndDate
+    const rangeEnd = rangeEndPlain.toString({ calendarName: 'never' })
+
+    // Fetch events for the range to ensure up-to-date data
+    await this.fetchEventsForRange(rangeStart, rangeEnd)
+
+    // Validate dependency constraints if provided
+    if (dependsOn && dependsOn.length > 0) {
+      const depValidation = this.validateEventDependencies(
+        {
+          id: eventId,
+          title: (updates.title as string | undefined) ?? existingEvent.title,
+          start: effectiveStart,
+          end: effectiveEnd,
+        },
+        dependsOn,
+      )
+      if (!depValidation.valid && depValidation.error) {
+        return { success: false, error: depValidation.error }
+      }
+    }
+
+    // Validate the move if start, end, resources, or consumption changed
+    const startChanged = updates.start !== undefined
+    const endChanged = updates.end !== undefined
+    const resourcesChanged = updates.resources !== undefined
+    const consumptionChanged = updates.consumption !== undefined
+
+    if (startChanged || endChanged || resourcesChanged || consumptionChanged) {
+      const resources = updates.resources ?? existingEvent.resources
+      const consumption = updates.consumption ?? existingEvent.consumption
+      const moveValidation = this.validateMove(
+        eventId,
+        effectiveStart,
+        effectiveEnd,
+        resources,
+        consumption,
+      )
+      if (moveValidation.blocked) {
+        return {
+          success: false,
+          error: {
+            eventId,
+            eventTitle: moveValidation.blockedEventTitle ?? existingEvent.title,
+            reason: 'blocked',
+            message:
+              moveValidation.message ??
+              `Cannot move "${existingEvent.title}" to this position.`,
+            originalStart: existingEvent.start as string,
+            originalEnd: existingEvent.end as string,
+            attemptedStart: effectiveStart,
+            attemptedEnd: effectiveEnd,
+          },
+        }
+      }
+    }
+
+    this.commitUpdate(eventId, updates)
+    return { success: true }
+  }
+
   createDependency(
     sourceId: string,
     targetId: string,
@@ -1243,7 +1675,7 @@ export class CalendarCore<
       }
     }
 
-    this.updateEvent(targetId, {
+    this.commitUpdate(targetId, {
       dependsOn: [...currentDependsOn, sourceId],
       ...(needsReschedule && {
         start: newTargetStart,

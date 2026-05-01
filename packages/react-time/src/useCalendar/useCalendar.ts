@@ -330,7 +330,7 @@ export const useCalendar = <
         currentState.previewEnd !== original.end
 
       if (hasChanged) {
-        calendarCore.updateEvent(currentState.eventId, {
+        calendarCore.commitUpdate(currentState.eventId, {
           start: currentState.previewStart,
           end: currentState.previewEnd,
         } as Partial<Omit<TEvent, 'id'>>)
@@ -497,12 +497,13 @@ export const useCalendar = <
   )
 
   const addEvent = useCallback<typeof calendarCore.addEvent>(
-    (event) => calendarCore.addEvent(event),
+    (event, options) => calendarCore.addEvent(event, options),
     [calendarCore],
   )
 
-  const updateEvent = useCallback<typeof calendarCore.updateEvent>(
-    (id, updates) => calendarCore.updateEvent(id, updates),
+  const editEvent = useCallback<typeof calendarCore.editEvent>(
+    (eventId, updates, options) =>
+      calendarCore.editEvent(eventId, updates, options),
     [calendarCore],
   )
 
@@ -558,6 +559,17 @@ export const useCalendar = <
     [calendarCore],
   )
 
+  const fetchEventsForRange = useCallback<
+    typeof calendarCore.fetchEventsForRange
+  >(
+    (start, end) => calendarCore.fetchEventsForRange(start, end),
+    [calendarCore],
+  )
+
+  const validateEventPlacement = useCallback<
+    typeof calendarCore.validateEventPlacement
+  >((event) => calendarCore.validateEventPlacement(event), [calendarCore])
+
   const formatPeriodLabel = useCallback<typeof calendarCore.formatPeriodLabel>(
     (options) => calendarCore.formatPeriodLabel(options),
     [calendarCore],
@@ -585,7 +597,7 @@ export const useCalendar = <
     changeViewMode,
     getEventProps,
     addEvent,
-    updateEvent,
+    editEvent,
     removeEvent,
     isPending,
     groupDaysBy,
@@ -599,6 +611,8 @@ export const useCalendar = <
     validateMove,
     validateEventDependencies,
     createDependency,
+    fetchEventsForRange,
+    validateEventPlacement,
     formatPeriodLabel,
   }
 }

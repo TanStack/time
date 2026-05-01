@@ -197,6 +197,11 @@ export interface ResizeValidationResult {
   error?: ResizeError
 }
 
+/** Result of a {@link CalendarActions.saveEvent} call. */
+export type SaveEventResult =
+  | { success: true }
+  | { success: false; error: ResizeError }
+
 export interface TimelineEventLayout<
   TResource extends Resource = Resource,
   TEvent extends Event<TResource> = Event<TResource>,

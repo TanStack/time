@@ -276,6 +276,7 @@ interface EventFormData {
   endDate: string
   endTime: string
   resourceId: string
+  consumption: number
   dependsOn: Array<string>
 }
 
@@ -286,6 +287,7 @@ const emptyFormData: EventFormData = {
   endDate: toPlainDateString(new Date()),
   endTime: '10:00',
   resourceId: resourceDesign.id,
+  consumption: 1,
   dependsOn: [],
 }
 
@@ -296,13 +298,15 @@ function EventModal({
   onDelete,
   initialData,
   mode,
+  isSaving,
 }: {
   isOpen: boolean
   onClose: () => void
-  onSave: (data: EventFormData) => void
+  onSave: (data: EventFormData) => Promise<void>
   onDelete?: () => void
   initialData: EventFormData
   mode: 'add' | 'edit'
+  isSaving?: boolean
 }) {
   const [formData, setFormData] = useState<EventFormData>(initialData)
 
@@ -310,9 +314,13 @@ function EventModal({
     setFormData(initialData)
   }, [initialData, isOpen])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSave(formData)
+    try {
+      await onSave(formData)
+    } catch {
+      return
+    }
     onClose()
   }
 
@@ -343,25 +351,48 @@ function EventModal({
               required
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="resource">Resource</Label>
-            <Select
-              value={formData.resourceId}
-              onValueChange={(value) =>
-                setFormData({ ...formData, resourceId: value })
-              }
-            >
-              <SelectTrigger id="resource">
-                <SelectValue placeholder="Select a resource" />
-              </SelectTrigger>
-              <SelectContent>
-                {sampleResources.map((r) => (
-                  <SelectItem key={r.id} value={r.id}>
-                    {r.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="resource">Resource</Label>
+              <Select
+                value={formData.resourceId}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, resourceId: value })
+                }
+              >
+                <SelectTrigger id="resource">
+                  <SelectValue placeholder="Select a resource" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sampleResources.map((r) => {
+                    const cap = r.capacity?.reduce((a, b) => a + b, 0)
+                    return (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.label}
+                        {cap ? ` (cap ${cap})` : ''}
+                      </SelectItem>
+                    )
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="consumption">Consumption</Label>
+              <Input
+                id="consumption"
+                type="number"
+                min={1}
+                step={1}
+                value={formData.consumption}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    consumption: Math.max(1, Number(e.target.value) || 1),
+                  })
+                }
+                required
+              />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -433,7 +464,9 @@ function EventModal({
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit">{mode === 'add' ? 'Add' : 'Save'}</Button>
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? 'Saving…' : mode === 'add' ? 'Add' : 'Save'}
+              </Button>
             </div>
           </DialogFooter>
         </form>
@@ -892,8 +925,16 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
           <circle cx="10" cy="10" r="1.5" />
         </svg>
       </div>
-      <div className="flex-1 h-full min-w-0 flex items-center px-2.5 cursor-pointer">
+      <div className="flex-1 h-full min-w-0 flex items-center gap-1.5 px-2.5 cursor-pointer">
         <span className="truncate">{event.title}</span>
+        {event.consumption && event.consumption.length > 0 && (
+          <span
+            className="flex-shrink-0 text-[10px] leading-none rounded bg-black/30 px-1 py-0.5 font-semibold"
+            title="Consumption"
+          >
+            {event.consumption.reduce((a, b) => a + b, 0)}
+          </span>
+        )}
       </div>
       {!isEndClipped && (
         <HorizontalResizeHandle
@@ -1224,39 +1265,56 @@ function TimelineDemo() {
         endDate: toPlainDateString(event.end),
         endTime: toPlainTimeString(event.end),
         resourceId: event.resources?.[0]?.id ?? resourceDesign.id,
+        consumption: event.consumption?.[0] ?? 1,
         dependsOn: event.dependsOn ?? [],
       },
     })
   }, [])
 
-  const handleSave = (data: EventFormData) => {
-    const eventBaseData = {
-      title: data.title,
-      start: `${data.startDate}T${data.startTime}:00`,
-      end: `${data.endDate}T${data.endTime}:00`,
-    }
+  const [isSaving, setIsSaving] = useState(false)
 
-    const validation = calendar.validateEventDependencies(
-      { id: modalState.eventId, ...eventBaseData },
-      data.dependsOn,
-    )
+  const handleSave = async (data: EventFormData) => {
+    setIsSaving(true)
+    try {
+      const start = `${data.startDate}T${data.startTime}:00`
+      const end = `${data.endDate}T${data.endTime}:00`
 
-    if (!validation.valid && validation.error) {
-      setResizeError(validation.error)
-      return
-    }
+      const resource = sampleResources.find((r) => r.id === data.resourceId)
+      const resources = resource ? [resource] : []
 
-    const resource = sampleResources.find((r) => r.id === data.resourceId)
-    const eventData = {
-      ...eventBaseData,
-      resources: resource ? [resource] : [],
-      dependsOn: data.dependsOn,
-    }
+      const result =
+        modalState.mode === 'edit' && modalState.eventId
+          ? await calendar.editEvent(
+              modalState.eventId,
+              {
+                title: data.title,
+                start,
+                end,
+                resources,
+                consumption: [data.consumption],
+                dependsOn: data.dependsOn,
+              },
+              { dependsOn: data.dependsOn },
+            )
+          : await calendar.addEvent(
+              {
+                id: String(Date.now()),
+                title: data.title,
+                start,
+                end,
+                resources,
+                consumption: [data.consumption],
+                dependsOn: data.dependsOn,
+              },
+              { dependsOn: data.dependsOn },
+            )
 
-    if (modalState.mode === 'add') {
-      calendar.addEvent({ id: String(Date.now()), ...eventData })
-    } else if (modalState.eventId) {
-      calendar.updateEvent(modalState.eventId, eventData)
+      if (!result.success) {
+        setResizeError(result.error)
+        throw new Error('Validation failed')
+      }
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -1270,7 +1328,7 @@ function TimelineDemo() {
     setActiveDragEvent(e.operation?.source?.data)
   }
 
-  const handleDragEnd = (e: any) => {
+  const handleDragEnd = async (e: any) => {
     setActiveDragEvent(null)
     const sourceData = e.operation?.source?.data
     const targetData = e.operation?.target?.data
@@ -1341,7 +1399,7 @@ function TimelineDemo() {
         return
       }
 
-      calendar.updateEvent(draggedEvent.id, {
+      await calendar.editEvent(draggedEvent.id, {
         start: nextStart,
         end: nextEnd,
         resources: newResource ? [newResource] : [],
@@ -1444,6 +1502,14 @@ function TimelineDemo() {
                     <span className="text-sm font-medium text-neutral-300 truncate">
                       {resource.label}
                     </span>
+                    {resource.capacity && resource.capacity.length > 0 && (
+                      <span
+                        className="ml-auto text-[10px] uppercase tracking-wide text-neutral-500 border border-neutral-700 rounded px-1.5 py-0.5"
+                        title="Total capacity"
+                      >
+                        cap {resource.capacity.reduce((a, b) => a + b, 0)}
+                      </span>
+                    )}
                   </div>
                 )
               })}
@@ -1633,6 +1699,7 @@ function TimelineDemo() {
           onDelete={modalState.mode === 'edit' ? handleDelete : undefined}
           initialData={modalState.initialData}
           mode={modalState.mode}
+          isSaving={isSaving}
         />
 
         {resizeError && (

@@ -5,12 +5,12 @@ import {
   getSegmentInfo,
   useCalendar,
 } from '@tanstack/react-time'
-import { useInfiniteScroll } from './lib/useInfiniteScroll'
 import ReactDOM from 'react-dom/client'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { timeDevtoolsPlugin } from '@tanstack/react-time-devtools'
 import { toPlainDateTimeString } from '@tanstack/time'
+import { useInfiniteScroll } from './lib/useInfiniteScroll'
 import type {
   Day,
   Event,
@@ -111,89 +111,95 @@ function eventToSegmentInfoInput(
 
 const sampleResources: Array<Resource> = [
   {
-    id: '1',
-    label: 'Resource 1',
-    capacity: [1],
+    id: 'room-a',
+    label: 'Room A',
+    capacity: [4],
     availability: [
       {
-        weekdays: [1, 2, 3],
+        weekdays: [1, 2, 3, 4, 5],
         startTime: '08:00',
-        endTime: '17:00',
-      },
-      {
-        weekdays: [4, 5],
-        startTime: '00:00',
-        endTime: '24:00',
-      },
-      {
-        weekdays: [6, 7],
-        startTime: '10:00',
-        endTime: '15:00',
+        endTime: '18:00',
       },
     ],
   },
   {
-    id: '2',
-    label: 'Resource 2',
-    capacity: [1],
+    id: 'room-b',
+    label: 'Room B',
+    capacity: [2],
     availability: [
       {
         weekdays: [1, 2, 3, 4, 5],
-        startTime: '12:00',
+        startTime: '09:00',
         endTime: '18:00',
-      },
-      {
-        weekdays: [6, 7],
-        startTime: '00:00',
-        endTime: '24:00',
       },
     ],
   },
 ]
 
 /*
-  Every event uses both resources. Intersection of availability on Mon–Fri:
-  Resource1 Mon–Wed 08–17, Thu–Fri 00–24; Resource2 Mon–Fri 12–18 → 12:00–17:00.
-  Multi-day slots cannot cross midnight: Resource2 is off before 12:00 on each weekday,
-  so overnight segments would sit in unavailable time.
+  Capacity + consumption demo:
+  - Room A has capacity 4, Room B has capacity 2.
+  - Overlapping events intentionally consume different amounts.
+  - Try resizing one event to overlap others to trigger capacity conflicts.
 */
 function getSampleEvents(): Array<Event<Resource>> {
   return [
     {
       id: '1',
-      title: 'Team Meeting',
+      title: 'Team Meeting (A:2)',
       start: dateTimeOnWeekday(2, 12, 0),
       end: dateTimeOnWeekday(2, 13, 0),
-      resources: sampleResources,
+      resources: [sampleResources[0]],
+      consumption: [2],
     },
     {
       id: '2',
-      title: 'Project Review',
+      title: 'Project Review (A:2)',
       start: dateTimeOnWeekday(3, 14, 0),
       end: dateTimeOnWeekday(3, 15, 30),
-      resources: sampleResources,
+      resources: [sampleResources[0]],
+      consumption: [2],
     },
     {
       id: '3',
-      title: 'Workshop',
+      title: 'Workshop (B:1)',
       start: dateTimeOnWeekday(4, 12, 0),
       end: dateTimeOnWeekday(4, 16, 30),
-      resources: sampleResources,
+      resources: [sampleResources[1]],
+      consumption: [1],
     },
     {
       id: '4',
-      title: 'Lunch Break',
+      title: 'Capacity Probe (A:1)',
       start: dateTimeOnWeekday(5, 12, 0),
       end: dateTimeOnWeekday(5, 13, 0),
-      resources: sampleResources,
+      resources: [sampleResources[0]],
+      consumption: [1],
+    },
+    {
+      id: '5',
+      title: 'Focus Block (A:2)',
+      start: dateTimeOnWeekday(5, 12, 30),
+      end: dateTimeOnWeekday(5, 14, 30),
+      resources: [sampleResources[0]],
+      consumption: [2],
+    },
+    {
+      id: '6',
+      title: 'Interview (B:1)',
+      start: dateTimeOnWeekday(2, 12, 30),
+      end: dateTimeOnWeekday(2, 14, 0),
+      resources: [sampleResources[1]],
+      consumption: [1],
     },
     // ── Recurring events ────────────────────────────────────────────────────
     {
       id: 'r-standup',
-      title: '☀ Daily Stand-up',
+      title: '☀ Daily Stand-up (A:1)',
       start: dateTimeOnWeekday(1, 9, 0),
       end: dateTimeOnWeekday(1, 9, 15),
-      resources: sampleResources,
+      resources: [sampleResources[0]],
+      consumption: [1],
       recurrence: {
         frequency: 'daily',
         interval: 1,
@@ -203,10 +209,11 @@ function getSampleEvents(): Array<Event<Resource>> {
     },
     {
       id: 'r-sync',
-      title: '🔄 Weekly Sync',
+      title: '🔄 Weekly Sync (B:1)',
       start: dateTimeOnWeekday(1, 10, 0),
       end: dateTimeOnWeekday(1, 10, 30),
-      resources: sampleResources,
+      resources: [sampleResources[1]],
+      consumption: [1],
       recurrence: {
         frequency: 'weekly',
         interval: 1,
@@ -215,11 +222,12 @@ function getSampleEvents(): Array<Event<Resource>> {
     },
     {
       id: 'r-report',
-      title: '📊 Monthly Report',
+      title: '📊 Monthly Report (A:1)',
       // Use first Monday of the current work week at 14:00
       start: dateTimeOnWeekday(1, 14, 0),
       end: dateTimeOnWeekday(1, 15, 0),
-      resources: sampleResources,
+      resources: [sampleResources[0]],
+      consumption: [1],
       recurrence: {
         frequency: 'monthly',
         interval: 1,
@@ -228,7 +236,7 @@ function getSampleEvents(): Array<Event<Resource>> {
   ]
 }
 
-const sampleEvents = getSampleEvents()
+const MOCK_DB = getSampleEvents()
 
 interface EventFormData {
   title: string
@@ -236,6 +244,8 @@ interface EventFormData {
   startTime: string
   endDate: string
   endTime: string
+  resourceId: string
+  consumption: number
   recurrenceFrequency: RecurrenceFrequency | 'none'
   recurrenceUntil: string
 }
@@ -246,6 +256,8 @@ const emptyFormData: EventFormData = {
   startTime: '09:00',
   endDate: formatDateToISO(new Date()),
   endTime: '10:00',
+  resourceId: sampleResources[0]?.id ?? '',
+  consumption: 1,
   recurrenceFrequency: 'none',
   recurrenceUntil: '',
 }
@@ -257,19 +269,32 @@ function EventModal({
   onDelete,
   initialData,
   mode,
+  isSaving,
+  resources,
 }: {
   isOpen: boolean
   onClose: () => void
-  onSave: (data: EventFormData) => void
+  onSave: (data: EventFormData) => Promise<void>
   onDelete?: () => void
   initialData: EventFormData
   mode: 'add' | 'edit'
+  isSaving?: boolean
+  resources: Array<Resource>
 }) {
   const [formData, setFormData] = useState<EventFormData>(initialData)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    setFormData(initialData)
+  }, [initialData])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSave(formData)
+    try {
+      await onSave(formData)
+    } catch {
+      // Validation failed — keep modal open for correction
+      return
+    }
     onClose()
   }
 
@@ -327,6 +352,44 @@ function EventModal({
                 value={formData.startTime}
                 onChange={(e) =>
                   setFormData({ ...formData, startTime: e.target.value })
+                }
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="resourceId">Resource</Label>
+              <select
+                id="resourceId"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                value={formData.resourceId}
+                onChange={(e) =>
+                  setFormData({ ...formData, resourceId: e.target.value })
+                }
+                required
+              >
+                {resources.map((resource) => (
+                  <option key={resource.id} value={resource.id}>
+                    {resource.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="consumption">Consumption</Label>
+              <Input
+                id="consumption"
+                type="number"
+                min={1}
+                step={1}
+                value={formData.consumption}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    consumption: Math.max(1, Number(e.target.value) || 1),
+                  })
                 }
                 required
               />
@@ -416,7 +479,9 @@ function EventModal({
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit">{mode === 'add' ? 'Add' : 'Save'}</Button>
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? 'Saving…' : mode === 'add' ? 'Add' : 'Save'}
+              </Button>
             </div>
           </div>
         </form>
@@ -455,6 +520,7 @@ function ResizeHandle({ edge, onMouseDown }: ResizeHandleProps) {
 function ScheduleView({
   calendar,
   days,
+  resources,
   onEventClick,
   scrollRef,
   leftSentinelRef,
@@ -463,6 +529,7 @@ function ScheduleView({
 }: {
   calendar: ReturnType<typeof useCalendar<Resource, Event<Resource>>>
   days: Array<Day<Resource, Event<Resource>>>
+  resources: Array<Resource>
   onEventClick: (event: Event<Resource>) => void
   scrollRef: React.RefObject<HTMLDivElement | null>
   leftSentinelRef: React.RefObject<HTMLDivElement | null>
@@ -481,7 +548,7 @@ function ScheduleView({
     <div className="border border-neutral-800 rounded-lg overflow-hidden bg-black">
       <div className="border-b border-neutral-800 bg-neutral-950 px-4 py-3">
         <div className="flex gap-6 flex-wrap">
-          {sampleResources.map((resource, idx) => {
+          {resources.map((resource, idx) => {
             const colors = ['#0049af75', '#00af3475']
             const color = colors[idx % colors.length]
             return (
@@ -551,7 +618,7 @@ function ScheduleView({
                       </div>
                     </div>
                     <div className="relative h-[1440px] bg-neutral-950/30">
-                      {sampleResources.map((resource, resourceIdx) => {
+                      {resources.map((resource, resourceIdx) => {
                         const resourceRanges = getUnavailableRanges(dayDate, {
                           resourceIds: [resource.id],
                         })
@@ -667,6 +734,18 @@ function ScheduleView({
                                 </span>
                               )}
                               {event.title}
+                              {event.consumption &&
+                                event.consumption.length > 0 && (
+                                  <span
+                                    className="ml-1.5 inline-block text-[10px] leading-none rounded bg-black/40 px-1 py-0.5 font-semibold align-middle"
+                                    title="Consumption"
+                                  >
+                                    {event.consumption.reduce(
+                                      (a, b) => a + b,
+                                      0,
+                                    )}
+                                  </span>
+                                )}
                             </div>
                             {displayStyle &&
                               parseFloat(displayStyle.height) > 2 && (
@@ -795,6 +874,8 @@ function ResizeErrorToast({
 }
 
 function CalendarView() {
+  const [resources, setResources] = useState<Array<Resource>>(sampleResources)
+
   const [modalState, setModalState] = useState<{
     isOpen: boolean
     mode: 'add' | 'edit'
@@ -810,9 +891,31 @@ function CalendarView() {
 
   const calendar = useCalendar<Resource, Event<Resource>>({
     viewMode: { value: 1, unit: 'month' },
-    events: sampleEvents,
-    resources: sampleResources,
+    events: [],
+    resources,
     timeZone: 'UTC',
+    fetchEvents: async ({ start, end }) => {
+      await new Promise((resolve) => setTimeout(resolve, 300))
+
+      const startDate = new Date(start)
+      const endDate = new Date(end)
+      const resourceById = new Map(
+        resources.map((resource) => [resource.id, resource]),
+      )
+
+      return MOCK_DB.filter((e) => {
+        if (e.recurrence) return true
+        const eStart = new Date(e.start as string)
+        const eEnd = new Date(e.end as string)
+        return eStart <= endDate && eEnd >= startDate
+      }).map((event) => ({
+        ...event,
+        resources:
+          event.resources
+            ?.map((resource) => resourceById.get(resource.id))
+            .filter((resource): resource is Resource => resource != null) ?? [],
+      }))
+    },
     resize: {
       enabled: true,
       containerHeight: 1440,
@@ -1047,7 +1150,10 @@ function CalendarView() {
     setModalState({
       isOpen: true,
       mode: 'add',
-      initialData: emptyFormData,
+      initialData: {
+        ...emptyFormData,
+        resourceId: resources[0]?.id ?? '',
+      },
     })
   }
 
@@ -1061,7 +1167,7 @@ function CalendarView() {
     const startDate = new Date(eventProps.start)
     const endDate = new Date(eventProps.end)
 
-    const rule = (masterEvent as Event<Resource>).recurrence
+    const rule = masterEvent.recurrence
 
     setModalState({
       isOpen: true,
@@ -1073,6 +1179,8 @@ function CalendarView() {
         startTime: startDate.toTimeString().slice(0, 5),
         endDate: formatDateToISO(endDate),
         endTime: endDate.toTimeString().slice(0, 5),
+        resourceId: masterEvent.resources?.[0]?.id ?? (resources[0]?.id || ''),
+        consumption: masterEvent.consumption?.[0] ?? 1,
         recurrenceFrequency: rule?.frequency ?? 'none',
         recurrenceUntil: rule?.until ?? '',
       },
@@ -1083,27 +1191,50 @@ function CalendarView() {
     setModalState((prev) => ({ ...prev, isOpen: false }))
   }
 
-  const handleSave = (data: EventFormData) => {
-    const recurrence: RecurrenceRule | undefined =
-      data.recurrenceFrequency !== 'none'
-        ? {
-            frequency: data.recurrenceFrequency,
-            ...(data.recurrenceUntil ? { until: data.recurrenceUntil } : {}),
-          }
-        : undefined
+  const [isSaving, setIsSaving] = useState(false)
 
-    const eventData = {
-      title: data.title,
-      start: `${data.startDate}T${data.startTime}:00`,
-      end: `${data.endDate}T${data.endTime}:00`,
-      recurrence,
-    }
+  const handleSave = async (data: EventFormData) => {
+    setIsSaving(true)
+    try {
+      const recurrence: RecurrenceRule | undefined =
+        data.recurrenceFrequency !== 'none'
+          ? {
+              frequency: data.recurrenceFrequency,
+              ...(data.recurrenceUntil ? { until: data.recurrenceUntil } : {}),
+            }
+          : undefined
 
-    if (modalState.mode === 'add') {
-      const newId = String(Date.now())
-      calendar.addEvent({ id: newId, ...eventData })
-    } else if (modalState.eventId) {
-      calendar.updateEvent(modalState.eventId, eventData)
+      const start = `${data.startDate}T${data.startTime}:00`
+      const end = `${data.endDate}T${data.endTime}:00`
+      const selectedResource = resources.find((r) => r.id === data.resourceId)
+      const eventResources = selectedResource ? [selectedResource] : []
+
+      const result =
+        modalState.mode === 'edit' && modalState.eventId
+          ? await calendar.editEvent(modalState.eventId, {
+              title: data.title,
+              start,
+              end,
+              recurrence,
+              resources: eventResources,
+              consumption: [data.consumption],
+            })
+          : await calendar.addEvent({
+              id: String(Date.now()),
+              title: data.title,
+              start,
+              end,
+              recurrence,
+              resources: eventResources,
+              consumption: [data.consumption],
+            })
+
+      if (!result.success) {
+        setResizeError(result.error)
+        throw new Error('Validation failed')
+      }
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -1182,6 +1313,47 @@ function CalendarView() {
           </div>
         </div>
 
+        <div className="mb-4 rounded-lg border border-neutral-800 bg-neutral-950 px-4 py-3">
+          <div className="mb-2 text-xs uppercase tracking-wide text-neutral-500">
+            Capacity Controls
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {resources.map((resource) => {
+              const currentCapacity = resource.capacity?.[0] ?? 1
+              return (
+                <div
+                  key={resource.id}
+                  className="flex items-center gap-2 rounded-md border border-neutral-800 bg-black px-3 py-2"
+                >
+                  <span className="text-sm text-neutral-300">
+                    {resource.label}
+                  </span>
+                  <Input
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={currentCapacity}
+                    onChange={(e) => {
+                      const nextCapacity = Math.max(
+                        1,
+                        Number(e.target.value) || 1,
+                      )
+                      setResources((prev) =>
+                        prev.map((r) =>
+                          r.id === resource.id
+                            ? { ...r, capacity: [nextCapacity] }
+                            : r,
+                        ),
+                      )
+                    }}
+                    className="h-8 w-24"
+                  />
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
         <div className="text-lg font-medium text-neutral-400">
           {formatPeriodDate(calendar.currentPeriod)}
         </div>
@@ -1191,6 +1363,7 @@ function CalendarView() {
         <ScheduleView
           calendar={calendar}
           days={bufferedScheduleDays}
+          resources={resources}
           onEventClick={openEditModal}
           scrollRef={scheduleScrollRef}
           leftSentinelRef={scheduleLeftRef}
@@ -1300,6 +1473,18 @@ function CalendarView() {
                                 </span>
                               )}
                               {event.title}
+                              {event.consumption &&
+                                event.consumption.length > 0 && (
+                                  <span
+                                    className="ml-1.5 text-[10px] leading-none rounded bg-black/40 px-1 py-0.5 font-semibold"
+                                    title="Consumption"
+                                  >
+                                    {event.consumption.reduce(
+                                      (a, b) => a + b,
+                                      0,
+                                    )}
+                                  </span>
+                                )}
                             </Badge>
                           ))}
                         </div>
@@ -1329,6 +1514,8 @@ function CalendarView() {
         onDelete={modalState.mode === 'edit' ? handleDelete : undefined}
         initialData={modalState.initialData}
         mode={modalState.mode}
+        isSaving={isSaving}
+        resources={resources}
       />
 
       {resizeError && (

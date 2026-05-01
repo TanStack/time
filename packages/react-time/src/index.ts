@@ -10,6 +10,7 @@ export type {
   ResizeError,
   AvailabilityConflict,
   UnavailabilityReason,
+  SaveEventResult,
 } from '@tanstack/time'
 
 export {
