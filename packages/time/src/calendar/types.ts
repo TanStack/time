@@ -6,6 +6,15 @@ export type EventDateTimeInput = string | Date | number
 /** How often a recurring event repeats. */
 export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly'
 
+/** Supported dependency types for ordering events. */
+export type DependencyType = 'FS' | 'SS' | 'FF' | 'SF'
+
+/** A single dependency from one event to another. */
+export interface EventDependency {
+  id: string
+  type: DependencyType
+}
+
 /**
  * Defines the repetition rule for a recurring event.
  * Occurrences are expanded automatically by the calendar within the current viewport.
@@ -73,9 +82,10 @@ export interface Event<TResource extends Resource = Resource> {
   title: string
   resources?: Array<TResource>
   consumption?: Array<number>
-  /** IDs of events this event immediately follows (finish-to-start dependency).
-   * When a predecessor's end time shifts, this event shifts by the same delta. */
-  dependsOn?: Array<string>
+  /** Dependency links to other events this event is constrained by.
+   * Each link has an `id` (predecessor event) and a `type` (FS/SS/FF/SF).
+   * When a predecessor's relevant anchor shifts, this event shifts by the same delta. */
+  dependsOn?: Array<EventDependency>
   /** Defines how and when this event repeats. */
   recurrence?: RecurrenceRule
   /** Original start time before splitting (only set on split segments of multi-day events) */

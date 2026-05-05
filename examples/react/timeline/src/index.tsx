@@ -41,6 +41,7 @@ import { X } from 'lucide-react'
 
 import type {
   Day,
+  DependencyType,
   Event,
   ResizeError,
   Resource,
@@ -72,6 +73,47 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 
 import './index.css'
+
+const DEP_TYPE_STYLES: Record<
+  DependencyType,
+  {
+    label: string
+    description: string
+    color: string
+    strokeDasharray?: string
+    badgeBg: string
+  }
+> = {
+  FS: {
+    label: 'FS',
+    description: 'Finish → Start (successor starts after predecessor ends)',
+    color: '#f59e0b',
+    badgeBg: 'bg-amber-500',
+  },
+  SS: {
+    label: 'SS',
+    description: 'Start → Start (successor starts after predecessor starts)',
+    color: '#3b82f6',
+    strokeDasharray: '6 4',
+    badgeBg: 'bg-blue-500',
+  },
+  FF: {
+    label: 'FF',
+    description: 'Finish → Finish (successor ends after predecessor ends)',
+    color: '#10b981',
+    strokeDasharray: '6 4',
+    badgeBg: 'bg-emerald-500',
+  },
+  SF: {
+    label: 'SF',
+    description: 'Start → Finish (successor ends after predecessor starts)',
+    color: '#a855f7',
+    strokeDasharray: '2 3',
+    badgeBg: 'bg-purple-500',
+  },
+}
+
+const ALL_DEP_TYPES: Array<DependencyType> = ['FS', 'SS', 'FF', 'SF']
 
 const EVENT_COLORS = [
   {
@@ -199,6 +241,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       start: weekdayAt(2, 9, 0),
       end: weekdayAt(2, 17, 0),
       resources: [resourceFrontend],
+      dependsOn: [{ id: '1', type: 'FS' }],
     },
     {
       id: '3',
@@ -207,6 +250,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       end: weekdayAt(2, 18, 0),
       resources: [resourceBackend],
       consumption: [3],
+      dependsOn: [{ id: '2', type: 'SS' }],
     },
     {
       id: '4',
@@ -222,6 +266,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       start: weekdayAt(3, 10, 0),
       end: weekdayAt(3, 15, 0),
       resources: [resourceQA],
+      dependsOn: [{ id: '3', type: 'FF' }],
     },
     {
       id: '6',
@@ -250,6 +295,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       start: weekdayAt(4, 10, 30),
       end: weekdayAt(4, 14, 30),
       resources: [resourceQA],
+      dependsOn: [{ id: '4', type: 'SF' }],
     },
     {
       id: '10',
@@ -257,6 +303,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       start: weekdayAt(5, 7, 30),
       end: weekdayAt(5, 13, 0),
       resources: [resourceDevOps],
+      dependsOn: [{ id: '8', type: 'FS' }],
     },
   ]
 }
@@ -279,7 +326,7 @@ interface EventFormData {
   endTime: string
   resourceId: string
   consumption: number
-  dependsOn: Array<string>
+  dependsOn: Array<{ id: string; type: DependencyType }>
 }
 
 const emptyFormData: EventFormData = {
@@ -293,6 +340,63 @@ const emptyFormData: EventFormData = {
   dependsOn: [],
 }
 
+function DependencyTypeModal({
+  isOpen,
+  sourceTitle,
+  targetTitle,
+  onChoose,
+  onCancel,
+}: {
+  isOpen: boolean
+  sourceTitle: string
+  targetTitle: string
+  onChoose: (type: DependencyType) => void
+  onCancel: () => void
+}) {
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Link dependency</DialogTitle>
+          <DialogDescription>
+            Choose how{' '}
+            <span className="font-semibold">&ldquo;{targetTitle}&rdquo;</span>{' '}
+            depends on{' '}
+            <span className="font-semibold">&ldquo;{sourceTitle}&rdquo;</span>.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-1 gap-2 py-2">
+          {ALL_DEP_TYPES.map((type) => {
+            const style = DEP_TYPE_STYLES[type]
+            return (
+              <button
+                key={type}
+                type="button"
+                onClick={() => onChoose(type)}
+                className="group flex items-center gap-3 rounded-md border border-neutral-700 bg-neutral-900/40 px-3 py-2.5 text-left transition-colors hover:border-neutral-500 hover:bg-neutral-800/60 focus:outline-none focus:ring-2 focus:ring-neutral-500"
+              >
+                <span
+                  className={`${style.badgeBg} text-white text-xs font-bold rounded px-2 py-1 min-w-[2.5rem] text-center`}
+                >
+                  {style.label}
+                </span>
+                <span className="text-sm text-neutral-200">
+                  {style.description}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function EventModal({
   isOpen,
   onClose,
@@ -301,6 +405,8 @@ function EventModal({
   initialData,
   mode,
   isSaving,
+  allEvents,
+  editingEventId,
 }: {
   isOpen: boolean
   onClose: () => void
@@ -309,6 +415,8 @@ function EventModal({
   initialData: EventFormData
   mode: 'add' | 'edit'
   isSaving?: boolean
+  allEvents: Array<Event<Resource>>
+  editingEventId?: string
 }) {
   const [formData, setFormData] = useState<EventFormData>(initialData)
 
@@ -326,9 +434,41 @@ function EventModal({
     onClose()
   }
 
+  const dependableEvents = allEvents.filter((e) => e.id !== editingEventId)
+
+  const addDependency = () => {
+    const candidate = dependableEvents.find(
+      (e) => !formData.dependsOn.some((d) => d.id === e.id),
+    )
+    if (!candidate) return
+    setFormData({
+      ...formData,
+      dependsOn: [...formData.dependsOn, { id: candidate.id, type: 'FS' }],
+    })
+  }
+
+  const updateDependency = (
+    index: number,
+    patch: Partial<{ id: string; type: DependencyType }>,
+  ) => {
+    setFormData({
+      ...formData,
+      dependsOn: formData.dependsOn.map((d, i) =>
+        i === index ? { ...d, ...patch } : d,
+      ),
+    })
+  }
+
+  const removeDependency = (index: number) => {
+    setFormData({
+      ...formData,
+      dependsOn: formData.dependsOn.filter((_, i) => i !== index),
+    })
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
             {mode === 'add' ? 'Add Event' : 'Edit Event'}
@@ -445,6 +585,78 @@ function EventModal({
                 required
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Dependencies</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addDependency}
+                disabled={dependableEvents.length === 0}
+              >
+                + Add
+              </Button>
+            </div>
+            {formData.dependsOn.length === 0 ? (
+              <div className="text-xs text-neutral-500 italic">
+                No dependencies. Add one to constrain when this event can be
+                scheduled.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {formData.dependsOn.map((dep, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <Select
+                      value={dep.id}
+                      onValueChange={(value) =>
+                        updateDependency(idx, { id: value })
+                      }
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {dependableEvents.map((e) => (
+                          <SelectItem key={e.id} value={e.id}>
+                            {e.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={dep.type}
+                      onValueChange={(value) =>
+                        updateDependency(idx, {
+                          type: value as DependencyType,
+                        })
+                      }
+                    >
+                      <SelectTrigger className="w-24">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ALL_DEP_TYPES.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeDependency(idx)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <DialogFooter className="flex justify-between pt-4">
@@ -610,7 +822,7 @@ function DepCanvasNode({ data }: NodeProps) {
           <Handle
             type="target"
             position={Position.Left}
-            id={`${eventId}-target`}
+            id={`${eventId}-target-start`}
             style={{
               ...DEP_HANDLE_STYLE,
               position: 'absolute',
@@ -623,8 +835,38 @@ function DepCanvasNode({ data }: NodeProps) {
           />
           <Handle
             type="source"
+            position={Position.Left}
+            id={`${eventId}-source-start`}
+            style={{
+              ...DEP_HANDLE_STYLE,
+              position: 'absolute',
+              left: x,
+              right: 'auto',
+              top: y + height / 2,
+              bottom: 'auto',
+              transform: 'translate(-50%, -50%)',
+              opacity: 0,
+            }}
+          />
+          <Handle
+            type="target"
             position={Position.Right}
-            id={`${eventId}-source`}
+            id={`${eventId}-target-end`}
+            style={{
+              ...DEP_HANDLE_STYLE,
+              position: 'absolute',
+              left: x + width,
+              right: 'auto',
+              top: y + height / 2,
+              bottom: 'auto',
+              transform: 'translate(-50%, -50%)',
+              opacity: 0,
+            }}
+          />
+          <Handle
+            type="source"
+            position={Position.Right}
+            id={`${eventId}-source-end`}
             style={{
               ...DEP_HANDLE_STYLE,
               position: 'absolute',
@@ -648,21 +890,44 @@ function buildTimelineEdges(events: Array<Event<Resource>>): Array<Edge> {
   const visibleEventIds = new Set(events.map((e) => e.id))
 
   return events.flatMap((event) => {
-    const deps = (event.dependsOn ?? []).filter((sourceId) =>
-      visibleEventIds.has(sourceId),
+    const deps = (event.dependsOn ?? []).filter((d) =>
+      visibleEventIds.has(d.id),
     )
 
-    return deps.map((sourceId) => ({
-      id: `dep-${sourceId}-${event.id}`,
-      source: CANVAS_NODE_ID,
-      sourceHandle: `${sourceId}-source`,
-      target: CANVAS_NODE_ID,
-      targetHandle: `${event.id}-target`,
-      type: 'smoothstep',
-      animated: true,
-      markerEnd: { type: MarkerType.ArrowClosed, color: '#f59e0b' },
-      style: { stroke: '#f59e0b', strokeWidth: 2 },
-    }))
+    return deps.map((dep) => {
+      const style = DEP_TYPE_STYLES[dep.type]
+      const sourceAnchor =
+        dep.type === 'SS' || dep.type === 'SF' ? 'start' : 'end'
+      const targetAnchor =
+        dep.type === 'FF' || dep.type === 'SF' ? 'end' : 'start'
+      return {
+        id: `dep-${dep.id}-${event.id}-${dep.type}`,
+        source: CANVAS_NODE_ID,
+        sourceHandle: `${dep.id}-source-${sourceAnchor}`,
+        target: CANVAS_NODE_ID,
+        targetHandle: `${event.id}-target-${targetAnchor}`,
+        type: 'smoothstep',
+        animated: true,
+        label: dep.type,
+        labelStyle: {
+          fill: '#fff',
+          fontSize: 10,
+          fontWeight: 700,
+        },
+        labelBgStyle: {
+          fill: style.color,
+          opacity: 0.95,
+        },
+        labelBgPadding: [4, 2] as [number, number],
+        labelBgBorderRadius: 3,
+        markerEnd: { type: MarkerType.ArrowClosed, color: style.color },
+        style: {
+          stroke: style.color,
+          strokeWidth: 2,
+          strokeDasharray: style.strokeDasharray,
+        },
+      }
+    })
   })
 }
 
@@ -677,7 +942,12 @@ interface TimelineDependencyOverlayProps {
     previewEnd: string | null
   }
   activeDragEvent: any
-  onDependencyCreate: (sourceId: string, targetId: string) => void
+  onDependencyCreate: (
+    sourceId: string,
+    targetId: string,
+    sourceAnchor: 'start' | 'end',
+    targetAnchor: 'start' | 'end',
+  ) => void
 }
 
 function TimelineDependencyOverlay({
@@ -771,11 +1041,26 @@ function TimelineDependencyOverlay({
 
   const handleConnect = useCallback(
     (connection: Connection) => {
-      const sourceEventId = connection.sourceHandle?.replace(/-source$/, '')
-      const targetEventId = connection.targetHandle?.replace(/-target$/, '')
-      if (!sourceEventId || !targetEventId) return
+      const sourceMatch = connection.sourceHandle?.match(
+        /^(.+)-source-(start|end)$/,
+      )
+      const targetMatch = connection.targetHandle?.match(
+        /^(.+)-target-(start|end)$/,
+      )
+      if (!sourceMatch || !targetMatch) return
+
+      const sourceEventId = sourceMatch[1]!
+      const sourceAnchor = sourceMatch[2] as 'start' | 'end'
+      const targetEventId = targetMatch[1]!
+      const targetAnchor = targetMatch[2] as 'start' | 'end'
+
       if (sourceEventId === targetEventId) return
-      onDependencyCreate(sourceEventId, targetEventId)
+      onDependencyCreate(
+        sourceEventId,
+        targetEventId,
+        sourceAnchor,
+        targetAnchor,
+      )
     },
     [onDependencyCreate],
   )
@@ -858,6 +1143,8 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
     data: { event, left, width, laneHeightPct, topPct, lane, color },
   })
 
+  const depCount = event.dependsOn?.length ?? 0
+
   return (
     <div
       ref={(el) => {
@@ -926,6 +1213,14 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
       </div>
       <div className="flex-1 h-full min-w-0 flex items-center gap-1.5 px-2.5 cursor-pointer">
         <span className="truncate">{event.title}</span>
+        {depCount > 0 && (
+          <span
+            className="flex-shrink-0 text-[10px] leading-none rounded bg-amber-500/40 border border-amber-300/60 px-1 py-0.5 font-semibold"
+            title={`${depCount} dependenc${depCount === 1 ? 'y' : 'ies'}`}
+          >
+            ↳{depCount}
+          </span>
+        )}
         {event.consumption && event.consumption.length > 0 && (
           <span
             className="flex-shrink-0 text-[10px] leading-none rounded bg-black/30 px-1 py-0.5 font-semibold"
@@ -1084,6 +1379,17 @@ function TimelineDemo() {
   }>({ isOpen: false, mode: 'add', initialData: emptyFormData })
 
   const [resizeError, setResizeError] = useState<ResizeError | null>(null)
+
+  const [pendingDep, setPendingDep] = useState<{
+    sourceId: string
+    targetId: string
+    sourceAnchor: 'start' | 'end'
+    targetAnchor: 'start' | 'end'
+    sourceTitle: string
+    targetTitle: string
+    suggestedType: DependencyType
+  } | null>(null)
+
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const timelineContentRef = useRef<HTMLDivElement>(null)
   const containerWidthRef = useRef(0)
@@ -1210,7 +1516,6 @@ function TimelineDemo() {
     overscan: 3,
   })
 
-  // Keep containerWidthRef synced with virtualized total width so px math (drag/resize) stays correct.
   useEffect(() => {
     containerWidthRef.current = totalContentWidthPx
   }, [totalContentWidthPx])
@@ -1269,14 +1574,57 @@ function TimelineDemo() {
     prevResizedIdRef.current = resizeState.eventId
   }, [resizeState, firstDayIso, totalDays])
 
-  const handleDependencyCreate = useCallback(
-    (sourceId: string, targetId: string) => {
-      const result = calendar.createDependency(sourceId, targetId)
+  const inferDepType = useCallback(
+    (
+      sourceAnchor: 'start' | 'end',
+      targetAnchor: 'start' | 'end',
+    ): DependencyType => {
+      if (sourceAnchor === 'end' && targetAnchor === 'start') return 'FS'
+      if (sourceAnchor === 'start' && targetAnchor === 'start') return 'SS'
+      if (sourceAnchor === 'end' && targetAnchor === 'end') return 'FF'
+      return 'SF'
+    },
+    [],
+  )
+
+  const handleDependencyDragged = useCallback(
+    (
+      sourceId: string,
+      targetId: string,
+      sourceAnchor: 'start' | 'end',
+      targetAnchor: 'start' | 'end',
+    ) => {
+      const sourceEvent = calendar.getEvents().find((e) => e.id === sourceId)
+      const targetEvent = calendar.getEvents().find((e) => e.id === targetId)
+      if (!sourceEvent || !targetEvent) return
+
+      setPendingDep({
+        sourceId,
+        targetId,
+        sourceAnchor,
+        targetAnchor,
+        sourceTitle: sourceEvent.title,
+        targetTitle: targetEvent.title,
+        suggestedType: inferDepType(sourceAnchor, targetAnchor),
+      })
+    },
+    [calendar, inferDepType],
+  )
+
+  const finalizeDependency = useCallback(
+    (type: DependencyType) => {
+      if (!pendingDep) return
+      const result = calendar.createDependency(
+        pendingDep.sourceId,
+        pendingDep.targetId,
+        type,
+      )
       if (result.blocked && result.error) {
         setResizeError(result.error)
       }
+      setPendingDep(null)
     },
-    [calendar],
+    [calendar, pendingDep],
   )
 
   const openAddModal = () =>
@@ -1444,6 +1792,8 @@ function TimelineDemo() {
   const virtualColumns = columnVirtualizer.getVirtualItems()
   const virtualRows = rowVirtualizer.getVirtualItems()
   const rowsTotalHeight = rowVirtualizer.getTotalSize()
+
+  const allEvents = calendar.getEvents()
 
   return (
     <DragDropProvider onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -1694,7 +2044,7 @@ function TimelineDemo() {
                       rowsContainerRef={rowsContainerRef}
                       resizeState={resizeState}
                       activeDragEvent={activeDragEvent}
-                      onDependencyCreate={handleDependencyCreate}
+                      onDependencyCreate={handleDependencyDragged}
                     />
                   </div>
                 </div>
@@ -1704,8 +2054,46 @@ function TimelineDemo() {
         </div>
 
         <div className="mt-4 flex flex-wrap gap-x-6 gap-y-3">
+          <div className="flex flex-wrap items-center gap-3 border-l border-border pl-6">
+            <span className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">
+              Dependencies:
+            </span>
+            {ALL_DEP_TYPES.map((type) => {
+              const style = DEP_TYPE_STYLES[type]
+              return (
+                <div
+                  key={type}
+                  className="flex items-center gap-2"
+                  title={style.description}
+                >
+                  <svg width="28" height="10" className="flex-shrink-0">
+                    <line
+                      x1="0"
+                      y1="5"
+                      x2="28"
+                      y2="5"
+                      stroke={style.color}
+                      strokeWidth="2"
+                      strokeDasharray={style.strokeDasharray}
+                    />
+                  </svg>
+                  <span
+                    className={`${style.badgeBg} text-white text-[10px] font-bold rounded px-1.5 py-0.5`}
+                  >
+                    {style.label}
+                  </span>
+                  <span className="text-xs text-neutral-400">
+                    {style.description.split(' (')[0]}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-3">
           <div className="flex flex-wrap gap-2">
-            {calendar.getEvents().map((event) => {
+            {allEvents.map((event) => {
               const color = getEventColor(event.id)
               return (
                 <Badge
@@ -1768,6 +2156,16 @@ function TimelineDemo() {
           initialData={modalState.initialData}
           mode={modalState.mode}
           isSaving={isSaving}
+          allEvents={allEvents}
+          editingEventId={modalState.eventId}
+        />
+
+        <DependencyTypeModal
+          isOpen={pendingDep !== null}
+          sourceTitle={pendingDep?.sourceTitle ?? ''}
+          targetTitle={pendingDep?.targetTitle ?? ''}
+          onChoose={finalizeDependency}
+          onCancel={() => setPendingDep(null)}
         />
 
         {resizeError && (
