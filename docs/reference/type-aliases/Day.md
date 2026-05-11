@@ -9,7 +9,7 @@ title: Day
 type Day<TResource, TEvent> = object;
 ```
 
-Defined in: [calendar/types.ts:94](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L94)
+Defined in: [calendar/types.ts:104](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L104)
 
 ## Type Parameters
 
@@ -29,7 +29,7 @@ Defined in: [calendar/types.ts:94](https://github.com/TanStack/time/blob/main/pa
 date: Temporal.PlainDate;
 ```
 
-Defined in: [calendar/types.ts:98](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L98)
+Defined in: [calendar/types.ts:108](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L108)
 
 ***
 
@@ -39,7 +39,7 @@ Defined in: [calendar/types.ts:98](https://github.com/TanStack/time/blob/main/pa
 events: TEvent[];
 ```
 
-Defined in: [calendar/types.ts:101](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L101)
+Defined in: [calendar/types.ts:111](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L111)
 
 ***
 
@@ -49,7 +49,7 @@ Defined in: [calendar/types.ts:101](https://github.com/TanStack/time/blob/main/p
 isInCurrentPeriod: boolean;
 ```
 
-Defined in: [calendar/types.ts:103](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L103)
+Defined in: [calendar/types.ts:113](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L113)
 
 ***
 
@@ -59,7 +59,7 @@ Defined in: [calendar/types.ts:103](https://github.com/TanStack/time/blob/main/p
 isoDate: string;
 ```
 
-Defined in: [calendar/types.ts:100](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L100)
+Defined in: [calendar/types.ts:110](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L110)
 
 Pre-computed ISO date string (YYYY-MM-DD) — use instead of manually formatting `date`
 
@@ -71,4 +71,4 @@ Pre-computed ISO date string (YYYY-MM-DD) — use instead of manually formatting
 isToday: boolean;
 ```
 
-Defined in: [calendar/types.ts:102](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L102)
+Defined in: [calendar/types.ts:112](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L112)

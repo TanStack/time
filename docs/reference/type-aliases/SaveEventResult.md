@@ -16,6 +16,6 @@ type SaveEventResult =
 };
 ```
 
-Defined in: [calendar/types.ts:201](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L201)
+Defined in: [calendar/types.ts:211](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L211)
 
 Result of a CalendarActions.saveEvent call.

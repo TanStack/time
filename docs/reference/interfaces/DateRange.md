@@ -5,7 +5,7 @@ title: DateRange
 
 # Interface: DateRange
 
-Defined in: [calendar/types.ts:106](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L106)
+Defined in: [calendar/types.ts:116](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L116)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/types.ts:106](https://github.com/TanStack/time/blob/main/p
 end: DateInput | null;
 ```
 
-Defined in: [calendar/types.ts:108](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L108)
+Defined in: [calendar/types.ts:118](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L118)
 
 ***
 
@@ -25,4 +25,4 @@ Defined in: [calendar/types.ts:108](https://github.com/TanStack/time/blob/main/p
 start: DateInput | null;
 ```
 
-Defined in: [calendar/types.ts:107](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L107)
+Defined in: [calendar/types.ts:117](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L117)

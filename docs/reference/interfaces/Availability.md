@@ -5,7 +5,7 @@ title: Availability
 
 # Interface: Availability
 
-Defined in: [calendar/types.ts:38](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L38)
+Defined in: [calendar/types.ts:47](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L47)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/types.ts:38](https://github.com/TanStack/time/blob/main/pa
 endTime: string;
 ```
 
-Defined in: [calendar/types.ts:44](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L44)
+Defined in: [calendar/types.ts:53](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L53)
 
 End time in HH:mm format
 
@@ -27,7 +27,7 @@ End time in HH:mm format
 startTime: string;
 ```
 
-Defined in: [calendar/types.ts:42](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L42)
+Defined in: [calendar/types.ts:51](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L51)
 
 Start time in HH:mm format
 
@@ -39,6 +39,6 @@ Start time in HH:mm format
 weekdays: number[];
 ```
 
-Defined in: [calendar/types.ts:40](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L40)
+Defined in: [calendar/types.ts:49](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L49)
 
 Days of the week when available (ISO weekday: 1 = Monday, ..., 7 = Sunday)
