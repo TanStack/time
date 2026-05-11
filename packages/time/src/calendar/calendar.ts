@@ -1383,35 +1383,15 @@ export class CalendarCore<
     const event = this._eventMap.get(eventId)
     if (!event || event._originalStart) return { blocked: false }
 
-    const conflict = this.checkEventAvailability(
-      event,
-      newStart,
-      newEnd,
-      newResources,
-      newConsumption,
-    )
-    if (conflict) {
-      const isCapacity = conflict.resourceDetails.some(
-        (d) => d.reason === 'capacity',
-      )
-      const message = isCapacity
-        ? `"${event.title}" cannot be placed here — ${conflict.description}.`
-        : `"${event.title}" cannot be placed here — it falls inside an unavailable zone.`
-      return {
-        blocked: true,
-        blockedEventTitle: event.title,
-        message,
-      }
-    }
+    const tz = this.options.timeZone
+    const newStartMs =
+      Temporal.PlainDateTime.from(newStart).toZonedDateTime(
+        tz,
+      ).epochMilliseconds
+    const newEndMs =
+      Temporal.PlainDateTime.from(newEnd).toZonedDateTime(tz).epochMilliseconds
 
     if (event.dependsOn?.length) {
-      const newStartMs = Temporal.PlainDateTime.from(newStart).toZonedDateTime(
-        this.options.timeZone,
-      ).epochMilliseconds
-      const newEndMs = Temporal.PlainDateTime.from(newEnd).toZonedDateTime(
-        this.options.timeZone,
-      ).epochMilliseconds
-
       const visited = new Set<string>([eventId])
       const queue: Array<{ id: string; startMs: number; endMs: number }> = [
         { id: eventId, startMs: newStartMs, endMs: newEndMs },
@@ -1429,12 +1409,14 @@ export class CalendarCore<
 
           const predStartStr = toPlainDateTimeString(pred.start)
           const predEndStr = toPlainDateTimeString(pred.end)
-          const predStartMs = Temporal.PlainDateTime.from(
-            predStartStr,
-          ).toZonedDateTime(this.options.timeZone).epochMilliseconds
-          const predEndMs = Temporal.PlainDateTime.from(
-            predEndStr,
-          ).toZonedDateTime(this.options.timeZone).epochMilliseconds
+          const predStartMs =
+            Temporal.PlainDateTime.from(predStartStr).toZonedDateTime(
+              tz,
+            ).epochMilliseconds
+          const predEndMs =
+            Temporal.PlainDateTime.from(predEndStr).toZonedDateTime(
+              tz,
+            ).epochMilliseconds
 
           const pullBackMs = requiredBackwardShiftMs(
             dep.type,
@@ -1476,13 +1458,31 @@ export class CalendarCore<
       }
     }
 
+    const conflict = this.checkEventAvailability(
+      event,
+      newStart,
+      newEnd,
+      newResources,
+      newConsumption,
+    )
+    if (conflict) {
+      const isCapacity = conflict.resourceDetails.some(
+        (d) => d.reason === 'capacity',
+      )
+      const message = isCapacity
+        ? `"${event.title}" cannot be placed here — ${conflict.description}.`
+        : `"${event.title}" cannot be placed here — it falls inside an unavailable zone.`
+      return {
+        blocked: true,
+        blockedEventTitle: event.title,
+        message,
+      }
+    }
+
     const oldStartMs = Temporal.PlainDateTime.from(
       toPlainDateTimeString(event.start),
-    ).toZonedDateTime(this.options.timeZone).epochMilliseconds
-    const newStartMsForDelta = Temporal.PlainDateTime.from(
-      newStart,
-    ).toZonedDateTime(this.options.timeZone).epochMilliseconds
-    const startDeltaMs = newStartMsForDelta - oldStartMs
+    ).toZonedDateTime(tz).epochMilliseconds
+    const startDeltaMs = newStartMs - oldStartMs
 
     if (startDeltaMs !== 0) {
       const affected = this.getAffectedByDelta(
@@ -1502,6 +1502,79 @@ export class CalendarCore<
             blockedEventTitle: dep.title,
             message: `"${dep.title}" would be pushed to unavailable time.`,
           }
+        }
+      }
+    }
+
+    const oldEndMs = Temporal.PlainDateTime.from(
+      toPlainDateTimeString(event.end),
+    ).toZonedDateTime(tz).epochMilliseconds
+    const endDeltaMs = newEndMs - oldEndMs
+
+    if (endDeltaMs > 0) {
+      const endVisited = new Set<string>([eventId])
+      const endQueue: Array<{
+        id: string
+        projStartMs: number
+        projEndMs: number
+      }> = [{ id: eventId, projStartMs: newStartMs, projEndMs: newEndMs }]
+
+      while (endQueue.length > 0) {
+        const { id: curId, projStartMs, projEndMs } = endQueue.shift()!
+        const succIds = this._dependentsMap.get(curId)
+        if (!succIds?.size) continue
+
+        for (const sId of succIds) {
+          if (endVisited.has(sId)) continue
+          const s = this._eventMap.get(sId)
+          if (!s) continue
+
+          const link = s.dependsOn?.find((d) => d.id === curId)
+          if (!link) continue
+
+          const sStartStr = toPlainDateTimeString(s.start)
+          const sEndStr = toPlainDateTimeString(s.end)
+          const sStartMs =
+            Temporal.PlainDateTime.from(sStartStr).toZonedDateTime(
+              tz,
+            ).epochMilliseconds
+          const sEndMs =
+            Temporal.PlainDateTime.from(sEndStr).toZonedDateTime(
+              tz,
+            ).epochMilliseconds
+
+          const shiftMs = requiredForwardShiftMs(
+            link.type,
+            projStartMs,
+            projEndMs,
+            sStartMs,
+            sEndMs,
+          )
+          if (shiftMs <= 0) continue
+
+          endVisited.add(sId)
+
+          const sNewStart = Temporal.PlainDateTime.from(sStartStr)
+            .add({ milliseconds: shiftMs })
+            .toString({ smallestUnit: 'second' })
+          const sNewEnd = Temporal.PlainDateTime.from(sEndStr)
+            .add({ milliseconds: shiftMs })
+            .toString({ smallestUnit: 'second' })
+
+          const sConflict = this.checkEventAvailability(s, sNewStart, sNewEnd)
+          if (sConflict) {
+            return {
+              blocked: true,
+              blockedEventTitle: s.title,
+              message: `"${s.title}" would be pushed into unavailable time.`,
+            }
+          }
+
+          endQueue.push({
+            id: sId,
+            projStartMs: sStartMs + shiftMs,
+            projEndMs: sEndMs + shiftMs,
+          })
         }
       }
     }

@@ -2,7 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "paths": {
-      "@tanstack/pacer": ["../pacer/src"]
+      "@tanstack/time": ["../time/src"]
     }
   },
   "include": ["src"]
