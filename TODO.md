@@ -1,5 +1,12 @@
-1. Replace `capacity` with `fractions` - eg. [2, 3, 5] = 10 and consumption based on fractions
-2. Virtualization examples
-3. Lazy loading events
-4. Unavailability zones - friday -> monday connection should be possible with a flag on weekends
-5. Recurring events
+- Unavailability zones - friday -> monday connection should be possible with a flag on weekends
+- Undo/redo
+- All-day events
+- Recurrence exceptions:
+  - EXDATE (skip specific occurrences)
+  - Modified single occurrences ("this event, but the Tuesday one moves to 3pm")
+  - Recurrence end conditions beyond what's implied (UNTIL, COUNT)
+  - Editing "this event," "this and following," or "all events" — a standard UX requirement
+- Search/filter API
+- Reminders/notifications
+- iCalendar (ICS) import/export
+- Bulk editing
