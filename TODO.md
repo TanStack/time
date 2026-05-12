@@ -10,3 +10,4 @@
 - Reminders/notifications
 - iCalendar (ICS) import/export
 - Bulk editing
+- Go to next/previous occurrence
