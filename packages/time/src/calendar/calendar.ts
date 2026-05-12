@@ -153,6 +153,14 @@ interface CalendarActions<
   formatPeriodLabel: (options?: { locale?: string }) => string
   /** Returns a snapshot of all events currently managed by the calendar (including those outside the visible range). */
   getEvents: () => Array<TEvent>
+  /** Reverts the last mutating action (commitAdd, commitUpdate, removeEvent). */
+  undo: () => void
+  /** Re-applies the last undone action. */
+  redo: () => void
+  /** Returns true when there is at least one action to undo. */
+  canUndo: () => boolean
+  /** Returns true when there is at least one action to redo. */
+  canRedo: () => boolean
   /**
    * Checks whether moving `eventId` to `[newStart, newEnd]` — and cascading
    * all finish-to-start dependents — would violate any resource availability.
@@ -285,6 +293,8 @@ export class CalendarCore<
   private _dependentsMap = new Map<string, Set<string>>()
   private _dateIndex = new Map<string, Set<string>>()
   private _loadedRanges: Array<{ start: string; end: string }> = []
+  private _undoStack: Array<Array<TEvent>> = []
+  private _redoStack: Array<Array<TEvent>> = []
 
   private _resourceDayAvailCache = new Map<
     string,
@@ -761,7 +771,45 @@ export class CalendarCore<
     return eventMap.get(targetDate) ?? []
   }
 
+  private _snapshotEvents(): Array<TEvent> {
+    return this.options.events ? [...this.options.events] : []
+  }
+
+  private _restoreSnapshot(snapshot: Array<TEvent>): void {
+    this._eventMap.clear()
+    this._dependentsMap.clear()
+    this._dateIndex.clear()
+    this.options.events = snapshot
+    snapshot.forEach((e) => this._indexAddEvent(e))
+    this.store.setState((prev) => ({
+      ...prev,
+      eventsVersion: prev.eventsVersion + 1,
+    }))
+  }
+
+  canUndo(): boolean {
+    return this._undoStack.length > 0
+  }
+
+  canRedo(): boolean {
+    return this._redoStack.length > 0
+  }
+
+  undo(): void {
+    if (this._undoStack.length === 0) return
+    this._redoStack.push(this._snapshotEvents())
+    this._restoreSnapshot(this._undoStack.pop()!)
+  }
+
+  redo(): void {
+    if (this._redoStack.length === 0) return
+    this._undoStack.push(this._snapshotEvents())
+    this._restoreSnapshot(this._redoStack.pop()!)
+  }
+
   commitAdd(event: TEvent): void {
+    this._undoStack.push(this._snapshotEvents())
+    this._redoStack = []
     if (!this.options.events) {
       this.options.events = []
     }
@@ -786,6 +834,9 @@ export class CalendarCore<
 
     const existingEvent = this._eventMap.get(id)
     if (!existingEvent) return
+
+    this._undoStack.push(this._snapshotEvents())
+    this._redoStack = []
 
     const index = this.options.events.indexOf(existingEvent)
     if (index === -1) return
@@ -1828,6 +1879,9 @@ export class CalendarCore<
 
     const index = this.options.events.indexOf(removedEvent)
     if (index === -1) return
+
+    this._undoStack.push(this._snapshotEvents())
+    this._redoStack = []
 
     this.options.events.splice(index, 1)
     this._indexRemoveEvent(removedEvent)

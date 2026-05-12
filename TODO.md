@@ -1,5 +1,5 @@
-- Unavailability zones - friday -> monday connection should be possible with a flag on weekends
-- Undo/redo
+- Undo/redo ✅
+- Go to next/previous occurrence
 - All-day events
 - Recurrence exceptions:
   - EXDATE (skip specific occurrences)
@@ -10,4 +10,3 @@
 - Reminders/notifications
 - iCalendar (ICS) import/export
 - Bulk editing
-- Go to next/previous occurrence

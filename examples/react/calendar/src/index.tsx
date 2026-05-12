@@ -949,11 +949,11 @@ function CalendarView() {
   // Navigation direction is tracked via a ref so the accumulation effect
   // knows whether to prepend or append.
   const monthScrollRef = useRef<HTMLDivElement>(null)
-  const daysAccumRef = useRef<Map<string, Day<Resource, Event<Resource>>>>(
-    null as any,
-  )
+  const daysAccumRef = useRef<Map<
+    string,
+    Day<Resource, Event<Resource>>
+  > | null>(null)
   if (daysAccumRef.current === null) {
-    // Lazy-init: populate from the initial period on first render
     daysAccumRef.current = new Map(calendar.days.map((d) => [d.isoDate, d]))
   }
 
@@ -973,21 +973,17 @@ function CalendarView() {
     navDirectionRef.current = 'none'
 
     for (const day of calendar.days) {
-      daysAccumRef.current.set(day.isoDate, day)
+      daysAccumRef.current!.set(day.isoDate, day)
     }
 
     if (direction === 'backward') {
-      // Schedule a scrollTop correction after the next DOM paint
       prevScrollHeightRef.current = monthScrollRef.current?.scrollHeight ?? 0
       needsScrollAdjRef.current = true
     }
 
-    // Bump version to trigger re-render with the updated map
     setAccumVersion((v) => v + 1)
   }, [calendar.currentPeriod, calendar.days])
 
-  // Correct scroll position after prepending new weeks (backward nav)
-  // so the currently-visible rows don’t jump.
   useLayoutEffect(() => {
     if (!needsScrollAdjRef.current) return
     needsScrollAdjRef.current = false
@@ -997,9 +993,8 @@ function CalendarView() {
     }
   })
 
-  // Sorted unique days from the accumulator map → grouped into weeks for rendering
   const bufferedWeekGroups = useMemo(() => {
-    const sorted = Array.from(daysAccumRef.current.values()).sort((a, b) =>
+    const sorted = Array.from(daysAccumRef.current!.values()).sort((a, b) =>
       a.isoDate < b.isoDate ? -1 : 1,
     )
     return calendar.groupDaysBy({
@@ -1007,7 +1002,6 @@ function CalendarView() {
       unit: 'week',
       fillMissingDays: true,
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accumVersion, calendar.groupDaysBy])
 
   const { startSentinelRef: monthTopRef, endSentinelRef: monthBottomRef } =
@@ -1279,6 +1273,23 @@ function CalendarView() {
           </Button>
 
           <Button onClick={openAddModal}>+ Add Event</Button>
+
+          <Button
+            onClick={calendar.undo}
+            disabled={!calendar.canUndo()}
+            variant="outline"
+            title="Undo"
+          >
+            ↩ Undo
+          </Button>
+          <Button
+            onClick={calendar.redo}
+            disabled={!calendar.canRedo()}
+            variant="outline"
+            title="Redo"
+          >
+            ↪ Redo
+          </Button>
 
           <div className="ml-auto flex gap-2">
             <Button

@@ -12,7 +12,9 @@ import { CalendarCore } from '@tanstack/time'
 import type {
   CalendarApi,
   CalendarCoreOptions,
+  DependencyType,
   Event,
+  EventDependency,
   ResizeController,
   ResizeControllerOptions,
   ResizeEdge,
@@ -277,16 +279,21 @@ export const useCalendar = <
   const validateEventDependencies = useCallback(
     (
       event: { id?: string; title: string; start: string; end: string },
-      dependsOn: Array<string>,
+      dependsOn: Array<EventDependency>,
     ) => calendarCore.validateEventDependencies(event, dependsOn),
     [calendarCore],
   )
 
   const createDependency = useCallback(
-    (sourceId: string, targetId: string) =>
-      calendarCore.createDependency(sourceId, targetId),
+    (sourceId: string, targetId: string, type?: DependencyType) =>
+      calendarCore.createDependency(sourceId, targetId, type),
     [calendarCore],
   )
+
+  const undo = useCallback(() => calendarCore.undo(), [calendarCore])
+  const redo = useCallback(() => calendarCore.redo(), [calendarCore])
+  const canUndo = useCallback(() => calendarCore.canUndo(), [calendarCore])
+  const canRedo = useCallback(() => calendarCore.canRedo(), [calendarCore])
 
   const fetchEventsForRange = useCallback<
     typeof calendarCore.fetchEventsForRange
@@ -343,5 +350,9 @@ export const useCalendar = <
     fetchEventsForRange,
     validateEventPlacement,
     formatPeriodLabel,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   }
 }

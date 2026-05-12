@@ -1260,8 +1260,6 @@ describe('CalendarCore', () => {
     test('changeViewMode updates the visible mode', () => {
       const cal = createCalendar()
       cal.changeViewMode({ value: 2, unit: 'week' })
-      // No public getter for viewMode; just verify the call doesn't throw
-      // and that downstream behaviours (like getDaysWithEvents) reflect it.
       expect(cal.getDaysWithEvents().length).toBeGreaterThan(0)
     })
 
@@ -2535,2345 +2533,2483 @@ describe('CalendarCore', () => {
       })
     })
   })
-})
 
-describe('CalendarCore - dependency types (FS, SS, FF, SF)', () => {
-  beforeEach(() => {
-    emitSpy.mockClear()
-  })
-
-  describe('validateEventDependencies', () => {
-    const PRED_START = `${DATE_MON}T10:00:00`
-    const PRED_END = `${DATE_MON}T12:00:00`
-
-    function withPredecessor() {
-      return createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: PRED_START,
-            end: PRED_END,
-          },
-        ],
-      })
-    }
-
-    describe('FS - successor.start must be ≥ predecessor.end', () => {
-      test('valid when successor starts exactly at predecessor end', () => {
-        const cal = withPredecessor()
-        const result = cal.validateEventDependencies(
-          {
-            title: 'S',
-            start: `${DATE_MON}T12:00:00`,
-            end: `${DATE_MON}T13:00:00`,
-          },
-          [{ id: 'p', type: 'FS' }],
-        )
-        expect(result.valid).toBe(true)
-      })
-
-      test('valid when successor starts after predecessor end', () => {
-        const cal = withPredecessor()
-        const result = cal.validateEventDependencies(
-          {
-            title: 'S',
-            start: `${DATE_MON}T13:00:00`,
-            end: `${DATE_MON}T14:00:00`,
-          },
-          [{ id: 'p', type: 'FS' }],
-        )
-        expect(result.valid).toBe(true)
-      })
-
-      test('invalid when successor starts before predecessor end', () => {
-        const cal = withPredecessor()
-        const result = cal.validateEventDependencies(
-          {
-            title: 'S',
-            start: `${DATE_MON}T11:00:00`,
-            end: `${DATE_MON}T13:00:00`,
-          },
-          [{ id: 'p', type: 'FS' }],
-        )
-        assert(!result.valid)
-        expect(result.error?.reason).toBe('blocked')
-        expect(result.error?.message).toContain('cannot start before')
-        expect(result.error?.message).toContain('ends')
-        expect(result.error?.message).toContain('(FS)')
-      })
+  describe('dependency types (FS, SS, FF, SF)', () => {
+    beforeEach(() => {
+      emitSpy.mockClear()
     })
 
-    describe('SS - successor.start must be ≥ predecessor.start', () => {
-      test('valid when successor starts exactly at predecessor start', () => {
-        const cal = withPredecessor()
-        const result = cal.validateEventDependencies(
-          {
-            title: 'S',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T11:00:00`,
-          },
-          [{ id: 'p', type: 'SS' }],
-        )
-        expect(result.valid).toBe(true)
-      })
+    describe('validateEventDependencies', () => {
+      const PRED_START = `${DATE_MON}T10:00:00`
+      const PRED_END = `${DATE_MON}T12:00:00`
 
-      test('valid when successor starts after predecessor start (even if predecessor still running)', () => {
-        const cal = withPredecessor()
-        const result = cal.validateEventDependencies(
-          {
-            title: 'S',
-            start: `${DATE_MON}T10:30:00`,
-            end: `${DATE_MON}T11:30:00`,
-          },
-          [{ id: 'p', type: 'SS' }],
-        )
-        expect(result.valid).toBe(true)
-      })
-
-      test('invalid when successor starts before predecessor start', () => {
-        const cal = withPredecessor()
-        const result = cal.validateEventDependencies(
-          {
-            title: 'S',
-            start: `${DATE_MON}T09:30:00`,
-            end: `${DATE_MON}T11:00:00`,
-          },
-          [{ id: 'p', type: 'SS' }],
-        )
-        assert(!result.valid)
-        expect(result.error?.message).toContain('cannot start before')
-        expect(result.error?.message).toContain('starts')
-        expect(result.error?.message).toContain('(SS)')
-      })
-    })
-
-    describe('FF - successor.end must be ≥ predecessor.end', () => {
-      test('valid when successor ends exactly at predecessor end', () => {
-        const cal = withPredecessor()
-        const result = cal.validateEventDependencies(
-          {
-            title: 'S',
-            start: `${DATE_MON}T11:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-          },
-          [{ id: 'p', type: 'FF' }],
-        )
-        expect(result.valid).toBe(true)
-      })
-
-      test('valid when successor ends after predecessor end', () => {
-        const cal = withPredecessor()
-        const result = cal.validateEventDependencies(
-          {
-            title: 'S',
-            start: `${DATE_MON}T08:00:00`,
-            end: `${DATE_MON}T13:00:00`,
-          },
-          [{ id: 'p', type: 'FF' }],
-        )
-        expect(result.valid).toBe(true)
-      })
-
-      test('invalid when successor ends before predecessor end', () => {
-        const cal = withPredecessor()
-        const result = cal.validateEventDependencies(
-          {
-            title: 'S',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T11:30:00`,
-          },
-          [{ id: 'p', type: 'FF' }],
-        )
-        assert(!result.valid)
-        expect(result.error?.message).toContain('cannot end before')
-        expect(result.error?.message).toContain('ends')
-        expect(result.error?.message).toContain('(FF)')
-      })
-    })
-
-    describe('SF - successor.end must be ≥ predecessor.start', () => {
-      test('valid when successor ends exactly at predecessor start', () => {
-        const cal = withPredecessor()
-        const result = cal.validateEventDependencies(
-          {
-            title: 'S',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:00:00`,
-          },
-          [{ id: 'p', type: 'SF' }],
-        )
-        expect(result.valid).toBe(true)
-      })
-
-      test('valid when successor ends after predecessor start', () => {
-        const cal = withPredecessor()
-        const result = cal.validateEventDependencies(
-          {
-            title: 'S',
-            start: `${DATE_MON}T08:00:00`,
-            end: `${DATE_MON}T11:00:00`,
-          },
-          [{ id: 'p', type: 'SF' }],
-        )
-        expect(result.valid).toBe(true)
-      })
-
-      test('invalid when successor ends before predecessor start', () => {
-        const cal = withPredecessor()
-        const result = cal.validateEventDependencies(
-          {
-            title: 'S',
-            start: `${DATE_MON}T08:00:00`,
-            end: `${DATE_MON}T09:30:00`,
-          },
-          [{ id: 'p', type: 'SF' }],
-        )
-        assert(!result.valid)
-        expect(result.error?.message).toContain('cannot end before')
-        expect(result.error?.message).toContain('starts')
-        expect(result.error?.message).toContain('(SF)')
-      })
-    })
-
-    describe('shape and edge cases', () => {
-      test('returns valid:true when there are no events in the calendar', () => {
-        const cal = createCalendar()
-        const result = cal.validateEventDependencies(
-          {
-            title: 'S',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T11:00:00`,
-          },
-          [{ id: 'missing', type: 'FS' }],
-        )
-        expect(result.valid).toBe(true)
-      })
-
-      test('skips dependencies whose predecessor id is unknown', () => {
-        const cal = withPredecessor()
-        const result = cal.validateEventDependencies(
-          {
-            title: 'S',
-            start: `${DATE_MON}T08:00:00`,
-            end: `${DATE_MON}T09:00:00`,
-          },
-          [{ id: 'does-not-exist', type: 'FS' }],
-        )
-        expect(result.valid).toBe(true)
-      })
-
-      test('reports the first failing dependency when multiple are violated', () => {
-        const cal = createCalendar({
+      function withPredecessor() {
+        return createCalendar({
           events: [
             {
-              id: 'p1',
-              title: 'P1',
+              id: 'p',
+              title: 'P',
+              start: PRED_START,
+              end: PRED_END,
+            },
+          ],
+        })
+      }
+
+      describe('FS - successor.start must be ≥ predecessor.end', () => {
+        test('valid when successor starts exactly at predecessor end', () => {
+          const cal = withPredecessor()
+          const result = cal.validateEventDependencies(
+            {
+              title: 'S',
+              start: `${DATE_MON}T12:00:00`,
+              end: `${DATE_MON}T13:00:00`,
+            },
+            [{ id: 'p', type: 'FS' }],
+          )
+          expect(result.valid).toBe(true)
+        })
+
+        test('valid when successor starts after predecessor end', () => {
+          const cal = withPredecessor()
+          const result = cal.validateEventDependencies(
+            {
+              title: 'S',
+              start: `${DATE_MON}T13:00:00`,
+              end: `${DATE_MON}T14:00:00`,
+            },
+            [{ id: 'p', type: 'FS' }],
+          )
+          expect(result.valid).toBe(true)
+        })
+
+        test('invalid when successor starts before predecessor end', () => {
+          const cal = withPredecessor()
+          const result = cal.validateEventDependencies(
+            {
+              title: 'S',
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T13:00:00`,
+            },
+            [{ id: 'p', type: 'FS' }],
+          )
+          assert(!result.valid)
+          expect(result.error?.reason).toBe('blocked')
+          expect(result.error?.message).toContain('cannot start before')
+          expect(result.error?.message).toContain('ends')
+          expect(result.error?.message).toContain('(FS)')
+        })
+      })
+
+      describe('SS - successor.start must be ≥ predecessor.start', () => {
+        test('valid when successor starts exactly at predecessor start', () => {
+          const cal = withPredecessor()
+          const result = cal.validateEventDependencies(
+            {
+              title: 'S',
               start: `${DATE_MON}T10:00:00`,
               end: `${DATE_MON}T11:00:00`,
             },
+            [{ id: 'p', type: 'SS' }],
+          )
+          expect(result.valid).toBe(true)
+        })
+
+        test('valid when successor starts after predecessor start (even if predecessor still running)', () => {
+          const cal = withPredecessor()
+          const result = cal.validateEventDependencies(
             {
-              id: 'p2',
-              title: 'P2',
+              title: 'S',
+              start: `${DATE_MON}T10:30:00`,
+              end: `${DATE_MON}T11:30:00`,
+            },
+            [{ id: 'p', type: 'SS' }],
+          )
+          expect(result.valid).toBe(true)
+        })
+
+        test('invalid when successor starts before predecessor start', () => {
+          const cal = withPredecessor()
+          const result = cal.validateEventDependencies(
+            {
+              title: 'S',
+              start: `${DATE_MON}T09:30:00`,
+              end: `${DATE_MON}T11:00:00`,
+            },
+            [{ id: 'p', type: 'SS' }],
+          )
+          assert(!result.valid)
+          expect(result.error?.message).toContain('cannot start before')
+          expect(result.error?.message).toContain('starts')
+          expect(result.error?.message).toContain('(SS)')
+        })
+      })
+
+      describe('FF - successor.end must be ≥ predecessor.end', () => {
+        test('valid when successor ends exactly at predecessor end', () => {
+          const cal = withPredecessor()
+          const result = cal.validateEventDependencies(
+            {
+              title: 'S',
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+            },
+            [{ id: 'p', type: 'FF' }],
+          )
+          expect(result.valid).toBe(true)
+        })
+
+        test('valid when successor ends after predecessor end', () => {
+          const cal = withPredecessor()
+          const result = cal.validateEventDependencies(
+            {
+              title: 'S',
+              start: `${DATE_MON}T08:00:00`,
+              end: `${DATE_MON}T13:00:00`,
+            },
+            [{ id: 'p', type: 'FF' }],
+          )
+          expect(result.valid).toBe(true)
+        })
+
+        test('invalid when successor ends before predecessor end', () => {
+          const cal = withPredecessor()
+          const result = cal.validateEventDependencies(
+            {
+              title: 'S',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T11:30:00`,
+            },
+            [{ id: 'p', type: 'FF' }],
+          )
+          assert(!result.valid)
+          expect(result.error?.message).toContain('cannot end before')
+          expect(result.error?.message).toContain('ends')
+          expect(result.error?.message).toContain('(FF)')
+        })
+      })
+
+      describe('SF - successor.end must be ≥ predecessor.start', () => {
+        test('valid when successor ends exactly at predecessor start', () => {
+          const cal = withPredecessor()
+          const result = cal.validateEventDependencies(
+            {
+              title: 'S',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+            },
+            [{ id: 'p', type: 'SF' }],
+          )
+          expect(result.valid).toBe(true)
+        })
+
+        test('valid when successor ends after predecessor start', () => {
+          const cal = withPredecessor()
+          const result = cal.validateEventDependencies(
+            {
+              title: 'S',
+              start: `${DATE_MON}T08:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+            },
+            [{ id: 'p', type: 'SF' }],
+          )
+          expect(result.valid).toBe(true)
+        })
+
+        test('invalid when successor ends before predecessor start', () => {
+          const cal = withPredecessor()
+          const result = cal.validateEventDependencies(
+            {
+              title: 'S',
+              start: `${DATE_MON}T08:00:00`,
+              end: `${DATE_MON}T09:30:00`,
+            },
+            [{ id: 'p', type: 'SF' }],
+          )
+          assert(!result.valid)
+          expect(result.error?.message).toContain('cannot end before')
+          expect(result.error?.message).toContain('starts')
+          expect(result.error?.message).toContain('(SF)')
+        })
+      })
+
+      describe('shape and edge cases', () => {
+        test('returns valid:true when there are no events in the calendar', () => {
+          const cal = createCalendar()
+          const result = cal.validateEventDependencies(
+            {
+              title: 'S',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+            },
+            [{ id: 'missing', type: 'FS' }],
+          )
+          expect(result.valid).toBe(true)
+        })
+
+        test('skips dependencies whose predecessor id is unknown', () => {
+          const cal = withPredecessor()
+          const result = cal.validateEventDependencies(
+            {
+              title: 'S',
+              start: `${DATE_MON}T08:00:00`,
+              end: `${DATE_MON}T09:00:00`,
+            },
+            [{ id: 'does-not-exist', type: 'FS' }],
+          )
+          expect(result.valid).toBe(true)
+        })
+
+        test('reports the first failing dependency when multiple are violated', () => {
+          const cal = createCalendar({
+            events: [
+              {
+                id: 'p1',
+                title: 'P1',
+                start: `${DATE_MON}T10:00:00`,
+                end: `${DATE_MON}T11:00:00`,
+              },
+              {
+                id: 'p2',
+                title: 'P2',
+                start: `${DATE_MON}T13:00:00`,
+                end: `${DATE_MON}T14:00:00`,
+              },
+            ],
+          })
+
+          const result = cal.validateEventDependencies(
+            {
+              title: 'S',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T09:30:00`,
+            },
+            [
+              { id: 'p1', type: 'FS' },
+              { id: 'p2', type: 'FS' },
+            ],
+          )
+
+          assert(!result.valid)
+          expect(result.error?.message).toContain('P1')
+        })
+
+        test('passes through provided event id and title in the error payload', () => {
+          const cal = withPredecessor()
+          const result = cal.validateEventDependencies(
+            {
+              id: 'my-event',
+              title: 'My Event',
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T11:30:00`,
+            },
+            [{ id: 'p', type: 'FS' }],
+          )
+
+          assert(!result.valid)
+          expect(result.error?.eventId).toBe('my-event')
+          expect(result.error?.eventTitle).toBe('My Event')
+          expect(result.error?.originalStart).toBe(`${DATE_MON}T11:00:00`)
+          expect(result.error?.originalEnd).toBe(`${DATE_MON}T11:30:00`)
+        })
+      })
+    })
+
+    describe('validateMove - predecessor cascade per type', () => {
+      test('FS: moving successor earlier pulls predecessor back into unavailable hours → blocked', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T08:30:00`,
+              end: `${DATE_MON}T09:30:00`,
+              resources: [weekdayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: [weekdayResource],
+              dependsOn: [{ id: 'p', type: 'FS' }],
+            },
+          ],
+          resources: [weekdayResource],
+        })
+
+        const r = cal.validateMove(
+          's',
+          `${DATE_MON}T08:00:00`,
+          `${DATE_MON}T09:00:00`,
+        )
+        expect(r.blocked).toBe(true)
+        expect(r.blockedEventTitle).toBe('P')
+        expect(r.message).toContain('pulled into unavailable')
+      })
+
+      test('SS: moving successor before predecessor.start pulls predecessor back', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T08:30:00`,
+              end: `${DATE_MON}T09:30:00`,
+              resources: [weekdayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+              resources: [weekdayResource],
+              dependsOn: [{ id: 'p', type: 'SS' }],
+            },
+          ],
+          resources: [weekdayResource],
+        })
+
+        const r = cal.validateMove(
+          's',
+          `${DATE_MON}T07:30:00`,
+          `${DATE_MON}T08:30:00`,
+        )
+        expect(r.blocked).toBe(true)
+        expect(r.blockedEventTitle).toBe('P')
+      })
+
+      test('FF: shrinking successor.end below predecessor.end pulls predecessor back', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T08:30:00`,
+              end: `${DATE_MON}T09:30:00`,
+              resources: [weekdayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+              resources: [weekdayResource],
+              dependsOn: [{ id: 'p', type: 'FF' }],
+            },
+          ],
+          resources: [weekdayResource],
+        })
+
+        const allowed = cal.validateMove(
+          's',
+          `${DATE_MON}T08:00:00`,
+          `${DATE_MON}T09:00:00`,
+        )
+        expect(allowed.blocked).toBe(false)
+
+        const blocked = cal.validateMove(
+          's',
+          `${DATE_MON}T07:30:00`,
+          `${DATE_MON}T08:30:00`,
+        )
+        expect(blocked.blocked).toBe(true)
+        expect(blocked.blockedEventTitle).toBe('P')
+      })
+
+      test('SF: shrinking successor.end below predecessor.start pulls predecessor back', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T08:30:00`,
+              end: `${DATE_MON}T10:00:00`,
+              resources: [weekdayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+              resources: [weekdayResource],
+              dependsOn: [{ id: 'p', type: 'SF' }],
+            },
+          ],
+          resources: [weekdayResource],
+        })
+
+        const r = cal.validateMove(
+          's',
+          `${DATE_MON}T06:30:00`,
+          `${DATE_MON}T07:30:00`,
+        )
+        expect(r.blocked).toBe(true)
+        expect(r.blockedEventTitle).toBe('P')
+      })
+
+      test('FS: moving successor later (constraint already satisfied) does not touch predecessor', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+              dependsOn: [{ id: 'p', type: 'FS' }],
+            },
+          ],
+          resources: [allDayResource],
+        })
+
+        const r = cal.validateMove(
+          's',
+          `${DATE_MON}T14:00:00`,
+          `${DATE_MON}T15:00:00`,
+        )
+        expect(r.blocked).toBe(false)
+      })
+    })
+
+    describe('createDependency', () => {
+      test('FS: reschedules target forward when target.start < source.end', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T13:00:00`,
+              resources: [allDayResource],
+            },
+          ],
+          resources: [allDayResource],
+        })
+        cal.commitUpdate('s', { dependsOn: [] })
+
+        const result = cal.createDependency('p', 's', 'FS')
+
+        expect(result.blocked).toBe(false)
+        const s = cal.getEvents().find((e) => e.id === 's')!
+        expect(s.start).toBe(`${DATE_MON}T12:00:00`)
+        expect(s.end).toBe(`${DATE_MON}T14:00:00`)
+        expect(s.dependsOn).toEqual([{ id: 'p', type: 'FS' }])
+      })
+
+      test('SS: reschedules target forward when target.start < source.start', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:30:00`,
+              resources: [allDayResource],
+            },
+          ],
+          resources: [allDayResource],
+        })
+        cal.commitUpdate('s', { dependsOn: [] })
+
+        const result = cal.createDependency('p', 's', 'SS')
+
+        expect(result.blocked).toBe(false)
+        const s = cal.getEvents().find((e) => e.id === 's')!
+        expect(s.start).toBe(`${DATE_MON}T10:00:00`)
+        expect(s.end).toBe(`${DATE_MON}T11:30:00`)
+      })
+
+      test('FF: reschedules target forward when target.end < source.end', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T13:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: [allDayResource],
+            },
+          ],
+          resources: [allDayResource],
+        })
+        cal.commitUpdate('s', { dependsOn: [] })
+
+        const result = cal.createDependency('p', 's', 'FF')
+
+        expect(result.blocked).toBe(false)
+        const s = cal.getEvents().find((e) => e.id === 's')!
+        expect(s.start).toBe(`${DATE_MON}T11:00:00`)
+        expect(s.end).toBe(`${DATE_MON}T13:00:00`)
+      })
+
+      test('SF: reschedules target forward when target.end < source.start', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T13:00:00`,
+              end: `${DATE_MON}T15:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+              resources: [allDayResource],
+            },
+          ],
+          resources: [allDayResource],
+        })
+        cal.commitUpdate('s', { dependsOn: [] })
+
+        const result = cal.createDependency('p', 's', 'SF')
+
+        expect(result.blocked).toBe(false)
+        const s = cal.getEvents().find((e) => e.id === 's')!
+        expect(s.start).toBe(`${DATE_MON}T12:00:00`)
+        expect(s.end).toBe(`${DATE_MON}T13:00:00`)
+      })
+
+      test('does not reschedule when constraint is already satisfied', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+            },
+          ],
+          resources: [allDayResource],
+        })
+
+        const result = cal.createDependency('p', 's', 'FS')
+
+        expect(result.blocked).toBe(false)
+        const s = cal.getEvents().find((e) => e.id === 's')!
+        expect(s.start).toBe(`${DATE_MON}T11:00:00`)
+        expect(s.end).toBe(`${DATE_MON}T12:00:00`)
+        expect(s.dependsOn).toEqual([{ id: 'p', type: 'FS' }])
+      })
+
+      test('default type is FS when no type is specified', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+            },
+          ],
+          resources: [allDayResource],
+        })
+
+        cal.createDependency('p', 's')
+
+        const s = cal.getEvents().find((e) => e.id === 's')!
+        expect(s.dependsOn).toEqual([{ id: 'p', type: 'FS' }])
+      })
+
+      test('does nothing when source or target is missing', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+            },
+          ],
+        })
+
+        expect(cal.createDependency('p', 'missing', 'FS')).toEqual({
+          blocked: false,
+        })
+        expect(cal.createDependency('missing', 'p', 'FS')).toEqual({
+          blocked: false,
+        })
+      })
+
+      test('is idempotent - adding the same (sourceId, type) pair twice is a no-op', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+            },
+          ],
+          resources: [allDayResource],
+        })
+
+        cal.createDependency('p', 's', 'FS')
+        cal.createDependency('p', 's', 'FS')
+
+        const s = cal.getEvents().find((e) => e.id === 's')!
+        expect(s.dependsOn).toEqual([{ id: 'p', type: 'FS' }])
+      })
+
+      test('allows the same source to be linked to the same target with different types', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+            },
+          ],
+          resources: [allDayResource],
+        })
+
+        cal.createDependency('p', 's', 'FS')
+        cal.createDependency('p', 's', 'SS')
+
+        const s = cal.getEvents().find((e) => e.id === 's')!
+        expect(s.dependsOn).toEqual([
+          { id: 'p', type: 'FS' },
+          { id: 'p', type: 'SS' },
+        ])
+      })
+
+      test('blocks creation when reschedule would land target in unavailable time', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T15:00:00`,
+              end: `${DATE_MON}T16:00:00`,
+              resources: [weekdayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T16:00:00`,
+              resources: [weekdayResource],
+            },
+          ],
+          resources: [weekdayResource],
+        })
+
+        const result = cal.createDependency('p', 's', 'FS')
+
+        assert(result.blocked)
+        expect(result.error?.reason).toBe('unavailable-time')
+        expect(result.error?.eventId).toBe('s')
+        expect(result.error?.attemptedStart).toBe(`${DATE_MON}T16:00:00`)
+        expect(result.error?.attemptedEnd).toBe(`${DATE_MON}T23:00:00`)
+
+        const s = cal.getEvents().find((e) => e.id === 's')!
+        expect(s.start).toBe(`${DATE_MON}T09:00:00`)
+        expect(s.end).toBe(`${DATE_MON}T16:00:00`)
+        expect(s.dependsOn ?? []).toEqual([])
+      })
+    })
+
+    describe('commitUpdate forward cascade per type', () => {
+      test('FS: shifts successor when predecessor.end extends past successor.start', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+              dependsOn: [{ id: 'p', type: 'FS' }],
+            },
+          ],
+          resources: [allDayResource],
+        })
+
+        cal.commitUpdate('p', { end: `${DATE_MON}T12:30:00` })
+
+        const s = cal.getEvents().find((e) => e.id === 's')!
+
+        expect(s.start).toBe(`${DATE_MON}T12:30:00`)
+        expect(s.end).toBe(`${DATE_MON}T13:30:00`)
+      })
+
+      test('SS: shifts successor when predecessor.start moves later past successor.start', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T10:30:00`,
+              end: `${DATE_MON}T11:30:00`,
+              resources: [allDayResource],
+              dependsOn: [{ id: 'p', type: 'SS' }],
+            },
+          ],
+          resources: [allDayResource],
+        })
+
+        cal.commitUpdate('p', {
+          start: `${DATE_MON}T11:00:00`,
+          end: `${DATE_MON}T12:00:00`,
+        })
+
+        const s = cal.getEvents().find((e) => e.id === 's')!
+
+        expect(s.start).toBe(`${DATE_MON}T11:00:00`)
+        expect(s.end).toBe(`${DATE_MON}T12:00:00`)
+      })
+
+      test('FF: shifts successor when predecessor.end moves past successor.end', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T10:30:00`,
+              end: `${DATE_MON}T11:30:00`,
+              resources: [allDayResource],
+              dependsOn: [{ id: 'p', type: 'FF' }],
+            },
+          ],
+          resources: [allDayResource],
+        })
+
+        cal.commitUpdate('p', { end: `${DATE_MON}T13:00:00` })
+
+        const s = cal.getEvents().find((e) => e.id === 's')!
+
+        expect(s.start).toBe(`${DATE_MON}T12:00:00`)
+        expect(s.end).toBe(`${DATE_MON}T13:00:00`)
+      })
+
+      test('SF: shifts successor when predecessor.start moves past successor.end', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+              resources: [allDayResource],
+              dependsOn: [{ id: 'p', type: 'SF' }],
+            },
+          ],
+          resources: [allDayResource],
+        })
+
+        cal.commitUpdate('p', {
+          start: `${DATE_MON}T13:00:00`,
+          end: `${DATE_MON}T14:00:00`,
+        })
+
+        const s = cal.getEvents().find((e) => e.id === 's')!
+
+        expect(s.start).toBe(`${DATE_MON}T12:00:00`)
+        expect(s.end).toBe(`${DATE_MON}T13:00:00`)
+      })
+
+      test('does not shift when constraint stays satisfied', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T14:00:00`,
+              end: `${DATE_MON}T15:00:00`,
+              resources: [allDayResource],
+              dependsOn: [{ id: 'p', type: 'FS' }],
+            },
+          ],
+          resources: [allDayResource],
+        })
+
+        cal.commitUpdate('p', { end: `${DATE_MON}T11:30:00` })
+
+        const s = cal.getEvents().find((e) => e.id === 's')!
+        expect(s.start).toBe(`${DATE_MON}T14:00:00`)
+        expect(s.end).toBe(`${DATE_MON}T15:00:00`)
+      })
+
+      test('mixed-type chain propagates correctly: A -SS→ B -FS→ C', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'a',
+              title: 'A',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 'b',
+              title: 'B',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:30:00`,
+              resources: [allDayResource],
+              dependsOn: [{ id: 'a', type: 'SS' }],
+            },
+            {
+              id: 'c',
+              title: 'C',
+              start: `${DATE_MON}T10:30:00`,
+              end: `${DATE_MON}T11:30:00`,
+              resources: [allDayResource],
+              dependsOn: [{ id: 'b', type: 'FS' }],
+            },
+          ],
+          resources: [allDayResource],
+        })
+
+        cal.commitUpdate('a', {
+          start: `${DATE_MON}T10:00:00`,
+          end: `${DATE_MON}T11:00:00`,
+        })
+
+        const events = cal.getEvents()
+        const b = events.find((e) => e.id === 'b')!
+        const c = events.find((e) => e.id === 'c')!
+        expect(b.start).toBe(`${DATE_MON}T10:00:00`)
+        expect(b.end).toBe(`${DATE_MON}T11:30:00`)
+        expect(c.start).toBe(`${DATE_MON}T11:30:00`)
+        expect(c.end).toBe(`${DATE_MON}T12:30:00`)
+      })
+
+      test('shifts only the dependents of the changed predecessor - unrelated events stay put', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+              dependsOn: [{ id: 'p', type: 'FS' }],
+            },
+            {
+              id: 'unrelated',
+              title: 'Unrelated',
+              start: `${DATE_MON}T11:30:00`,
+              end: `${DATE_MON}T12:30:00`,
+              resources: [allDayResource],
+            },
+          ],
+          resources: [allDayResource],
+        })
+
+        cal.commitUpdate('p', { end: `${DATE_MON}T13:00:00` })
+
+        const u = cal.getEvents().find((e) => e.id === 'unrelated')!
+        expect(u.start).toBe(`${DATE_MON}T11:30:00`)
+        expect(u.end).toBe(`${DATE_MON}T12:30:00`)
+      })
+    })
+
+    describe('commitUpdate backward cascade per type', () => {
+      test('FS: pulls predecessor back when successor.start moves before predecessor.end', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T12:00:00`,
+              end: `${DATE_MON}T13:00:00`,
+              resources: [allDayResource],
+              dependsOn: [{ id: 'p', type: 'FS' }],
+            },
+          ],
+          resources: [allDayResource],
+        })
+
+        cal.commitUpdate('s', {
+          start: `${DATE_MON}T10:00:00`,
+          end: `${DATE_MON}T11:00:00`,
+        })
+
+        const p = cal.getEvents().find((e) => e.id === 'p')!
+
+        expect(p.start).toBe(`${DATE_MON}T09:00:00`)
+        expect(p.end).toBe(`${DATE_MON}T10:00:00`)
+      })
+
+      test('SS: pulls predecessor back when successor.start moves before predecessor.start', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T11:30:00`,
+              end: `${DATE_MON}T12:30:00`,
+              resources: [allDayResource],
+              dependsOn: [{ id: 'p', type: 'SS' }],
+            },
+          ],
+          resources: [allDayResource],
+        })
+
+        cal.commitUpdate('s', {
+          start: `${DATE_MON}T10:00:00`,
+          end: `${DATE_MON}T11:00:00`,
+        })
+
+        const p = cal.getEvents().find((e) => e.id === 'p')!
+
+        expect(p.start).toBe(`${DATE_MON}T10:00:00`)
+        expect(p.end).toBe(`${DATE_MON}T11:00:00`)
+      })
+    })
+
+    describe('validateResize top-edge dependency check', () => {
+      const baseResizeOptions = {
+        constraints: { snapToMinutes: 15, minDurationMinutes: 15 },
+      }
+
+      test('FS: blocked when shrinking start before predecessor.end', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T12:00:00`,
+              end: `${DATE_MON}T14:00:00`,
+              resources: [allDayResource],
+              dependsOn: [{ id: 'p', type: 'FS' }],
+            },
+          ],
+          resources: [allDayResource],
+        })
+
+        const r = cal.validateResize({
+          eventId: 's',
+          originalStart: `${DATE_MON}T12:00:00`,
+          originalEnd: `${DATE_MON}T14:00:00`,
+          edge: 'top',
+          totalDeltaMinutes: -60,
+          targetDayDate: DATE_MON,
+          originalDayDate: DATE_MON,
+          ...baseResizeOptions,
+        })
+
+        expect(r.blocked).toBe(true)
+        expect(r.error?.reason).toBe('blocked')
+        expect(r.error?.message).toContain('FS')
+      })
+
+      test('SS: blocked when shrinking start before predecessor.start', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T14:00:00`,
+              resources: [allDayResource],
+              dependsOn: [{ id: 'p', type: 'SS' }],
+            },
+          ],
+          resources: [allDayResource],
+        })
+
+        const r = cal.validateResize({
+          eventId: 's',
+          originalStart: `${DATE_MON}T11:00:00`,
+          originalEnd: `${DATE_MON}T14:00:00`,
+          edge: 'top',
+          totalDeltaMinutes: -120,
+          targetDayDate: DATE_MON,
+          originalDayDate: DATE_MON,
+          ...baseResizeOptions,
+        })
+
+        expect(r.blocked).toBe(true)
+        expect(r.error?.message).toContain('SS')
+      })
+
+      test('FF: not blocked by top-edge resize because end stays unchanged', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T13:00:00`,
+              resources: [allDayResource],
+              dependsOn: [{ id: 'p', type: 'FF' }],
+            },
+          ],
+          resources: [allDayResource],
+        })
+
+        const r = cal.validateResize({
+          eventId: 's',
+          originalStart: `${DATE_MON}T11:00:00`,
+          originalEnd: `${DATE_MON}T13:00:00`,
+          edge: 'top',
+          totalDeltaMinutes: -90,
+          targetDayDate: DATE_MON,
+          originalDayDate: DATE_MON,
+          ...baseResizeOptions,
+        })
+
+        expect(r.blocked).toBe(false)
+      })
+    })
+
+    describe('addEvent', () => {
+      test('successfully adds an event and returns { success: true }', async () => {
+        const cal = createCalendar({ resources: [weekdayResource] })
+
+        const result = await cal.addEvent({
+          id: 'e1',
+          title: 'New Event',
+          start: `${DATE_MON}T09:00:00`,
+          end: `${DATE_MON}T10:00:00`,
+          resources: [weekdayResource],
+        })
+
+        expect(result.success).toBe(true)
+        expect(cal.getEvents()).toHaveLength(1)
+        expect(cal.getEvents()[0]!.id).toBe('e1')
+      })
+
+      test('returns failure when placement violates resource availability', async () => {
+        const cal = createCalendar({ resources: [weekdayResource] })
+
+        const result = await cal.addEvent({
+          id: 'e1',
+          title: 'Too Early',
+          start: `${DATE_MON}T06:00:00`,
+          end: `${DATE_MON}T07:00:00`,
+          resources: [weekdayResource],
+        })
+
+        assert(!result.success)
+        expect(result.error.reason).toBe('blocked')
+        expect(result.error.eventId).toBe('e1')
+        expect(result.error.eventTitle).toBe('Too Early')
+        expect(result.error.originalStart).toBe(`${DATE_MON}T06:00:00`)
+        expect(result.error.originalEnd).toBe(`${DATE_MON}T07:00:00`)
+
+        expect(cal.getEvents()).toHaveLength(0)
+      })
+
+      test('returns failure when dependency constraint is violated', async () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+            },
+          ],
+        })
+
+        const result = await cal.addEvent(
+          {
+            id: 's',
+            title: 'S',
+            start: `${DATE_MON}T11:00:00`,
+            end: `${DATE_MON}T13:00:00`,
+          },
+          { dependsOn: [{ id: 'p', type: 'FS' }] },
+        )
+
+        assert(!result.success)
+        expect(result.error.reason).toBe('blocked')
+        expect(result.error.message).toContain('cannot start before')
+        expect(cal.getEvents().find((e) => e.id === 's')).toBeUndefined()
+      })
+
+      test('triggers fetchEvents for the event date range before validating', async () => {
+        const fetchEvents = vi.fn().mockResolvedValue([])
+        const cal = createCalendar({
+          resources: [weekdayResource],
+          fetchEvents,
+        })
+
+        await cal.addEvent({
+          id: 'e1',
+          title: 'Event',
+          start: `${DATE_MON}T09:00:00`,
+          end: `${DATE_MON}T10:00:00`,
+          resources: [weekdayResource],
+        })
+
+        expect(fetchEvents).toHaveBeenCalledTimes(1)
+        const call = fetchEvents.mock.calls[0]![0]
+        expect(call.start).toBe(DATE_MON)
+        expect(call.end).toBe(DATE_TUE)
+      })
+
+      test('does not fetch when fetchEvents is not configured', async () => {
+        const cal = createCalendar({ resources: [weekdayResource] })
+
+        const result = await cal.addEvent({
+          id: 'e1',
+          title: 'Event',
+          start: `${DATE_MON}T09:00:00`,
+          end: `${DATE_MON}T10:00:00`,
+          resources: [weekdayResource],
+        })
+
+        expect(result.success).toBe(true)
+      })
+    })
+
+    describe('editEvent', () => {
+      test('successfully updates an event', async () => {
+        const cal = createCalendar({
+          resources: [weekdayResource],
+          events: [
+            {
+              id: 'e1',
+              title: 'Original',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+              resources: [weekdayResource],
+            },
+          ],
+        })
+
+        const result = await cal.editEvent('e1', { title: 'Updated' })
+
+        expect(result.success).toBe(true)
+        expect(cal.getEvents()[0]!.title).toBe('Updated')
+      })
+
+      test('returns failure for unknown event id', async () => {
+        const cal = createCalendar()
+
+        const result = await cal.editEvent('nonexistent', { title: 'X' })
+
+        assert(!result.success)
+        expect(result.error.eventId).toBe('nonexistent')
+        expect(result.error.message).toContain('not found')
+      })
+
+      test('skips move validation when start/end/resources/consumption are unchanged', async () => {
+        const cal = createCalendar({
+          resources: [weekdayResource],
+          events: [
+            {
+              id: 'e1',
+              title: 'Original',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+              resources: [weekdayResource],
+            },
+          ],
+        })
+
+        const result = await cal.editEvent('e1', { title: 'Renamed' })
+        expect(result.success).toBe(true)
+        expect(cal.getEvents()[0]!.title).toBe('Renamed')
+      })
+
+      test('returns failure when new position violates availability', async () => {
+        const cal = createCalendar({
+          resources: [weekdayResource],
+          events: [
+            {
+              id: 'e1',
+              title: 'E1',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+              resources: [weekdayResource],
+            },
+          ],
+        })
+
+        const result = await cal.editEvent('e1', {
+          start: `${DATE_MON}T06:00:00`,
+          end: `${DATE_MON}T07:00:00`,
+        })
+
+        assert(!result.success)
+        expect(result.error.attemptedStart).toBe(`${DATE_MON}T06:00:00`)
+        expect(result.error.attemptedEnd).toBe(`${DATE_MON}T07:00:00`)
+        expect(result.error.originalStart).toBe(`${DATE_MON}T09:00:00`)
+        expect(result.error.originalEnd).toBe(`${DATE_MON}T10:00:00`)
+        expect(cal.getEvents()[0]!.start).toBe(`${DATE_MON}T09:00:00`)
+      })
+
+      test('fetchEvents range covers both old and new positions', async () => {
+        const fetchEvents = vi.fn().mockResolvedValue([])
+        const cal = createCalendar({
+          resources: [allDayResource],
+          fetchEvents,
+          events: [
+            {
+              id: 'e1',
+              title: 'E1',
+              start: `${DATE_TUE}T09:00:00`,
+              end: `${DATE_TUE}T10:00:00`,
+              resources: [allDayResource],
+            },
+          ],
+        })
+
+        fetchEvents.mockClear()
+
+        await cal.editEvent('e1', {
+          start: `${DATE_WED}T09:00:00`,
+          end: `${DATE_WED}T10:00:00`,
+        })
+
+        expect(fetchEvents).toHaveBeenCalled()
+        const call = fetchEvents.mock.calls[0]![0]
+        expect(call.start <= DATE_TUE).toBe(true)
+        expect(call.end > DATE_WED).toBe(true)
+      })
+
+      test('validates dependency constraint when dependsOn is provided', async () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+            },
+            {
+              id: 's',
+              title: 'S',
               start: `${DATE_MON}T13:00:00`,
               end: `${DATE_MON}T14:00:00`,
             },
           ],
         })
 
-        const result = cal.validateEventDependencies(
-          {
-            title: 'S',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T09:30:00`,
-          },
-          [
-            { id: 'p1', type: 'FS' },
-            { id: 'p2', type: 'FS' },
-          ],
+        const result = await cal.editEvent(
+          's',
+          { start: `${DATE_MON}T11:00:00`, end: `${DATE_MON}T12:00:00` },
+          { dependsOn: [{ id: 'p', type: 'FS' }] },
         )
 
-        assert(!result.valid)
-        expect(result.error?.message).toContain('P1')
-      })
-
-      test('passes through provided event id and title in the error payload', () => {
-        const cal = withPredecessor()
-        const result = cal.validateEventDependencies(
-          {
-            id: 'my-event',
-            title: 'My Event',
-            start: `${DATE_MON}T11:00:00`,
-            end: `${DATE_MON}T11:30:00`,
-          },
-          [{ id: 'p', type: 'FS' }],
-        )
-
-        assert(!result.valid)
-        expect(result.error?.eventId).toBe('my-event')
-        expect(result.error?.eventTitle).toBe('My Event')
-        expect(result.error?.originalStart).toBe(`${DATE_MON}T11:00:00`)
-        expect(result.error?.originalEnd).toBe(`${DATE_MON}T11:30:00`)
-      })
-    })
-  })
-
-  describe('validateMove - predecessor cascade per type', () => {
-    test('FS: moving successor earlier pulls predecessor back into unavailable hours → blocked', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T08:30:00`,
-            end: `${DATE_MON}T09:30:00`,
-            resources: [weekdayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T11:00:00`,
-            resources: [weekdayResource],
-            dependsOn: [{ id: 'p', type: 'FS' }],
-          },
-        ],
-        resources: [weekdayResource],
-      })
-
-      const r = cal.validateMove(
-        's',
-        `${DATE_MON}T08:00:00`,
-        `${DATE_MON}T09:00:00`,
-      )
-      expect(r.blocked).toBe(true)
-      expect(r.blockedEventTitle).toBe('P')
-      expect(r.message).toContain('pulled into unavailable')
-    })
-
-    test('SS: moving successor before predecessor.start pulls predecessor back', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T08:30:00`,
-            end: `${DATE_MON}T09:30:00`,
-            resources: [weekdayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:00:00`,
-            resources: [weekdayResource],
-            dependsOn: [{ id: 'p', type: 'SS' }],
-          },
-        ],
-        resources: [weekdayResource],
-      })
-
-      const r = cal.validateMove(
-        's',
-        `${DATE_MON}T07:30:00`,
-        `${DATE_MON}T08:30:00`,
-      )
-      expect(r.blocked).toBe(true)
-      expect(r.blockedEventTitle).toBe('P')
-    })
-
-    test('FF: shrinking successor.end below predecessor.end pulls predecessor back', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T08:30:00`,
-            end: `${DATE_MON}T09:30:00`,
-            resources: [weekdayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:00:00`,
-            resources: [weekdayResource],
-            dependsOn: [{ id: 'p', type: 'FF' }],
-          },
-        ],
-        resources: [weekdayResource],
-      })
-
-      const allowed = cal.validateMove(
-        's',
-        `${DATE_MON}T08:00:00`,
-        `${DATE_MON}T09:00:00`,
-      )
-      expect(allowed.blocked).toBe(false)
-
-      const blocked = cal.validateMove(
-        's',
-        `${DATE_MON}T07:30:00`,
-        `${DATE_MON}T08:30:00`,
-      )
-      expect(blocked.blocked).toBe(true)
-      expect(blocked.blockedEventTitle).toBe('P')
-    })
-
-    test('SF: shrinking successor.end below predecessor.start pulls predecessor back', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T08:30:00`,
-            end: `${DATE_MON}T10:00:00`,
-            resources: [weekdayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:00:00`,
-            resources: [weekdayResource],
-            dependsOn: [{ id: 'p', type: 'SF' }],
-          },
-        ],
-        resources: [weekdayResource],
-      })
-
-      const r = cal.validateMove(
-        's',
-        `${DATE_MON}T06:30:00`,
-        `${DATE_MON}T07:30:00`,
-      )
-      expect(r.blocked).toBe(true)
-      expect(r.blockedEventTitle).toBe('P')
-    })
-
-    test('FS: moving successor later (constraint already satisfied) does not touch predecessor', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T11:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T11:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-            resources: [allDayResource],
-            dependsOn: [{ id: 'p', type: 'FS' }],
-          },
-        ],
-        resources: [allDayResource],
-      })
-
-      const r = cal.validateMove(
-        's',
-        `${DATE_MON}T14:00:00`,
-        `${DATE_MON}T15:00:00`,
-      )
-      expect(r.blocked).toBe(false)
-    })
-  })
-
-  describe('createDependency', () => {
-    test('FS: reschedules target forward when target.start < source.end', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T11:00:00`,
-            end: `${DATE_MON}T13:00:00`,
-            resources: [allDayResource],
-          },
-        ],
-        resources: [allDayResource],
-      })
-      cal.commitUpdate('s', { dependsOn: [] })
-
-      const result = cal.createDependency('p', 's', 'FS')
-
-      expect(result.blocked).toBe(false)
-      const s = cal.getEvents().find((e) => e.id === 's')!
-      expect(s.start).toBe(`${DATE_MON}T12:00:00`)
-      expect(s.end).toBe(`${DATE_MON}T14:00:00`)
-      expect(s.dependsOn).toEqual([{ id: 'p', type: 'FS' }])
-    })
-
-    test('SS: reschedules target forward when target.start < source.start', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:30:00`,
-            resources: [allDayResource],
-          },
-        ],
-        resources: [allDayResource],
-      })
-      cal.commitUpdate('s', { dependsOn: [] })
-
-      const result = cal.createDependency('p', 's', 'SS')
-
-      expect(result.blocked).toBe(false)
-      const s = cal.getEvents().find((e) => e.id === 's')!
-      expect(s.start).toBe(`${DATE_MON}T10:00:00`)
-      expect(s.end).toBe(`${DATE_MON}T11:30:00`)
-    })
-
-    test('FF: reschedules target forward when target.end < source.end', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T13:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T11:00:00`,
-            resources: [allDayResource],
-          },
-        ],
-        resources: [allDayResource],
-      })
-      cal.commitUpdate('s', { dependsOn: [] })
-
-      const result = cal.createDependency('p', 's', 'FF')
-
-      expect(result.blocked).toBe(false)
-      const s = cal.getEvents().find((e) => e.id === 's')!
-      expect(s.start).toBe(`${DATE_MON}T11:00:00`)
-      expect(s.end).toBe(`${DATE_MON}T13:00:00`)
-    })
-
-    test('SF: reschedules target forward when target.end < source.start', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T13:00:00`,
-            end: `${DATE_MON}T15:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:00:00`,
-            resources: [allDayResource],
-          },
-        ],
-        resources: [allDayResource],
-      })
-      cal.commitUpdate('s', { dependsOn: [] })
-
-      const result = cal.createDependency('p', 's', 'SF')
-
-      expect(result.blocked).toBe(false)
-      const s = cal.getEvents().find((e) => e.id === 's')!
-      expect(s.start).toBe(`${DATE_MON}T12:00:00`)
-      expect(s.end).toBe(`${DATE_MON}T13:00:00`)
-    })
-
-    test('does not reschedule when constraint is already satisfied', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T11:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-            resources: [allDayResource],
-          },
-        ],
-        resources: [allDayResource],
-      })
-
-      const result = cal.createDependency('p', 's', 'FS')
-
-      expect(result.blocked).toBe(false)
-      const s = cal.getEvents().find((e) => e.id === 's')!
-      expect(s.start).toBe(`${DATE_MON}T11:00:00`)
-      expect(s.end).toBe(`${DATE_MON}T12:00:00`)
-      expect(s.dependsOn).toEqual([{ id: 'p', type: 'FS' }])
-    })
-
-    test('default type is FS when no type is specified', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T11:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-            resources: [allDayResource],
-          },
-        ],
-        resources: [allDayResource],
-      })
-
-      cal.createDependency('p', 's')
-
-      const s = cal.getEvents().find((e) => e.id === 's')!
-      expect(s.dependsOn).toEqual([{ id: 'p', type: 'FS' }])
-    })
-
-    test('does nothing when source or target is missing', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:00:00`,
-          },
-        ],
-      })
-
-      expect(cal.createDependency('p', 'missing', 'FS')).toEqual({
-        blocked: false,
-      })
-      expect(cal.createDependency('missing', 'p', 'FS')).toEqual({
-        blocked: false,
+        assert(!result.success)
+        expect(result.error.reason).toBe('blocked')
       })
     })
 
-    test('is idempotent - adding the same (sourceId, type) pair twice is a no-op', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T11:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-            resources: [allDayResource],
-          },
-        ],
-        resources: [allDayResource],
+    describe('fetchEventsForRange', () => {
+      test('resolves immediately and is a no-op when fetchEvents is not configured', async () => {
+        const cal = createCalendar()
+        await expect(
+          cal.fetchEventsForRange(DATE_MON, DATE_TUE),
+        ).resolves.toBeUndefined()
+        expect(cal.getLoadedRanges()).toHaveLength(0)
       })
 
-      cal.createDependency('p', 's', 'FS')
-      cal.createDependency('p', 's', 'FS')
-
-      const s = cal.getEvents().find((e) => e.id === 's')!
-      expect(s.dependsOn).toEqual([{ id: 'p', type: 'FS' }])
-    })
-
-    test('allows the same source to be linked to the same target with different types', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T11:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-            resources: [allDayResource],
-          },
-        ],
-        resources: [allDayResource],
-      })
-
-      cal.createDependency('p', 's', 'FS')
-      cal.createDependency('p', 's', 'SS')
-
-      const s = cal.getEvents().find((e) => e.id === 's')!
-      expect(s.dependsOn).toEqual([
-        { id: 'p', type: 'FS' },
-        { id: 'p', type: 'SS' },
-      ])
-    })
-
-    test('blocks creation when reschedule would land target in unavailable time', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T15:00:00`,
-            end: `${DATE_MON}T16:00:00`,
-            resources: [weekdayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T16:00:00`,
-            resources: [weekdayResource],
-          },
-        ],
-        resources: [weekdayResource],
-      })
-
-      const result = cal.createDependency('p', 's', 'FS')
-
-      assert(result.blocked)
-      expect(result.error?.reason).toBe('unavailable-time')
-      expect(result.error?.eventId).toBe('s')
-      expect(result.error?.attemptedStart).toBe(`${DATE_MON}T16:00:00`)
-      expect(result.error?.attemptedEnd).toBe(`${DATE_MON}T23:00:00`)
-
-      const s = cal.getEvents().find((e) => e.id === 's')!
-      expect(s.start).toBe(`${DATE_MON}T09:00:00`)
-      expect(s.end).toBe(`${DATE_MON}T16:00:00`)
-      expect(s.dependsOn ?? []).toEqual([])
-    })
-  })
-
-  describe('commitUpdate forward cascade per type', () => {
-    test('FS: shifts successor when predecessor.end extends past successor.start', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T11:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T11:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-            resources: [allDayResource],
-            dependsOn: [{ id: 'p', type: 'FS' }],
-          },
-        ],
-        resources: [allDayResource],
-      })
-
-      cal.commitUpdate('p', { end: `${DATE_MON}T12:30:00` })
-
-      const s = cal.getEvents().find((e) => e.id === 's')!
-
-      expect(s.start).toBe(`${DATE_MON}T12:30:00`)
-      expect(s.end).toBe(`${DATE_MON}T13:30:00`)
-    })
-
-    test('SS: shifts successor when predecessor.start moves later past successor.start', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T11:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T10:30:00`,
-            end: `${DATE_MON}T11:30:00`,
-            resources: [allDayResource],
-            dependsOn: [{ id: 'p', type: 'SS' }],
-          },
-        ],
-        resources: [allDayResource],
-      })
-
-      cal.commitUpdate('p', {
-        start: `${DATE_MON}T11:00:00`,
-        end: `${DATE_MON}T12:00:00`,
-      })
-
-      const s = cal.getEvents().find((e) => e.id === 's')!
-
-      expect(s.start).toBe(`${DATE_MON}T11:00:00`)
-      expect(s.end).toBe(`${DATE_MON}T12:00:00`)
-    })
-
-    test('FF: shifts successor when predecessor.end moves past successor.end', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T11:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T10:30:00`,
-            end: `${DATE_MON}T11:30:00`,
-            resources: [allDayResource],
-            dependsOn: [{ id: 'p', type: 'FF' }],
-          },
-        ],
-        resources: [allDayResource],
-      })
-
-      cal.commitUpdate('p', { end: `${DATE_MON}T13:00:00` })
-
-      const s = cal.getEvents().find((e) => e.id === 's')!
-
-      expect(s.start).toBe(`${DATE_MON}T12:00:00`)
-      expect(s.end).toBe(`${DATE_MON}T13:00:00`)
-    })
-
-    test('SF: shifts successor when predecessor.start moves past successor.end', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T11:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:00:00`,
-            resources: [allDayResource],
-            dependsOn: [{ id: 'p', type: 'SF' }],
-          },
-        ],
-        resources: [allDayResource],
-      })
-
-      cal.commitUpdate('p', {
-        start: `${DATE_MON}T13:00:00`,
-        end: `${DATE_MON}T14:00:00`,
-      })
-
-      const s = cal.getEvents().find((e) => e.id === 's')!
-
-      expect(s.start).toBe(`${DATE_MON}T12:00:00`)
-      expect(s.end).toBe(`${DATE_MON}T13:00:00`)
-    })
-
-    test('does not shift when constraint stays satisfied', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T11:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T14:00:00`,
-            end: `${DATE_MON}T15:00:00`,
-            resources: [allDayResource],
-            dependsOn: [{ id: 'p', type: 'FS' }],
-          },
-        ],
-        resources: [allDayResource],
-      })
-
-      cal.commitUpdate('p', { end: `${DATE_MON}T11:30:00` })
-
-      const s = cal.getEvents().find((e) => e.id === 's')!
-      expect(s.start).toBe(`${DATE_MON}T14:00:00`)
-      expect(s.end).toBe(`${DATE_MON}T15:00:00`)
-    })
-
-    test('mixed-type chain propagates correctly: A -SS→ B -FS→ C', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'a',
-            title: 'A',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 'b',
-            title: 'B',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:30:00`,
-            resources: [allDayResource],
-            dependsOn: [{ id: 'a', type: 'SS' }],
-          },
-          {
-            id: 'c',
-            title: 'C',
-            start: `${DATE_MON}T10:30:00`,
-            end: `${DATE_MON}T11:30:00`,
-            resources: [allDayResource],
-            dependsOn: [{ id: 'b', type: 'FS' }],
-          },
-        ],
-        resources: [allDayResource],
-      })
-
-      cal.commitUpdate('a', {
-        start: `${DATE_MON}T10:00:00`,
-        end: `${DATE_MON}T11:00:00`,
-      })
-
-      const events = cal.getEvents()
-      const b = events.find((e) => e.id === 'b')!
-      const c = events.find((e) => e.id === 'c')!
-      expect(b.start).toBe(`${DATE_MON}T10:00:00`)
-      expect(b.end).toBe(`${DATE_MON}T11:30:00`)
-      expect(c.start).toBe(`${DATE_MON}T11:30:00`)
-      expect(c.end).toBe(`${DATE_MON}T12:30:00`)
-    })
-
-    test('shifts only the dependents of the changed predecessor - unrelated events stay put', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T11:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T11:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-            resources: [allDayResource],
-            dependsOn: [{ id: 'p', type: 'FS' }],
-          },
-          {
-            id: 'unrelated',
-            title: 'Unrelated',
-            start: `${DATE_MON}T11:30:00`,
-            end: `${DATE_MON}T12:30:00`,
-            resources: [allDayResource],
-          },
-        ],
-        resources: [allDayResource],
-      })
-
-      cal.commitUpdate('p', { end: `${DATE_MON}T13:00:00` })
-
-      const u = cal.getEvents().find((e) => e.id === 'unrelated')!
-      expect(u.start).toBe(`${DATE_MON}T11:30:00`)
-      expect(u.end).toBe(`${DATE_MON}T12:30:00`)
-    })
-  })
-
-  describe('commitUpdate backward cascade per type', () => {
-    test('FS: pulls predecessor back when successor.start moves before predecessor.end', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T11:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T12:00:00`,
-            end: `${DATE_MON}T13:00:00`,
-            resources: [allDayResource],
-            dependsOn: [{ id: 'p', type: 'FS' }],
-          },
-        ],
-        resources: [allDayResource],
-      })
-
-      cal.commitUpdate('s', {
-        start: `${DATE_MON}T10:00:00`,
-        end: `${DATE_MON}T11:00:00`,
-      })
-
-      const p = cal.getEvents().find((e) => e.id === 'p')!
-
-      expect(p.start).toBe(`${DATE_MON}T09:00:00`)
-      expect(p.end).toBe(`${DATE_MON}T10:00:00`)
-    })
-
-    test('SS: pulls predecessor back when successor.start moves before predecessor.start', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T11:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T11:30:00`,
-            end: `${DATE_MON}T12:30:00`,
-            resources: [allDayResource],
-            dependsOn: [{ id: 'p', type: 'SS' }],
-          },
-        ],
-        resources: [allDayResource],
-      })
-
-      cal.commitUpdate('s', {
-        start: `${DATE_MON}T10:00:00`,
-        end: `${DATE_MON}T11:00:00`,
-      })
-
-      const p = cal.getEvents().find((e) => e.id === 'p')!
-
-      expect(p.start).toBe(`${DATE_MON}T10:00:00`)
-      expect(p.end).toBe(`${DATE_MON}T11:00:00`)
-    })
-  })
-
-  describe('validateResize top-edge dependency check', () => {
-    const baseResizeOptions = {
-      constraints: { snapToMinutes: 15, minDurationMinutes: 15 },
-    }
-
-    test('FS: blocked when shrinking start before predecessor.end', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T12:00:00`,
-            end: `${DATE_MON}T14:00:00`,
-            resources: [allDayResource],
-            dependsOn: [{ id: 'p', type: 'FS' }],
-          },
-        ],
-        resources: [allDayResource],
-      })
-
-      const r = cal.validateResize({
-        eventId: 's',
-        originalStart: `${DATE_MON}T12:00:00`,
-        originalEnd: `${DATE_MON}T14:00:00`,
-        edge: 'top',
-        totalDeltaMinutes: -60,
-        targetDayDate: DATE_MON,
-        originalDayDate: DATE_MON,
-        ...baseResizeOptions,
-      })
-
-      expect(r.blocked).toBe(true)
-      expect(r.error?.reason).toBe('blocked')
-      expect(r.error?.message).toContain('FS')
-    })
-
-    test('SS: blocked when shrinking start before predecessor.start', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T11:00:00`,
-            end: `${DATE_MON}T14:00:00`,
-            resources: [allDayResource],
-            dependsOn: [{ id: 'p', type: 'SS' }],
-          },
-        ],
-        resources: [allDayResource],
-      })
-
-      const r = cal.validateResize({
-        eventId: 's',
-        originalStart: `${DATE_MON}T11:00:00`,
-        originalEnd: `${DATE_MON}T14:00:00`,
-        edge: 'top',
-        totalDeltaMinutes: -120,
-        targetDayDate: DATE_MON,
-        originalDayDate: DATE_MON,
-        ...baseResizeOptions,
-      })
-
-      expect(r.blocked).toBe(true)
-      expect(r.error?.message).toContain('SS')
-    })
-
-    test('FF: not blocked by top-edge resize because end stays unchanged', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T11:00:00`,
-            end: `${DATE_MON}T13:00:00`,
-            resources: [allDayResource],
-            dependsOn: [{ id: 'p', type: 'FF' }],
-          },
-        ],
-        resources: [allDayResource],
-      })
-
-      const r = cal.validateResize({
-        eventId: 's',
-        originalStart: `${DATE_MON}T11:00:00`,
-        originalEnd: `${DATE_MON}T13:00:00`,
-        edge: 'top',
-        totalDeltaMinutes: -90,
-        targetDayDate: DATE_MON,
-        originalDayDate: DATE_MON,
-        ...baseResizeOptions,
-      })
-
-      expect(r.blocked).toBe(false)
-    })
-  })
-
-  describe('addEvent', () => {
-    test('successfully adds an event and returns { success: true }', async () => {
-      const cal = createCalendar({ resources: [weekdayResource] })
-
-      const result = await cal.addEvent({
-        id: 'e1',
-        title: 'New Event',
-        start: `${DATE_MON}T09:00:00`,
-        end: `${DATE_MON}T10:00:00`,
-        resources: [weekdayResource],
-      })
-
-      expect(result.success).toBe(true)
-      expect(cal.getEvents()).toHaveLength(1)
-      expect(cal.getEvents()[0]!.id).toBe('e1')
-    })
-
-    test('returns failure when placement violates resource availability', async () => {
-      const cal = createCalendar({ resources: [weekdayResource] })
-
-      const result = await cal.addEvent({
-        id: 'e1',
-        title: 'Too Early',
-        start: `${DATE_MON}T06:00:00`,
-        end: `${DATE_MON}T07:00:00`,
-        resources: [weekdayResource],
-      })
-
-      assert(!result.success)
-      expect(result.error.reason).toBe('blocked')
-      expect(result.error.eventId).toBe('e1')
-      expect(result.error.eventTitle).toBe('Too Early')
-      expect(result.error.originalStart).toBe(`${DATE_MON}T06:00:00`)
-      expect(result.error.originalEnd).toBe(`${DATE_MON}T07:00:00`)
-
-      expect(cal.getEvents()).toHaveLength(0)
-    })
-
-    test('returns failure when dependency constraint is violated', async () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-          },
-        ],
-      })
-
-      const result = await cal.addEvent(
-        {
-          id: 's',
-          title: 'S',
-          start: `${DATE_MON}T11:00:00`,
-          end: `${DATE_MON}T13:00:00`,
-        },
-        { dependsOn: [{ id: 'p', type: 'FS' }] },
-      )
-
-      assert(!result.success)
-      expect(result.error.reason).toBe('blocked')
-      expect(result.error.message).toContain('cannot start before')
-      expect(cal.getEvents().find((e) => e.id === 's')).toBeUndefined()
-    })
-
-    test('triggers fetchEvents for the event date range before validating', async () => {
-      const fetchEvents = vi.fn().mockResolvedValue([])
-      const cal = createCalendar({
-        resources: [weekdayResource],
-        fetchEvents,
-      })
-
-      await cal.addEvent({
-        id: 'e1',
-        title: 'Event',
-        start: `${DATE_MON}T09:00:00`,
-        end: `${DATE_MON}T10:00:00`,
-        resources: [weekdayResource],
-      })
-
-      expect(fetchEvents).toHaveBeenCalledTimes(1)
-      const call = fetchEvents.mock.calls[0]![0]
-      expect(call.start).toBe(DATE_MON)
-      // end is exclusive: start date + 1 day
-      expect(call.end).toBe(DATE_TUE)
-    })
-
-    test('does not fetch when fetchEvents is not configured', async () => {
-      const cal = createCalendar({ resources: [weekdayResource] })
-
-      const result = await cal.addEvent({
-        id: 'e1',
-        title: 'Event',
-        start: `${DATE_MON}T09:00:00`,
-        end: `${DATE_MON}T10:00:00`,
-        resources: [weekdayResource],
-      })
-
-      expect(result.success).toBe(true)
-    })
-  })
-
-  describe('editEvent', () => {
-    test('successfully updates an event', async () => {
-      const cal = createCalendar({
-        resources: [weekdayResource],
-        events: [
+      test('calls fetchEvents and merges fetched events into the calendar', async () => {
+        const fetched: Array<TestEvent> = [
           {
             id: 'e1',
-            title: 'Original',
+            title: 'Fetched',
             start: `${DATE_MON}T09:00:00`,
             end: `${DATE_MON}T10:00:00`,
-            resources: [weekdayResource],
           },
-        ],
+        ]
+        const fetchEvents = vi.fn().mockResolvedValue(fetched)
+        const cal = createCalendar({ fetchEvents })
+
+        await cal.fetchEventsForRange(DATE_MON, DATE_TUE)
+
+        expect(fetchEvents).toHaveBeenCalledWith({
+          start: DATE_MON,
+          end: DATE_TUE,
+        })
+        expect(cal.getEvents()).toHaveLength(1)
+        expect(cal.getEvents()[0]!.id).toBe('e1')
       })
 
-      const result = await cal.editEvent('e1', { title: 'Updated' })
+      test('does not refetch a range that is already loaded', async () => {
+        const fetchEvents = vi.fn().mockResolvedValue([])
+        const cal = createCalendar({ fetchEvents })
 
-      expect(result.success).toBe(true)
-      expect(cal.getEvents()[0]!.title).toBe('Updated')
-    })
+        await cal.fetchEventsForRange(DATE_MON, DATE_TUE)
+        await cal.fetchEventsForRange(DATE_MON, DATE_TUE)
 
-    test('returns failure for unknown event id', async () => {
-      const cal = createCalendar()
-
-      const result = await cal.editEvent('nonexistent', { title: 'X' })
-
-      assert(!result.success)
-      expect(result.error.eventId).toBe('nonexistent')
-      expect(result.error.message).toContain('not found')
-    })
-
-    test('skips move validation when start/end/resources/consumption are unchanged', async () => {
-      const cal = createCalendar({
-        // Resource is unavailable on weekends, but we're not touching start/end,
-        // so the move-validation path must be skipped.
-        resources: [weekdayResource],
-        events: [
-          {
-            id: 'e1',
-            title: 'Original',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:00:00`,
-            resources: [weekdayResource],
-          },
-        ],
+        expect(fetchEvents).toHaveBeenCalledTimes(1)
       })
 
-      const result = await cal.editEvent('e1', { title: 'Renamed' })
-      expect(result.success).toBe(true)
-      expect(cal.getEvents()[0]!.title).toBe('Renamed')
-    })
+      test('does not refetch a sub-range of an already loaded range', async () => {
+        const fetchEvents = vi.fn().mockResolvedValue([])
+        const cal = createCalendar({ fetchEvents })
 
-    test('returns failure when new position violates availability', async () => {
-      const cal = createCalendar({
-        resources: [weekdayResource],
-        events: [
-          {
-            id: 'e1',
-            title: 'E1',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:00:00`,
-            resources: [weekdayResource],
-          },
-        ],
+        await cal.fetchEventsForRange(DATE_MON, '2024-03-25')
+        await cal.fetchEventsForRange(DATE_TUE, DATE_WED)
+
+        expect(fetchEvents).toHaveBeenCalledTimes(1)
       })
 
-      const result = await cal.editEvent('e1', {
-        start: `${DATE_MON}T06:00:00`,
-        end: `${DATE_MON}T07:00:00`,
-      })
-
-      assert(!result.success)
-      expect(result.error.attemptedStart).toBe(`${DATE_MON}T06:00:00`)
-      expect(result.error.attemptedEnd).toBe(`${DATE_MON}T07:00:00`)
-      expect(result.error.originalStart).toBe(`${DATE_MON}T09:00:00`)
-      expect(result.error.originalEnd).toBe(`${DATE_MON}T10:00:00`)
-      // Event was not mutated
-      expect(cal.getEvents()[0]!.start).toBe(`${DATE_MON}T09:00:00`)
-    })
-
-    test('fetchEvents range covers both old and new positions', async () => {
-      const fetchEvents = vi.fn().mockResolvedValue([])
-      const cal = createCalendar({
-        resources: [allDayResource],
-        fetchEvents,
-        events: [
-          {
-            id: 'e1',
-            title: 'E1',
-            start: `${DATE_TUE}T09:00:00`,
-            end: `${DATE_TUE}T10:00:00`,
-            resources: [allDayResource],
-          },
-        ],
-      })
-
-      fetchEvents.mockClear()
-
-      await cal.editEvent('e1', {
-        start: `${DATE_WED}T09:00:00`,
-        end: `${DATE_WED}T10:00:00`,
-      })
-
-      expect(fetchEvents).toHaveBeenCalled()
-      const call = fetchEvents.mock.calls[0]![0]
-      // Range should span from earlier of old/new start to later of old/new end + 1 day
-      expect(call.start <= DATE_TUE).toBe(true)
-      expect(call.end > DATE_WED).toBe(true)
-    })
-
-    test('validates dependency constraint when dependsOn is provided', async () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T13:00:00`,
-            end: `${DATE_MON}T14:00:00`,
-          },
-        ],
-      })
-
-      const result = await cal.editEvent(
-        's',
-        { start: `${DATE_MON}T11:00:00`, end: `${DATE_MON}T12:00:00` },
-        { dependsOn: [{ id: 'p', type: 'FS' }] },
-      )
-
-      assert(!result.success)
-      expect(result.error.reason).toBe('blocked')
-    })
-  })
-
-  // ---------------------------------------------------------------------------
-  // fetchEventsForRange / lazy loading
-  // ---------------------------------------------------------------------------
-  describe('fetchEventsForRange', () => {
-    test('resolves immediately and is a no-op when fetchEvents is not configured', async () => {
-      const cal = createCalendar()
-      await expect(
-        cal.fetchEventsForRange(DATE_MON, DATE_TUE),
-      ).resolves.toBeUndefined()
-      expect(cal.getLoadedRanges()).toHaveLength(0)
-    })
-
-    test('calls fetchEvents and merges fetched events into the calendar', async () => {
-      const fetched: Array<TestEvent> = [
-        {
-          id: 'e1',
-          title: 'Fetched',
-          start: `${DATE_MON}T09:00:00`,
-          end: `${DATE_MON}T10:00:00`,
-        },
-      ]
-      const fetchEvents = vi.fn().mockResolvedValue(fetched)
-      const cal = createCalendar({ fetchEvents })
-
-      await cal.fetchEventsForRange(DATE_MON, DATE_TUE)
-
-      expect(fetchEvents).toHaveBeenCalledWith({
-        start: DATE_MON,
-        end: DATE_TUE,
-      })
-      expect(cal.getEvents()).toHaveLength(1)
-      expect(cal.getEvents()[0]!.id).toBe('e1')
-    })
-
-    test('does not refetch a range that is already loaded', async () => {
-      const fetchEvents = vi.fn().mockResolvedValue([])
-      const cal = createCalendar({ fetchEvents })
-
-      await cal.fetchEventsForRange(DATE_MON, DATE_TUE)
-      await cal.fetchEventsForRange(DATE_MON, DATE_TUE)
-
-      expect(fetchEvents).toHaveBeenCalledTimes(1)
-    })
-
-    test('does not refetch a sub-range of an already loaded range', async () => {
-      const fetchEvents = vi.fn().mockResolvedValue([])
-      const cal = createCalendar({ fetchEvents })
-
-      await cal.fetchEventsForRange(DATE_MON, '2024-03-25')
-      await cal.fetchEventsForRange(DATE_TUE, DATE_WED)
-
-      expect(fetchEvents).toHaveBeenCalledTimes(1)
-    })
-
-    test('deduplicates fetched events by id', async () => {
-      const fetchEvents = vi.fn().mockResolvedValue([
-        {
-          id: 'e1',
-          title: 'Existing',
-          start: `${DATE_MON}T09:00:00`,
-          end: `${DATE_MON}T10:00:00`,
-        },
-      ])
-      const cal = createCalendar({
-        fetchEvents,
-        events: [
+      test('deduplicates fetched events by id', async () => {
+        const fetchEvents = vi.fn().mockResolvedValue([
           {
             id: 'e1',
             title: 'Existing',
             start: `${DATE_MON}T09:00:00`,
             end: `${DATE_MON}T10:00:00`,
           },
-        ],
+        ])
+        const cal = createCalendar({
+          fetchEvents,
+          events: [
+            {
+              id: 'e1',
+              title: 'Existing',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+            },
+          ],
+        })
+
+        await cal.fetchEventsForRange(DATE_MON, DATE_TUE)
+
+        expect(cal.getEvents().filter((e) => e.id === 'e1')).toHaveLength(1)
       })
 
-      await cal.fetchEventsForRange(DATE_MON, DATE_TUE)
+      test('un-marks the range on fetch error so future calls can retry', async () => {
+        const fetchEvents = vi
+          .fn()
+          .mockRejectedValueOnce(new Error('network'))
+          .mockResolvedValueOnce([])
+        const cal = createCalendar({ fetchEvents })
 
-      // The event with id 'e1' should still appear exactly once.
-      expect(cal.getEvents().filter((e) => e.id === 'e1')).toHaveLength(1)
+        await cal.fetchEventsForRange(DATE_MON, DATE_TUE)
+        expect(cal.getLoadedRanges()).toHaveLength(0)
+
+        await cal.fetchEventsForRange(DATE_MON, DATE_TUE)
+        expect(fetchEvents).toHaveBeenCalledTimes(2)
+        expect(cal.getLoadedRanges()).toHaveLength(1)
+      })
+
+      test('getLoadedRanges merges overlapping ranges', async () => {
+        const fetchEvents = vi.fn().mockResolvedValue([])
+        const cal = createCalendar({ fetchEvents })
+
+        await cal.fetchEventsForRange('2024-03-01', '2024-03-10')
+        await cal.fetchEventsForRange('2024-03-05', '2024-03-15')
+
+        const ranges = cal.getLoadedRanges()
+        expect(ranges).toHaveLength(1)
+        expect(ranges[0]!.start).toBe('2024-03-01')
+        expect(ranges[0]!.end).toBe('2024-03-15')
+      })
+
+      test('getLoadedRanges keeps disjoint ranges separate', async () => {
+        const fetchEvents = vi.fn().mockResolvedValue([])
+        const cal = createCalendar({ fetchEvents })
+
+        await cal.fetchEventsForRange('2024-03-01', '2024-03-05')
+        await cal.fetchEventsForRange('2024-03-10', '2024-03-15')
+
+        expect(cal.getLoadedRanges()).toHaveLength(2)
+      })
+
+      test('emits events:set when new events are merged in', async () => {
+        const fetchEvents = vi.fn().mockResolvedValue([
+          {
+            id: 'e1',
+            title: 'Fetched',
+            start: `${DATE_MON}T09:00:00`,
+            end: `${DATE_MON}T10:00:00`,
+          },
+        ])
+        const cal = createCalendar({ fetchEvents })
+
+        await cal.fetchEventsForRange(DATE_MON, DATE_TUE)
+
+        const setCall = emitSpy.mock.calls.find(
+          ([name]) => name === 'events:set',
+        )
+        expect(setCall).toBeDefined()
+        expect(setCall![1].events).toHaveLength(1)
+        expect(setCall![1].events[0].eventId).toBe('e1')
+      })
+
+      test('does not emit events:set when fetch returns nothing new', async () => {
+        const fetchEvents = vi.fn().mockResolvedValue([])
+        const cal = createCalendar({ fetchEvents })
+
+        await cal.fetchEventsForRange(DATE_MON, DATE_TUE)
+
+        const setCall = emitSpy.mock.calls.find(
+          ([name]) => name === 'events:set',
+        )
+        expect(setCall).toBeUndefined()
+      })
     })
 
-    test('un-marks the range on fetch error so future calls can retry', async () => {
-      const fetchEvents = vi
-        .fn()
-        .mockRejectedValueOnce(new Error('network'))
-        .mockResolvedValueOnce([])
-      const cal = createCalendar({ fetchEvents })
-
-      await cal.fetchEventsForRange(DATE_MON, DATE_TUE)
-      expect(cal.getLoadedRanges()).toHaveLength(0)
-
-      // A second call should actually invoke fetchEvents again.
-      await cal.fetchEventsForRange(DATE_MON, DATE_TUE)
-      expect(fetchEvents).toHaveBeenCalledTimes(2)
-      expect(cal.getLoadedRanges()).toHaveLength(1)
-    })
-
-    test('getLoadedRanges merges overlapping ranges', async () => {
-      const fetchEvents = vi.fn().mockResolvedValue([])
-      const cal = createCalendar({ fetchEvents })
-
-      await cal.fetchEventsForRange('2024-03-01', '2024-03-10')
-      await cal.fetchEventsForRange('2024-03-05', '2024-03-15')
-
-      const ranges = cal.getLoadedRanges()
-      expect(ranges).toHaveLength(1)
-      expect(ranges[0]!.start).toBe('2024-03-01')
-      expect(ranges[0]!.end).toBe('2024-03-15')
-    })
-
-    test('getLoadedRanges keeps disjoint ranges separate', async () => {
-      const fetchEvents = vi.fn().mockResolvedValue([])
-      const cal = createCalendar({ fetchEvents })
-
-      await cal.fetchEventsForRange('2024-03-01', '2024-03-05')
-      await cal.fetchEventsForRange('2024-03-10', '2024-03-15')
-
-      expect(cal.getLoadedRanges()).toHaveLength(2)
-    })
-
-    test('emits events:set when new events are merged in', async () => {
-      const fetchEvents = vi.fn().mockResolvedValue([
-        {
+    describe('event emissions', () => {
+      test('commitAdd emits event:added', () => {
+        const cal = createCalendar()
+        cal.commitAdd({
           id: 'e1',
-          title: 'Fetched',
+          title: 'New',
           start: `${DATE_MON}T09:00:00`,
           end: `${DATE_MON}T10:00:00`,
-        },
-      ])
-      const cal = createCalendar({ fetchEvents })
+        })
 
-      await cal.fetchEventsForRange(DATE_MON, DATE_TUE)
+        const addCall = emitSpy.mock.calls.find(
+          ([name]) => name === 'event:added',
+        )
+        expect(addCall).toBeDefined()
+        expect(addCall![1]).toMatchObject({
+          eventId: 'e1',
+          eventTitle: 'New',
+          start: `${DATE_MON}T09:00:00`,
+          end: `${DATE_MON}T10:00:00`,
+        })
+      })
 
-      const setCall = emitSpy.mock.calls.find(([name]) => name === 'events:set')
-      expect(setCall).toBeDefined()
-      expect(setCall![1].events).toHaveLength(1)
-      expect(setCall![1].events[0].eventId).toBe('e1')
+      test('commitUpdate emits event:updated with the patch', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'e1',
+              title: 'Original',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+            },
+          ],
+        })
+        emitSpy.mockClear()
+
+        cal.commitUpdate('e1', { title: 'Renamed' })
+
+        const upd = emitSpy.mock.calls.find(
+          ([name]) => name === 'event:updated',
+        )
+        expect(upd).toBeDefined()
+        expect(upd![1].eventId).toBe('e1')
+        expect(upd![1].updates).toMatchObject({ title: 'Renamed' })
+      })
+
+      test('removeEvent emits event:removed', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'e1',
+              title: 'To Remove',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+            },
+          ],
+        })
+        emitSpy.mockClear()
+
+        cal.removeEvent('e1')
+
+        const rem = emitSpy.mock.calls.find(
+          ([name]) => name === 'event:removed',
+        )
+        expect(rem).toBeDefined()
+        expect(rem![1].eventId).toBe('e1')
+        expect(rem![1].eventTitle).toBe('To Remove')
+      })
+
+      test('removeEvent does not emit when id does not exist', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'e1',
+              title: 'Keep',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+            },
+          ],
+        })
+        emitSpy.mockClear()
+
+        cal.removeEvent('nope')
+
+        const rem = emitSpy.mock.calls.find(
+          ([name]) => name === 'event:removed',
+        )
+        expect(rem).toBeUndefined()
+      })
+
+      test('commitUpdate cascade emits event:updated for shifted dependents', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+              dependsOn: [{ id: 'p', type: 'FS' }],
+            },
+          ],
+          resources: [allDayResource],
+        })
+        emitSpy.mockClear()
+
+        cal.commitUpdate('p', { end: `${DATE_MON}T12:30:00` })
+
+        const updatedIds = emitSpy.mock.calls
+          .filter(([name]) => name === 'event:updated')
+          .map(([, payload]) => payload.eventId)
+        expect(updatedIds).toContain('p')
+        expect(updatedIds).toContain('s')
+      })
     })
 
-    test('does not emit events:set when fetch returns nothing new', async () => {
-      const fetchEvents = vi.fn().mockResolvedValue([])
-      const cal = createCalendar({ fetchEvents })
+    describe('getTimelineLayout', () => {
+      test('returns one row per resource', () => {
+        const cal = createCalendar({
+          resources: [weekdayResource, afternoonResource, allDayResource],
+        })
 
-      await cal.fetchEventsForRange(DATE_MON, DATE_TUE)
-
-      const setCall = emitSpy.mock.calls.find(([name]) => name === 'events:set')
-      expect(setCall).toBeUndefined()
-    })
-  })
-
-  // ---------------------------------------------------------------------------
-  // Emitted events via getTimeClient()
-  // ---------------------------------------------------------------------------
-  describe('event emissions', () => {
-    test('commitAdd emits event:added', () => {
-      const cal = createCalendar()
-      cal.commitAdd({
-        id: 'e1',
-        title: 'New',
-        start: `${DATE_MON}T09:00:00`,
-        end: `${DATE_MON}T10:00:00`,
+        const layout = cal.getTimelineLayout()
+        expect(layout.rows).toHaveLength(3)
+        expect(layout.rows.map((r) => r.resource.id)).toEqual([
+          'r1',
+          'r2',
+          'r3',
+        ])
       })
 
-      const addCall = emitSpy.mock.calls.find(
-        ([name]) => name === 'event:added',
-      )
-      expect(addCall).toBeDefined()
-      expect(addCall![1]).toMatchObject({
-        eventId: 'e1',
-        eventTitle: 'New',
-        start: `${DATE_MON}T09:00:00`,
-        end: `${DATE_MON}T10:00:00`,
-      })
-    })
+      test('row has empty events when resource has none', () => {
+        const cal = createCalendar({ resources: [weekdayResource] })
 
-    test('commitUpdate emits event:updated with the patch', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'e1',
-            title: 'Original',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:00:00`,
-          },
-        ],
-      })
-      emitSpy.mockClear()
-
-      cal.commitUpdate('e1', { title: 'Renamed' })
-
-      const upd = emitSpy.mock.calls.find(([name]) => name === 'event:updated')
-      expect(upd).toBeDefined()
-      expect(upd![1].eventId).toBe('e1')
-      expect(upd![1].updates).toMatchObject({ title: 'Renamed' })
-    })
-
-    test('removeEvent emits event:removed', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'e1',
-            title: 'To Remove',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:00:00`,
-          },
-        ],
-      })
-      emitSpy.mockClear()
-
-      cal.removeEvent('e1')
-
-      const rem = emitSpy.mock.calls.find(([name]) => name === 'event:removed')
-      expect(rem).toBeDefined()
-      expect(rem![1].eventId).toBe('e1')
-      expect(rem![1].eventTitle).toBe('To Remove')
-    })
-
-    test('removeEvent does not emit when id does not exist', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'e1',
-            title: 'Keep',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:00:00`,
-          },
-        ],
-      })
-      emitSpy.mockClear()
-
-      cal.removeEvent('nope')
-
-      const rem = emitSpy.mock.calls.find(([name]) => name === 'event:removed')
-      expect(rem).toBeUndefined()
-    })
-
-    test('commitUpdate cascade emits event:updated for shifted dependents', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T11:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T11:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-            resources: [allDayResource],
-            dependsOn: [{ id: 'p', type: 'FS' }],
-          },
-        ],
-        resources: [allDayResource],
-      })
-      emitSpy.mockClear()
-
-      cal.commitUpdate('p', { end: `${DATE_MON}T12:30:00` })
-
-      const updatedIds = emitSpy.mock.calls
-        .filter(([name]) => name === 'event:updated')
-        .map(([, payload]) => payload.eventId)
-      expect(updatedIds).toContain('p')
-      expect(updatedIds).toContain('s')
-    })
-  })
-
-  // ---------------------------------------------------------------------------
-  // getTimelineLayout
-  // ---------------------------------------------------------------------------
-  describe('getTimelineLayout', () => {
-    test('returns one row per resource', () => {
-      const cal = createCalendar({
-        resources: [weekdayResource, afternoonResource, allDayResource],
+        const layout = cal.getTimelineLayout()
+        expect(layout.rows[0]!.events).toHaveLength(0)
+        expect(layout.rows[0]!.laneCount).toBe(1)
       })
 
-      const layout = cal.getTimelineLayout()
-      expect(layout.rows).toHaveLength(3)
-      expect(layout.rows.map((r) => r.resource.id)).toEqual(['r1', 'r2', 'r3'])
+      test('places non-overlapping events on the same lane', () => {
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: 'week' },
+          resources: [allDayResource],
+          events: [
+            {
+              id: 'e1',
+              title: 'E1',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 'e2',
+              title: 'E2',
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+            },
+          ],
+        })
+        cal.goToSpecificPeriod(DATE_MON)
+
+        const layout = cal.getTimelineLayout()
+        const row = layout.rows[0]!
+        expect(row.events).toHaveLength(2)
+        expect(row.laneCount).toBe(1)
+        expect(row.events.every((e) => e.lane === 0)).toBe(true)
+      })
+
+      test('assigns overlapping events to separate lanes', () => {
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: 'week' },
+          resources: [allDayResource],
+          events: [
+            {
+              id: 'e1',
+              title: 'E1',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 'e2',
+              title: 'E2',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+            },
+          ],
+        })
+        cal.goToSpecificPeriod(DATE_MON)
+
+        const layout = cal.getTimelineLayout()
+        const row = layout.rows[0]!
+        expect(row.events).toHaveLength(2)
+        expect(row.laneCount).toBe(2)
+        const lanes = row.events.map((e) => e.lane).sort()
+        expect(lanes).toEqual([0, 1])
+      })
+
+      test('currentTimePosition is null when today is not in the visible range', () => {
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: 'week' },
+          resources: [allDayResource],
+        })
+        cal.goToSpecificPeriod(DATE_MON)
+
+        const layout = cal.getTimelineLayout()
+        expect(layout.currentTimePosition).toBeNull()
+      })
+
+      test('events fully outside the visible range are filtered out (zero width)', () => {
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: 'week' },
+          resources: [allDayResource],
+          events: [
+            {
+              id: 'far',
+              title: 'Far',
+              start: '2025-01-01T09:00:00',
+              end: '2025-01-01T10:00:00',
+              resources: [allDayResource],
+            },
+          ],
+        })
+        cal.goToSpecificPeriod(DATE_MON)
+
+        const layout = cal.getTimelineLayout()
+        expect(layout.rows[0]!.events).toHaveLength(0)
+      })
     })
 
-    test('row has empty events when resource has none', () => {
-      const cal = createCalendar({ resources: [weekdayResource] })
+    describe('getEventsByResource', () => {
+      test('returns one entry per configured resource', () => {
+        const cal = createCalendar({
+          resources: [weekdayResource, afternoonResource],
+        })
 
-      const layout = cal.getTimelineLayout()
-      expect(layout.rows[0]!.events).toHaveLength(0)
-      expect(layout.rows[0]!.laneCount).toBe(1)
+        const byResource = cal.getEventsByResource()
+        expect(byResource.has('r1')).toBe(true)
+        expect(byResource.has('r2')).toBe(true)
+      })
+
+      test('groups events by their assigned resources', () => {
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: 'week' },
+          resources: [allDayResource, afternoonResource],
+          events: [
+            {
+              id: 'e1',
+              title: 'E1',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 'e2',
+              title: 'E2',
+              start: `${DATE_MON}T13:00:00`,
+              end: `${DATE_MON}T14:00:00`,
+              resources: [afternoonResource],
+            },
+          ],
+        })
+        cal.goToSpecificPeriod(DATE_MON)
+
+        const byResource = cal.getEventsByResource()
+        expect(byResource.get('r3')!.map((e) => e.id)).toEqual(['e1'])
+        expect(byResource.get('r2')!.map((e) => e.id)).toEqual(['e2'])
+      })
+
+      test('merges multi-day segments back to a single full-span event', () => {
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: 'week' },
+          resources: [allDayResource],
+          events: [
+            {
+              id: 'multi',
+              title: 'Multi',
+              start: `${DATE_MON}T20:00:00`,
+              end: `${DATE_TUE}T04:00:00`,
+              resources: [allDayResource],
+            },
+          ],
+        })
+        cal.goToSpecificPeriod(DATE_MON)
+
+        const byResource = cal.getEventsByResource()
+        const events = byResource.get('r3')!
+        expect(events).toHaveLength(1)
+        expect(events[0]!.id).toBe('multi')
+        expect(events[0]!.start).toBe(`${DATE_MON}T20:00:00`)
+        expect(events[0]!.end).toBe(`${DATE_TUE}T04:00:00`)
+      })
+
+      test('event attached to multiple resources appears in each resource bucket', () => {
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: 'week' },
+          resources: [allDayResource, afternoonResource],
+          events: [
+            {
+              id: 'shared',
+              title: 'Shared',
+              start: `${DATE_MON}T13:00:00`,
+              end: `${DATE_MON}T14:00:00`,
+              resources: [allDayResource, afternoonResource],
+            },
+          ],
+        })
+        cal.goToSpecificPeriod(DATE_MON)
+
+        const byResource = cal.getEventsByResource()
+        expect(byResource.get('r3')!.map((e) => e.id)).toContain('shared')
+        expect(byResource.get('r2')!.map((e) => e.id)).toContain('shared')
+      })
     })
 
-    test('places non-overlapping events on the same lane', () => {
-      const cal = createCalendar({
-        viewMode: { value: 1, unit: 'week' },
-        resources: [allDayResource],
-        events: [
-          {
-            id: 'e1',
-            title: 'E1',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 'e2',
-            title: 'E2',
-            start: `${DATE_MON}T11:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-            resources: [allDayResource],
-          },
-        ],
-      })
-      cal.goToSpecificPeriod(DATE_MON)
+    describe('formatPeriodLabel', () => {
+      test('returns a non-empty string for a normal week view', () => {
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: 'week' },
+          locale: 'en-US',
+        })
+        cal.goToSpecificPeriod(DATE_MON)
 
-      const layout = cal.getTimelineLayout()
-      const row = layout.rows[0]!
-      expect(row.events).toHaveLength(2)
-      expect(row.laneCount).toBe(1)
-      expect(row.events.every((e) => e.lane === 0)).toBe(true)
+        const label = cal.formatPeriodLabel()
+        expect(typeof label).toBe('string')
+        expect(label.length).toBeGreaterThan(0)
+      })
+
+      test('uses an em-dash range separator when spanning multiple days', () => {
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: 'week' },
+          locale: 'en-US',
+        })
+        cal.goToSpecificPeriod(DATE_MON)
+
+        const label = cal.formatPeriodLabel()
+        expect(label).toContain('\u2014')
+      })
+
+      test('accepts a locale override', () => {
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: 'week' },
+          locale: 'en-US',
+        })
+        cal.goToSpecificPeriod(DATE_MON)
+
+        const en = cal.formatPeriodLabel({ locale: 'en-US' })
+        const de = cal.formatPeriodLabel({ locale: 'de-DE' })
+        expect(en).not.toBe(de)
+      })
     })
 
-    test('assigns overlapping events to separate lanes', () => {
-      const cal = createCalendar({
-        viewMode: { value: 1, unit: 'week' },
-        resources: [allDayResource],
-        events: [
-          {
-            id: 'e1',
-            title: 'E1',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T11:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 'e2',
-            title: 'E2',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-            resources: [allDayResource],
-          },
-        ],
-      })
-      cal.goToSpecificPeriod(DATE_MON)
+    describe('getEventProps', () => {
+      test('returns a result with start/end and overlappingEvents for a visible event', () => {
+        const event: TestEvent = {
+          id: 'e1',
+          title: 'Event',
+          start: `${DATE_MON}T09:00:00`,
+          end: `${DATE_MON}T10:00:00`,
+        }
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: 'week' },
+          events: [event],
+        })
+        cal.goToSpecificPeriod(DATE_MON)
 
-      const layout = cal.getTimelineLayout()
-      const row = layout.rows[0]!
-      expect(row.events).toHaveLength(2)
-      expect(row.laneCount).toBe(2)
-      const lanes = row.events.map((e) => e.lane).sort()
-      expect(lanes).toEqual([0, 1])
+        const props = cal.getEventProps(cal.getEvents()[0]!)
+        expect(props.start).toBe(`${DATE_MON}T09:00:00`)
+        expect(props.end).toBe(`${DATE_MON}T10:00:00`)
+        expect(Array.isArray(props.overlappingEvents)).toBe(true)
+      })
+
+      test('detects overlap with a sibling event', () => {
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: 'week' },
+          events: [
+            {
+              id: 'e1',
+              title: 'E1',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+            },
+            {
+              id: 'e2',
+              title: 'E2',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+            },
+          ],
+        })
+        cal.goToSpecificPeriod(DATE_MON)
+
+        const props = cal.getEventProps(
+          cal.getEvents().find((e) => e.id === 'e1')!,
+        )
+        expect(props.overlappingEvents.some((e) => e.id === 'e2')).toBe(true)
+      })
     })
 
-    test('currentTimePosition is null when today is not in the visible range', () => {
-      // 2024-03-18 is far in the past relative to the test runner's "today"
-      const cal = createCalendar({
-        viewMode: { value: 1, unit: 'week' },
-        resources: [allDayResource],
-      })
-      cal.goToSpecificPeriod(DATE_MON)
+    describe('commitUpdate backward cascade - FF and SF', () => {
+      test('FF: pulls predecessor back when successor.end moves before predecessor.end', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T13:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T12:00:00`,
+              end: `${DATE_MON}T14:00:00`,
+              resources: [allDayResource],
+              dependsOn: [{ id: 'p', type: 'FF' }],
+            },
+          ],
+          resources: [allDayResource],
+        })
 
-      const layout = cal.getTimelineLayout()
-      expect(layout.currentTimePosition).toBeNull()
+        cal.commitUpdate('s', {
+          start: `${DATE_MON}T10:00:00`,
+          end: `${DATE_MON}T12:00:00`,
+        })
+
+        const p = cal.getEvents().find((e) => e.id === 'p')!
+        expect(p.start).toBe(`${DATE_MON}T10:00:00`)
+        expect(p.end).toBe(`${DATE_MON}T12:00:00`)
+      })
+
+      test('SF: pulls predecessor back when successor.end moves before predecessor.start', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: [allDayResource],
+              dependsOn: [{ id: 'p', type: 'SF' }],
+            },
+          ],
+          resources: [allDayResource],
+        })
+
+        cal.commitUpdate('s', {
+          start: `${DATE_MON}T09:00:00`,
+          end: `${DATE_MON}T10:00:00`,
+        })
+
+        const p = cal.getEvents().find((e) => e.id === 'p')!
+        expect(p.start).toBe(`${DATE_MON}T10:00:00`)
+        expect(p.end).toBe(`${DATE_MON}T11:00:00`)
+      })
     })
 
-    test('events fully outside the visible range are filtered out (zero width)', () => {
-      const cal = createCalendar({
-        viewMode: { value: 1, unit: 'week' },
-        resources: [allDayResource],
-        events: [
-          {
-            id: 'far',
-            title: 'Far',
-            start: '2025-01-01T09:00:00',
-            end: '2025-01-01T10:00:00',
-            resources: [allDayResource],
-          },
-        ],
+    describe('validateMove backward cascade - allowed when target available', () => {
+      test('FS: allows move when predecessor pull-back stays within availability', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T12:00:00`,
+              end: `${DATE_MON}T13:00:00`,
+              resources: [allDayResource],
+              dependsOn: [{ id: 'p', type: 'FS' }],
+            },
+          ],
+          resources: [allDayResource],
+        })
+
+        const r = cal.validateMove(
+          's',
+          `${DATE_MON}T10:30:00`,
+          `${DATE_MON}T11:30:00`,
+        )
+        expect(r.blocked).toBe(false)
       })
-      cal.goToSpecificPeriod(DATE_MON)
-
-      const layout = cal.getTimelineLayout()
-      expect(layout.rows[0]!.events).toHaveLength(0)
-    })
-  })
-
-  // ---------------------------------------------------------------------------
-  // getEventsByResource
-  // ---------------------------------------------------------------------------
-  describe('getEventsByResource', () => {
-    test('returns one entry per configured resource', () => {
-      const cal = createCalendar({
-        resources: [weekdayResource, afternoonResource],
-      })
-
-      const byResource = cal.getEventsByResource()
-      expect(byResource.has('r1')).toBe(true)
-      expect(byResource.has('r2')).toBe(true)
     })
 
-    test('groups events by their assigned resources', () => {
-      const cal = createCalendar({
-        viewMode: { value: 1, unit: 'week' },
-        resources: [allDayResource, afternoonResource],
-        events: [
-          {
-            id: 'e1',
-            title: 'E1',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 'e2',
-            title: 'E2',
-            start: `${DATE_MON}T13:00:00`,
-            end: `${DATE_MON}T14:00:00`,
-            resources: [afternoonResource],
-          },
-        ],
-      })
-      cal.goToSpecificPeriod(DATE_MON)
-
-      const byResource = cal.getEventsByResource()
-      expect(byResource.get('r3')!.map((e) => e.id)).toEqual(['e1'])
-      expect(byResource.get('r2')!.map((e) => e.id)).toEqual(['e2'])
-    })
-
-    test('merges multi-day segments back to a single full-span event', () => {
-      const cal = createCalendar({
-        viewMode: { value: 1, unit: 'week' },
-        resources: [allDayResource],
-        events: [
-          {
-            id: 'multi',
-            title: 'Multi',
-            start: `${DATE_MON}T20:00:00`,
-            end: `${DATE_TUE}T04:00:00`,
-            resources: [allDayResource],
-          },
-        ],
-      })
-      cal.goToSpecificPeriod(DATE_MON)
-
-      const byResource = cal.getEventsByResource()
-      const events = byResource.get('r3')!
-      // Even though the event is split into two segments internally for the
-      // day view, getEventsByResource must return a single merged entry.
-      expect(events).toHaveLength(1)
-      expect(events[0]!.id).toBe('multi')
-      // The merged event keeps the original span, not just one segment's range.
-      expect(events[0]!.start).toBe(`${DATE_MON}T20:00:00`)
-      expect(events[0]!.end).toBe(`${DATE_TUE}T04:00:00`)
-    })
-
-    test('event attached to multiple resources appears in each resource bucket', () => {
-      const cal = createCalendar({
-        viewMode: { value: 1, unit: 'week' },
-        resources: [allDayResource, afternoonResource],
-        events: [
-          {
-            id: 'shared',
-            title: 'Shared',
-            start: `${DATE_MON}T13:00:00`,
-            end: `${DATE_MON}T14:00:00`,
-            resources: [allDayResource, afternoonResource],
-          },
-        ],
-      })
-      cal.goToSpecificPeriod(DATE_MON)
-
-      const byResource = cal.getEventsByResource()
-      expect(byResource.get('r3')!.map((e) => e.id)).toContain('shared')
-      expect(byResource.get('r2')!.map((e) => e.id)).toContain('shared')
-    })
-  })
-
-  // ---------------------------------------------------------------------------
-  // formatPeriodLabel
-  // ---------------------------------------------------------------------------
-  describe('formatPeriodLabel', () => {
-    test('returns a non-empty string for a normal week view', () => {
-      const cal = createCalendar({
-        viewMode: { value: 1, unit: 'week' },
-        locale: 'en-US',
-      })
-      cal.goToSpecificPeriod(DATE_MON)
-
-      const label = cal.formatPeriodLabel()
-      expect(typeof label).toBe('string')
-      expect(label.length).toBeGreaterThan(0)
-    })
-
-    test('uses an em-dash range separator when spanning multiple days', () => {
-      const cal = createCalendar({
-        viewMode: { value: 1, unit: 'week' },
-        locale: 'en-US',
-      })
-      cal.goToSpecificPeriod(DATE_MON)
-
-      const label = cal.formatPeriodLabel()
-      // Implementation uses \u2014 (em-dash). The label should contain it for a
-      // week view since there are 7 distinct days.
-      expect(label).toContain('\u2014')
-    })
-
-    test('accepts a locale override', () => {
-      const cal = createCalendar({
-        viewMode: { value: 1, unit: 'week' },
-        locale: 'en-US',
-      })
-      cal.goToSpecificPeriod(DATE_MON)
-
-      const en = cal.formatPeriodLabel({ locale: 'en-US' })
-      const de = cal.formatPeriodLabel({ locale: 'de-DE' })
-      expect(en).not.toBe(de)
-    })
-  })
-
-  // ---------------------------------------------------------------------------
-  // getEventProps
-  // ---------------------------------------------------------------------------
-  describe('getEventProps', () => {
-    test('returns a result with start/end and overlappingEvents for a visible event', () => {
-      const event: TestEvent = {
-        id: 'e1',
-        title: 'Event',
-        start: `${DATE_MON}T09:00:00`,
-        end: `${DATE_MON}T10:00:00`,
-      }
-      const cal = createCalendar({
-        viewMode: { value: 1, unit: 'week' },
-        events: [event],
-      })
-      cal.goToSpecificPeriod(DATE_MON)
-
-      const props = cal.getEventProps(cal.getEvents()[0]!)
-      expect(props.start).toBe(`${DATE_MON}T09:00:00`)
-      expect(props.end).toBe(`${DATE_MON}T10:00:00`)
-      expect(Array.isArray(props.overlappingEvents)).toBe(true)
-    })
-
-    test('detects overlap with a sibling event', () => {
-      const cal = createCalendar({
-        viewMode: { value: 1, unit: 'week' },
-        events: [
-          {
-            id: 'e1',
-            title: 'E1',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T11:00:00`,
-          },
-          {
-            id: 'e2',
-            title: 'E2',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-          },
-        ],
-      })
-      cal.goToSpecificPeriod(DATE_MON)
-
-      const props = cal.getEventProps(
-        cal.getEvents().find((e) => e.id === 'e1')!,
-      )
-      expect(props.overlappingEvents.some((e) => e.id === 'e2')).toBe(true)
-    })
-  })
-
-  // ---------------------------------------------------------------------------
-  // commitUpdate backward cascade — FF and SF (gaps in original suite)
-  // ---------------------------------------------------------------------------
-  describe('commitUpdate backward cascade - FF and SF', () => {
-    test('FF: pulls predecessor back when successor.end moves before predecessor.end', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T11:00:00`,
-            end: `${DATE_MON}T13:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T12:00:00`,
-            end: `${DATE_MON}T14:00:00`,
-            resources: [allDayResource],
-            dependsOn: [{ id: 'p', type: 'FF' }],
-          },
-        ],
-        resources: [allDayResource],
-      })
-
-      // Move successor so its end is BEFORE predecessor's end.
-      // s.end goes 14:00 → 12:00, which is below p.end (13:00).
-      cal.commitUpdate('s', {
-        start: `${DATE_MON}T10:00:00`,
-        end: `${DATE_MON}T12:00:00`,
-      })
-
-      const p = cal.getEvents().find((e) => e.id === 'p')!
-      // FF requires succ.end >= pred.end. Shortfall is 13:00 - 12:00 = 1h.
-      // Predecessor is pulled back by 1h: 11:00→10:00, 13:00→12:00.
-      expect(p.start).toBe(`${DATE_MON}T10:00:00`)
-      expect(p.end).toBe(`${DATE_MON}T12:00:00`)
-    })
-
-    test('SF: pulls predecessor back when successor.end moves before predecessor.start', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T11:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T11:00:00`,
-            resources: [allDayResource],
-            dependsOn: [{ id: 'p', type: 'SF' }],
-          },
-        ],
-        resources: [allDayResource],
-      })
-
-      // Move s so its end is BEFORE p.start. s.end 11:00 → 10:00, p.start is 11:00.
-      cal.commitUpdate('s', {
-        start: `${DATE_MON}T09:00:00`,
-        end: `${DATE_MON}T10:00:00`,
-      })
-
-      const p = cal.getEvents().find((e) => e.id === 'p')!
-      // SF requires succ.end >= pred.start. Shortfall = 11:00 - 10:00 = 1h.
-      // Pull p back by 1h: 11:00→10:00, 12:00→11:00.
-      expect(p.start).toBe(`${DATE_MON}T10:00:00`)
-      expect(p.end).toBe(`${DATE_MON}T11:00:00`)
-    })
-  })
-
-  // ---------------------------------------------------------------------------
-  // validateMove backward cascade - allowed path
-  // ---------------------------------------------------------------------------
-  describe('validateMove backward cascade - allowed when target available', () => {
-    test('FS: allows move when predecessor pull-back stays within availability', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T11:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T12:00:00`,
-            end: `${DATE_MON}T13:00:00`,
-            resources: [allDayResource],
-            dependsOn: [{ id: 'p', type: 'FS' }],
-          },
-        ],
-        resources: [allDayResource],
-      })
-
-      // Move s earlier: 12:00 → 10:30. p.end (11:00) > s.start (10:30) by 30min,
-      // so p is pulled back to 09:30-10:30 - still inside all-day availability.
-      const r = cal.validateMove(
-        's',
-        `${DATE_MON}T10:30:00`,
-        `${DATE_MON}T11:30:00`,
-      )
-      expect(r.blocked).toBe(false)
-    })
-  })
-
-  // ---------------------------------------------------------------------------
-  // validateResize bottom-edge cascade
-  // ---------------------------------------------------------------------------
-  describe('validateResize bottom-edge cascade through dependents', () => {
-    const baseResizeOptions = {
-      constraints: { snapToMinutes: 15, minDurationMinutes: 15 },
-    }
-
-    test('blocks bottom-edge extension when dependent would be pushed into unavailable hours', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:00:00`,
-            resources: [weekdayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T11:00:00`,
-            resources: [weekdayResource],
-            dependsOn: [{ id: 'p', type: 'FS' }],
-          },
-        ],
-        resources: [weekdayResource],
-      })
-
-      // Extend p by 7h: 10:00 → 17:00. Dependent s would be pushed to 17:00-18:00,
-      // outside the 08:00-17:00 availability window.
-      const r = cal.validateResize({
-        eventId: 'p',
-        originalStart: `${DATE_MON}T09:00:00`,
-        originalEnd: `${DATE_MON}T10:00:00`,
-        edge: 'bottom',
-        totalDeltaMinutes: 420,
-        targetDayDate: DATE_MON,
-        originalDayDate: DATE_MON,
-        ...baseResizeOptions,
-      })
-
-      expect(r.blocked).toBe(true)
-    })
-
-    test('allows bottom-edge extension when dependent still fits inside availability', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:00:00`,
-            resources: [weekdayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T11:00:00`,
-            resources: [weekdayResource],
-            dependsOn: [{ id: 'p', type: 'FS' }],
-          },
-        ],
-        resources: [weekdayResource],
-      })
-
-      // Extend p by 1h: 10:00 → 11:00. Dependent s shifts to 11:00-12:00,
-      // still inside the 08:00-17:00 availability window.
-      const r = cal.validateResize({
-        eventId: 'p',
-        originalStart: `${DATE_MON}T09:00:00`,
-        originalEnd: `${DATE_MON}T10:00:00`,
-        edge: 'bottom',
-        totalDeltaMinutes: 60,
-        targetDayDate: DATE_MON,
-        originalDayDate: DATE_MON,
-        ...baseResizeOptions,
-      })
-
-      expect(r.blocked).toBe(false)
-    })
-  })
-
-  // ---------------------------------------------------------------------------
-  // Capacity edge cases
-  // ---------------------------------------------------------------------------
-  describe('capacity edge cases', () => {
-    test('resource with capacity [0] effectively prevents any concurrent usage', () => {
-      const zeroCapResource: TestResource = {
-        id: 'r-zero',
-        label: 'Zero',
-        capacity: [0],
-        availability: [
-          { weekdays: [1, 2, 3, 4, 5], startTime: '09:00', endTime: '17:00' },
-        ],
+    describe('validateResize bottom-edge cascade through dependents', () => {
+      const baseResizeOptions = {
+        constraints: { snapToMinutes: 15, minDurationMinutes: 15 },
       }
 
-      const cal = createCalendar({ resources: [zeroCapResource] })
+      test('blocks bottom-edge extension when dependent would be pushed into unavailable hours', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+              resources: [weekdayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: [weekdayResource],
+              dependsOn: [{ id: 'p', type: 'FS' }],
+            },
+          ],
+          resources: [weekdayResource],
+        })
 
-      // Implementation short-circuits when capacitySum <= 0, so this is NOT blocked.
-      // We pin that behavior so any future change is intentional.
-      const result = cal.validateEventPlacement({
-        title: 'Anything',
-        start: `${DATE_MON}T10:00:00`,
-        end: `${DATE_MON}T11:00:00`,
-        resources: [zeroCapResource],
-        consumption: [1],
+        const r = cal.validateResize({
+          eventId: 'p',
+          originalStart: `${DATE_MON}T09:00:00`,
+          originalEnd: `${DATE_MON}T10:00:00`,
+          edge: 'bottom',
+          totalDeltaMinutes: 420,
+          targetDayDate: DATE_MON,
+          originalDayDate: DATE_MON,
+          ...baseResizeOptions,
+        })
+
+        expect(r.blocked).toBe(true)
       })
-      expect(result.blocked).toBe(false)
+
+      test('allows bottom-edge extension when dependent still fits inside availability', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+              resources: [weekdayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: [weekdayResource],
+              dependsOn: [{ id: 'p', type: 'FS' }],
+            },
+          ],
+          resources: [weekdayResource],
+        })
+
+        const r = cal.validateResize({
+          eventId: 'p',
+          originalStart: `${DATE_MON}T09:00:00`,
+          originalEnd: `${DATE_MON}T10:00:00`,
+          edge: 'bottom',
+          totalDeltaMinutes: 60,
+          targetDayDate: DATE_MON,
+          originalDayDate: DATE_MON,
+          ...baseResizeOptions,
+        })
+
+        expect(r.blocked).toBe(false)
+      })
     })
 
-    test('treats missing event.consumption as [1] when checking against existing usage', () => {
-      const capResource: TestResource = {
-        id: 'r-cap',
-        label: 'Cap1',
-        capacity: [1],
-        availability: [
-          { weekdays: [1, 2, 3, 4, 5], startTime: '09:00', endTime: '17:00' },
-        ],
-      }
+    describe('capacity edge cases', () => {
+      test('resource with capacity [0] effectively prevents any concurrent usage', () => {
+        const zeroCapResource: TestResource = {
+          id: 'r-zero',
+          label: 'Zero',
+          capacity: [0],
+          availability: [
+            { weekdays: [1, 2, 3, 4, 5], startTime: '09:00', endTime: '17:00' },
+          ],
+        }
 
-      const cal = createCalendar({
-        resources: [capResource],
-        events: [
-          {
-            id: 'e1',
-            title: 'E1',
-            start: `${DATE_MON}T10:00:00`,
-            end: `${DATE_MON}T11:00:00`,
-            resources: [capResource],
-            // no consumption — treated as [1]
-          },
-        ],
+        const cal = createCalendar({ resources: [zeroCapResource] })
+
+        const result = cal.validateEventPlacement({
+          title: 'Anything',
+          start: `${DATE_MON}T10:00:00`,
+          end: `${DATE_MON}T11:00:00`,
+          resources: [zeroCapResource],
+          consumption: [1],
+        })
+        expect(result.blocked).toBe(false)
       })
 
-      // Adding an overlapping event with implicit consumption of 1 should
-      // blow past the capacity of 1.
-      const result = cal.validateEventPlacement({
-        title: 'E2',
-        start: `${DATE_MON}T10:00:00`,
-        end: `${DATE_MON}T11:00:00`,
-        resources: [capResource],
+      test('treats missing event.consumption as [1] when checking against existing usage', () => {
+        const capResource: TestResource = {
+          id: 'r-cap',
+          label: 'Cap1',
+          capacity: [1],
+          availability: [
+            { weekdays: [1, 2, 3, 4, 5], startTime: '09:00', endTime: '17:00' },
+          ],
+        }
+
+        const cal = createCalendar({
+          resources: [capResource],
+          events: [
+            {
+              id: 'e1',
+              title: 'E1',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: [capResource],
+            },
+          ],
+        })
+
+        const result = cal.validateEventPlacement({
+          title: 'E2',
+          start: `${DATE_MON}T10:00:00`,
+          end: `${DATE_MON}T11:00:00`,
+          resources: [capResource],
+        })
+        expect(result.blocked).toBe(true)
       })
-      expect(result.blocked).toBe(true)
+    })
+
+    describe('partial datetime normalization in commit*', () => {
+      test('commitAdd normalizes "YYYY-MM-DDTHH" form', () => {
+        const cal = createCalendar()
+        cal.commitAdd({
+          id: 'e1',
+          title: 'E',
+          start: `${DATE_MON}T09` as unknown as string,
+          end: `${DATE_MON}T10` as unknown as string,
+        })
+
+        const e = cal.getEvents()[0]!
+        expect(e.start).toBe(`${DATE_MON}T09:00:00`)
+        expect(e.end).toBe(`${DATE_MON}T10:00:00`)
+      })
+
+      test('commitUpdate normalizes "YYYY-MM-DDTHH" form', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'e1',
+              title: 'E',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+            },
+          ],
+        })
+
+        cal.commitUpdate('e1', {
+          start: `${DATE_MON}T11` as unknown as string,
+          end: `${DATE_MON}T12` as unknown as string,
+        })
+
+        const e = cal.getEvents()[0]!
+        expect(e.start).toBe(`${DATE_MON}T11:00:00`)
+        expect(e.end).toBe(`${DATE_MON}T12:00:00`)
+      })
+    })
+
+    describe('createDependency - shape and idempotency edges', () => {
+      test('emits a single event:updated when dependency is added without reschedule', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+            },
+          ],
+          resources: [allDayResource],
+        })
+        emitSpy.mockClear()
+
+        cal.createDependency('p', 's', 'FS')
+
+        const targetUpdates = emitSpy.mock.calls.filter(
+          ([name, payload]) =>
+            name === 'event:updated' && payload.eventId === 's',
+        )
+        expect(targetUpdates.length).toBeGreaterThanOrEqual(1)
+      })
+
+      test('does not modify target when reschedule attempt is blocked', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'p',
+              title: 'P',
+              start: `${DATE_MON}T15:00:00`,
+              end: `${DATE_MON}T16:00:00`,
+              resources: [weekdayResource],
+            },
+            {
+              id: 's',
+              title: 'S',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T16:00:00`,
+              resources: [weekdayResource],
+            },
+          ],
+          resources: [weekdayResource],
+        })
+
+        const result = cal.createDependency('p', 's', 'FS')
+
+        expect(result.blocked).toBe(true)
+        const s = cal.getEvents().find((e) => e.id === 's')!
+        expect(s.dependsOn ?? []).toEqual([])
+        expect(s.start).toBe(`${DATE_MON}T09:00:00`)
+        expect(s.end).toBe(`${DATE_MON}T16:00:00`)
+      })
     })
   })
 
-  // ---------------------------------------------------------------------------
-  // commitAdd / commitUpdate partial-datetime normalization
-  // ---------------------------------------------------------------------------
-  describe('partial datetime normalization in commit*', () => {
-    test('commitAdd normalizes "YYYY-MM-DDTHH" form', () => {
-      const cal = createCalendar()
-      cal.commitAdd({
-        id: 'e1',
-        title: 'E',
-        start: `${DATE_MON}T09` as unknown as string,
-        end: `${DATE_MON}T10` as unknown as string,
-      })
-
-      const e = cal.getEvents()[0]!
-      expect(e.start).toBe(`${DATE_MON}T09:00:00`)
-      expect(e.end).toBe(`${DATE_MON}T10:00:00`)
-    })
-
-    test('commitUpdate normalizes "YYYY-MM-DDTHH" form', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'e1',
-            title: 'E',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:00:00`,
-          },
-        ],
-      })
-
-      cal.commitUpdate('e1', {
-        start: `${DATE_MON}T11` as unknown as string,
-        end: `${DATE_MON}T12` as unknown as string,
-      })
-
-      const e = cal.getEvents()[0]!
-      expect(e.start).toBe(`${DATE_MON}T11:00:00`)
-      expect(e.end).toBe(`${DATE_MON}T12:00:00`)
-    })
-  })
-
-  // ---------------------------------------------------------------------------
-  // createDependency — additional shape
-  // ---------------------------------------------------------------------------
-  describe('createDependency - shape and idempotency edges', () => {
-    test('emits a single event:updated when dependency is added without reschedule', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T10:00:00`,
-            resources: [allDayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T11:00:00`,
-            end: `${DATE_MON}T12:00:00`,
-            resources: [allDayResource],
-          },
-        ],
-        resources: [allDayResource],
-      })
+  describe('undo/redo', () => {
+    beforeEach(() => {
       emitSpy.mockClear()
-
-      cal.createDependency('p', 's', 'FS')
-
-      const targetUpdates = emitSpy.mock.calls.filter(
-        ([name, payload]) =>
-          name === 'event:updated' && payload.eventId === 's',
-      )
-      expect(targetUpdates.length).toBeGreaterThanOrEqual(1)
     })
 
-    test('does not modify target when reschedule attempt is blocked', () => {
-      const cal = createCalendar({
-        events: [
-          {
-            id: 'p',
-            title: 'P',
-            start: `${DATE_MON}T15:00:00`,
-            end: `${DATE_MON}T16:00:00`,
-            resources: [weekdayResource],
-          },
-          {
-            id: 's',
-            title: 'S',
-            start: `${DATE_MON}T09:00:00`,
-            end: `${DATE_MON}T16:00:00`,
-            resources: [weekdayResource],
-          },
-        ],
-        resources: [weekdayResource],
+    describe('canUndo / canRedo', () => {
+      test('initially both return false', () => {
+        const cal = createCalendar()
+        expect(cal.canUndo()).toBe(false)
+        expect(cal.canRedo()).toBe(false)
       })
 
-      const result = cal.createDependency('p', 's', 'FS')
+      test('canUndo returns true after commitAdd', () => {
+        const cal = createCalendar()
+        cal.commitAdd({
+          id: 'e1',
+          title: 'E1',
+          start: `${DATE_MON}T09:00:00`,
+          end: `${DATE_MON}T10:00:00`,
+        } as TestEvent)
+        expect(cal.canUndo()).toBe(true)
+        expect(cal.canRedo()).toBe(false)
+      })
+    })
 
-      expect(result.blocked).toBe(true)
-      const s = cal.getEvents().find((e) => e.id === 's')!
-      expect(s.dependsOn ?? []).toEqual([])
-      expect(s.start).toBe(`${DATE_MON}T09:00:00`)
-      expect(s.end).toBe(`${DATE_MON}T16:00:00`)
+    describe('undo', () => {
+      test('undo after commitAdd removes the event', () => {
+        const cal = createCalendar()
+        cal.commitAdd({
+          id: 'e1',
+          title: 'E1',
+          start: `${DATE_MON}T09:00:00`,
+          end: `${DATE_MON}T10:00:00`,
+        } as TestEvent)
+        expect(cal.getEvents()).toHaveLength(1)
+        cal.undo()
+        expect(cal.getEvents()).toHaveLength(0)
+      })
+
+      test('undo after commitUpdate restores original event', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'e1',
+              title: 'Original',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+            } as TestEvent,
+          ],
+        })
+        cal.commitUpdate('e1', { title: 'Updated' })
+        expect(cal.getEvents()[0]!.title).toBe('Updated')
+        cal.undo()
+        expect(cal.getEvents()[0]!.title).toBe('Original')
+      })
+
+      test('undo after removeEvent brings back the event', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'e1',
+              title: 'E1',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+            } as TestEvent,
+          ],
+        })
+        cal.removeEvent('e1')
+        expect(cal.getEvents()).toHaveLength(0)
+        cal.undo()
+        expect(cal.getEvents()).toHaveLength(1)
+        expect(cal.getEvents()[0]!.id).toBe('e1')
+      })
+
+      test('undo is a no-op when stack is empty', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'e1',
+              title: 'E1',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+            } as TestEvent,
+          ],
+        })
+        cal.undo()
+        expect(cal.getEvents()).toHaveLength(1)
+      })
+
+      test('multiple undos restore in reverse order', () => {
+        const cal = createCalendar()
+        cal.commitAdd({
+          id: 'e1',
+          title: 'E1',
+          start: `${DATE_MON}T09:00:00`,
+          end: `${DATE_MON}T10:00:00`,
+        } as TestEvent)
+        cal.commitAdd({
+          id: 'e2',
+          title: 'E2',
+          start: `${DATE_MON}T11:00:00`,
+          end: `${DATE_MON}T12:00:00`,
+        } as TestEvent)
+        expect(cal.getEvents()).toHaveLength(2)
+        cal.undo()
+        expect(cal.getEvents()).toHaveLength(1)
+        cal.undo()
+        expect(cal.getEvents()).toHaveLength(0)
+      })
+    })
+
+    describe('redo', () => {
+      test('redo after undo reapplies commitAdd', () => {
+        const cal = createCalendar()
+        cal.commitAdd({
+          id: 'e1',
+          title: 'E1',
+          start: `${DATE_MON}T09:00:00`,
+          end: `${DATE_MON}T10:00:00`,
+        } as TestEvent)
+        cal.undo()
+        expect(cal.getEvents()).toHaveLength(0)
+        cal.redo()
+        expect(cal.getEvents()).toHaveLength(1)
+        expect(cal.getEvents()[0]!.id).toBe('e1')
+      })
+
+      test('redo after undo reapplies commitUpdate', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'e1',
+              title: 'Original',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+            } as TestEvent,
+          ],
+        })
+        cal.commitUpdate('e1', { title: 'Updated' })
+        cal.undo()
+        expect(cal.getEvents()[0]!.title).toBe('Original')
+        cal.redo()
+        expect(cal.getEvents()[0]!.title).toBe('Updated')
+      })
+
+      test('new action after undo clears redo stack', () => {
+        const cal = createCalendar()
+        cal.commitAdd({
+          id: 'e1',
+          title: 'E1',
+          start: `${DATE_MON}T09:00:00`,
+          end: `${DATE_MON}T10:00:00`,
+        } as TestEvent)
+        cal.undo()
+        expect(cal.canRedo()).toBe(true)
+        cal.commitAdd({
+          id: 'e2',
+          title: 'E2',
+          start: `${DATE_MON}T11:00:00`,
+          end: `${DATE_MON}T12:00:00`,
+        } as TestEvent)
+        expect(cal.canRedo()).toBe(false)
+      })
+
+      test('redo is a no-op when stack is empty', () => {
+        const cal = createCalendar()
+        cal.commitAdd({
+          id: 'e1',
+          title: 'E1',
+          start: `${DATE_MON}T09:00:00`,
+          end: `${DATE_MON}T10:00:00`,
+        } as TestEvent)
+        cal.redo()
+        expect(cal.getEvents()).toHaveLength(1)
+      })
+
+      test('canRedo returns false after redo exhausts the stack', () => {
+        const cal = createCalendar()
+        cal.commitAdd({
+          id: 'e1',
+          title: 'E1',
+          start: `${DATE_MON}T09:00:00`,
+          end: `${DATE_MON}T10:00:00`,
+        } as TestEvent)
+        cal.undo()
+        cal.redo()
+        expect(cal.canRedo()).toBe(false)
+      })
     })
   })
 })

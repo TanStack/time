@@ -1049,9 +1049,9 @@ function TimelineDependencyOverlay({
       )
       if (!sourceMatch || !targetMatch) return
 
-      const sourceEventId = sourceMatch[1]!
+      const sourceEventId = sourceMatch[1]
       const sourceAnchor = sourceMatch[2] as 'start' | 'end'
-      const targetEventId = targetMatch[1]!
+      const targetEventId = targetMatch[1]
       const targetAnchor = targetMatch[2] as 'start' | 'end'
 
       if (sourceEventId === targetEventId) return
@@ -1826,6 +1826,23 @@ function TimelineDemo() {
               Next →
             </Button>
             <Button onClick={openAddModal}>+ Add Event</Button>
+
+            <Button
+              onClick={calendar.undo}
+              disabled={!calendar.canUndo()}
+              variant="outline"
+              title="Undo"
+            >
+              ↩ Undo
+            </Button>
+            <Button
+              onClick={calendar.redo}
+              disabled={!calendar.canRedo()}
+              variant="outline"
+              title="Redo"
+            >
+              ↪ Redo
+            </Button>
 
             <div className="ml-auto flex gap-2">
               {viewModeOptions.map((opt) => {
