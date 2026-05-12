@@ -9,6 +9,7 @@ title: "@tanstack/time"
 
 - [CalendarCore](classes/CalendarCore.md)
 - [DateCore](classes/DateCore.md)
+- [ResizeController](classes/ResizeController.md)
 
 ## Interfaces
 
@@ -24,6 +25,7 @@ title: "@tanstack/time"
 - [EndOfOptions](interfaces/EndOfOptions.md)
 - [EqualsOptions](interfaces/EqualsOptions.md)
 - [Event](interfaces/Event.md)
+- [EventDependency](interfaces/EventDependency.md)
 - [EventTimeRange](interfaces/EventTimeRange.md)
 - [FormatDateOptions](interfaces/FormatDateOptions.md)
 - [FormatEventTimeOptions](interfaces/FormatEventTimeOptions.md)
@@ -43,9 +45,12 @@ title: "@tanstack/time"
 - [RangeOptions](interfaces/RangeOptions.md)
 - [RecurrenceRule](interfaces/RecurrenceRule.md)
 - [ResizeConstraints](interfaces/ResizeConstraints.md)
+- [ResizeControllerOptions](interfaces/ResizeControllerOptions.md)
 - [ResizeError](interfaces/ResizeError.md)
 - [ResizeHandleStyle](interfaces/ResizeHandleStyle.md)
 - [ResizePreviewOptions](interfaces/ResizePreviewOptions.md)
+- [ResizeStartArgs](interfaces/ResizeStartArgs.md)
+- [ResizeState](interfaces/ResizeState.md)
 - [ResizeValidationResult](interfaces/ResizeValidationResult.md)
 - [Resource](interfaces/Resource.md)
 - [RoundOptions](interfaces/RoundOptions.md)
@@ -73,6 +78,7 @@ title: "@tanstack/time"
 
 - [DateInput](type-aliases/DateInput.md)
 - [Day](type-aliases/Day.md)
+- [DependencyType](type-aliases/DependencyType.md)
 - [DurationLike](type-aliases/DurationLike.md)
 - [EndOfUnit](type-aliases/EndOfUnit.md)
 - [EqualsUnit](type-aliases/EqualsUnit.md)
@@ -83,6 +89,7 @@ title: "@tanstack/time"
 - [IsSameOrBeforeUnit](type-aliases/IsSameOrBeforeUnit.md)
 - [RecurrenceFrequency](type-aliases/RecurrenceFrequency.md)
 - [ResizeEdge](type-aliases/ResizeEdge.md)
+- [ResizeListener](type-aliases/ResizeListener.md)
 - [RoundUnit](type-aliases/RoundUnit.md)
 - [SaveEventResult](type-aliases/SaveEventResult.md)
 - [StartOfUnit](type-aliases/StartOfUnit.md)

@@ -5,7 +5,7 @@ title: AvailabilityConflict
 
 # Interface: AvailabilityConflict
 
-Defined in: [calendar/types.ts:160](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L160)
+Defined in: [calendar/types.ts:170](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L170)
 
 Information about a specific availability conflict
 
@@ -17,7 +17,7 @@ Information about a specific availability conflict
 conflictRange: object;
 ```
 
-Defined in: [calendar/types.ts:164](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L164)
+Defined in: [calendar/types.ts:174](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L174)
 
 Time range that conflicts with availability
 
@@ -41,7 +41,7 @@ start: string;
 date: string;
 ```
 
-Defined in: [calendar/types.ts:162](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L162)
+Defined in: [calendar/types.ts:172](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L172)
 
 The date where the conflict occurred (YYYY-MM-DD)
 
@@ -53,7 +53,7 @@ The date where the conflict occurred (YYYY-MM-DD)
 description: string;
 ```
 
-Defined in: [calendar/types.ts:173](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L173)
+Defined in: [calendar/types.ts:183](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L183)
 
 Human-readable description of the conflict
 
@@ -65,7 +65,7 @@ Human-readable description of the conflict
 resourceDetails: UnavailabilityReason[];
 ```
 
-Defined in: [calendar/types.ts:171](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L171)
+Defined in: [calendar/types.ts:181](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L181)
 
 Detailed reasons for each resource
 
@@ -77,6 +77,6 @@ Detailed reasons for each resource
 resourceIds: string[];
 ```
 
-Defined in: [calendar/types.ts:169](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L169)
+Defined in: [calendar/types.ts:179](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L179)
 
 The resource(s) whose availability is being violated
