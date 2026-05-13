@@ -5,7 +5,7 @@ title: CalendarApi
 
 # Interface: CalendarApi\<TResource, TEvent\>
 
-Defined in: [calendar/calendar.ts:221](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L221)
+Defined in: [calendar/calendar.ts:229](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L229)
 
 ## Extends
 
@@ -29,7 +29,7 @@ Defined in: [calendar/calendar.ts:221](https://github.com/TanStack/time/blob/mai
 activeDate: string;
 ```
 
-Defined in: [calendar/calendar.ts:214](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L214)
+Defined in: [calendar/calendar.ts:222](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L222)
 
 The currently active date in the calendar.
 
@@ -121,6 +121,50 @@ CalendarActions.canGoPreviousPeriod
 
 ***
 
+### canRedo()
+
+```ts
+canRedo: () => boolean;
+```
+
+Defined in: [calendar/calendar.ts:163](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L163)
+
+Returns true when there is at least one action to redo.
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+```ts
+CalendarActions.canRedo
+```
+
+***
+
+### canUndo()
+
+```ts
+canUndo: () => boolean;
+```
+
+Defined in: [calendar/calendar.ts:161](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L161)
+
+Returns true when there is at least one action to undo.
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+```ts
+CalendarActions.canUndo
+```
+
+***
+
 ### changeViewMode()
 
 ```ts
@@ -155,7 +199,7 @@ CalendarActions.changeViewMode
 createDependency: (sourceId, targetId, type?) => object;
 ```
 
-Defined in: [calendar/calendar.ts:178](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L178)
+Defined in: [calendar/calendar.ts:186](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L186)
 
 Creates a dependency link from source to target event.
 If the target event starts before the source event ends, it will optionally reschedule the target.
@@ -204,7 +248,7 @@ CalendarActions.createDependency
 currentPeriod: string;
 ```
 
-Defined in: [calendar/calendar.ts:208](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L208)
+Defined in: [calendar/calendar.ts:216](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L216)
 
 The currently focused date period in the calendar.
 
@@ -222,7 +266,7 @@ ConvertTemporalToString.currentPeriod
 days: Day<TResource, TEvent>[];
 ```
 
-Defined in: [calendar/calendar.ts:212](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L212)
+Defined in: [calendar/calendar.ts:220](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L220)
 
 An array of days, each potentially containing events.
 
@@ -280,7 +324,7 @@ CalendarActions.editEvent
 fetchEventsForRange: (start, end) => Promise<void>;
 ```
 
-Defined in: [calendar/calendar.ts:189](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L189)
+Defined in: [calendar/calendar.ts:197](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L197)
 
 Fetches events for an arbitrary date range from the configured
 `fetchEvents` callback and merges them into the calendar.
@@ -741,6 +785,28 @@ CalendarActions.groupDaysBy
 
 ***
 
+### redo()
+
+```ts
+redo: () => void;
+```
+
+Defined in: [calendar/calendar.ts:159](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L159)
+
+Re-applies the last undone action.
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+```ts
+CalendarActions.redo
+```
+
+***
+
 ### removeEvent()
 
 ```ts
@@ -769,13 +835,35 @@ CalendarActions.removeEvent
 
 ***
 
+### undo()
+
+```ts
+undo: () => void;
+```
+
+Defined in: [calendar/calendar.ts:157](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L157)
+
+Reverts the last mutating action (commitAdd, commitUpdate, removeEvent).
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+```ts
+CalendarActions.undo
+```
+
+***
+
 ### validateEventDependencies()
 
 ```ts
 validateEventDependencies: (event, dependsOn) => object;
 ```
 
-Defined in: [calendar/calendar.ts:170](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L170)
+Defined in: [calendar/calendar.ts:178](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L178)
 
 Validates if placing an event with a specific start time satisfies all dependency constraints.
 
@@ -833,7 +921,7 @@ CalendarActions.validateEventDependencies
 validateEventPlacement: (event) => object;
 ```
 
-Defined in: [calendar/calendar.ts:195](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L195)
+Defined in: [calendar/calendar.ts:203](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L203)
 
 Validates whether a new event (not yet added to the calendar) can be
 placed at the given time slot without violating resource availability.
@@ -889,7 +977,7 @@ CalendarActions.validateEventPlacement
 validateMove: (eventId, newStart, newEnd, newResources?, newConsumption?) => object;
 ```
 
-Defined in: [calendar/calendar.ts:160](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L160)
+Defined in: [calendar/calendar.ts:168](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L168)
 
 Checks whether moving `eventId` to `[newStart, newEnd]` — and cascading
 all finish-to-start dependents — would violate any resource availability.
@@ -952,7 +1040,7 @@ CalendarActions.validateMove
 viewMode: ViewMode;
 ```
 
-Defined in: [calendar/calendar.ts:210](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L210)
+Defined in: [calendar/calendar.ts:218](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L218)
 
 The current view mode of the calendar.
 
