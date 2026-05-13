@@ -20,6 +20,7 @@ import type {
   Day,
   DependencyType,
   Event,
+  EventDateTimeInput,
   EventDependency,
   ResizeError,
   Resource,
@@ -87,6 +88,23 @@ interface CalendarActions<
   canGoPreviousPeriod: () => boolean
   /** Checks if navigation to the next period is allowed within the range. */
   canGoNextPeriod: () => boolean
+  /**
+   * Navigates to the next occurrence of a recurring event after fromDate (defaults to activeDate).
+   * No-op when the event is not recurring or has no future occurrences.
+   */
+  goToNextOccurrence: (eventId: string, fromDate?: EventDateTimeInput) => void
+  /**
+   * Navigates to the previous occurrence of a recurring event before fromDate (defaults to activeDate).
+   * No-op when the event is not recurring or is already at the first occurrence.
+   */
+  goToPreviousOccurrence: (
+    eventId: string,
+    fromDate?: EventDateTimeInput,
+  ) => void
+  /**
+   * Returns the master event for a given occurrence (or the event itself if it is already the master).
+   */
+  getMasterEvent: (event: TEvent) => TEvent
   /** Changes the current view mode of the calendar. */
   changeViewMode: (newViewMode: CalendarStore['viewMode']) => void
   /** Retrieves styling properties for a specific event. */
@@ -1313,8 +1331,70 @@ export class CalendarCore<
     return null
   }
 
+  getMasterEvent(event: TEvent): TEvent {
+    if (!event._recurringMasterId) return event
+    return this._eventMap.get(event._recurringMasterId) ?? event
+  }
+
   getEvents(): Array<TEvent> {
     return this.options.events ? [...this.options.events] : []
+  }
+
+  private _resolveMasterEvent(eventId: string): TEvent | undefined {
+    const direct = this._eventMap.get(eventId)
+    if (direct) return direct
+    const match = eventId.match(/^(.+)_\d+$/)
+    if (match) return this._eventMap.get(match[1]!)
+    return undefined
+  }
+
+  goToNextOccurrence(eventId: string, fromDate?: EventDateTimeInput): void {
+    const master = this._resolveMasterEvent(eventId)
+    if (!master?.recurrence) return
+
+    const baseDate = fromDate
+      ? Temporal.PlainDate.from(toPlainDateTimeString(fromDate).split('T')[0]!)
+      : this.store.state.activeDate
+    const windowStart = baseDate
+      .add({ days: 1 })
+      .toString({ calendarName: 'never' })
+    const windowEnd = baseDate
+      .add({ years: 4 })
+      .toString({ calendarName: 'never' })
+
+    const occurrences = expandRecurringEvent<TResource, TEvent>(
+      master,
+      windowStart,
+      windowEnd,
+    )
+    if (occurrences.length === 0) return
+
+    this.goToSpecificPeriod((occurrences[0]!.start as string).split('T')[0]!)
+  }
+
+  goToPreviousOccurrence(eventId: string, fromDate?: EventDateTimeInput): void {
+    const master = this._resolveMasterEvent(eventId)
+    if (!master?.recurrence) return
+
+    const activeDateStr = fromDate
+      ? toPlainDateTimeString(fromDate).split('T')[0]!
+      : this.store.state.activeDate.toString({ calendarName: 'never' })
+    const masterStartStr = (master.start as string).split('T')[0]!
+
+    if (masterStartStr >= activeDateStr) return
+
+    const candidates: Array<string> = [masterStartStr]
+    const occs = expandRecurringEvent<TResource, TEvent>(
+      master,
+      masterStartStr,
+      activeDateStr,
+    )
+    for (const occ of occs) {
+      const occDateStr = (occ.start as string).split('T')[0]!
+      if (occDateStr < activeDateStr) candidates.push(occDateStr)
+    }
+
+    this.goToSpecificPeriod(candidates[candidates.length - 1]!)
   }
 
   createResizeController(

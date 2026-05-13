@@ -1,5 +1,7 @@
+## v0.0
+
 - Undo/redo ✅
-- Go to next/previous occurrence
+- Go to next/previous occurrence ✅
 - All-day events
 - Recurrence exceptions:
   - EXDATE (skip specific occurrences)
@@ -10,3 +12,7 @@
 - Reminders/notifications
 - iCalendar (ICS) import/export
 - Bulk editing
+
+## v0.1
+
+- Modularization - features as plugins

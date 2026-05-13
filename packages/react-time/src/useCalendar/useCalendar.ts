@@ -14,6 +14,7 @@ import type {
   CalendarCoreOptions,
   DependencyType,
   Event,
+  EventDateTimeInput,
   EventDependency,
   ResizeController,
   ResizeControllerOptions,
@@ -290,6 +291,29 @@ export const useCalendar = <
     [calendarCore],
   )
 
+  const goToNextOccurrence = useCallback(
+    (eventId: string, fromDate?: EventDateTimeInput) => {
+      startTransition(() => {
+        calendarCore.goToNextOccurrence(eventId, fromDate)
+      })
+    },
+    [calendarCore, startTransition],
+  )
+
+  const goToPreviousOccurrence = useCallback(
+    (eventId: string, fromDate?: EventDateTimeInput) => {
+      startTransition(() => {
+        calendarCore.goToPreviousOccurrence(eventId, fromDate)
+      })
+    },
+    [calendarCore, startTransition],
+  )
+
+  const getMasterEvent = useCallback<typeof calendarCore.getMasterEvent>(
+    (event) => calendarCore.getMasterEvent(event),
+    [calendarCore],
+  )
+
   const undo = useCallback(() => calendarCore.undo(), [calendarCore])
   const redo = useCallback(() => calendarCore.redo(), [calendarCore])
   const canUndo = useCallback(() => calendarCore.canUndo(), [calendarCore])
@@ -354,5 +378,8 @@ export const useCalendar = <
     redo,
     canUndo,
     canRedo,
+    goToNextOccurrence,
+    goToPreviousOccurrence,
+    getMasterEvent,
   }
 }
