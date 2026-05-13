@@ -1285,6 +1285,77 @@ describe('CalendarCore', () => {
       const cal = createCalendar()
       expect(cal.canGoNextPeriod()).toBe(true)
     })
+
+    describe('goToNextOccurrence / goToPreviousOccurrence', () => {
+      const recurringEvent: TestEvent = {
+        id: 'rec',
+        title: 'Recurring',
+        start: '2025-06-02T09:00:00',
+        end: '2025-06-02T10:00:00',
+        recurrence: { frequency: 'weekly', interval: 1 },
+      }
+
+      const nonRecurringEvent: TestEvent = {
+        id: 'plain',
+        title: 'Plain',
+        start: '2025-06-02T09:00:00',
+        end: '2025-06-02T10:00:00',
+      }
+
+      test('goToNextOccurrence navigates to next weekly occurrence', () => {
+        const cal = createCalendar({ events: [recurringEvent] })
+        cal.goToSpecificPeriod('2025-06-02')
+        cal.goToNextOccurrence('rec')
+        expect(
+          cal.store.state.activeDate.toString({ calendarName: 'never' }),
+        ).toBe('2025-06-09')
+      })
+
+      test('goToNextOccurrence is no-op for non-recurring event', () => {
+        const cal = createCalendar({ events: [nonRecurringEvent] })
+        cal.goToSpecificPeriod('2025-06-02')
+        cal.goToNextOccurrence('plain')
+        expect(
+          cal.store.state.activeDate.toString({ calendarName: 'never' }),
+        ).toBe('2025-06-02')
+      })
+
+      test('goToNextOccurrence accepts occurrence id and resolves master', () => {
+        const cal = createCalendar({ events: [recurringEvent] })
+        cal.goToSpecificPeriod('2025-06-02')
+        cal.goToNextOccurrence('rec_1')
+        expect(
+          cal.store.state.activeDate.toString({ calendarName: 'never' }),
+        ).toBe('2025-06-09')
+      })
+
+      test('goToPreviousOccurrence navigates to previous weekly occurrence', () => {
+        const cal = createCalendar({ events: [recurringEvent] })
+        cal.goToSpecificPeriod('2025-06-16')
+        cal.goToPreviousOccurrence('rec')
+        expect(
+          cal.store.state.activeDate.toString({ calendarName: 'never' }),
+        ).toBe('2025-06-09')
+      })
+
+      test('goToPreviousOccurrence is no-op when already at master start', () => {
+        const cal = createCalendar({ events: [recurringEvent] })
+        cal.goToSpecificPeriod('2025-06-02')
+        cal.goToPreviousOccurrence('rec')
+        expect(
+          cal.store.state.activeDate.toString({ calendarName: 'never' }),
+        ).toBe('2025-06-02')
+      })
+
+      test('goToPreviousOccurrence from occurrence id resolves master', () => {
+        const cal = createCalendar({ events: [recurringEvent] })
+        cal.goToSpecificPeriod('2025-06-09')
+        cal.goToPreviousOccurrence('rec_1')
+        expect(
+          cal.store.state.activeDate.toString({ calendarName: 'never' }),
+        ).toBe('2025-06-02')
+      })
+    })
   })
 
   describe('getDaysNames', () => {

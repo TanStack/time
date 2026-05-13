@@ -29,6 +29,13 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
 
 import './index.css'
 
@@ -692,81 +699,114 @@ function ScheduleView({
                         )
 
                         return (
-                          <div
-                            key={`${event.id}-${eventIndex}`}
-                            className={`group absolute z-10 bg-neutral-800 text-white rounded px-2 py-1 text-xs font-medium overflow-hidden transition-colors border border-neutral-700 ${
-                              isActivelyResized
-                                ? 'bg-neutral-700 ring-2 ring-neutral-500 z-20'
-                                : 'cursor-pointer hover:bg-neutral-700'
-                            }`}
-                            title={event.title}
-                            style={displayStyle}
-                            onClick={(e) => {
-                              if (
-                                !resizeState.isResizing &&
-                                !(e.target as HTMLElement).closest(
-                                  '[data-resize-handle]',
-                                )
-                              ) {
-                                onEventClick(event)
-                              }
-                            }}
-                          >
-                            {showTopHandle && (
-                              <ResizeHandle
-                                edge="top"
-                                {...getResizeHandleProps(
-                                  event.id,
-                                  'top',
-                                  originalStart,
-                                  originalEnd,
-                                )}
-                              />
-                            )}
-                            <div className="font-semibold pt-1 flex items-center gap-1.5">
-                              <span className="flex items-center gap-1 min-w-0">
-                                {(event._recurringMasterId ||
-                                  event.recurrence) && (
-                                  <span
-                                    className="opacity-60 flex-shrink-0"
-                                    title="Recurring event"
-                                  >
-                                    ↻
-                                  </span>
-                                )}
-                                <span className="truncate">{event.title}</span>
-                              </span>
-                              {event.consumption &&
-                                event.consumption.length > 0 && (
-                                  <span
-                                    className="text-[10px] leading-none rounded bg-black/40 px-1 py-0.5 font-semibold flex-shrink-0"
-                                    title="Consumption"
-                                  >
-                                    {event.consumption.reduce(
-                                      (a, b) => a + b,
-                                      0,
-                                    )}
-                                  </span>
-                                )}
-                            </div>
-                            {displayStyle &&
-                              parseFloat(displayStyle.height) > 2 && (
-                                <div className="text-xs opacity-90 mt-0.5">
-                                  {timeRange.rangeFormatted}
-                                </div>
+                          <ContextMenu key={`${event.id}-${eventIndex}`}>
+                            <ContextMenuTrigger
+                              className={`group absolute z-10 bg-neutral-800 text-white rounded px-2 py-1 text-xs font-medium overflow-hidden transition-colors border border-neutral-700 ${
+                                isActivelyResized
+                                  ? 'bg-neutral-700 ring-2 ring-neutral-500 z-20'
+                                  : 'cursor-pointer hover:bg-neutral-700'
+                              }`}
+                              style={displayStyle as React.CSSProperties}
+                              onClick={(e: React.MouseEvent) => {
+                                if (
+                                  !resizeState.isResizing &&
+                                  !(e.target as HTMLElement).closest(
+                                    '[data-resize-handle]',
+                                  )
+                                ) {
+                                  onEventClick(event)
+                                }
+                              }}
+                            >
+                              {showTopHandle && (
+                                <ResizeHandle
+                                  edge="top"
+                                  {...getResizeHandleProps(
+                                    event.id,
+                                    'top',
+                                    originalStart,
+                                    originalEnd,
+                                  )}
+                                />
                               )}
-                            {showBottomHandle && (
-                              <ResizeHandle
-                                edge="bottom"
-                                {...getResizeHandleProps(
-                                  event.id,
-                                  'bottom',
-                                  originalStart,
-                                  originalEnd,
+                              <div className="font-semibold pt-1 flex items-center gap-1.5">
+                                <span className="flex items-center gap-1 min-w-0">
+                                  {event.recurrence && (
+                                    <span
+                                      className="opacity-60 flex-shrink-0"
+                                      title="Recurring event"
+                                    >
+                                      ↻
+                                    </span>
+                                  )}
+                                  <span className="truncate">
+                                    {event.title}
+                                  </span>
+                                </span>
+                                {event.consumption &&
+                                  event.consumption.length > 0 && (
+                                    <span
+                                      className="text-[10px] leading-none rounded bg-black/40 px-1 py-0.5 font-semibold flex-shrink-0"
+                                      title="Consumption"
+                                    >
+                                      {event.consumption.reduce(
+                                        (a, b) => a + b,
+                                        0,
+                                      )}
+                                    </span>
+                                  )}
+                              </div>
+                              {displayStyle &&
+                                parseFloat(displayStyle.height) > 2 && (
+                                  <div className="text-xs opacity-90 mt-0.5">
+                                    {timeRange.rangeFormatted}
+                                  </div>
                                 )}
-                              />
-                            )}
-                          </div>
+                              {showBottomHandle && (
+                                <ResizeHandle
+                                  edge="bottom"
+                                  {...getResizeHandleProps(
+                                    event.id,
+                                    'bottom',
+                                    originalStart,
+                                    originalEnd,
+                                  )}
+                                />
+                              )}
+                            </ContextMenuTrigger>
+                            <ContextMenuContent>
+                              <ContextMenuItem
+                                onClick={() => onEventClick(event)}
+                              >
+                                Edit event
+                              </ContextMenuItem>
+                              {event.recurrence && (
+                                <>
+                                  <ContextMenuSeparator />
+                                  <ContextMenuItem
+                                    onClick={() =>
+                                      calendar.goToPreviousOccurrence(
+                                        event.id,
+                                        event.start,
+                                      )
+                                    }
+                                  >
+                                    ← Previous occurrence
+                                  </ContextMenuItem>
+                                  <ContextMenuItem
+                                    onClick={() =>
+                                      calendar.goToNextOccurrence(
+                                        event.id,
+                                        event.start,
+                                      )
+                                    }
+                                  >
+                                    Next occurrence →
+                                  </ContextMenuItem>
+                                </>
+                              )}
+                            </ContextMenuContent>
+                          </ContextMenu>
                         )
                       })}
                       {resizeState.isResizing &&
@@ -1154,11 +1194,7 @@ function CalendarView() {
   }
 
   const openEditModal = (event: Event<Resource>) => {
-    // For recurring occurrences, always open the master event for editing
-    const masterEvent = event._recurringMasterId
-      ? (calendar.getEvents().find((e) => e.id === event._recurringMasterId) ??
-        event)
-      : event
+    const masterEvent = calendar.getMasterEvent(event)
     const eventProps = calendar.getEventProps(masterEvent)
     const startDate = new Date(eventProps.start)
     const endDate = new Date(eventProps.end)
@@ -1469,38 +1505,74 @@ function CalendarView() {
                         </div>
                         <div className="flex flex-col gap-1 overflow-hidden flex-1 min-h-0">
                           {day.events.slice(0, 3).map((event) => (
-                            <Badge
-                              key={event.id}
-                              variant="secondary"
-                              className="cursor-pointer hover:bg-muted flex items-center gap-1.5 max-w-full flex-shrink-0"
-                              title={event.title}
-                              onClick={() => openEditModal(event)}
-                            >
-                              <span className="flex items-center gap-1 min-w-0">
-                                {(event._recurringMasterId ||
-                                  event.recurrence) && (
-                                  <span
-                                    className="opacity-60 flex-shrink-0"
-                                    title="Recurring event"
-                                  >
-                                    ↻
-                                  </span>
-                                )}
-                                <span className="truncate">{event.title}</span>
-                              </span>
-                              {event.consumption &&
-                                event.consumption.length > 0 && (
-                                  <span
-                                    className="text-[10px] leading-none rounded bg-black/40 px-1 py-0.5 font-semibold flex-shrink-0"
-                                    title="Consumption"
-                                  >
-                                    {event.consumption.reduce(
-                                      (a, b) => a + b,
-                                      0,
+                            <ContextMenu key={event.id}>
+                              <ContextMenuTrigger className="contents">
+                                <Badge
+                                  variant="secondary"
+                                  className="cursor-pointer hover:bg-muted flex items-center gap-1.5 max-w-full flex-shrink-0 w-full"
+                                  title={event.title}
+                                  onClick={() => openEditModal(event)}
+                                >
+                                  <span className="flex items-center gap-1 min-w-0">
+                                    {event.recurrence && (
+                                      <span
+                                        className="opacity-60 flex-shrink-0"
+                                        title="Recurring event"
+                                      >
+                                        ↻
+                                      </span>
                                     )}
+                                    <span className="truncate">
+                                      {event.title}
+                                    </span>
                                   </span>
+                                  {event.consumption &&
+                                    event.consumption.length > 0 && (
+                                      <span
+                                        className="text-[10px] leading-none rounded bg-black/40 px-1 py-0.5 font-semibold flex-shrink-0"
+                                        title="Consumption"
+                                      >
+                                        {event.consumption.reduce(
+                                          (a, b) => a + b,
+                                          0,
+                                        )}
+                                      </span>
+                                    )}
+                                </Badge>
+                              </ContextMenuTrigger>
+                              <ContextMenuContent>
+                                <ContextMenuItem
+                                  onClick={() => openEditModal(event)}
+                                >
+                                  Edit event
+                                </ContextMenuItem>
+                                {event.recurrence && (
+                                  <>
+                                    <ContextMenuSeparator />
+                                    <ContextMenuItem
+                                      onClick={() =>
+                                        calendar.goToPreviousOccurrence(
+                                          event.id,
+                                          event.start,
+                                        )
+                                      }
+                                    >
+                                      ← Previous occurrence
+                                    </ContextMenuItem>
+                                    <ContextMenuItem
+                                      onClick={() =>
+                                        calendar.goToNextOccurrence(
+                                          event.id,
+                                          event.start,
+                                        )
+                                      }
+                                    >
+                                      Next occurrence →
+                                    </ContextMenuItem>
+                                  </>
                                 )}
-                            </Badge>
+                              </ContextMenuContent>
+                            </ContextMenu>
                           ))}
                           {day.events.length > 3 && (
                             <div className="text-[10px] text-neutral-400 px-1 flex-shrink-0">
