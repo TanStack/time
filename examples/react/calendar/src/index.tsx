@@ -2,14 +2,12 @@ import {
   calculateGhostPreviewStyle,
   calculateSegmentResizePreview,
   formatEventTimeRange,
-  getSegmentInfo,
   useCalendar,
 } from '@tanstack/react-time'
 import ReactDOM from 'react-dom/client'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { timeDevtoolsPlugin } from '@tanstack/react-time-devtools'
-import { toPlainDateTimeString } from '@tanstack/time'
 import { useInfiniteScroll } from './lib/useInfiniteScroll'
 import type {
   Day,
@@ -39,21 +37,6 @@ import {
 
 import './index.css'
 
-function formatPeriodDate(dateString: string): string {
-  const datePart = dateString.split('[')[0]
-  if (!datePart) return dateString
-
-  const [year, month, day] = datePart.split('-').map(Number)
-  const date = new Date(year, month - 1, day)
-
-  const formatter = new Intl.DateTimeFormat(undefined, {
-    month: 'long',
-    year: 'numeric',
-  })
-
-  return formatter.format(date)
-}
-
 function formatDateToISO(date: Date): string {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -65,7 +48,6 @@ function padTimePart(n: number): string {
   return String(n).padStart(2, '0')
 }
 
-// Monday of the work week containing today, or upcoming Monday on Sat–Sun.
 function workWeekMonday(): Date {
   const today = new Date()
   const dow = today.getDay()
@@ -95,25 +77,6 @@ function dateTimeOnWeekday(
   const d = weekdayAt(isoWeekday)
   d.setHours(hour, minute, 0, 0)
   return `${formatDateToISO(d)}T${padTimePart(hour)}:${padTimePart(minute)}:00`
-}
-
-function eventToSegmentInfoInput(
-  event: Event<Resource>,
-): Parameters<typeof getSegmentInfo>[0] {
-  const e = event as Event<Resource> & {
-    _originalStart?: string | Date | number
-    _originalEnd?: string | Date | number
-  }
-  return {
-    start: toPlainDateTimeString(e.start),
-    end: toPlainDateTimeString(e.end),
-    ...(e._originalStart != null
-      ? { _originalStart: toPlainDateTimeString(e._originalStart) }
-      : {}),
-    ...(e._originalEnd != null
-      ? { _originalEnd: toPlainDateTimeString(e._originalEnd) }
-      : {}),
-  }
 }
 
 const sampleResources: Array<Resource> = [
@@ -199,7 +162,6 @@ function getSampleEvents(): Array<Event<Resource>> {
       resources: [sampleResources[1]],
       consumption: [1],
     },
-    // ── Recurring events ────────────────────────────────────────────────────
     {
       id: 'r-standup',
       title: '☀ Daily Stand-up (A:1)',
@@ -210,7 +172,6 @@ function getSampleEvents(): Array<Event<Resource>> {
       recurrence: {
         frequency: 'daily',
         interval: 1,
-        // Mon–Fri only
         byWeekday: undefined,
       },
     },
@@ -224,13 +185,12 @@ function getSampleEvents(): Array<Event<Resource>> {
       recurrence: {
         frequency: 'weekly',
         interval: 1,
-        byWeekday: [1], // every Monday
+        byWeekday: [1],
       },
     },
     {
       id: 'r-report',
       title: '📊 Monthly Report (A:1)',
-      // Use first Monday of the current work week at 14:00
       start: dateTimeOnWeekday(1, 14, 0),
       end: dateTimeOnWeekday(1, 15, 0),
       resources: [sampleResources[0]],
@@ -299,7 +259,6 @@ function EventModal({
     try {
       await onSave(formData)
     } catch {
-      // Validation failed — keep modal open for correction
       return
     }
     onClose()
@@ -649,9 +608,7 @@ function ScheduleView({
                         const eventProps = calendar.getEventProps(event)
                         const { style, isSplitEvent } = eventProps
 
-                        const segmentInfo = getSegmentInfo(
-                          eventToSegmentInfoInput(event),
-                        )
+                        const segmentInfo = calendar.getEventSegmentInfo(event)
                         const {
                           isFirstSegment,
                           isLastSegment,
@@ -984,16 +941,12 @@ function CalendarView() {
       : calendar.days
     : []
 
-  // ── Month-view infinite scroll ───────────────────────────────────────────
-  // Track buffer range as [start, end] iso-date strings. Days are derived
-  // freshly from `calendar.getDaysInRange` so any event mutation is reflected
-  // immediately without manual cache invalidation.
   const monthScrollRef = useRef<HTMLDivElement>(null)
   const monthBufferRef = useRef<{ start: string; end: string } | null>(null)
   if (monthBufferRef.current === null && calendar.days.length > 0) {
     monthBufferRef.current = {
-      start: calendar.days[0]!.isoDate,
-      end: calendar.days[calendar.days.length - 1]!.isoDate,
+      start: calendar.days[0].isoDate,
+      end: calendar.days[calendar.days.length - 1].isoDate,
     }
   }
 
@@ -1003,7 +956,6 @@ function CalendarView() {
   const needsScrollAdjRef = useRef(false)
   const [bufferVersion, setBufferVersion] = useState(0)
 
-  // When the calendar navigates to a new period, extend the buffer bounds.
   useEffect(() => {
     if (navDirectionRef.current === 'none') return
     if (calendar.currentPeriod === prevPeriodRef.current) return
@@ -1013,8 +965,8 @@ function CalendarView() {
     navDirectionRef.current = 'none'
 
     if (calendar.days.length === 0 || !monthBufferRef.current) return
-    const newStart = calendar.days[0]!.isoDate
-    const newEnd = calendar.days[calendar.days.length - 1]!.isoDate
+    const newStart = calendar.days[0].isoDate
+    const newEnd = calendar.days[calendar.days.length - 1].isoDate
     monthBufferRef.current = {
       start:
         newStart < monthBufferRef.current.start
@@ -1045,7 +997,7 @@ function CalendarView() {
 
   const bufferedWeekGroups = useMemo(() => {
     void bufferVersion
-    void calendar.days // reactive: re-runs when events change
+    void calendar.days
     if (!monthBufferRef.current) return []
     const days = calendar.getDaysInRange(
       monthBufferRef.current.start,
@@ -1066,7 +1018,7 @@ function CalendarView() {
   const { startSentinelRef: monthTopRef, endSentinelRef: monthBottomRef } =
     useInfiniteScroll({
       root: monthScrollRef,
-      rootMargin: '120px 0px', // prefetch slightly before edge
+      rootMargin: '120px 0px',
       cooldownMs: 1000,
       onReachStart: () => {
         const el = monthScrollRef.current
@@ -1083,7 +1035,6 @@ function CalendarView() {
       disabled: isScheduleView,
     })
 
-  // ── Schedule-view horizontal infinite scroll ─────────────────────
   const scheduleScrollRef = useRef<HTMLDivElement>(null)
   const scheduleBufferRef = useRef<{ start: string; end: string } | null>(null)
   const scheduleNavDirectionRef = useRef<'none' | 'forward' | 'backward'>(
@@ -1095,40 +1046,35 @@ function CalendarView() {
   const [scheduleBufferVersion, setScheduleBufferVersion] = useState(0)
   const prevViewModeUnitRef = useRef(calendar.viewMode.unit)
 
-  // Reset buffers when view mode unit changes
   if (prevViewModeUnitRef.current !== calendar.viewMode.unit) {
     prevViewModeUnitRef.current = calendar.viewMode.unit
     scheduleBufferRef.current = null
     prevSchedulePeriodRef.current = calendar.currentPeriod
-    // Also reset the month buffer on view mode change
     monthBufferRef.current =
       calendar.days.length > 0
         ? {
-            start: calendar.days[0]!.isoDate,
-            end: calendar.days[calendar.days.length - 1]!.isoDate,
+            start: calendar.days[0].isoDate,
+            end: calendar.days[calendar.days.length - 1].isoDate,
           }
         : null
   }
 
-  // Lazy-init: populate from the current period's schedule days
   if (
     isScheduleView &&
     scheduleBufferRef.current === null &&
     scheduleDays.length > 0
   ) {
     scheduleBufferRef.current = {
-      start: scheduleDays[0]!.isoDate,
-      end: scheduleDays[scheduleDays.length - 1]!.isoDate,
+      start: scheduleDays[0].isoDate,
+      end: scheduleDays[scheduleDays.length - 1].isoDate,
     }
   }
 
-  // When the calendar navigates to a new period in schedule view, extend bounds
   useEffect(() => {
     if (!isScheduleView) return
     if (calendar.currentPeriod === prevSchedulePeriodRef.current) return
     prevSchedulePeriodRef.current = calendar.currentPeriod
 
-    // Compute current period's schedule days
     let currentDays: typeof calendar.days
     if (calendar.viewMode.unit === 'day') {
       const currentDateStr = calendar.currentPeriod.split('[')[0]
@@ -1141,11 +1087,10 @@ function CalendarView() {
     }
 
     if (currentDays.length === 0) return
-    const newStart = currentDays[0]!.isoDate
-    const newEnd = currentDays[currentDays.length - 1]!.isoDate
+    const newStart = currentDays[0].isoDate
+    const newEnd = currentDays[currentDays.length - 1].isoDate
 
     if (scheduleNavDirectionRef.current === 'none') {
-      // Button-triggered navigation: reset buffer to the current period
       scheduleBufferRef.current = { start: newStart, end: newEnd }
     } else {
       const direction = scheduleNavDirectionRef.current
@@ -1173,7 +1118,6 @@ function CalendarView() {
     calendar.days,
   ])
 
-  // Correct scroll position after prepending schedule days (backward nav)
   useLayoutEffect(() => {
     if (!needsScheduleScrollAdjRef.current) return
     needsScheduleScrollAdjRef.current = false
@@ -1183,10 +1127,9 @@ function CalendarView() {
     }
   })
 
-  // Derive schedule days from the current buffer range
   const bufferedScheduleDays = useMemo(() => {
     void scheduleBufferVersion
-    void calendar.days // reactive: re-runs when events change
+    void calendar.days
     if (!scheduleBufferRef.current) return scheduleDays
     return calendar.getDaysInRange(
       scheduleBufferRef.current.start,
@@ -1446,7 +1389,7 @@ function CalendarView() {
         </div>
 
         <div className="text-lg font-medium text-neutral-400">
-          {formatPeriodDate(calendar.currentPeriod)}
+          {calendar.formatCurrentPeriod()}
         </div>
       </div>
 

@@ -5,7 +5,7 @@ import { expandRecurringEvent } from './expandRecurringEvent'
 import { getEventProps } from './getEventProps'
 import { groupDaysBy } from './groupDaysBy'
 import { getTimeSlots } from './getTimeSlots'
-import { calculateResizedEvent } from './getResizeProps'
+import { calculateResizedEvent, getSegmentInfo } from './getResizeProps'
 import { DateCore } from './date-core'
 import { generateDateRange } from './generateDateRange'
 import { ResizeController } from './resizeController'
@@ -14,6 +14,7 @@ import type { ResizeControllerOptions } from './resizeController'
 import type {
   ResizeConstraints,
   ResizeEdge,
+  SegmentInfo,
   UnavailableTimeRange,
 } from './getResizeProps'
 import type {
@@ -170,6 +171,10 @@ interface CalendarActions<
   getTimelineLayout: () => TimelineLayout<TResource, TEvent>
   /** Returns a human-readable label for the currently visible date range. */
   formatPeriodLabel: (options?: { locale?: string }) => string
+  /** Formats the current period as a human-readable "Month Year" string (e.g. "January 2024"). */
+  formatCurrentPeriod: (options?: { locale?: string }) => string
+  /** Returns segment info (split/occurrence metadata) for an event, normalising flexible datetime inputs. */
+  getEventSegmentInfo: (event: TEvent) => SegmentInfo
   /**
    * Returns Day objects for every date between `start` and `end` (inclusive),
    * derived freshly from current event state. Useful for buffered/infinite-scroll
@@ -786,6 +791,32 @@ export class CalendarCore<
 
     if (days.length === 1) return fmt(first.date)
     return `${fmt(first.date)} \u2014 ${fmt(last.date)}`
+  }
+
+  formatCurrentPeriod(options?: { locale?: string }): string {
+    const period = this.store.state.currentPeriod
+    const locale = options?.locale ?? this.options.locale
+    return new Date(
+      period.year,
+      period.month - 1,
+      period.day,
+    ).toLocaleDateString(locale, {
+      month: 'long',
+      year: 'numeric',
+    })
+  }
+
+  getEventSegmentInfo(event: TEvent): SegmentInfo {
+    return getSegmentInfo({
+      start: toPlainDateTimeString(event.start),
+      end: toPlainDateTimeString(event.end),
+      ...(event._originalStart != null
+        ? { _originalStart: event._originalStart }
+        : {}),
+      ...(event._originalEnd != null
+        ? { _originalEnd: event._originalEnd }
+        : {}),
+    })
   }
 
   getEventProps(event: TEvent) {

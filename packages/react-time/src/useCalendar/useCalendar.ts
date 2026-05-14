@@ -335,6 +335,14 @@ export const useCalendar = <
     [calendarCore],
   )
 
+  const formatCurrentPeriod = useCallback<
+    typeof calendarCore.formatCurrentPeriod
+  >((labelOptions) => calendarCore.formatCurrentPeriod(labelOptions), [calendarCore])
+
+  const getEventSegmentInfo = useCallback<
+    typeof calendarCore.getEventSegmentInfo
+  >((event) => calendarCore.getEventSegmentInfo(event), [calendarCore])
+
   const days = useMemo(() => {
     void state
     return calendarCore.getDaysWithEvents()
@@ -380,6 +388,8 @@ export const useCalendar = <
     fetchEventsForRange,
     validateEventPlacement,
     formatPeriodLabel,
+    formatCurrentPeriod,
+    getEventSegmentInfo,
     undo,
     redo,
     canUndo,
