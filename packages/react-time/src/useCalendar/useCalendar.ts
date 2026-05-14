@@ -340,11 +340,17 @@ export const useCalendar = <
     return calendarCore.getDaysWithEvents()
   }, [calendarCore, state])
 
+  const getDaysInRange = useCallback<typeof calendarCore.getDaysInRange>(
+    (start, end) => calendarCore.getDaysInRange(start, end),
+    [calendarCore],
+  )
+
   return {
     activeDate: state.activeDate.toString(),
     currentPeriod: state.currentPeriod.toString(),
     viewMode: state.viewMode,
     days,
+    getDaysInRange,
     getDaysNames,
     getTimeSlots,
     getEventsByDate,

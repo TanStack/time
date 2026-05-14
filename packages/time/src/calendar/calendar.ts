@@ -7,6 +7,7 @@ import { groupDaysBy } from './groupDaysBy'
 import { getTimeSlots } from './getTimeSlots'
 import { calculateResizedEvent } from './getResizeProps'
 import { DateCore } from './date-core'
+import { generateDateRange } from './generateDateRange'
 import { ResizeController } from './resizeController'
 import type { DateCoreOptions, ParsedDateCoreOptions } from './date-core'
 import type { ResizeControllerOptions } from './resizeController'
@@ -169,6 +170,13 @@ interface CalendarActions<
   getTimelineLayout: () => TimelineLayout<TResource, TEvent>
   /** Returns a human-readable label for the currently visible date range. */
   formatPeriodLabel: (options?: { locale?: string }) => string
+  /**
+   * Returns Day objects for every date between `start` and `end` (inclusive),
+   * derived freshly from current event state. Useful for buffered/infinite-scroll
+   * UIs that need to render a range wider than the current period without
+   * caching stale Day snapshots.
+   */
+  getDaysInRange: (start: string, end: string) => Array<Day<TResource, TEvent>>
   /** Returns a snapshot of all events currently managed by the calendar (including those outside the visible range). */
   getEvents: () => Array<TEvent>
   /** Reverts the last mutating action (commitAdd, commitUpdate, removeEvent). */
@@ -515,20 +523,27 @@ export class CalendarCore<
     return super.getCalendarDays()
   }
 
-  private getEventMap() {
+  private getEventMap(window?: { start: string; end: string }) {
     const map = new Map<string, Array<TEvent>>()
 
-    const calendarDays = this.getCalendarDays()
-    const windowStart =
-      calendarDays.length > 0
-        ? calendarDays[0]!.toString({ calendarName: 'never' })
-        : null
-    const windowEnd =
-      calendarDays.length > 0
-        ? calendarDays[calendarDays.length - 1]!.add({ days: 1 }).toString({
-            calendarName: 'never',
-          })
-        : null
+    let windowStart: string | null
+    let windowEnd: string | null
+    if (window) {
+      windowStart = window.start
+      windowEnd = window.end
+    } else {
+      const calendarDays = this.getCalendarDays()
+      windowStart =
+        calendarDays.length > 0
+          ? calendarDays[0]!.toString({ calendarName: 'never' })
+          : null
+      windowEnd =
+        calendarDays.length > 0
+          ? calendarDays[calendarDays.length - 1]!.add({ days: 1 }).toString({
+              calendarName: 'never',
+            })
+          : null
+    }
 
     const placeEvent = (ev: TEvent) => {
       const startStr = ev.start as string
@@ -658,22 +673,42 @@ export class CalendarCore<
   }
 
   getDaysWithEvents() {
-    const calendarDays = this.getCalendarDays()
-    const eventMap = this.getEventMap()
-    return calendarDays.map((day) => {
+    return this._buildDays(this.getCalendarDays())
+  }
+
+  /**
+   * Returns Day objects for every date between `start` and `end` (inclusive),
+   * derived freshly from the current event state. Use this when rendering a
+   * buffered range that spans multiple periods (e.g. infinite scroll) so
+   * mutations (add/edit/remove) are reflected without manual cache invalidation.
+   */
+  getDaysInRange(start: string, end: string) {
+    const days = generateDateRange(start, end)
+    const windowEnd = Temporal.PlainDate.from(end)
+      .add({ days: 1 })
+      .toString({ calendarName: 'never' })
+    return this._buildDays(days, { start, end: windowEnd })
+  }
+
+  private _buildDays(
+    days: Array<Temporal.PlainDate>,
+    window?: { start: string; end: string },
+  ) {
+    const eventMap = this.getEventMap(window)
+    const currentMonthRange = Array.from(
+      { length: this.store.state.viewMode.value },
+      (_, i) => this.store.state.currentPeriod.add({ months: i }).month,
+    )
+    const today = Temporal.Now.plainDateISO()
+    return days.map((day) => {
       const isoDate = day.toString({ calendarName: 'never' })
       const dailyEvents = eventMap.get(isoDate) ?? []
-      const currentMonthRange = Array.from(
-        { length: this.store.state.viewMode.value },
-        (_, i) => this.store.state.currentPeriod.add({ months: i }).month,
-      )
       const isInCurrentPeriod = currentMonthRange.includes(day.month)
       return {
         date: day,
         isoDate,
         events: dailyEvents,
-        isToday:
-          Temporal.PlainDate.compare(day, Temporal.Now.plainDateISO()) === 0,
+        isToday: Temporal.PlainDate.compare(day, today) === 0,
         isInCurrentPeriod,
       }
     })

@@ -985,25 +985,25 @@ function CalendarView() {
     : []
 
   // ── Month-view infinite scroll ───────────────────────────────────────────
-  // We accumulate days from multiple months in a stable Map<isoDate, Day>.
-  // Navigation direction is tracked via a ref so the accumulation effect
-  // knows whether to prepend or append.
+  // Track buffer range as [start, end] iso-date strings. Days are derived
+  // freshly from `calendar.getDaysInRange` so any event mutation is reflected
+  // immediately without manual cache invalidation.
   const monthScrollRef = useRef<HTMLDivElement>(null)
-  const daysAccumRef = useRef<Map<
-    string,
-    Day<Resource, Event<Resource>>
-  > | null>(null)
-  if (daysAccumRef.current === null) {
-    daysAccumRef.current = new Map(calendar.days.map((d) => [d.isoDate, d]))
+  const monthBufferRef = useRef<{ start: string; end: string } | null>(null)
+  if (monthBufferRef.current === null && calendar.days.length > 0) {
+    monthBufferRef.current = {
+      start: calendar.days[0]!.isoDate,
+      end: calendar.days[calendar.days.length - 1]!.isoDate,
+    }
   }
 
   const navDirectionRef = useRef<'none' | 'forward' | 'backward'>('none')
   const prevPeriodRef = useRef(calendar.currentPeriod)
   const prevScrollHeightRef = useRef(0)
   const needsScrollAdjRef = useRef(false)
-  const [accumVersion, setAccumVersion] = useState(0)
+  const [bufferVersion, setBufferVersion] = useState(0)
 
-  // When the calendar navigates to a new period, fold its days into the map.
+  // When the calendar navigates to a new period, extend the buffer bounds.
   useEffect(() => {
     if (navDirectionRef.current === 'none') return
     if (calendar.currentPeriod === prevPeriodRef.current) return
@@ -1012,8 +1012,18 @@ function CalendarView() {
     const direction = navDirectionRef.current
     navDirectionRef.current = 'none'
 
-    for (const day of calendar.days) {
-      daysAccumRef.current!.set(day.isoDate, day)
+    if (calendar.days.length === 0 || !monthBufferRef.current) return
+    const newStart = calendar.days[0]!.isoDate
+    const newEnd = calendar.days[calendar.days.length - 1]!.isoDate
+    monthBufferRef.current = {
+      start:
+        newStart < monthBufferRef.current.start
+          ? newStart
+          : monthBufferRef.current.start,
+      end:
+        newEnd > monthBufferRef.current.end
+          ? newEnd
+          : monthBufferRef.current.end,
     }
 
     if (direction === 'backward') {
@@ -1021,7 +1031,7 @@ function CalendarView() {
       needsScrollAdjRef.current = true
     }
 
-    setAccumVersion((v) => v + 1)
+    setBufferVersion((v) => v + 1)
   }, [calendar.currentPeriod, calendar.days])
 
   useLayoutEffect(() => {
@@ -1034,15 +1044,24 @@ function CalendarView() {
   })
 
   const bufferedWeekGroups = useMemo(() => {
-    const sorted = Array.from(daysAccumRef.current!.values()).sort((a, b) =>
-      a.isoDate < b.isoDate ? -1 : 1,
+    void bufferVersion
+    void calendar.days // reactive: re-runs when events change
+    if (!monthBufferRef.current) return []
+    const days = calendar.getDaysInRange(
+      monthBufferRef.current.start,
+      monthBufferRef.current.end,
     )
     return calendar.groupDaysBy({
-      days: sorted,
+      days,
       unit: 'week',
       fillMissingDays: true,
     })
-  }, [accumVersion, calendar.groupDaysBy])
+  }, [
+    bufferVersion,
+    calendar.days,
+    calendar.getDaysInRange,
+    calendar.groupDaysBy,
+  ])
 
   const { startSentinelRef: monthTopRef, endSentinelRef: monthBottomRef } =
     useInfiniteScroll({
@@ -1066,36 +1085,44 @@ function CalendarView() {
 
   // ── Schedule-view horizontal infinite scroll ─────────────────────
   const scheduleScrollRef = useRef<HTMLDivElement>(null)
-  const scheduleDaysAccumRef = useRef<Map<
-    string,
-    Day<Resource, Event<Resource>>
-  > | null>(null)
+  const scheduleBufferRef = useRef<{ start: string; end: string } | null>(null)
   const scheduleNavDirectionRef = useRef<'none' | 'forward' | 'backward'>(
     'none',
   )
   const prevSchedulePeriodRef = useRef(calendar.currentPeriod)
   const prevScheduleScrollWidthRef = useRef(0)
   const needsScheduleScrollAdjRef = useRef(false)
-  const [scheduleAccumVersion, setScheduleAccumVersion] = useState(0)
+  const [scheduleBufferVersion, setScheduleBufferVersion] = useState(0)
   const prevViewModeUnitRef = useRef(calendar.viewMode.unit)
 
-  // Reset accumulators when view mode unit changes
+  // Reset buffers when view mode unit changes
   if (prevViewModeUnitRef.current !== calendar.viewMode.unit) {
     prevViewModeUnitRef.current = calendar.viewMode.unit
-    scheduleDaysAccumRef.current = null
+    scheduleBufferRef.current = null
     prevSchedulePeriodRef.current = calendar.currentPeriod
-    // Also reset the month accumulator on view mode change
-    daysAccumRef.current = new Map(calendar.days.map((d) => [d.isoDate, d]))
+    // Also reset the month buffer on view mode change
+    monthBufferRef.current =
+      calendar.days.length > 0
+        ? {
+            start: calendar.days[0]!.isoDate,
+            end: calendar.days[calendar.days.length - 1]!.isoDate,
+          }
+        : null
   }
 
   // Lazy-init: populate from the current period's schedule days
-  if (isScheduleView && scheduleDaysAccumRef.current === null) {
-    scheduleDaysAccumRef.current = new Map(
-      scheduleDays.map((d) => [d.isoDate, d]),
-    )
+  if (
+    isScheduleView &&
+    scheduleBufferRef.current === null &&
+    scheduleDays.length > 0
+  ) {
+    scheduleBufferRef.current = {
+      start: scheduleDays[0]!.isoDate,
+      end: scheduleDays[scheduleDays.length - 1]!.isoDate,
+    }
   }
 
-  // When the calendar navigates to a new period in schedule view, fold days into the map
+  // When the calendar navigates to a new period in schedule view, extend bounds
   useEffect(() => {
     if (!isScheduleView) return
     if (calendar.currentPeriod === prevSchedulePeriodRef.current) return
@@ -1113,16 +1140,23 @@ function CalendarView() {
       currentDays = calendar.days
     }
 
+    if (currentDays.length === 0) return
+    const newStart = currentDays[0]!.isoDate
+    const newEnd = currentDays[currentDays.length - 1]!.isoDate
+
     if (scheduleNavDirectionRef.current === 'none') {
-      // Button-triggered navigation: reset accumulator to the current period
-      scheduleDaysAccumRef.current = new Map(
-        currentDays.map((d) => [d.isoDate, d]),
-      )
+      // Button-triggered navigation: reset buffer to the current period
+      scheduleBufferRef.current = { start: newStart, end: newEnd }
     } else {
       const direction = scheduleNavDirectionRef.current
       scheduleNavDirectionRef.current = 'none'
-      for (const day of currentDays) {
-        scheduleDaysAccumRef.current!.set(day.isoDate, day)
+      const prev = scheduleBufferRef.current ?? {
+        start: newStart,
+        end: newEnd,
+      }
+      scheduleBufferRef.current = {
+        start: newStart < prev.start ? newStart : prev.start,
+        end: newEnd > prev.end ? newEnd : prev.end,
       }
       if (direction === 'backward') {
         prevScheduleScrollWidthRef.current =
@@ -1131,7 +1165,7 @@ function CalendarView() {
       }
     }
 
-    setScheduleAccumVersion((v) => v + 1)
+    setScheduleBufferVersion((v) => v + 1)
   }, [
     calendar.currentPeriod,
     isScheduleView,
@@ -1149,13 +1183,21 @@ function CalendarView() {
     }
   })
 
-  // Sorted accumulated days for schedule view rendering
+  // Derive schedule days from the current buffer range
   const bufferedScheduleDays = useMemo(() => {
-    if (!scheduleDaysAccumRef.current) return scheduleDays
-    return Array.from(scheduleDaysAccumRef.current.values()).sort((a, b) =>
-      a.isoDate < b.isoDate ? -1 : 1,
+    void scheduleBufferVersion
+    void calendar.days // reactive: re-runs when events change
+    if (!scheduleBufferRef.current) return scheduleDays
+    return calendar.getDaysInRange(
+      scheduleBufferRef.current.start,
+      scheduleBufferRef.current.end,
     )
-  }, [scheduleAccumVersion, scheduleDays])
+  }, [
+    scheduleBufferVersion,
+    scheduleDays,
+    calendar.days,
+    calendar.getDaysInRange,
+  ])
 
   const periodDayCount =
     calendar.viewMode.unit === 'day' ? 1 : scheduleDays.length || 7
