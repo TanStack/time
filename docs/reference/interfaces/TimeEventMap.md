@@ -5,7 +5,7 @@ title: TimeEventMap
 
 # Interface: TimeEventMap
 
-Defined in: [client/TimeClient.ts:10](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L10)
+Defined in: [client/TimeClient.ts:17](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L17)
 
 Event map for TimeClient events
 
@@ -17,7 +17,7 @@ Event map for TimeClient events
 time:calendar:navigate: object;
 ```
 
-Defined in: [client/TimeClient.ts:55](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L55)
+Defined in: [client/TimeClient.ts:48](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L48)
 
 #### direction
 
@@ -39,7 +39,7 @@ targetDate: string;
 time:calendar:viewMode:changed: object;
 ```
 
-Defined in: [client/TimeClient.ts:59](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L59)
+Defined in: [client/TimeClient.ts:52](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L52)
 
 #### viewMode
 
@@ -64,33 +64,37 @@ value: number;
 ### time:event:added
 
 ```ts
-time:event:added: object;
+time:event:added: TimeEventInfo;
 ```
 
-Defined in: [client/TimeClient.ts:11](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L11)
+Defined in: [client/TimeClient.ts:18](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L18)
 
-#### end
+***
+
+### time:event:redo
 
 ```ts
-end: string;
+time:event:redo: object;
 ```
 
-#### eventId
+Defined in: [client/TimeClient.ts:31](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L31)
+
+#### added
 
 ```ts
-eventId: string;
+added: TimeEventInfo[];
 ```
 
-#### eventTitle
+#### removed
 
 ```ts
-eventTitle: string;
+removed: TimeEventInfo[];
 ```
 
-#### start
+#### updated
 
 ```ts
-start: string;
+updated: TimeEventInfo[];
 ```
 
 ***
@@ -98,67 +102,47 @@ start: string;
 ### time:event:removed
 
 ```ts
-time:event:removed: object;
+time:event:removed: TimeEventInfo;
 ```
 
-Defined in: [client/TimeClient.ts:32](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L32)
-
-#### end
-
-```ts
-end: string;
-```
-
-#### eventId
-
-```ts
-eventId: string;
-```
-
-#### eventTitle
-
-```ts
-eventTitle: string;
-```
-
-#### start
-
-```ts
-start: string;
-```
+Defined in: [client/TimeClient.ts:25](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L25)
 
 ***
 
 ### time:event:resized
 
 ```ts
-time:event:resized: object;
+time:event:resized: TimeEventInfo;
 ```
 
-Defined in: [client/TimeClient.ts:38](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L38)
+Defined in: [client/TimeClient.ts:36](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L36)
 
-#### end
+***
+
+### time:event:undo
 
 ```ts
-end: string;
+time:event:undo: object;
 ```
 
-#### eventId
+Defined in: [client/TimeClient.ts:26](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L26)
+
+#### added
 
 ```ts
-eventId: string;
+added: TimeEventInfo[];
 ```
 
-#### eventTitle
+#### removed
 
 ```ts
-eventTitle: string;
+removed: TimeEventInfo[];
 ```
 
-#### start
+#### updated
 
 ```ts
-start: string;
+updated: TimeEventInfo[];
 ```
 
 ***
@@ -169,7 +153,7 @@ start: string;
 time:event:update:error: object;
 ```
 
-Defined in: [client/TimeClient.ts:44](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L44)
+Defined in: [client/TimeClient.ts:37](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L37)
 
 #### attemptedEnd?
 
@@ -230,36 +214,14 @@ reason: "unavailable-time" | "invalid-time" | "min-duration" | "blocked";
 ### time:event:updated
 
 ```ts
-time:event:updated: object;
+time:event:updated: TimeEventInfo & object;
 ```
 
-Defined in: [client/TimeClient.ts:25](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L25)
+Defined in: [client/TimeClient.ts:22](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L22)
 
-#### end
+#### Type Declaration
 
-```ts
-end: string;
-```
-
-#### eventId
-
-```ts
-eventId: string;
-```
-
-#### eventTitle
-
-```ts
-eventTitle: string;
-```
-
-#### start
-
-```ts
-start: string;
-```
-
-#### updates
+##### updates
 
 ```ts
 updates: Record<string, unknown>;
@@ -273,10 +235,10 @@ updates: Record<string, unknown>;
 time:events:set: object;
 ```
 
-Defined in: [client/TimeClient.ts:17](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L17)
+Defined in: [client/TimeClient.ts:19](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L19)
 
 #### events
 
 ```ts
-events: object[];
+events: TimeEventInfo[];
 ```

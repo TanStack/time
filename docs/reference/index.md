@@ -59,6 +59,7 @@ title: "@tanstack/time"
 - [SinceOptions](interfaces/SinceOptions.md)
 - [StartOfOptions](interfaces/StartOfOptions.md)
 - [SubtractOptions](interfaces/SubtractOptions.md)
+- [TimeEventInfo](interfaces/TimeEventInfo.md)
 - [TimeEventMap](interfaces/TimeEventMap.md)
 - [TimelineEventLayout](interfaces/TimelineEventLayout.md)
 - [TimelineLayout](interfaces/TimelineLayout.md)
