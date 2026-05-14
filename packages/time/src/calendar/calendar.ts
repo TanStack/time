@@ -134,8 +134,10 @@ interface CalendarActions<
   getTimeSlots: (
     options?: Parameters<typeof getTimeSlots>[1],
   ) => Array<TimeSlot>
-  /** Retrieves events for a specific date. */
+  /** Retrieves all events for a specific date. */
   getEventsByDate: (date: string) => Array<TEvent>
+  /** Retrieves all-day events occurring on a specific date (multi-day all-day segments included). */
+  getAllDayEventsByDate: (date: string) => Array<TEvent>
   /**
    * Fetches events for the event's date range, validates placement
    * constraints, and adds the event if valid. Returns a result
@@ -708,11 +710,18 @@ export class CalendarCore<
     return days.map((day) => {
       const isoDate = day.toString({ calendarName: 'never' })
       const dailyEvents = eventMap.get(isoDate) ?? []
+      const timedEvents: Array<TEvent> = []
+      const allDayEvents: Array<TEvent> = []
+      for (const ev of dailyEvents) {
+        if (ev.allDay) allDayEvents.push(ev)
+        else timedEvents.push(ev)
+      }
       const isInCurrentPeriod = currentMonthRange.includes(day.month)
       return {
         date: day,
         isoDate,
-        events: dailyEvents,
+        events: timedEvents,
+        allDayEvents,
         isToday: Temporal.PlainDate.compare(day, today) === 0,
         isInCurrentPeriod,
       }
@@ -852,7 +861,17 @@ export class CalendarCore<
       calendarName: 'never',
     })
     const eventMap = this.getEventMap()
-    return eventMap.get(targetDate) ?? []
+    const all = eventMap.get(targetDate) ?? []
+    return all
+  }
+
+  getAllDayEventsByDate(date: string): Array<TEvent> {
+    const targetDate = Temporal.PlainDate.from(date).toString({
+      calendarName: 'never',
+    })
+    const eventMap = this.getEventMap()
+    const all = eventMap.get(targetDate) ?? []
+    return all.filter((e) => !!e.allDay)
   }
 
   private _snapshotEvents(): Array<TEvent> {
@@ -2494,53 +2513,39 @@ export class CalendarCore<
 
     const eventsOnDay = this.getEventsByDate(dayDate)
 
-    const origStartDate = new Date(originalStart)
-    const origEndDate = new Date(originalEnd)
-    const origStartMins =
-      origStartDate.getHours() * 60 + origStartDate.getMinutes()
-    const origEndMins = origEndDate.getHours() * 60 + origEndDate.getMinutes()
+    const selfEvent = this._eventMap.get(eventId)
+    const ownConsumptionArr = selfEvent?.consumption ?? [1]
+    const ownConsumption = ownConsumptionArr.reduce((a, b) => a + b, 0)
 
     for (const resourceId of resourceIds) {
       const resource = this.options.resources?.find((r) => r.id === resourceId)
       if (!resource || !resource.capacity || resource.capacity.length === 0)
         continue
 
-      const getOverlappingEvents = (
-        checkStartMins: number,
-        checkEndMins: number,
-      ) =>
-        eventsOnDay.filter((e) => {
-          if (e.id === eventId) return false
+      const overlappingEvents = eventsOnDay.filter((e) => {
+        if (e.id === eventId) return false
 
-          const eventResourceIds = e.resources?.map((r) => r.id) || []
-          if (!eventResourceIds.includes(resourceId)) return false
+        const eventResourceIds = e.resources?.map((r) => r.id) || []
+        if (!eventResourceIds.includes(resourceId)) return false
 
-          const eventStart = new Date(e.start)
-          const eventEnd = new Date(e.end)
-          const eventStartMins =
-            eventStart.getHours() * 60 + eventStart.getMinutes()
-          const eventEndMins = eventEnd.getHours() * 60 + eventEnd.getMinutes()
+        const eventStart = new Date(e.start)
+        const eventEnd = new Date(e.end)
+        const eventStartMins =
+          eventStart.getHours() * 60 + eventStart.getMinutes()
+        const eventEndMins = eventEnd.getHours() * 60 + eventEnd.getMinutes()
 
-          return checkStartMins < eventEndMins && checkEndMins > eventStartMins
-        })
+        return startMins < eventEndMins && endMins > eventStartMins
+      })
 
-      const overlappingEvents = getOverlappingEvents(startMins, endMins)
-      const previouslyOverlapping = getOverlappingEvents(
-        origStartMins,
-        origEndMins,
-      )
+      const usedByOthers = overlappingEvents.reduce((acc, e) => {
+        const c = e.consumption ?? [1]
+        return acc + c.reduce((a, b) => a + b, 0)
+      }, 0)
 
-      const getSum = (events: Array<TEvent>) =>
-        events.reduce((acc, e) => {
-          const f = e.consumption || [1]
-          return acc + f.reduce((a, b) => a + b, 0)
-        }, 0)
-
-      const currentUsage = getSum(overlappingEvents)
-      const previousUsage = getSum(previouslyOverlapping)
       const resourceCapacitySum = resource.capacity.reduce((a, b) => a + b, 0)
+      const totalUsage = usedByOthers + ownConsumption
 
-      if (currentUsage > previousUsage && currentUsage >= resourceCapacitySum) {
+      if (totalUsage > resourceCapacitySum) {
         conflicts.push({
           date: dayDate,
           conflictRange: {
@@ -2553,15 +2558,15 @@ export class CalendarCore<
               resourceId: resource.id,
               resourceLabel: resource.label,
               reason: 'capacity',
-              description: `${resource.label}: Capacity exceeded (${currentUsage}/${resourceCapacitySum} units used)`,
+              description: `${resource.label}: Capacity exceeded (${totalUsage}/${resourceCapacitySum} units used)`,
               capacityInfo: {
                 max: resourceCapacitySum,
-                used: currentUsage,
+                used: totalUsage,
                 remaining: 0,
               },
             },
           ],
-          description: `${resource.label}: Capacity exceeded (${currentUsage}/${resourceCapacitySum} units used)`,
+          description: `${resource.label}: Capacity exceeded (${totalUsage}/${resourceCapacitySum} units used)`,
         })
       }
     }
@@ -3009,6 +3014,42 @@ export class CalendarCore<
           blockMessage = `Blocked: "${affectedEvent.title}" would be pushed to unavailable time`
           conflicts.push(conflict)
           break
+        }
+      }
+    }
+
+    if (!shouldBlockResize && resourceIds?.length) {
+      const selfEvent = this._eventMap.get(eventId)
+      if (selfEvent) {
+        const proposedNewStart =
+          effectiveEdge === 'top'
+            ? Temporal.PlainDateTime.from(originalStart)
+                .add({ milliseconds: snappedDeltaMs })
+                .toString({ smallestUnit: 'second' })
+            : originalStart
+        const proposedNewEnd =
+          effectiveEdge === 'bottom'
+            ? Temporal.PlainDateTime.from(originalEnd)
+                .add({ milliseconds: snappedDeltaMs })
+                .toString({ smallestUnit: 'second' })
+            : originalEnd
+
+        const spanConflict = this.checkEventAvailability(
+          selfEvent,
+          proposedNewStart,
+          proposedNewEnd,
+        )
+        if (spanConflict) {
+          shouldBlockResize = true
+          blockReason = 'unavailable-time'
+          blockMessage = spanConflict.description
+          const alreadyReported = conflicts.some(
+            (c) =>
+              c.date === spanConflict.date &&
+              c.conflictRange.start === spanConflict.conflictRange.start &&
+              c.conflictRange.end === spanConflict.conflictRange.end,
+          )
+          if (!alreadyReported) conflicts.push(spanConflict)
         }
       }
     }

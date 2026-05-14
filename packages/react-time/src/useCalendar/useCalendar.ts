@@ -219,6 +219,10 @@ export const useCalendar = <
     [calendarCore],
   )
 
+  const getAllDayEventsByDate = useCallback<
+    typeof calendarCore.getAllDayEventsByDate
+  >((date) => calendarCore.getAllDayEventsByDate(date), [calendarCore])
+
   const canGoPreviousPeriod = useCallback<
     typeof calendarCore.canGoPreviousPeriod
   >(() => calendarCore.canGoPreviousPeriod(), [calendarCore])
@@ -337,7 +341,10 @@ export const useCalendar = <
 
   const formatCurrentPeriod = useCallback<
     typeof calendarCore.formatCurrentPeriod
-  >((labelOptions) => calendarCore.formatCurrentPeriod(labelOptions), [calendarCore])
+  >(
+    (labelOptions) => calendarCore.formatCurrentPeriod(labelOptions),
+    [calendarCore],
+  )
 
   const getEventSegmentInfo = useCallback<
     typeof calendarCore.getEventSegmentInfo
@@ -362,6 +369,7 @@ export const useCalendar = <
     getDaysNames,
     getTimeSlots,
     getEventsByDate,
+    getAllDayEventsByDate,
     goToPreviousPeriod,
     goToNextPeriod,
     goToCurrentPeriod,

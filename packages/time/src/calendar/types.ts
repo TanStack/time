@@ -88,6 +88,14 @@ export interface Event<TResource extends Resource = Resource> {
   dependsOn?: Array<EventDependency>
   /** Defines how and when this event repeats. */
   recurrence?: RecurrenceRule
+  /**
+   * When true, event spans full day(s) and is rendered in the all-day strip
+   * separately from timed events. `start` and `end` are still ISO datetime strings;
+   * for an all-day event use the day's start (00:00:00) and the inclusive day's
+   * end (23:59:59) — or any time within those days. Multi-day all-day events
+   * are split per-day like regular events.
+   */
+  allDay?: boolean
   /** Original start time before splitting (only set on split segments of multi-day events) */
   _originalStart?: string
   /** Original end time before splitting (only set on split segments of multi-day events) */
@@ -108,7 +116,10 @@ export type Day<
   date: Temporal.PlainDate
   /** Pre-computed ISO date string (YYYY-MM-DD) — use instead of manually formatting `date` */
   isoDate: string
+  /** Timed events occurring on this day (sub-day events + segments of timed multi-day events). */
   events: Array<TEvent>
+  /** All-day events occurring on this day (segments of multi-day all-day events included). */
+  allDayEvents: Array<TEvent>
   isToday: boolean
   isInCurrentPeriod: boolean
 }

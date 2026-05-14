@@ -87,8 +87,8 @@ const sampleResources: Array<Resource> = [
     availability: [
       {
         weekdays: [1, 2, 3, 4, 5],
-        startTime: '08:00',
-        endTime: '18:00',
+        startTime: '00:00',
+        endTime: '24:00',
       },
     ],
   },
@@ -99,8 +99,8 @@ const sampleResources: Array<Resource> = [
     availability: [
       {
         weekdays: [1, 2, 3, 4, 5],
-        startTime: '09:00',
-        endTime: '18:00',
+        startTime: '00:00',
+        endTime: '24:00',
       },
     ],
   },
@@ -200,6 +200,20 @@ function getSampleEvents(): Array<Event<Resource>> {
         interval: 1,
       },
     },
+    {
+      id: 'ad-holiday',
+      title: '🎉 Company Holiday',
+      start: `${formatDateToISO(weekdayAt(3))}T00:00:00`,
+      end: `${formatDateToISO(weekdayAt(3))}T23:59:59`,
+      allDay: true,
+    },
+    {
+      id: 'ad-conf',
+      title: '🏢 Offsite Conference',
+      start: `${formatDateToISO(weekdayAt(4))}T00:00:00`,
+      end: `${formatDateToISO(weekdayAt(5))}T23:59:59`,
+      allDay: true,
+    },
   ]
 }
 
@@ -215,6 +229,7 @@ interface EventFormData {
   consumption: number
   recurrenceFrequency: RecurrenceFrequency | 'none'
   recurrenceUntil: string
+  allDay: boolean
 }
 
 const emptyFormData: EventFormData = {
@@ -227,6 +242,7 @@ const emptyFormData: EventFormData = {
   consumption: 1,
   recurrenceFrequency: 'none',
   recurrenceUntil: '',
+  allDay: false,
 }
 
 function EventModal({
@@ -297,6 +313,20 @@ function EventModal({
               required
             />
           </div>
+          <div className="flex items-center gap-2">
+            <input
+              id="allDay"
+              type="checkbox"
+              checked={formData.allDay}
+              onChange={(e) =>
+                setFormData({ ...formData, allDay: e.target.checked })
+              }
+              className="h-4 w-4"
+            />
+            <Label htmlFor="allDay" className="cursor-pointer">
+              All-day
+            </Label>
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="startDate">Start Date</Label>
@@ -319,7 +349,8 @@ function EventModal({
                 onChange={(e) =>
                   setFormData({ ...formData, startTime: e.target.value })
                 }
-                required
+                disabled={formData.allDay}
+                required={!formData.allDay}
               />
             </div>
           </div>
@@ -383,7 +414,8 @@ function EventModal({
                 onChange={(e) =>
                   setFormData({ ...formData, endTime: e.target.value })
                 }
-                required
+                disabled={formData.allDay}
+                required={!formData.allDay}
               />
             </div>
           </div>
@@ -510,6 +542,9 @@ function ScheduleView({
     getUnavailableRanges,
   } = calendar
 
+  const maxAllDay = days.reduce((m, d) => Math.max(m, d.allDayEvents.length), 0)
+  const allDayRowHeight = maxAllDay > 0 ? maxAllDay * 24 + 8 : 28
+
   return (
     <div className="border border-neutral-800 rounded-lg overflow-hidden bg-black">
       <div className="border-b border-neutral-800 bg-neutral-950 px-4 py-3">
@@ -542,6 +577,12 @@ function ScheduleView({
       <div className="flex border-t border-neutral-800">
         <div className="w-20 border-r border-neutral-800 bg-neutral-950">
           <div className="h-12 border-b border-neutral-800"></div>
+          <div
+            className="border-b border-neutral-800 px-2 py-1 text-[10px] uppercase tracking-wide text-neutral-500 flex items-center"
+            style={{ height: allDayRowHeight }}
+          >
+            all-day
+          </div>
           {timeSlots.map((slot) => (
             <div
               key={`${slot.hour}-${slot.minute}`}
@@ -582,6 +623,22 @@ function ScheduleView({
                       <div className="text-xs text-neutral-500">
                         {day.date.day}
                       </div>
+                    </div>
+                    <div
+                      className="border-b border-neutral-800 bg-neutral-950/60 px-1 py-1 flex flex-col gap-1 overflow-hidden"
+                      style={{ height: allDayRowHeight }}
+                    >
+                      {day.allDayEvents.map((event) => (
+                        <div
+                          key={`ad-${event.id}`}
+                          className="cursor-pointer bg-amber-700/70 hover:bg-amber-600/80 text-amber-50 rounded px-2 text-[11px] font-medium truncate border border-amber-600/40"
+                          style={{ height: 20, lineHeight: '20px' }}
+                          title={event.title}
+                          onClick={() => onEventClick(event)}
+                        >
+                          {event.title}
+                        </div>
+                      ))}
                     </div>
                     <div className="relative h-[1440px] bg-neutral-950/30">
                       {resources.map((resource, resourceIdx) => {
@@ -1200,6 +1257,7 @@ function CalendarView() {
         consumption: masterEvent.consumption?.[0] ?? 1,
         recurrenceFrequency: rule?.frequency ?? 'none',
         recurrenceUntil: rule?.until ?? '',
+        allDay: !!masterEvent.allDay,
       },
     })
   }
@@ -1221,10 +1279,16 @@ function CalendarView() {
             }
           : undefined
 
-      const start = `${data.startDate}T${data.startTime}:00`
-      const end = `${data.endDate}T${data.endTime}:00`
+      const start = data.allDay
+        ? `${data.startDate}T00:00:00`
+        : `${data.startDate}T${data.startTime}:00`
+      const end = data.allDay
+        ? `${data.endDate}T23:59:59`
+        : `${data.endDate}T${data.endTime}:00`
       const selectedResource = resources.find((r) => r.id === data.resourceId)
-      const eventResources = selectedResource ? [selectedResource] : []
+      const eventResources =
+        data.allDay || !selectedResource ? [] : [selectedResource]
+      const eventConsumption = data.allDay ? [] : [data.consumption]
 
       const result =
         modalState.mode === 'edit' && modalState.eventId
@@ -1234,7 +1298,8 @@ function CalendarView() {
               end,
               recurrence,
               resources: eventResources,
-              consumption: [data.consumption],
+              consumption: eventConsumption,
+              allDay: data.allDay,
             })
           : await calendar.addEvent({
               id: String(Date.now()),
@@ -1243,7 +1308,8 @@ function CalendarView() {
               end,
               recurrence,
               resources: eventResources,
-              consumption: [data.consumption],
+              consumption: eventConsumption,
+              allDay: data.allDay,
             })
 
       if (!result.success) {
@@ -1489,6 +1555,16 @@ function CalendarView() {
                           {day.date.day}
                         </div>
                         <div className="flex flex-col gap-1 overflow-hidden flex-1 min-h-0">
+                          {day.allDayEvents.map((event) => (
+                            <Badge
+                              key={`ad-${event.id}`}
+                              className="cursor-pointer bg-amber-700/70 hover:bg-amber-600/80 text-amber-50 border border-amber-600/40 flex items-center gap-1.5 max-w-full flex-shrink-0 w-full"
+                              title={event.title}
+                              onClick={() => openEditModal(event)}
+                            >
+                              <span className="truncate">{event.title}</span>
+                            </Badge>
+                          ))}
                           {day.events.slice(0, 3).map((event) => (
                             <ContextMenu key={event.id}>
                               <ContextMenuTrigger className="contents">
