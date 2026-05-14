@@ -337,7 +337,10 @@ export const useCalendar = <
 
   const formatCurrentPeriod = useCallback<
     typeof calendarCore.formatCurrentPeriod
-  >((labelOptions) => calendarCore.formatCurrentPeriod(labelOptions), [calendarCore])
+  >(
+    (labelOptions) => calendarCore.formatCurrentPeriod(labelOptions),
+    [calendarCore],
+  )
 
   const getEventSegmentInfo = useCallback<
     typeof calendarCore.getEventSegmentInfo
