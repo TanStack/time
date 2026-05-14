@@ -87,6 +87,45 @@ export const TimeProvider: ParentComponent = (props) => {
       } else if (event.type === 'time:event:removed') {
         const payload = event.payload as { eventId: string }
         setState('events', payload.eventId, undefined!)
+      } else if (
+        event.type === 'time:event:undo' ||
+        event.type === 'time:event:redo'
+      ) {
+        const payload = event.payload as {
+          added: Array<{
+            eventId: string
+            eventTitle: string
+            start: string
+            end: string
+          }>
+          removed: Array<{
+            eventId: string
+            eventTitle: string
+            start: string
+            end: string
+          }>
+          updated: Array<{
+            eventId: string
+            eventTitle: string
+            start: string
+            end: string
+          }>
+        }
+        setState('events', (prev) => {
+          const next = { ...prev }
+          for (const ev of payload.removed) {
+            delete next[ev.eventId]
+          }
+          for (const ev of [...payload.added, ...payload.updated]) {
+            next[ev.eventId] = {
+              id: ev.eventId,
+              title: ev.eventTitle,
+              start: ev.start,
+              end: ev.end,
+            }
+          }
+          return next
+        })
       } else if (event.type === 'time:events:set') {
         const payload = event.payload as {
           events: Array<{

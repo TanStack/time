@@ -4,43 +4,36 @@ import type {
   UnavailabilityReason,
 } from '../calendar/types'
 
+export interface TimeEventInfo {
+  eventId: string
+  eventTitle: string
+  start: string
+  end: string
+}
+
 /**
  * Event map for TimeClient events
  */
 export interface TimeEventMap {
-  'time:event:added': {
-    eventId: string
-    eventTitle: string
-    start: string
-    end: string
-  }
+  'time:event:added': TimeEventInfo
   'time:events:set': {
-    events: Array<{
-      eventId: string
-      eventTitle: string
-      start: string
-      end: string
-    }>
+    events: Array<TimeEventInfo>
   }
-  'time:event:updated': {
-    eventId: string
-    eventTitle: string
-    start: string
-    end: string
+  'time:event:updated': TimeEventInfo & {
     updates: Record<string, unknown>
   }
-  'time:event:removed': {
-    eventId: string
-    eventTitle: string
-    start: string
-    end: string
+  'time:event:removed': TimeEventInfo
+  'time:event:undo': {
+    added: Array<TimeEventInfo>
+    removed: Array<TimeEventInfo>
+    updated: Array<TimeEventInfo>
   }
-  'time:event:resized': {
-    eventId: string
-    eventTitle: string
-    start: string
-    end: string
+  'time:event:redo': {
+    added: Array<TimeEventInfo>
+    removed: Array<TimeEventInfo>
+    updated: Array<TimeEventInfo>
   }
+  'time:event:resized': TimeEventInfo
   'time:event:update:error': {
     eventId: string
     eventTitle: string

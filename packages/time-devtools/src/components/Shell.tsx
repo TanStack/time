@@ -11,6 +11,7 @@ import {
 } from '@tanstack/devtools-ui'
 import { useStyles } from '../styles/use-styles'
 import { TimeProvider, useTimeStore } from '../store/time-context'
+import type { TimeEventInfo } from '@tanstack/time'
 import type { ActivityLogEntry } from '../store/time-context'
 
 export default function Devtools() {
@@ -35,7 +36,15 @@ const getEventTypeLabel = (
   type: string,
 ): {
   text: string
-  color: 'green' | 'blue' | 'red' | 'yellow' | 'purple' | 'pink' | 'gray'
+  color:
+    | 'green'
+    | 'blue'
+    | 'red'
+    | 'yellow'
+    | 'purple'
+    | 'pink'
+    | 'gray'
+    | 'teal'
 } => {
   switch (type) {
     case 'time:events:set':
@@ -52,6 +61,10 @@ const getEventTypeLabel = (
       return { text: 'Update Error', color: 'red' }
     case 'time:calendar:navigate':
       return { text: 'Navigate', color: 'purple' }
+    case 'time:event:undo':
+      return { text: 'Undo', color: 'yellow' }
+    case 'time:event:redo':
+      return { text: 'Redo', color: 'yellow' }
     case 'time:calendar:viewMode:changed':
       return { text: 'View Mode', color: 'pink' }
     default:
@@ -76,6 +89,30 @@ const getEventDescription = (entry: ActivityLogEntry): string => {
       return `Resized to ${String(details.start)} - ${String(details.end)}`
     case 'time:event:update:error':
       return `${details.eventTitle || 'Event'} - ${String(details.message)}`
+    case 'time:event:undo': {
+      const d = details as {
+        added?: Array<TimeEventInfo>
+        removed?: Array<TimeEventInfo>
+        updated?: Array<TimeEventInfo>
+      }
+      const parts: Array<string> = []
+      if (d.added?.length) parts.push(`${d.added.length} added`)
+      if (d.removed?.length) parts.push(`${d.removed.length} removed`)
+      if (d.updated?.length) parts.push(`${d.updated.length} updated`)
+      return parts.length ? `Undo: ${parts.join(', ')}` : 'Undo'
+    }
+    case 'time:event:redo': {
+      const d = details as {
+        added?: Array<TimeEventInfo>
+        removed?: Array<TimeEventInfo>
+        updated?: Array<TimeEventInfo>
+      }
+      const parts: Array<string> = []
+      if (d.added?.length) parts.push(`${d.added.length} added`)
+      if (d.removed?.length) parts.push(`${d.removed.length} removed`)
+      if (d.updated?.length) parts.push(`${d.updated.length} updated`)
+      return parts.length ? `Redo: ${parts.join(', ')}` : 'Redo'
+    }
     case 'time:calendar:navigate':
       return `${String(details.direction)} → ${String(details.targetDate)}`
     case 'time:calendar:viewMode:changed':

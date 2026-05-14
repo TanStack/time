@@ -344,7 +344,7 @@ export class CalendarCore<
     return startStr.split('T')[0] ?? startStr
   }
 
-  private _indexAddEvent(event: TEvent): void {
+  private _indexAddEvent(event: TEvent) {
     this._eventMap.set(event.id, event)
     const dk = this._eventDateKey(event)
     if (!this._dateIndex.has(dk)) this._dateIndex.set(dk, new Set())
@@ -357,7 +357,7 @@ export class CalendarCore<
     }
   }
 
-  private _indexRemoveEvent(event: TEvent): void {
+  private _indexRemoveEvent(event: TEvent) {
     this._eventMap.delete(event.id)
     const dk = this._eventDateKey(event)
     const bucket = this._dateIndex.get(dk)
@@ -371,7 +371,7 @@ export class CalendarCore<
     this._dependentsMap.delete(event.id)
   }
 
-  private _indexUpdateEvent(prev: TEvent, next: TEvent): void {
+  private _indexUpdateEvent(prev: TEvent, next: TEvent) {
     this._eventMap.set(next.id, next)
 
     const prevDk = this._eventDateKey(prev)
@@ -402,14 +402,14 @@ export class CalendarCore<
     }
   }
 
-  private _isRangeLoaded(start: string, end: string): boolean {
+  private _isRangeLoaded(start: string, end: string) {
     for (const r of this._loadedRanges) {
       if (r.start <= start && r.end >= end) return true
     }
     return false
   }
 
-  private _markRangeLoaded(start: string, end: string): void {
+  private _markRangeLoaded(start: string, end: string) {
     this._loadedRanges.push({ start, end })
     this._loadedRanges.sort((a, b) => (a.start < b.start ? -1 : 1))
     const merged: Array<{ start: string; end: string }> = []
@@ -596,7 +596,7 @@ export class CalendarCore<
     return map
   }
 
-  ensureRangeLoaded(): void {
+  ensureRangeLoaded() {
     const calendarDays = this.getCalendarDays()
 
     if (this.options.fetchEvents && calendarDays.length > 0) {
@@ -793,7 +793,7 @@ export class CalendarCore<
     return this.options.events ? [...this.options.events] : []
   }
 
-  private _restoreSnapshot(snapshot: Array<TEvent>): void {
+  private _restoreSnapshot(snapshot: Array<TEvent>) {
     this._eventMap.clear()
     this._dependentsMap.clear()
     this._dateIndex.clear()
@@ -805,27 +805,58 @@ export class CalendarCore<
     }))
   }
 
-  canUndo(): boolean {
+  canUndo() {
     return this._undoStack.length > 0
   }
 
-  canRedo(): boolean {
+  canRedo() {
     return this._redoStack.length > 0
   }
 
-  undo(): void {
+  private _diffEvents(before: Array<TEvent>, after: Array<TEvent>) {
+    const beforeMap = new Map(before.map((e) => [e.id, e]))
+    const afterMap = new Map(after.map((e) => [e.id, e]))
+    const added = after.filter((e) => !beforeMap.has(e.id))
+    const removed = before.filter((e) => !afterMap.has(e.id))
+    const updated = after.filter((e) => {
+      const prev = beforeMap.get(e.id)
+      if (!prev) return false
+      return (
+        prev.start !== e.start || prev.end !== e.end || prev.title !== e.title
+      )
+    })
+    const toInfo = (e: TEvent) => ({
+      eventId: e.id,
+      eventTitle: e.title,
+      start: e.start as string,
+      end: e.end as string,
+    })
+    return {
+      added: added.map(toInfo),
+      removed: removed.map(toInfo),
+      updated: updated.map(toInfo),
+    }
+  }
+
+  undo() {
     if (this._undoStack.length === 0) return
-    this._redoStack.push(this._snapshotEvents())
-    this._restoreSnapshot(this._undoStack.pop()!)
+    const before = this._snapshotEvents()
+    this._redoStack.push(before)
+    const restored = this._undoStack.pop()!
+    this._restoreSnapshot(restored)
+    getTimeClient().emit('event:undo', this._diffEvents(before, restored))
   }
 
-  redo(): void {
+  redo() {
     if (this._redoStack.length === 0) return
-    this._undoStack.push(this._snapshotEvents())
-    this._restoreSnapshot(this._redoStack.pop()!)
+    const before = this._snapshotEvents()
+    this._undoStack.push(before)
+    const restored = this._redoStack.pop()!
+    this._restoreSnapshot(restored)
+    getTimeClient().emit('event:redo', this._diffEvents(before, restored))
   }
 
-  commitAdd(event: TEvent): void {
+  commitAdd(event: TEvent) {
     this._undoStack.push(this._snapshotEvents())
     this._redoStack = []
     if (!this.options.events) {
@@ -847,7 +878,7 @@ export class CalendarCore<
     })
   }
 
-  commitUpdate(id: Event['id'], updates: Partial<Omit<TEvent, 'id'>>): void {
+  commitUpdate(id: Event['id'], updates: Partial<Omit<TEvent, 'id'>>) {
     if (!this.options.events) return
 
     const existingEvent = this._eventMap.get(id)
@@ -990,7 +1021,7 @@ export class CalendarCore<
     sourceId: string,
     _deltaMs: number,
     visited: Set<string>,
-  ): void {
+  ) {
     const sourceEvent = this._eventMap.get(sourceId)
     if (!sourceEvent) return
 
@@ -1348,7 +1379,7 @@ export class CalendarCore<
     return undefined
   }
 
-  goToNextOccurrence(eventId: string, fromDate?: EventDateTimeInput): void {
+  goToNextOccurrence(eventId: string, fromDate?: EventDateTimeInput) {
     const master = this._resolveMasterEvent(eventId)
     if (!master?.recurrence) return
 
@@ -1372,7 +1403,7 @@ export class CalendarCore<
     this.goToSpecificPeriod((occurrences[0]!.start as string).split('T')[0]!)
   }
 
-  goToPreviousOccurrence(eventId: string, fromDate?: EventDateTimeInput): void {
+  goToPreviousOccurrence(eventId: string, fromDate?: EventDateTimeInput) {
     const master = this._resolveMasterEvent(eventId)
     if (!master?.recurrence) return
 
@@ -1951,7 +1982,7 @@ export class CalendarCore<
     return { blocked: false }
   }
 
-  removeEvent(id: Event['id']): void {
+  removeEvent(id: Event['id']) {
     if (!this.options.events) return
 
     const removedEvent = this._eventMap.get(id)
