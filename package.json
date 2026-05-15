@@ -5,7 +5,7 @@
     "type": "git",
     "url": "git+https://github.com/TanStack/time.git"
   },
-  "packageManager": "pnpm@10.26.1",
+  "packageManager": "pnpm@11.1.0",
   "type": "module",
   "scripts": {
     "build": "nx affected --skip-nx-cache --targets=build --exclude=examples/**",
@@ -66,14 +66,6 @@
     "typescript": "5.9.3",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.0.17"
-  },
-  "overrides": {
-    "@tanstack/time": "workspace:*",
-    "@tanstack/time-devtools": "workspace:*",
-    "@tanstack/react-time": "workspace:*",
-    "@tanstack/react-time-devtools": "workspace:*",
-    "@tanstack/solid-time": "workspace:*",
-    "@tanstack/solid-time-devtools": "workspace:*"
   },
   "dependencies": {
     "@js-temporal/polyfill": "^0.5.1"
