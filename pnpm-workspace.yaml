@@ -5,3 +5,20 @@ preferWorkspacePackages: true
 packages:
   - 'examples/**/*'
   - 'packages/*'
+
+allowBuilds:
+  # root dependency
+  nx: true
+  unrs-resolver: false # not directly required for build
+  esbuild: true
+
+  # vitest
+  msw: false
+
+overrides:
+  '@tanstack/time': 'workspace:*'
+  '@tanstack/time-devtools': 'workspace:*'
+  '@tanstack/react-time': 'workspace:*'
+  '@tanstack/react-time-devtools': 'workspace:*'
+  '@tanstack/solid-time': 'workspace:*'
+  '@tanstack/solid-time-devtools': 'workspace:*'
