@@ -5,7 +5,7 @@ title: ValidateResizeResult
 
 # Interface: ValidateResizeResult
 
-Defined in: [calendar/calendar.ts:266](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L266)
+Defined in: [calendar/calendar.ts:279](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L279)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/calendar.ts:266](https://github.com/TanStack/time/blob/mai
 blocked: boolean;
 ```
 
-Defined in: [calendar/calendar.ts:267](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L267)
+Defined in: [calendar/calendar.ts:280](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L280)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [calendar/calendar.ts:267](https://github.com/TanStack/time/blob/mai
 optional error: object;
 ```
 
-Defined in: [calendar/calendar.ts:268](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L268)
+Defined in: [calendar/calendar.ts:281](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L281)
 
 #### conflicts
 
@@ -53,7 +53,7 @@ reason: "unavailable-time" | "invalid-time" | "min-duration" | "blocked";
 result: object;
 ```
 
-Defined in: [calendar/calendar.ts:273](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L273)
+Defined in: [calendar/calendar.ts:286](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L286)
 
 #### durationMinutes
 
@@ -81,4 +81,4 @@ start: string;
 targetDayDate: string;
 ```
 
-Defined in: [calendar/calendar.ts:278](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L278)
+Defined in: [calendar/calendar.ts:291](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L291)
