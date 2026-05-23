@@ -34,6 +34,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 import './index.css'
 
@@ -593,11 +594,11 @@ function ScheduleView({
           ))}
         </div>
         {/* Horizontal-scrollable schedule body — sentinels auto-navigate on edge */}
-        <div ref={scrollRef} className="flex-1 overflow-x-auto">
+        <ScrollArea viewportRef={scrollRef} className="flex-1">
           <div
             className="grid"
             style={{
-              gridTemplateColumns: `1px repeat(${days.length}, 1fr) 1px`,
+              gridTemplateColumns: `1px repeat(${days.length}, minmax(0, 1fr)) 1px`,
               minWidth: `${(days.length / periodDayCount) * 100}%`,
             }}
           >
@@ -859,7 +860,7 @@ function ScheduleView({
             </div>
             <div ref={rightSentinelRef} style={{ width: 1 }} aria-hidden />
           </div>
-        </div>
+        </ScrollArea>
       </div>
     </div>
   )
@@ -1012,6 +1013,49 @@ function CalendarView() {
   const prevScrollHeightRef = useRef(0)
   const needsScrollAdjRef = useRef(false)
   const [bufferVersion, setBufferVersion] = useState(0)
+
+  const [visibleMonth, setVisibleMonth] = useState(() =>
+    calendar.formatCurrentPeriod(),
+  )
+  const rafRef = useRef<number | undefined>(undefined)
+
+  useEffect(() => {
+    setVisibleMonth(calendar.formatCurrentPeriod())
+  }, [calendar.currentPeriod])
+
+  useEffect(() => {
+    const el = monthScrollRef.current
+    if (!el) return
+
+    const compute = () => {
+      if (rafRef.current) return
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = undefined
+        const viewportRect = el.getBoundingClientRect()
+        const cells = el.querySelectorAll<HTMLElement>('[data-day-date]')
+        for (const cell of cells) {
+          const cellRect = cell.getBoundingClientRect()
+          if (cellRect.bottom > viewportRect.top) {
+            const iso = cell.getAttribute('data-day-date')
+            if (iso) {
+              const d = new Date(`${iso}T00:00:00`)
+              setVisibleMonth(
+                d.toLocaleDateString(undefined, {
+                  month: 'long',
+                  year: 'numeric',
+                }),
+              )
+            }
+            break
+          }
+        }
+      })
+    }
+
+    el.addEventListener('scroll', compute, { passive: true })
+    compute()
+    return () => el.removeEventListener('scroll', compute)
+  }, [bufferVersion])
 
   useEffect(() => {
     if (navDirectionRef.current === 'none') return
@@ -1455,7 +1499,7 @@ function CalendarView() {
         </div>
 
         <div className="text-lg font-medium text-neutral-400">
-          {calendar.formatCurrentPeriod()}
+          {visibleMonth}
         </div>
       </div>
 
@@ -1475,7 +1519,9 @@ function CalendarView() {
           {/* Sticky day-name header */}
           <div
             className="grid border-b border-neutral-800 bg-neutral-950 sticky top-0 z-10"
-            style={{ gridTemplateColumns: `repeat(${dayNames.length}, 1fr)` }}
+            style={{
+              gridTemplateColumns: `repeat(${dayNames.length}, minmax(0, 1fr))`,
+            }}
           >
             {dayNames.map((dayName: string, index: number) => (
               <div
@@ -1492,17 +1538,18 @@ function CalendarView() {
           </div>
 
           {/* Scrollable month body — sentinels trigger period navigation */}
-          <div
-            ref={monthScrollRef}
-            className="overflow-y-auto"
-            style={{ maxHeight: 'calc(100vh - 260px)' }}
+          <ScrollArea
+            viewportRef={monthScrollRef}
+            className="h-[calc(100vh-260px)]"
           >
             {/* Top sentinel: triggers goToPreviousPeriod */}
             <div ref={monthTopRef} style={{ height: 1 }} aria-hidden />
 
             <div
               className="grid"
-              style={{ gridTemplateColumns: `repeat(${dayNames.length}, 1fr)` }}
+              style={{
+                gridTemplateColumns: `repeat(${dayNames.length}, minmax(0, 1fr))`,
+              }}
             >
               {bufferedWeekGroups.map(
                 (
@@ -1516,7 +1563,7 @@ function CalendarView() {
                       return (
                         <div
                           key={`empty-${weekKey}-${dayIndex}`}
-                          className={`h-[120px] bg-neutral-950/50 ${
+                          className={`min-h-[120px] bg-neutral-950/50 ${
                             dayIndex < dayNames.length - 1
                               ? 'border-r border-neutral-800'
                               : ''
@@ -1531,7 +1578,8 @@ function CalendarView() {
                     return (
                       <div
                         key={day.isoDate}
-                        className={`h-[120px] p-2 relative flex flex-col overflow-hidden ${
+                        data-day-date={day.isoDate}
+                        className={`min-h-[120px] p-2 relative flex flex-col ${
                           dayIndex < dayNames.length - 1
                             ? 'border-r border-neutral-800'
                             : ''
@@ -1554,7 +1602,7 @@ function CalendarView() {
                         >
                           {day.date.day}
                         </div>
-                        <div className="flex flex-col gap-1 overflow-hidden flex-1 min-h-0">
+                        <div className="flex flex-col gap-1 flex-1 min-h-0">
                           {day.allDayEvents.map((event) => (
                             <Badge
                               key={`ad-${event.id}`}
@@ -1565,7 +1613,7 @@ function CalendarView() {
                               <span className="truncate">{event.title}</span>
                             </Badge>
                           ))}
-                          {day.events.slice(0, 3).map((event) => (
+                          {day.events.map((event) => (
                             <ContextMenu key={event.id}>
                               <ContextMenuTrigger className="contents">
                                 <Badge
@@ -1635,11 +1683,6 @@ function CalendarView() {
                               </ContextMenuContent>
                             </ContextMenu>
                           ))}
-                          {day.events.length > 3 && (
-                            <div className="text-[10px] text-neutral-400 px-1 flex-shrink-0">
-                              +{day.events.length - 3} more
-                            </div>
-                          )}
                         </div>
                       </div>
                     )
@@ -1650,7 +1693,7 @@ function CalendarView() {
 
             {/* Bottom sentinel: triggers goToNextPeriod */}
             <div ref={monthBottomRef} style={{ height: 1 }} aria-hidden />
-          </div>
+          </ScrollArea>
         </div>
       )}
 
