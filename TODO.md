@@ -2,7 +2,7 @@
 
 - Undo/redo ✅
 - Go to next/previous occurrence ✅
-- All-day events
+- All-day events ✅
 - Recurrence exceptions:
   - EXDATE (skip specific occurrences)
   - Modified single occurrences ("this event, but the Tuesday one moves to 3pm")

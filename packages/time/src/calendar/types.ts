@@ -80,7 +80,7 @@ export interface Event<TResource extends Resource = Resource> {
   start: EventDateTimeInput
   end: EventDateTimeInput
   title: string
-  resources?: Array<TResource>
+  resources?: Array<TResource | string>
   consumption?: Array<number>
   /** Dependency links to other events this event is constrained by.
    * Each link has an `id` (predecessor event) and a `type` (FS/SS/FF/SF).
