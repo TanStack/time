@@ -66,6 +66,7 @@ export const groupDaysBy = <
                       date: newDate,
                       isoDate: newDate.toString({ calendarName: 'never' }),
                       events: [],
+                      allDayEvents: [],
                       isToday: false,
                       isInCurrentPeriod: false,
                     }
@@ -93,6 +94,7 @@ export const groupDaysBy = <
                   date: newDate,
                   isoDate: newDate.toString({ calendarName: 'never' }),
                   events: [],
+                  allDayEvents: [],
                   isToday: false,
                   isInCurrentPeriod: false,
                 }
@@ -125,6 +127,7 @@ export const groupDaysBy = <
                         date: newDay,
                         isoDate: newDay.toString({ calendarName: 'never' }),
                         events: [],
+                        allDayEvents: [],
                         isToday: false,
                         isInCurrentPeriod: false,
                       }
@@ -156,6 +159,7 @@ export const groupDaysBy = <
                     date: nextDate,
                     isoDate: nextDate.toString({ calendarName: 'never' }),
                     events: [],
+                    allDayEvents: [],
                     isToday: false,
                     isInCurrentPeriod: false,
                   }

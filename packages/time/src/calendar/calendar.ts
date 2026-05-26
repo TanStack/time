@@ -134,8 +134,10 @@ interface CalendarActions<
   getTimeSlots: (
     options?: Parameters<typeof getTimeSlots>[1],
   ) => Array<TimeSlot>
-  /** Retrieves events for a specific date. */
+  /** Retrieves all events for a specific date. */
   getEventsByDate: (date: string) => Array<TEvent>
+  /** Retrieves all-day events occurring on a specific date (multi-day all-day segments included). */
+  getAllDayEventsByDate: (date: string) => Array<TEvent>
   /**
    * Fetches events for the event's date range, validates placement
    * constraints, and adds the event if valid. Returns a result
@@ -200,7 +202,7 @@ interface CalendarActions<
     eventId: string,
     newStart: string,
     newEnd: string,
-    newResources?: Array<TResource>,
+    newResources?: Array<TResource | string>,
     newConsumption?: Array<number>,
   ) => { blocked: boolean; blockedEventTitle?: string; message?: string }
   /**
@@ -235,8 +237,10 @@ interface CalendarActions<
     title: string
     start: string
     end: string
-    resources?: Array<TResource>
+    resources?: Array<TResource | string>
   }) => { blocked: boolean; message?: string }
+  setResources: (resources: Array<TResource> | null) => void
+  setEvents: (events: Array<TEvent> | null) => void
 }
 
 interface CalendarState<
@@ -341,6 +345,28 @@ export class CalendarCore<
     Array<{ startMinutes: number; endMinutes: number }>
   >()
   private _weekdayCache = new Map<string, number>()
+
+  private _resolveEventResources(event: {
+    resources?: Array<TResource | string>
+  }): Array<TResource> {
+    return (event.resources ?? []).map((r) => {
+      if (typeof r === 'string') {
+        return (
+          this.options.resources?.find((res) => res.id === r) ??
+          ({ id: r, label: r } as TResource)
+        )
+      }
+      return r
+    })
+  }
+
+  private _getEventResourceIds(event: {
+    resources?: Array<TResource | string>
+  }): Array<string> {
+    return (event.resources ?? []).map((r) =>
+      typeof r === 'string' ? r : r.id,
+    )
+  }
 
   constructor(options: CalendarCoreOptions<TResource, TEvent>) {
     super(options)
@@ -708,11 +734,18 @@ export class CalendarCore<
     return days.map((day) => {
       const isoDate = day.toString({ calendarName: 'never' })
       const dailyEvents = eventMap.get(isoDate) ?? []
+      const timedEvents: Array<TEvent> = []
+      const allDayEvents: Array<TEvent> = []
+      for (const ev of dailyEvents) {
+        if (ev.allDay) allDayEvents.push(ev)
+        else timedEvents.push(ev)
+      }
       const isInCurrentPeriod = currentMonthRange.includes(day.month)
       return {
         date: day,
         isoDate,
-        events: dailyEvents,
+        events: timedEvents,
+        allDayEvents,
         isToday: Temporal.PlainDate.compare(day, today) === 0,
         isInCurrentPeriod,
       }
@@ -852,7 +885,17 @@ export class CalendarCore<
       calendarName: 'never',
     })
     const eventMap = this.getEventMap()
-    return eventMap.get(targetDate) ?? []
+    const all = eventMap.get(targetDate) ?? []
+    return all
+  }
+
+  getAllDayEventsByDate(date: string): Array<TEvent> {
+    const targetDate = Temporal.PlainDate.from(date).toString({
+      calendarName: 'never',
+    })
+    const eventMap = this.getEventMap()
+    const all = eventMap.get(targetDate) ?? []
+    return all.filter((e) => !!e.allDay)
   }
 
   private _snapshotEvents(): Array<TEvent> {
@@ -1256,10 +1299,16 @@ export class CalendarCore<
     event: TEvent,
     newStart: string,
     newEnd: string,
-    newResources?: Array<TResource>,
+    newResources?: Array<TResource | string>,
     newConsumption?: Array<number>,
   ): AvailabilityConflict | null {
-    const resources = newResources || event.resources
+    const resources =
+      newResources?.map((r) =>
+        typeof r === 'string'
+          ? (this.options.resources?.find((res) => res.id === r) ??
+            ({ id: r, label: r } as TResource))
+          : r,
+      ) || this._resolveEventResources(event)
     if (!resources?.length) return null
 
     const resourceIds = resources.map((r) => r.id)
@@ -1343,7 +1392,7 @@ export class CalendarCore<
             const selfId = event.id
             if (e.id === selfId || masterId === selfId) return false
 
-            const eventResourceIds = e.resources?.map((r) => r.id) ?? []
+            const eventResourceIds = this._getEventResourceIds(e)
             if (!eventResourceIds.includes(resource.id)) return false
 
             const eOrigStart = (e._originalStart ?? e.start) as
@@ -1504,7 +1553,7 @@ export class CalendarCore<
     eventId: string,
     newStart: string,
     newEnd: string,
-    newResources?: Array<TResource>,
+    newResources?: Array<TResource | string>,
     newConsumption?: Array<number>,
   ): { blocked: boolean; blockedEventTitle?: string; message?: string } {
     const event = this._eventMap.get(eventId)
@@ -1771,7 +1820,7 @@ export class CalendarCore<
     title: string
     start: string
     end: string
-    resources?: Array<TResource>
+    resources?: Array<TResource | string>
     consumption?: Array<number>
   }): { blocked: boolean; message?: string } {
     const placeholderEvent = {
@@ -1971,6 +2020,47 @@ export class CalendarCore<
     const currentDeps = targetEvent.dependsOn ?? []
     if (currentDeps.some((d) => d.id === sourceId && d.type === type)) {
       return { blocked: false }
+    }
+
+    if (sourceId === targetId) {
+      return {
+        blocked: true,
+        error: {
+          eventId: targetId,
+          eventTitle: targetEvent.title,
+          reason: 'blocked',
+          message: 'circular dependency: an event cannot depend on itself',
+          originalStart: toPlainDateTimeString(targetEvent.start),
+          originalEnd: toPlainDateTimeString(targetEvent.end),
+        },
+      }
+    }
+
+    const visited = new Set<string>()
+    const stack = [sourceId]
+    while (stack.length > 0) {
+      const currentId = stack.pop()!
+      if (currentId === targetId) {
+        return {
+          blocked: true,
+          error: {
+            eventId: targetId,
+            eventTitle: targetEvent.title,
+            reason: 'blocked',
+            message: `circular dependency: ${sourceId} already depends on ${targetId} (directly or indirectly)`,
+            originalStart: toPlainDateTimeString(targetEvent.start),
+            originalEnd: toPlainDateTimeString(targetEvent.end),
+          },
+        }
+      }
+      if (visited.has(currentId)) continue
+      visited.add(currentId)
+      const currentEvent = this._eventMap.get(currentId)
+      if (currentEvent) {
+        for (const dep of currentEvent.dependsOn ?? []) {
+          stack.push(dep.id)
+        }
+      }
     }
 
     const tz = this.options.timeZone
@@ -2270,7 +2360,7 @@ export class CalendarCore<
     }
 
     for (const event of merged.values()) {
-      const resourceIds = event.resources?.map((r) => r.id) ?? []
+      const resourceIds = this._getEventResourceIds(event)
       for (const rid of resourceIds) {
         map.get(rid)?.push(event)
       }
@@ -2428,8 +2518,6 @@ export class CalendarCore<
     startMins: number,
     endMins: number,
     eventId: string,
-    originalStart: string,
-    originalEnd: string,
     resourceIds: Array<string>,
   ): Array<AvailabilityConflict> {
     const conflicts: Array<AvailabilityConflict> = []
@@ -2494,53 +2582,39 @@ export class CalendarCore<
 
     const eventsOnDay = this.getEventsByDate(dayDate)
 
-    const origStartDate = new Date(originalStart)
-    const origEndDate = new Date(originalEnd)
-    const origStartMins =
-      origStartDate.getHours() * 60 + origStartDate.getMinutes()
-    const origEndMins = origEndDate.getHours() * 60 + origEndDate.getMinutes()
+    const selfEvent = this._eventMap.get(eventId)
+    const ownConsumptionArr = selfEvent?.consumption ?? [1]
+    const ownConsumption = ownConsumptionArr.reduce((a, b) => a + b, 0)
 
     for (const resourceId of resourceIds) {
       const resource = this.options.resources?.find((r) => r.id === resourceId)
       if (!resource || !resource.capacity || resource.capacity.length === 0)
         continue
 
-      const getOverlappingEvents = (
-        checkStartMins: number,
-        checkEndMins: number,
-      ) =>
-        eventsOnDay.filter((e) => {
-          if (e.id === eventId) return false
+      const overlappingEvents = eventsOnDay.filter((e) => {
+        if (e.id === eventId) return false
 
-          const eventResourceIds = e.resources?.map((r) => r.id) || []
-          if (!eventResourceIds.includes(resourceId)) return false
+        const eventResourceIds = this._getEventResourceIds(e)
+        if (!eventResourceIds.includes(resourceId)) return false
 
-          const eventStart = new Date(e.start)
-          const eventEnd = new Date(e.end)
-          const eventStartMins =
-            eventStart.getHours() * 60 + eventStart.getMinutes()
-          const eventEndMins = eventEnd.getHours() * 60 + eventEnd.getMinutes()
+        const eventStart = new Date(e.start)
+        const eventEnd = new Date(e.end)
+        const eventStartMins =
+          eventStart.getHours() * 60 + eventStart.getMinutes()
+        const eventEndMins = eventEnd.getHours() * 60 + eventEnd.getMinutes()
 
-          return checkStartMins < eventEndMins && checkEndMins > eventStartMins
-        })
+        return startMins < eventEndMins && endMins > eventStartMins
+      })
 
-      const overlappingEvents = getOverlappingEvents(startMins, endMins)
-      const previouslyOverlapping = getOverlappingEvents(
-        origStartMins,
-        origEndMins,
-      )
+      const usedByOthers = overlappingEvents.reduce((acc, e) => {
+        const c = e.consumption ?? [1]
+        return acc + c.reduce((a, b) => a + b, 0)
+      }, 0)
 
-      const getSum = (events: Array<TEvent>) =>
-        events.reduce((acc, e) => {
-          const f = e.consumption || [1]
-          return acc + f.reduce((a, b) => a + b, 0)
-        }, 0)
-
-      const currentUsage = getSum(overlappingEvents)
-      const previousUsage = getSum(previouslyOverlapping)
       const resourceCapacitySum = resource.capacity.reduce((a, b) => a + b, 0)
+      const totalUsage = usedByOthers + ownConsumption
 
-      if (currentUsage > previousUsage && currentUsage >= resourceCapacitySum) {
+      if (totalUsage > resourceCapacitySum) {
         conflicts.push({
           date: dayDate,
           conflictRange: {
@@ -2553,15 +2627,15 @@ export class CalendarCore<
               resourceId: resource.id,
               resourceLabel: resource.label,
               reason: 'capacity',
-              description: `${resource.label}: Capacity exceeded (${currentUsage}/${resourceCapacitySum} units used)`,
+              description: `${resource.label}: Capacity exceeded (${totalUsage}/${resourceCapacitySum} units used)`,
               capacityInfo: {
                 max: resourceCapacitySum,
-                used: currentUsage,
+                used: totalUsage,
                 remaining: 0,
               },
             },
           ],
-          description: `${resource.label}: Capacity exceeded (${currentUsage}/${resourceCapacitySum} units used)`,
+          description: `${resource.label}: Capacity exceeded (${totalUsage}/${resourceCapacitySum} units used)`,
         })
       }
     }
@@ -2582,7 +2656,7 @@ export class CalendarCore<
     } = options
 
     const event = this.options.events?.find((ev) => ev.id === eventId)
-    const resourceIds = event?.resources?.map((r) => r.id)
+    const resourceIds = event ? this._getEventResourceIds(event) : undefined
 
     const unavailableRanges = this.getUnavailableMinuteRanges(targetDayDate, {
       resourceIds,
@@ -2830,8 +2904,6 @@ export class CalendarCore<
           snappedStartMinutes,
           snappedEndMinutes,
           eventId,
-          originalStart,
-          originalEnd,
           resourceIds,
         )
 
@@ -2897,35 +2969,23 @@ export class CalendarCore<
               (overlapEndMs - dayStartMs) / 60_000,
             )
 
-            const details = this.getUnavailabilityDetails(
+            const dayConflicts = this.getResizeConflicts(
               dayStr,
               overlapStartMins,
               overlapEndMins,
-              { resourceIds },
+              eventId,
+              resourceIds,
             )
 
-            if (details.length > 0) {
+            if (dayConflicts.length > 0) {
               shouldBlockResize = true
               blockReason = 'unavailable-time'
-              const detailsText = details
+              const conflict = dayConflicts[0]!
+              const detailsText = conflict.resourceDetails
                 .map((d) => `${d.resourceLabel} (${d.reason})`)
                 .join(', ')
               blockMessage = `Unavailable: ${dayStr} ${formatMinutesToTime(overlapStartMins)}–${formatMinutesToTime(overlapEndMins)} conflicts with ${detailsText}`
-              conflicts.push({
-                date: dayStr,
-                conflictRange: {
-                  start: formatMinutesToTime(overlapStartMins),
-                  end: formatMinutesToTime(overlapEndMins),
-                },
-                resourceIds: details.map((d) => d.resourceId),
-                resourceDetails: details.map((d) => ({
-                  resourceId: d.resourceId,
-                  resourceLabel: d.resourceLabel,
-                  reason: d.reason,
-                  description: d.description,
-                })),
-                description: details.map((d) => d.description).join('; '),
-              })
+              conflicts.push(...dayConflicts)
             }
           }
 
@@ -3013,6 +3073,46 @@ export class CalendarCore<
       }
     }
 
+    if (
+      !shouldBlockResize &&
+      resourceIds?.length &&
+      originalStartDate === originalEndDate
+    ) {
+      const selfEvent = this._eventMap.get(eventId)
+      if (selfEvent) {
+        const proposedNewStart =
+          effectiveEdge === 'top'
+            ? Temporal.PlainDateTime.from(originalStart)
+                .add({ milliseconds: snappedDeltaMs })
+                .toString({ smallestUnit: 'second' })
+            : originalStart
+        const proposedNewEnd =
+          effectiveEdge === 'bottom'
+            ? Temporal.PlainDateTime.from(originalEnd)
+                .add({ milliseconds: snappedDeltaMs })
+                .toString({ smallestUnit: 'second' })
+            : originalEnd
+
+        const spanConflict = this.checkEventAvailability(
+          selfEvent,
+          proposedNewStart,
+          proposedNewEnd,
+        )
+        if (spanConflict) {
+          shouldBlockResize = true
+          blockReason = 'unavailable-time'
+          blockMessage = spanConflict.description
+          const alreadyReported = conflicts.some(
+            (c) =>
+              c.date === spanConflict.date &&
+              c.conflictRange.start === spanConflict.conflictRange.start &&
+              c.conflictRange.end === spanConflict.conflictRange.end,
+          )
+          if (!alreadyReported) conflicts.push(spanConflict)
+        }
+      }
+    }
+
     const effectiveDeltaMinutes = shouldBlockResize ? 0 : totalDeltaMinutes
 
     const result = calculateResizedEvent({
@@ -3039,6 +3139,28 @@ export class CalendarCore<
       result,
       targetDayDate: shouldBlockResize ? originalDayDate : targetDayDate,
     }
+  }
+
+  /**
+   * Replaces the current resource list and invalidates availability caches.
+   */
+  setResources(resources: Array<TResource> | null) {
+    this.options.resources = resources
+    this._resourceDayAvailCache.clear()
+    this._mergedUnavailMinuteCache.clear()
+  }
+
+  /**
+   * Replaces the current event list and invalidates availability caches.
+   */
+  setEvents(events: Array<TEvent> | null) {
+    this.options.events = events?.map((e) => this.normalizeEvent(e)) || null
+    this._eventMap.clear()
+    this._dependentsMap.clear()
+    this._dateIndex.clear()
+    this._resourceDayAvailCache.clear()
+    this._mergedUnavailMinuteCache.clear()
+    this.options.events?.forEach((e) => this._indexAddEvent(e))
   }
 }
 

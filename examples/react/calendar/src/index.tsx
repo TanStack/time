@@ -34,6 +34,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 import './index.css'
 
@@ -87,8 +88,8 @@ const sampleResources: Array<Resource> = [
     availability: [
       {
         weekdays: [1, 2, 3, 4, 5],
-        startTime: '08:00',
-        endTime: '18:00',
+        startTime: '00:00',
+        endTime: '24:00',
       },
     ],
   },
@@ -99,8 +100,8 @@ const sampleResources: Array<Resource> = [
     availability: [
       {
         weekdays: [1, 2, 3, 4, 5],
-        startTime: '09:00',
-        endTime: '18:00',
+        startTime: '00:00',
+        endTime: '24:00',
       },
     ],
   },
@@ -200,6 +201,20 @@ function getSampleEvents(): Array<Event<Resource>> {
         interval: 1,
       },
     },
+    {
+      id: 'ad-holiday',
+      title: '🎉 Company Holiday',
+      start: `${formatDateToISO(weekdayAt(3))}T00:00:00`,
+      end: `${formatDateToISO(weekdayAt(3))}T23:59:59`,
+      allDay: true,
+    },
+    {
+      id: 'ad-conf',
+      title: '🏢 Offsite Conference',
+      start: `${formatDateToISO(weekdayAt(4))}T00:00:00`,
+      end: `${formatDateToISO(weekdayAt(5))}T23:59:59`,
+      allDay: true,
+    },
   ]
 }
 
@@ -215,6 +230,7 @@ interface EventFormData {
   consumption: number
   recurrenceFrequency: RecurrenceFrequency | 'none'
   recurrenceUntil: string
+  allDay: boolean
 }
 
 const emptyFormData: EventFormData = {
@@ -227,6 +243,7 @@ const emptyFormData: EventFormData = {
   consumption: 1,
   recurrenceFrequency: 'none',
   recurrenceUntil: '',
+  allDay: false,
 }
 
 function EventModal({
@@ -297,6 +314,20 @@ function EventModal({
               required
             />
           </div>
+          <div className="flex items-center gap-2">
+            <input
+              id="allDay"
+              type="checkbox"
+              checked={formData.allDay}
+              onChange={(e) =>
+                setFormData({ ...formData, allDay: e.target.checked })
+              }
+              className="h-4 w-4"
+            />
+            <Label htmlFor="allDay" className="cursor-pointer">
+              All-day
+            </Label>
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="startDate">Start Date</Label>
@@ -319,7 +350,8 @@ function EventModal({
                 onChange={(e) =>
                   setFormData({ ...formData, startTime: e.target.value })
                 }
-                required
+                disabled={formData.allDay}
+                required={!formData.allDay}
               />
             </div>
           </div>
@@ -383,7 +415,8 @@ function EventModal({
                 onChange={(e) =>
                   setFormData({ ...formData, endTime: e.target.value })
                 }
-                required
+                disabled={formData.allDay}
+                required={!formData.allDay}
               />
             </div>
           </div>
@@ -510,6 +543,9 @@ function ScheduleView({
     getUnavailableRanges,
   } = calendar
 
+  const maxAllDay = days.reduce((m, d) => Math.max(m, d.allDayEvents.length), 0)
+  const allDayRowHeight = maxAllDay > 0 ? maxAllDay * 24 + 8 : 28
+
   return (
     <div className="border border-neutral-800 rounded-lg overflow-hidden bg-black">
       <div className="border-b border-neutral-800 bg-neutral-950 px-4 py-3">
@@ -542,6 +578,12 @@ function ScheduleView({
       <div className="flex border-t border-neutral-800">
         <div className="w-20 border-r border-neutral-800 bg-neutral-950">
           <div className="h-12 border-b border-neutral-800"></div>
+          <div
+            className="border-b border-neutral-800 px-2 py-1 text-[10px] uppercase tracking-wide text-neutral-500 flex items-center"
+            style={{ height: allDayRowHeight }}
+          >
+            all-day
+          </div>
           {timeSlots.map((slot) => (
             <div
               key={`${slot.hour}-${slot.minute}`}
@@ -552,11 +594,11 @@ function ScheduleView({
           ))}
         </div>
         {/* Horizontal-scrollable schedule body — sentinels auto-navigate on edge */}
-        <div ref={scrollRef} className="flex-1 overflow-x-auto">
+        <ScrollArea viewportRef={scrollRef} className="flex-1">
           <div
             className="grid"
             style={{
-              gridTemplateColumns: `1px repeat(${days.length}, 1fr) 1px`,
+              gridTemplateColumns: `1px repeat(${days.length}, minmax(0, 1fr)) 1px`,
               minWidth: `${(days.length / periodDayCount) * 100}%`,
             }}
           >
@@ -582,6 +624,22 @@ function ScheduleView({
                       <div className="text-xs text-neutral-500">
                         {day.date.day}
                       </div>
+                    </div>
+                    <div
+                      className="border-b border-neutral-800 bg-neutral-950/60 px-1 py-1 flex flex-col gap-1 overflow-hidden"
+                      style={{ height: allDayRowHeight }}
+                    >
+                      {day.allDayEvents.map((event) => (
+                        <div
+                          key={`ad-${event.id}`}
+                          className="cursor-pointer bg-amber-700/70 hover:bg-amber-600/80 text-amber-50 rounded px-2 text-[11px] font-medium truncate border border-amber-600/40"
+                          style={{ height: 20, lineHeight: '20px' }}
+                          title={event.title}
+                          onClick={() => onEventClick(event)}
+                        >
+                          {event.title}
+                        </div>
+                      ))}
                     </div>
                     <div className="relative h-[1440px] bg-neutral-950/30">
                       {resources.map((resource, resourceIdx) => {
@@ -802,7 +860,7 @@ function ScheduleView({
             </div>
             <div ref={rightSentinelRef} style={{ width: 1 }} aria-hidden />
           </div>
-        </div>
+        </ScrollArea>
       </div>
     </div>
   )
@@ -955,6 +1013,49 @@ function CalendarView() {
   const prevScrollHeightRef = useRef(0)
   const needsScrollAdjRef = useRef(false)
   const [bufferVersion, setBufferVersion] = useState(0)
+
+  const [visibleMonth, setVisibleMonth] = useState(() =>
+    calendar.formatCurrentPeriod(),
+  )
+  const rafRef = useRef<number | undefined>(undefined)
+
+  useEffect(() => {
+    setVisibleMonth(calendar.formatCurrentPeriod())
+  }, [calendar.currentPeriod])
+
+  useEffect(() => {
+    const el = monthScrollRef.current
+    if (!el) return
+
+    const compute = () => {
+      if (rafRef.current) return
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = undefined
+        const viewportRect = el.getBoundingClientRect()
+        const cells = el.querySelectorAll<HTMLElement>('[data-day-date]')
+        for (const cell of cells) {
+          const cellRect = cell.getBoundingClientRect()
+          if (cellRect.bottom > viewportRect.top) {
+            const iso = cell.getAttribute('data-day-date')
+            if (iso) {
+              const d = new Date(`${iso}T00:00:00`)
+              setVisibleMonth(
+                d.toLocaleDateString(undefined, {
+                  month: 'long',
+                  year: 'numeric',
+                }),
+              )
+            }
+            break
+          }
+        }
+      })
+    }
+
+    el.addEventListener('scroll', compute, { passive: true })
+    compute()
+    return () => el.removeEventListener('scroll', compute)
+  }, [bufferVersion])
 
   useEffect(() => {
     if (navDirectionRef.current === 'none') return
@@ -1200,6 +1301,7 @@ function CalendarView() {
         consumption: masterEvent.consumption?.[0] ?? 1,
         recurrenceFrequency: rule?.frequency ?? 'none',
         recurrenceUntil: rule?.until ?? '',
+        allDay: !!masterEvent.allDay,
       },
     })
   }
@@ -1221,10 +1323,16 @@ function CalendarView() {
             }
           : undefined
 
-      const start = `${data.startDate}T${data.startTime}:00`
-      const end = `${data.endDate}T${data.endTime}:00`
+      const start = data.allDay
+        ? `${data.startDate}T00:00:00`
+        : `${data.startDate}T${data.startTime}:00`
+      const end = data.allDay
+        ? `${data.endDate}T23:59:59`
+        : `${data.endDate}T${data.endTime}:00`
       const selectedResource = resources.find((r) => r.id === data.resourceId)
-      const eventResources = selectedResource ? [selectedResource] : []
+      const eventResources =
+        data.allDay || !selectedResource ? [] : [selectedResource]
+      const eventConsumption = data.allDay ? [] : [data.consumption]
 
       const result =
         modalState.mode === 'edit' && modalState.eventId
@@ -1234,7 +1342,8 @@ function CalendarView() {
               end,
               recurrence,
               resources: eventResources,
-              consumption: [data.consumption],
+              consumption: eventConsumption,
+              allDay: data.allDay,
             })
           : await calendar.addEvent({
               id: String(Date.now()),
@@ -1243,7 +1352,8 @@ function CalendarView() {
               end,
               recurrence,
               resources: eventResources,
-              consumption: [data.consumption],
+              consumption: eventConsumption,
+              allDay: data.allDay,
             })
 
       if (!result.success) {
@@ -1389,7 +1499,7 @@ function CalendarView() {
         </div>
 
         <div className="text-lg font-medium text-neutral-400">
-          {calendar.formatCurrentPeriod()}
+          {visibleMonth}
         </div>
       </div>
 
@@ -1409,7 +1519,9 @@ function CalendarView() {
           {/* Sticky day-name header */}
           <div
             className="grid border-b border-neutral-800 bg-neutral-950 sticky top-0 z-10"
-            style={{ gridTemplateColumns: `repeat(${dayNames.length}, 1fr)` }}
+            style={{
+              gridTemplateColumns: `repeat(${dayNames.length}, minmax(0, 1fr))`,
+            }}
           >
             {dayNames.map((dayName: string, index: number) => (
               <div
@@ -1426,17 +1538,18 @@ function CalendarView() {
           </div>
 
           {/* Scrollable month body — sentinels trigger period navigation */}
-          <div
-            ref={monthScrollRef}
-            className="overflow-y-auto"
-            style={{ maxHeight: 'calc(100vh - 260px)' }}
+          <ScrollArea
+            viewportRef={monthScrollRef}
+            className="h-[calc(100vh-260px)]"
           >
             {/* Top sentinel: triggers goToPreviousPeriod */}
             <div ref={monthTopRef} style={{ height: 1 }} aria-hidden />
 
             <div
               className="grid"
-              style={{ gridTemplateColumns: `repeat(${dayNames.length}, 1fr)` }}
+              style={{
+                gridTemplateColumns: `repeat(${dayNames.length}, minmax(0, 1fr))`,
+              }}
             >
               {bufferedWeekGroups.map(
                 (
@@ -1450,7 +1563,7 @@ function CalendarView() {
                       return (
                         <div
                           key={`empty-${weekKey}-${dayIndex}`}
-                          className={`h-[120px] bg-neutral-950/50 ${
+                          className={`min-h-[120px] bg-neutral-950/50 ${
                             dayIndex < dayNames.length - 1
                               ? 'border-r border-neutral-800'
                               : ''
@@ -1465,7 +1578,8 @@ function CalendarView() {
                     return (
                       <div
                         key={day.isoDate}
-                        className={`h-[120px] p-2 relative flex flex-col overflow-hidden ${
+                        data-day-date={day.isoDate}
+                        className={`min-h-[120px] p-2 relative flex flex-col ${
                           dayIndex < dayNames.length - 1
                             ? 'border-r border-neutral-800'
                             : ''
@@ -1488,8 +1602,18 @@ function CalendarView() {
                         >
                           {day.date.day}
                         </div>
-                        <div className="flex flex-col gap-1 overflow-hidden flex-1 min-h-0">
-                          {day.events.slice(0, 3).map((event) => (
+                        <div className="flex flex-col gap-1 flex-1 min-h-0">
+                          {day.allDayEvents.map((event) => (
+                            <Badge
+                              key={`ad-${event.id}`}
+                              className="cursor-pointer bg-amber-700/70 hover:bg-amber-600/80 text-amber-50 border border-amber-600/40 flex items-center gap-1.5 max-w-full flex-shrink-0 w-full"
+                              title={event.title}
+                              onClick={() => openEditModal(event)}
+                            >
+                              <span className="truncate">{event.title}</span>
+                            </Badge>
+                          ))}
+                          {day.events.map((event) => (
                             <ContextMenu key={event.id}>
                               <ContextMenuTrigger className="contents">
                                 <Badge
@@ -1559,11 +1683,6 @@ function CalendarView() {
                               </ContextMenuContent>
                             </ContextMenu>
                           ))}
-                          {day.events.length > 3 && (
-                            <div className="text-[10px] text-neutral-400 px-1 flex-shrink-0">
-                              +{day.events.length - 3} more
-                            </div>
-                          )}
                         </div>
                       </div>
                     )
@@ -1574,7 +1693,7 @@ function CalendarView() {
 
             {/* Bottom sentinel: triggers goToNextPeriod */}
             <div ref={monthBottomRef} style={{ height: 1 }} aria-hidden />
-          </div>
+          </ScrollArea>
         </div>
       )}
 

@@ -5,7 +5,7 @@ title: TimelineEventLayout
 
 # Interface: TimelineEventLayout\<TResource, TEvent\>
 
-Defined in: [calendar/types.ts:215](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L215)
+Defined in: [calendar/types.ts:226](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L226)
 
 ## Type Parameters
 
@@ -25,7 +25,7 @@ Defined in: [calendar/types.ts:215](https://github.com/TanStack/time/blob/main/p
 event: TEvent;
 ```
 
-Defined in: [calendar/types.ts:219](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L219)
+Defined in: [calendar/types.ts:230](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L230)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [calendar/types.ts:219](https://github.com/TanStack/time/blob/main/p
 isEndClipped: boolean;
 ```
 
-Defined in: [calendar/types.ts:226](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L226)
+Defined in: [calendar/types.ts:237](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L237)
 
 True when the event ends after the last visible day (right edge is clipped)
 
@@ -47,7 +47,7 @@ True when the event ends after the last visible day (right edge is clipped)
 isStartClipped: boolean;
 ```
 
-Defined in: [calendar/types.ts:224](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L224)
+Defined in: [calendar/types.ts:235](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L235)
 
 True when the event starts before the first visible day (left edge is clipped)
 
@@ -59,7 +59,7 @@ True when the event starts before the first visible day (left edge is clipped)
 lane: number;
 ```
 
-Defined in: [calendar/types.ts:222](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L222)
+Defined in: [calendar/types.ts:233](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L233)
 
 ***
 
@@ -69,7 +69,7 @@ Defined in: [calendar/types.ts:222](https://github.com/TanStack/time/blob/main/p
 left: number;
 ```
 
-Defined in: [calendar/types.ts:220](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L220)
+Defined in: [calendar/types.ts:231](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L231)
 
 ***
 
@@ -79,4 +79,4 @@ Defined in: [calendar/types.ts:220](https://github.com/TanStack/time/blob/main/p
 width: number;
 ```
 
-Defined in: [calendar/types.ts:221](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L221)
+Defined in: [calendar/types.ts:232](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L232)

@@ -3342,6 +3342,103 @@ describe('CalendarCore', () => {
         expect(s.end).toBe(`${DATE_MON}T16:00:00`)
         expect(s.dependsOn ?? []).toEqual([])
       })
+
+      test('blocks circular dependency: A->B, B->C, try C->A', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'a',
+              title: 'A',
+              start: `${DATE_MON}T08:00:00`,
+              end: `${DATE_MON}T09:00:00`,
+              resources: ['r1'],
+            },
+            {
+              id: 'b',
+              title: 'B',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+              resources: ['r1'],
+              dependsOn: [{ id: 'a', type: 'FS' as const }],
+            },
+            {
+              id: 'c',
+              title: 'C',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: ['r1'],
+              dependsOn: [{ id: 'b', type: 'FS' as const }],
+            },
+          ],
+          resources: [weekdayResource],
+        })
+
+        const result = cal.createDependency('c', 'a', 'FS')
+        assert(result.blocked)
+        expect(result.error?.reason).toBe('blocked')
+        expect(result.error?.message).toContain('circular dependency')
+      })
+
+      test('blocks self-dependency', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'a',
+              title: 'A',
+              start: `${DATE_MON}T08:00:00`,
+              end: `${DATE_MON}T09:00:00`,
+              resources: ['r1'],
+            },
+          ],
+          resources: [weekdayResource],
+        })
+
+        const result = cal.createDependency('a', 'a', 'FS')
+        assert(result.blocked)
+        expect(result.error?.reason).toBe('blocked')
+        expect(result.error?.message).toContain('circular dependency')
+      })
+
+      test('allows non-circular chain: A->B, B->C, C->D', () => {
+        const cal = createCalendar({
+          events: [
+            {
+              id: 'a',
+              title: 'A',
+              start: `${DATE_MON}T08:00:00`,
+              end: `${DATE_MON}T09:00:00`,
+              resources: ['r1'],
+            },
+            {
+              id: 'b',
+              title: 'B',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+              resources: ['r1'],
+              dependsOn: [{ id: 'a', type: 'FS' as const }],
+            },
+            {
+              id: 'c',
+              title: 'C',
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: ['r1'],
+              dependsOn: [{ id: 'b', type: 'FS' as const }],
+            },
+            {
+              id: 'd',
+              title: 'D',
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: ['r1'],
+            },
+          ],
+          resources: [weekdayResource],
+        })
+
+        const result = cal.createDependency('c', 'd', 'FS')
+        assert(!result.blocked)
+      })
     })
 
     describe('commitUpdate forward cascade per type', () => {
@@ -5081,6 +5178,84 @@ describe('CalendarCore', () => {
         cal.redo()
         expect(cal.canRedo()).toBe(false)
       })
+    })
+  })
+
+  describe('setResources', () => {
+    test('replaces resources and invalidates availability caches', () => {
+      const cal = createCalendar({ resources: [weekdayResource] })
+      const ranges1 = cal.getUnavailableRanges(DATE_MON, {
+        containerHeight: 1000,
+        resourceIds: [weekdayResource.id],
+      })
+      expect(ranges1.length).toBeGreaterThan(0)
+      cal.setResources([allDayResource])
+      const ranges2 = cal.getUnavailableRanges(DATE_MON, {
+        containerHeight: 1000,
+        resourceIds: [allDayResource.id],
+      })
+      expect(ranges2).toHaveLength(0)
+    })
+
+    test('accepts null to clear resources', () => {
+      const cal = createCalendar({ resources: [weekdayResource] })
+      cal.setResources(null)
+      const ranges = cal.getUnavailableRanges(DATE_MON, {
+        containerHeight: 1000,
+        resourceIds: [weekdayResource.id],
+      })
+      expect(ranges).toHaveLength(0)
+    })
+  })
+
+  describe('setEvents', () => {
+    test('replaces events and invalidates availability caches', () => {
+      const res: TestResource = {
+        id: 'r-cap',
+        label: 'Cap',
+        capacity: [1],
+        availability: [
+          { weekdays: [1, 2, 3, 4, 5], startTime: '09:00', endTime: '17:00' },
+        ],
+      }
+      const cal = createCalendar({
+        resources: [res],
+        events: [
+          {
+            id: 'a',
+            title: 'A',
+            start: `${DATE_MON}T09:00:00`,
+            end: `${DATE_MON}T10:00:00`,
+            resources: [res],
+            consumption: [1],
+          },
+        ],
+      })
+      expect(cal.getEvents()).toHaveLength(1)
+      cal.setEvents([])
+      expect(cal.getEvents()).toHaveLength(0)
+      const result = cal.validateEventPlacement({
+        title: 'New',
+        start: `${DATE_MON}T09:00:00`,
+        end: `${DATE_MON}T10:00:00`,
+        resources: [res],
+        consumption: [1],
+      })
+      expect(result.blocked).toBe(false)
+    })
+
+    test('reindexes after setEvents', () => {
+      const cal = createCalendar({ events: [] as any, resources: [] })
+      cal.setEvents([
+        {
+          id: 'x',
+          title: 'X',
+          start: `${DATE_MON}T09:00:00`,
+          end: `${DATE_MON}T10:00:00`,
+        },
+      ] as any)
+      expect(cal.getEvents()).toHaveLength(1)
+      expect(cal.getEventsByDate(DATE_MON)).toHaveLength(1)
     })
   })
 })

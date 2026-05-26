@@ -21,7 +21,7 @@ Defined in: [calendar/types.ts:78](https://github.com/TanStack/time/blob/main/pa
 optional _occurrenceIndex: number;
 ```
 
-Defined in: [calendar/types.ts:101](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L101)
+Defined in: [calendar/types.ts:109](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L109)
 
 0-based index of this occurrence within the recurring series.
 
@@ -33,7 +33,7 @@ Defined in: [calendar/types.ts:101](https://github.com/TanStack/time/blob/main/p
 optional _originalEnd: string;
 ```
 
-Defined in: [calendar/types.ts:94](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L94)
+Defined in: [calendar/types.ts:102](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L102)
 
 Original end time before splitting (only set on split segments of multi-day events)
 
@@ -45,7 +45,7 @@ Original end time before splitting (only set on split segments of multi-day even
 optional _originalStart: string;
 ```
 
-Defined in: [calendar/types.ts:92](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L92)
+Defined in: [calendar/types.ts:100](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L100)
 
 Original start time before splitting (only set on split segments of multi-day events)
 
@@ -57,10 +57,26 @@ Original start time before splitting (only set on split segments of multi-day ev
 optional _recurringMasterId: string;
 ```
 
-Defined in: [calendar/types.ts:99](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L99)
+Defined in: [calendar/types.ts:107](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L107)
 
 ID of the master recurring event this occurrence was generated from.
 Only present on ephemeral occurrence instances (index > 0).
+
+***
+
+### allDay?
+
+```ts
+optional allDay: boolean;
+```
+
+Defined in: [calendar/types.ts:98](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L98)
+
+When true, event spans full day(s) and is rendered in the all-day strip
+separately from timed events. `start` and `end` are still ISO datetime strings;
+for an all-day event use the day's start (00:00:00) and the inclusive day's
+end (23:59:59) — or any time within those days. Multi-day all-day events
+are split per-day like regular events.
 
 ***
 
@@ -123,7 +139,7 @@ Defines how and when this event repeats.
 ### resources?
 
 ```ts
-optional resources: TResource[];
+optional resources: (string | TResource)[];
 ```
 
 Defined in: [calendar/types.ts:83](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L83)
