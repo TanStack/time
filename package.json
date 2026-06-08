@@ -21,6 +21,7 @@
     "dev": "pnpm run watch",
     "format": "prettier --experimental-cli --ignore-unknown '**/*' --write",
     "generate-docs": "node scripts/generate-docs.ts && pnpm run copy:readme",
+    "graphify": "node scripts/graphify.ts",
     "lint:fix": "nx affected --target=lint:fix --exclude=examples/**",
     "lint:fix:all": "nx run-many --targets=lint --fix",
     "test": "pnpm run test:ci",
