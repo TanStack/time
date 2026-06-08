@@ -6,6 +6,9 @@
     "url": "git+https://github.com/TanStack/time.git"
   },
   "packageManager": "pnpm@11.1.0",
+  "engines": {
+    "pnpm": ">=11.0.0"
+  },
   "type": "module",
   "scripts": {
     "build": "nx affected --skip-nx-cache --targets=build --exclude=examples/**",
@@ -44,9 +47,9 @@
     ]
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.7.0",
     "@changesets/cli": "^2.29.8",
     "@faker-js/faker": "^10.2.0",
-    "@svitejs/changesets-changelog-github-compact": "^1.2.0",
     "@tanstack/eslint-config": "0.3.4",
     "@tanstack/typedoc-config": "0.3.3",
     "@testing-library/jest-dom": "^6.9.1",
