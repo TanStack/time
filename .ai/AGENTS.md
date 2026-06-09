@@ -49,6 +49,12 @@ TanStack Time is a headless time/calendar utility library for TS/JS, React, Soli
 - `Methodology.md` — API design philosophy
 - `TODO.md` — roadmap
 
+## Navigation
+
+- Read `.ai/graph.json` before exploring. It contains the full package map, file lists, exports, dependencies, and test locations.
+- Use the `edges` array to trace internal dependencies and identify affected packages before modifying core logic.
+- If `graph.json` is stale or missing, run `pnpm run graphify` to regenerate it.
+
 ## Agent Rules
 
 - Do not add comments to source code.

@@ -38,11 +38,13 @@ packages/
 ## Public API Surface
 
 Core exports from `@tanstack/time`:
+
 - Date primitives: `add`, `subtract`, `startOf`, `endOf`, `format`, `parse`, `equals`, `isBefore`, `isAfter`, `isBetween`, `range`, `since`, `until`
 - Calendar: `CalendarCore`, `DateCore`, event helpers, recurrence logic
 - Types: `CalendarEvent`, `CalendarResource`, `ResizeState`, etc.
 
 React exports from `@tanstack/react-time`:
+
 - `useCalendar` hook
 - `ResizeState`, `ResizeOptions`, `UseCalendarOptions`
 - Re-exports of core event utilities and types

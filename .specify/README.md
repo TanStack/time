@@ -48,19 +48,20 @@ specs/
 
 ## Commands
 
-| Command | Purpose | When to run |
-|---------|---------|-------------|
-| `/speckit.constitution` | Create/update project principles | First, before any feature |
-| `/speckit.specify` | Write functional requirements | For each new feature |
-| `/speckit.clarify` | Ask clarifying questions | After specify, before plan |
-| `/speckit.plan` | Write technical plan | After clarify/specify |
-| `/speckit.analyze` | Check spec-plan-task coverage | After tasks, before implement |
-| `/speckit.tasks` | Break plan into tasks | After plan |
-| `/speckit.implement` | Execute task breakdown | After tasks |
+| Command                 | Purpose                          | When to run                   |
+| ----------------------- | -------------------------------- | ----------------------------- |
+| `/speckit.constitution` | Create/update project principles | First, before any feature     |
+| `/speckit.specify`      | Write functional requirements    | For each new feature          |
+| `/speckit.clarify`      | Ask clarifying questions         | After specify, before plan    |
+| `/speckit.plan`         | Write technical plan             | After clarify/specify         |
+| `/speckit.analyze`      | Check spec-plan-task coverage    | After tasks, before implement |
+| `/speckit.tasks`        | Break plan into tasks            | After plan                    |
+| `/speckit.implement`    | Execute task breakdown           | After tasks                   |
 
 ## Constitution
 
 Read `.specify/memory/constitution.md` before any development. It defines:
+
 - Zero comments in source code
 - Headless core, thin adapters
 - No Temporal leakage in public API

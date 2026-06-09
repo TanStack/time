@@ -346,6 +346,20 @@ export class CalendarCore<
   >()
   private _weekdayCache = new Map<string, number>()
 
+  /**
+   * Monotonic counter bumped whenever event state or resource availability
+   * changes in a way that affects {@link getEventMap}. Drives memoization of
+   * the built event map so repeated calls within (and across) renders don't
+   * re-iterate and re-parse every event.
+   */
+  private _mapVersion = 0
+  private _eventMapCache = new Map<string, Map<string, Array<TEvent>>>()
+  private _eventMapCacheVersion = -1
+
+  private _bumpMapVersion() {
+    this._mapVersion++
+  }
+
   private _resolveEventResources(event: {
     resources?: Array<TResource | string>
   }): Array<TResource> {
@@ -384,6 +398,7 @@ export class CalendarCore<
   }
 
   private _indexAddEvent(event: TEvent) {
+    this._bumpMapVersion()
     this._eventMap.set(event.id, event)
     const dk = this._eventDateKey(event)
     if (!this._dateIndex.has(dk)) this._dateIndex.set(dk, new Set())
@@ -397,6 +412,7 @@ export class CalendarCore<
   }
 
   private _indexRemoveEvent(event: TEvent) {
+    this._bumpMapVersion()
     this._eventMap.delete(event.id)
     const dk = this._eventDateKey(event)
     const bucket = this._dateIndex.get(dk)
@@ -411,6 +427,7 @@ export class CalendarCore<
   }
 
   private _indexUpdateEvent(prev: TEvent, next: TEvent) {
+    this._bumpMapVersion()
     this._eventMap.set(next.id, next)
 
     const prevDk = this._eventDateKey(prev)
@@ -555,8 +572,6 @@ export class CalendarCore<
   }
 
   private getEventMap(window?: { start: string; end: string }) {
-    const map = new Map<string, Array<TEvent>>()
-
     let windowStart: string | null
     let windowEnd: string | null
     if (window) {
@@ -575,6 +590,21 @@ export class CalendarCore<
             })
           : null
     }
+
+    // Memoize per window range, invalidated by _mapVersion. The window only
+    // controls recurring-event expansion (non-recurring events are placed
+    // regardless of window), so the key is the resolved range. Without this,
+    // a single render calling getEventsByDate per day re-iterates and
+    // re-parses every event D times.
+    if (this._eventMapCacheVersion !== this._mapVersion) {
+      this._eventMapCache.clear()
+      this._eventMapCacheVersion = this._mapVersion
+    }
+    const cacheKey = `${windowStart ?? ''}|${windowEnd ?? ''}`
+    const cached = this._eventMapCache.get(cacheKey)
+    if (cached) return cached
+
+    const map = new Map<string, Array<TEvent>>()
 
     const placeEvent = (ev: TEvent) => {
       const startStr = ev.start as string
@@ -639,6 +669,8 @@ export class CalendarCore<
         }
       }
     }
+
+    this._eventMapCache.set(cacheKey, map)
     return map
   }
 
@@ -885,8 +917,8 @@ export class CalendarCore<
       calendarName: 'never',
     })
     const eventMap = this.getEventMap()
-    const all = eventMap.get(targetDate) ?? []
-    return all
+    const all = eventMap.get(targetDate)
+    return all ? [...all] : []
   }
 
   getAllDayEventsByDate(date: string): Array<TEvent> {
@@ -3148,6 +3180,9 @@ export class CalendarCore<
     this.options.resources = resources
     this._resourceDayAvailCache.clear()
     this._mergedUnavailMinuteCache.clear()
+    // Recurring-event availability conflicts depend on resources, so the
+    // memoized event map must be invalidated.
+    this._bumpMapVersion()
   }
 
   /**
@@ -3160,6 +3195,9 @@ export class CalendarCore<
     this._dateIndex.clear()
     this._resourceDayAvailCache.clear()
     this._mergedUnavailMinuteCache.clear()
+    // _indexAddEvent bumps the version per event, but an empty/null list adds
+    // nothing — bump explicitly so the memoized event map is invalidated.
+    this._bumpMapVersion()
     this.options.events?.forEach((e) => this._indexAddEvent(e))
   }
 }
