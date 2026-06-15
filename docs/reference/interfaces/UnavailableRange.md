@@ -5,7 +5,7 @@ title: UnavailableRange
 
 # Interface: UnavailableRange
 
-Defined in: [calendar/types.ts:138](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L138)
+Defined in: [calendar/types.ts:163](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L163)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/types.ts:138](https://github.com/TanStack/time/blob/main/p
 endTime: string;
 ```
 
-Defined in: [calendar/types.ts:146](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L146)
+Defined in: [calendar/types.ts:171](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L171)
 
 End time as HH:mm string
 
@@ -27,7 +27,7 @@ End time as HH:mm string
 height: number;
 ```
 
-Defined in: [calendar/types.ts:142](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L142)
+Defined in: [calendar/types.ts:167](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L167)
 
 Height in pixels
 
@@ -39,7 +39,7 @@ Height in pixels
 startTime: string;
 ```
 
-Defined in: [calendar/types.ts:144](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L144)
+Defined in: [calendar/types.ts:169](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L169)
 
 Start time as HH:mm string
 
@@ -51,6 +51,6 @@ Start time as HH:mm string
 top: number;
 ```
 
-Defined in: [calendar/types.ts:140](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L140)
+Defined in: [calendar/types.ts:165](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L165)
 
 Top position in pixels

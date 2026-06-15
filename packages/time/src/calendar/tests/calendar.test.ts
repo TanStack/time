@@ -5431,14 +5431,17 @@ describe('CalendarCore', () => {
       expect(cal.getEventsByDate('2025-06-16')).toHaveLength(1)
     })
 
-
     test('validateResize checks capacity for a recurring occurrence', () => {
       const room: TestResource = {
         id: 'rec-room',
         label: 'Recurring Room',
         capacity: [1],
         availability: [
-          { weekdays: [1, 2, 3, 4, 5, 6, 7], startTime: '00:00', endTime: '24:00' },
+          {
+            weekdays: [1, 2, 3, 4, 5, 6, 7],
+            startTime: '00:00',
+            endTime: '24:00',
+          },
         ],
       }
       const cal = createCalendar({
@@ -5523,5 +5526,4 @@ describe('CalendarCore', () => {
       expect(removeCal.getEvents()).toHaveLength(0)
     })
   })
-
 })

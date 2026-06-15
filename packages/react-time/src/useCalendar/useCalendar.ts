@@ -253,7 +253,6 @@ export const useCalendar = <
     [calendarCore],
   )
 
-
   const editRecurringEvent = useCallback<
     typeof calendarCore.editRecurringEvent
   >(

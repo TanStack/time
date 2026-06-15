@@ -5,7 +5,7 @@ title: ResizeStartArgs
 
 # Interface: ResizeStartArgs
 
-Defined in: [calendar/resizeController.ts:33](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L33)
+Defined in: [calendar/resizeController.ts:47](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L47)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/resizeController.ts:33](https://github.com/TanStack/time/b
 clientX: number;
 ```
 
-Defined in: [calendar/resizeController.ts:38](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L38)
+Defined in: [calendar/resizeController.ts:54](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L54)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [calendar/resizeController.ts:38](https://github.com/TanStack/time/b
 clientY: number;
 ```
 
-Defined in: [calendar/resizeController.ts:39](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L39)
+Defined in: [calendar/resizeController.ts:55](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L55)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [calendar/resizeController.ts:39](https://github.com/TanStack/time/b
 edge: ResizeEdge;
 ```
 
-Defined in: [calendar/resizeController.ts:35](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L35)
+Defined in: [calendar/resizeController.ts:49](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L49)
 
 ***
 
@@ -45,7 +45,17 @@ Defined in: [calendar/resizeController.ts:35](https://github.com/TanStack/time/b
 eventId: string;
 ```
 
-Defined in: [calendar/resizeController.ts:34](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L34)
+Defined in: [calendar/resizeController.ts:48](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L48)
+
+***
+
+### occurrenceStart?
+
+```ts
+optional occurrenceStart: EventDateTimeInput;
+```
+
+Defined in: [calendar/resizeController.ts:52](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L52)
 
 ***
 
@@ -55,7 +65,7 @@ Defined in: [calendar/resizeController.ts:34](https://github.com/TanStack/time/b
 originalEnd: string;
 ```
 
-Defined in: [calendar/resizeController.ts:37](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L37)
+Defined in: [calendar/resizeController.ts:51](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L51)
 
 ***
 
@@ -65,7 +75,17 @@ Defined in: [calendar/resizeController.ts:37](https://github.com/TanStack/time/b
 originalStart: string;
 ```
 
-Defined in: [calendar/resizeController.ts:36](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L36)
+Defined in: [calendar/resizeController.ts:50](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L50)
+
+***
+
+### recurrenceScope?
+
+```ts
+optional recurrenceScope: RecurrenceEditScope;
+```
+
+Defined in: [calendar/resizeController.ts:53](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L53)
 
 ***
 
@@ -75,7 +95,7 @@ Defined in: [calendar/resizeController.ts:36](https://github.com/TanStack/time/b
 optional target: HTMLElement | null;
 ```
 
-Defined in: [calendar/resizeController.ts:44](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L44)
+Defined in: [calendar/resizeController.ts:60](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L60)
 
 Optional element under the pointer (e.g. `e.target as HTMLElement`).
 Used to resolve the originating day column without `getBoundingClientRect`.

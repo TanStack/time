@@ -580,7 +580,8 @@ export class CalendarCore<
   private normalizeEvent<
     T extends { start: string | Date | number; end: string | Date | number },
   >(event: T): T {
-    const recurrence = (event as { recurrence?: TEvent['recurrence'] }).recurrence
+    const recurrence = (event as { recurrence?: TEvent['recurrence'] })
+      .recurrence
     return {
       ...event,
       start: toPlainDateTimeString(event.start),
@@ -1664,8 +1665,10 @@ export class CalendarCore<
     )
     if (override?.start != null) {
       const overrideDate = toPlainDateTimeString(override.start).split('T')[0]!
-      windowStart = overrideDate < occurrenceDate ? overrideDate : occurrenceDate
-      const maxDate = overrideDate > occurrenceDate ? overrideDate : occurrenceDate
+      windowStart =
+        overrideDate < occurrenceDate ? overrideDate : occurrenceDate
+      const maxDate =
+        overrideDate > occurrenceDate ? overrideDate : occurrenceDate
       windowEnd = Temporal.PlainDate.from(maxDate)
         .add({ days: 1 })
         .toString({ calendarName: 'never' })
@@ -1678,7 +1681,8 @@ export class CalendarCore<
     )
     return (
       occurrences.find(
-        (occ) => (occ._occurrenceOriginalStart ?? occ.start) === occurrenceStart,
+        (occ) =>
+          (occ._occurrenceOriginalStart ?? occ.start) === occurrenceStart,
       ) ?? null
     )
   }
@@ -1693,9 +1697,14 @@ export class CalendarCore<
 
     if (master?.recurrence) {
       const resolvedOccurrenceStart =
-        occurrenceStart ?? (direct ? toPlainDateTimeString(direct.start) : originalStart)
+        occurrenceStart ??
+        (direct ? toPlainDateTimeString(direct.start) : originalStart)
       if (resolvedOccurrenceStart) {
-        return this._getRecurringOccurrence(master, resolvedOccurrenceStart) ?? direct ?? master
+        return (
+          this._getRecurringOccurrence(master, resolvedOccurrenceStart) ??
+          direct ??
+          master
+        )
       }
     }
 
@@ -1726,7 +1735,13 @@ export class CalendarCore<
           end: string
           updates: Record<string, unknown>
         }
-      | { type: 'removed'; eventId: string; eventTitle: string; start: string; end: string },
+      | {
+          type: 'removed'
+          eventId: string
+          eventTitle: string
+          start: string
+          end: string
+        },
   ) {
     if (!this.options.events) return
     const index = this.options.events.indexOf(master)
@@ -2318,7 +2333,9 @@ export class CalendarCore<
     }
 
     if (!master.recurrence || options.scope === 'all') {
-      return this.editEvent(master.id, updates, { dependsOn: options.dependsOn })
+      return this.editEvent(master.id, updates, {
+        dependsOn: options.dependsOn,
+      })
     }
 
     const occurrenceStart = this._resolveOccurrenceStart(
@@ -2361,9 +2378,9 @@ export class CalendarCore<
     const newStartDateStr = effectiveStart.slice(0, 10)
     const rangeStart =
       oldStartDateStr < newStartDateStr ? oldStartDateStr : newStartDateStr
-    const oldEndDate = Temporal.PlainDate.from(occurrenceEndStr.slice(0, 10)).add(
-      { days: 1 },
-    )
+    const oldEndDate = Temporal.PlainDate.from(
+      occurrenceEndStr.slice(0, 10),
+    ).add({ days: 1 })
     const newEndDate = Temporal.PlainDate.from(effectiveEnd.slice(0, 10)).add({
       days: 1,
     })
@@ -2443,7 +2460,8 @@ export class CalendarCore<
 
     if (options.scope === 'this') {
       const exDates = (rule.exDates ?? []).filter(
-        (value) => !this._recurrenceInputMatchesOccurrence(value, occurrenceStart),
+        (value) =>
+          !this._recurrenceInputMatchesOccurrence(value, occurrenceStart),
       )
       const overrides = (rule.overrides ?? []).filter(
         (override) =>
@@ -2493,7 +2511,9 @@ export class CalendarCore<
 
     const masterStart = toPlainDateTimeString(master.start)
     if (occurrenceStart === masterStart) {
-      return this.editEvent(master.id, updates, { dependsOn: options.dependsOn })
+      return this.editEvent(master.id, updates, {
+        dependsOn: options.dependsOn,
+      })
     }
 
     const splitDate = occurrenceStart.split('T')[0]!
@@ -2504,10 +2524,13 @@ export class CalendarCore<
     const remainingRule = this._normalizeRecurrenceDateTimeInputs({
       ...rule,
       ...(rule.count !== undefined && rule.until === undefined
-        ? { count: Math.max(1, rule.count - (occurrence._occurrenceIndex ?? 0)) }
+        ? {
+            count: Math.max(1, rule.count - (occurrence._occurrenceIndex ?? 0)),
+          }
         : {}),
       exDates: rule.exDates?.filter(
-        (value) => this._compareRecurrenceInputToOccurrence(value, occurrenceStart) > 0,
+        (value) =>
+          this._compareRecurrenceInputToOccurrence(value, occurrenceStart) > 0,
       ),
       overrides: rule.overrides?.filter(
         (override) =>
@@ -2583,7 +2606,8 @@ export class CalendarCore<
 
     if (options.scope === 'this') {
       const exDates = (rule.exDates ?? []).filter(
-        (value) => !this._recurrenceInputMatchesOccurrence(value, occurrenceStart),
+        (value) =>
+          !this._recurrenceInputMatchesOccurrence(value, occurrenceStart),
       )
       exDates.push(occurrenceStart)
       const overrides = (rule.overrides ?? []).filter(
@@ -3285,7 +3309,11 @@ export class CalendarCore<
       options.occurrenceStart != null
         ? toPlainDateTimeString(options.occurrenceStart)
         : undefined
-    const event = this._resolveResizeEvent(eventId, occurrenceStart, originalStart)
+    const event = this._resolveResizeEvent(
+      eventId,
+      occurrenceStart,
+      originalStart,
+    )
     const resourceIds = event ? this._getEventResourceIds(event) : undefined
 
     const unavailableRanges = this.getUnavailableMinuteRanges(targetDayDate, {

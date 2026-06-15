@@ -1930,7 +1930,6 @@ function CalendarView() {
         onClose={() => setScopeChoiceEvent(null)}
       />
 
-
       <ScopeChoiceModal
         event={null}
         title="Resize recurring event"

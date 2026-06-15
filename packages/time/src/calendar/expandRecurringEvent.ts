@@ -69,13 +69,21 @@ export function expandRecurringEvent<
     }
   }
 
-  const overridesByDateTime = new Map<string, NonNullable<typeof rule.overrides>[number]>()
-  const overridesByDate = new Map<string, NonNullable<typeof rule.overrides>[number]>()
+  const overridesByDateTime = new Map<
+    string,
+    NonNullable<typeof rule.overrides>[number]
+  >()
+  const overridesByDate = new Map<
+    string,
+    NonNullable<typeof rule.overrides>[number]
+  >()
   for (const override of rule.overrides ?? []) {
     const originalStart = override.originalStart
     if (typeof originalStart === 'string' && !originalStart.includes('T')) {
       overridesByDate.set(
-        Temporal.PlainDate.from(originalStart).toString({ calendarName: 'never' }),
+        Temporal.PlainDate.from(originalStart).toString({
+          calendarName: 'never',
+        }),
         override,
       )
     } else {
@@ -151,7 +159,10 @@ export function expandRecurringEvent<
               Temporal.PlainDateTime.compare(candidate, masterStart) >= 0,
           )
           .sort(Temporal.PlainDateTime.compare)
-          .map((candidate) => [candidate.toString({ smallestUnit: 'second' }), candidate]),
+          .map((candidate) => [
+            candidate.toString({ smallestUnit: 'second' }),
+            candidate,
+          ]),
       ).values(),
     )
 
@@ -166,14 +177,21 @@ export function expandRecurringEvent<
         return occurrences
       }
 
-      if (!untilDate && rule.count !== undefined && occurrenceIndex >= rule.count) {
+      if (
+        !untilDate &&
+        rule.count !== undefined &&
+        occurrenceIndex >= rule.count
+      ) {
         return occurrences
       }
 
-      const originalStartStr = candidateStart.toString({ smallestUnit: 'second' })
+      const originalStartStr = candidateStart.toString({
+        smallestUnit: 'second',
+      })
       const originalEndStr = addDuration(originalStartStr)
       const override =
-        overridesByDateTime.get(originalStartStr) ?? overridesByDate.get(candidateDateStr)
+        overridesByDateTime.get(originalStartStr) ??
+        overridesByDate.get(candidateDateStr)
 
       const excluded =
         exDateTimes.has(originalStartStr) || exDates.has(candidateDateStr)
@@ -199,7 +217,8 @@ export function expandRecurringEvent<
           .toString({ calendarName: 'never' })
 
         if (
-          occurrenceDate >= windowStartDate.toString({ calendarName: 'never' }) &&
+          occurrenceDate >=
+            windowStartDate.toString({ calendarName: 'never' }) &&
           occurrenceDate < windowEndDate.toString({ calendarName: 'never' })
         ) {
           const overrideFields = override
