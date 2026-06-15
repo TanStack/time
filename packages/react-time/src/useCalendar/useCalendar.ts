@@ -13,6 +13,7 @@ import type {
   CalendarApi,
   CalendarCoreOptions,
   DependencyType,
+  RecurrenceEditScope,
   Event,
   EventDateTimeInput,
   EventDependency,
@@ -33,6 +34,11 @@ export type ResizeOptions = ResizeControllerOptions
 
 interface ResizeHandleHandlers {
   onMouseDown: (e: React.MouseEvent) => void
+}
+
+interface ResizeHandleOptions {
+  occurrenceStart?: EventDateTimeInput
+  recurrenceScope?: RecurrenceEditScope
 }
 
 interface DayColumnProps {
@@ -59,6 +65,7 @@ export const useCalendar = <
     edge: ResizeEdge,
     originalStart: string,
     originalEnd: string,
+    options?: ResizeHandleOptions,
   ) => ResizeHandleHandlers
   getDayColumnProps: (dayDate: string) => DayColumnProps
 } => {
@@ -106,8 +113,9 @@ export const useCalendar = <
       edge: ResizeEdge,
       originalStart: string,
       originalEnd: string,
+      handleOptions?: ResizeHandleOptions,
     ): ResizeHandleHandlers => {
-      const key = `${eventId}|${edge}|${originalStart}|${originalEnd}`
+      const key = `${eventId}|${edge}|${originalStart}|${originalEnd}|${handleOptions?.occurrenceStart ?? ''}|${handleOptions?.recurrenceScope ?? ''}`
       const cache = resizeHandlePropsCacheRef.current
       const cached = cache.get(key)
       if (cached) return cached
@@ -119,6 +127,8 @@ export const useCalendar = <
             edge,
             originalStart,
             originalEnd,
+            occurrenceStart: handleOptions?.occurrenceStart,
+            recurrenceScope: handleOptions?.recurrenceScope,
             clientX: e.clientX,
             clientY: e.clientY,
             target: e.target as HTMLElement | null,
@@ -243,6 +253,22 @@ export const useCalendar = <
     [calendarCore],
   )
 
+
+  const editRecurringEvent = useCallback<
+    typeof calendarCore.editRecurringEvent
+  >(
+    (eventId, updates, editOptions) =>
+      calendarCore.editRecurringEvent(eventId, updates, editOptions),
+    [calendarCore],
+  )
+
+  const removeRecurringEvent = useCallback<
+    typeof calendarCore.removeRecurringEvent
+  >(
+    (eventId, removeOptions) =>
+      calendarCore.removeRecurringEvent(eventId, removeOptions),
+    [calendarCore],
+  )
   const removeEvent = useCallback<typeof calendarCore.removeEvent>(
     (id) => calendarCore.removeEvent(id),
     [calendarCore],
@@ -360,6 +386,16 @@ export const useCalendar = <
     [calendarCore],
   )
 
+  const setResources = useCallback<typeof calendarCore.setResources>(
+    (resources) => calendarCore.setResources(resources),
+    [calendarCore],
+  )
+
+  const setEvents = useCallback<typeof calendarCore.setEvents>(
+    (events) => calendarCore.setEvents(events),
+    [calendarCore],
+  )
+
   return {
     activeDate: state.activeDate.toString(),
     currentPeriod: state.currentPeriod.toString(),
@@ -380,7 +416,9 @@ export const useCalendar = <
     getEventProps,
     addEvent,
     editEvent,
+    editRecurringEvent,
     removeEvent,
+    removeRecurringEvent,
     isPending,
     groupDaysBy,
     resizeState,
@@ -405,5 +443,7 @@ export const useCalendar = <
     goToNextOccurrence,
     goToPreviousOccurrence,
     getMasterEvent,
+    setResources,
+    setEvents,
   }
 }

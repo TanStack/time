@@ -12,6 +12,8 @@ import { useInfiniteScroll } from './lib/useInfiniteScroll'
 import type {
   Day,
   Event,
+  EventDateTimeInput,
+  RecurrenceEditScope,
   RecurrenceFrequency,
   RecurrenceRule,
   ResizeError,
@@ -78,6 +80,10 @@ function dateTimeOnWeekday(
   const d = weekdayAt(isoWeekday)
   d.setHours(hour, minute, 0, 0)
   return `${formatDateToISO(d)}T${padTimePart(hour)}:${padTimePart(minute)}:00`
+}
+
+function getResourceId(resource: Resource | string): string {
+  return typeof resource === 'string' ? resource : resource.id
 }
 
 const sampleResources: Array<Resource> = [
@@ -174,6 +180,15 @@ function getSampleEvents(): Array<Event<Resource>> {
         frequency: 'daily',
         interval: 1,
         byWeekday: undefined,
+        exDates: [dateTimeOnWeekday(3, 9, 0)],
+        overrides: [
+          {
+            originalStart: dateTimeOnWeekday(2, 9, 0),
+            start: dateTimeOnWeekday(2, 15, 0),
+            end: dateTimeOnWeekday(2, 15, 15),
+            title: '☀ Daily Stand-up moved (A:1)',
+          },
+        ],
       },
     },
     {
@@ -187,6 +202,7 @@ function getSampleEvents(): Array<Event<Resource>> {
         frequency: 'weekly',
         interval: 1,
         byWeekday: [1],
+        count: 6,
       },
     },
     {
@@ -230,6 +246,7 @@ interface EventFormData {
   consumption: number
   recurrenceFrequency: RecurrenceFrequency | 'none'
   recurrenceUntil: string
+  recurrenceEditScope: RecurrenceEditScope
   allDay: boolean
 }
 
@@ -243,6 +260,7 @@ const emptyFormData: EventFormData = {
   consumption: 1,
   recurrenceFrequency: 'none',
   recurrenceUntil: '',
+  recurrenceEditScope: 'this',
   allDay: false,
 }
 
@@ -252,6 +270,7 @@ function EventModal({
   onSave,
   onDelete,
   initialData,
+  isRecurring,
   mode,
   isSaving,
   resources,
@@ -259,9 +278,10 @@ function EventModal({
   isOpen: boolean
   onClose: () => void
   onSave: (data: EventFormData) => Promise<void>
-  onDelete?: () => void
+  onDelete?: (data: EventFormData) => void
   initialData: EventFormData
   mode: 'add' | 'edit'
+  isRecurring?: boolean
   isSaving?: boolean
   resources: Array<Resource>
 }) {
@@ -290,6 +310,15 @@ function EventModal({
     { value: 'weekly', label: 'Weekly' },
     { value: 'monthly', label: 'Monthly' },
     { value: 'yearly', label: 'Yearly' },
+  ]
+
+  const recurrenceEditScopeOptions: Array<{
+    value: RecurrenceEditScope
+    label: string
+  }> = [
+    { value: 'this', label: 'This event only' },
+    { value: 'thisAndFollowing', label: 'This and following events' },
+    { value: 'all', label: 'All events in series' },
   ]
 
   return (
@@ -421,6 +450,32 @@ function EventModal({
             </div>
           </div>
 
+          {mode === 'edit' && isRecurring && (
+            <div className="space-y-2 rounded-md border border-neutral-800 bg-neutral-950/60 p-3">
+              <Label htmlFor="recurrenceEditScope">Apply changes to</Label>
+              <select
+                id="recurrenceEditScope"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                value={formData.recurrenceEditScope}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    recurrenceEditScope: e.target.value as RecurrenceEditScope,
+                  })
+                }
+              >
+                {recurrenceEditScopeOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-neutral-500">
+                Save or Delete uses selected recurring-event scope.
+              </p>
+            </div>
+          )}
+
           {/* ── Recurrence ───────────────────────────────────────────── */}
           <div className="space-y-2">
             <Label htmlFor="recurrenceFrequency">Repeat</Label>
@@ -466,11 +521,14 @@ function EventModal({
                   type="button"
                   variant="destructive"
                   onClick={() => {
-                    onDelete()
+                    onDelete(formData)
                     onClose()
                   }}
                 >
                   Delete
+                  {isRecurring
+                    ? ` ${formData.recurrenceEditScope === 'this' ? 'this event' : formData.recurrenceEditScope === 'thisAndFollowing' ? 'this and following' : 'series'}`
+                    : ''}
                 </Button>
               )}
             </div>
@@ -529,7 +587,7 @@ function ScheduleView({
   calendar: ReturnType<typeof useCalendar<Resource, Event<Resource>>>
   days: Array<Day<Resource, Event<Resource>>>
   resources: Array<Resource>
-  onEventClick: (event: Event<Resource>) => void
+  onEventClick: (event: Event<Resource>, scope?: RecurrenceEditScope) => void
   scrollRef: React.RefObject<HTMLDivElement | null>
   leftSentinelRef: React.RefObject<HTMLDivElement | null>
   rightSentinelRef: React.RefObject<HTMLDivElement | null>
@@ -741,6 +799,10 @@ function ScheduleView({
                                     'top',
                                     originalStart,
                                     originalEnd,
+                                    {
+                                      occurrenceStart:
+                                        event._occurrenceOriginalStart,
+                                    },
                                   )}
                                 />
                               )}
@@ -785,6 +847,10 @@ function ScheduleView({
                                     'bottom',
                                     originalStart,
                                     originalEnd,
+                                    {
+                                      occurrenceStart:
+                                        event._occurrenceOriginalStart,
+                                    },
                                   )}
                                 />
                               )}
@@ -793,8 +859,26 @@ function ScheduleView({
                               <ContextMenuItem
                                 onClick={() => onEventClick(event)}
                               >
-                                Edit event
+                                {event.recurrence
+                                  ? 'Edit this occurrence'
+                                  : 'Edit event'}
                               </ContextMenuItem>
+                              {event.recurrence && (
+                                <>
+                                  <ContextMenuItem
+                                    onClick={() =>
+                                      onEventClick(event, 'thisAndFollowing')
+                                    }
+                                  >
+                                    Edit this and following
+                                  </ContextMenuItem>
+                                  <ContextMenuItem
+                                    onClick={() => onEventClick(event, 'all')}
+                                  >
+                                    Edit series
+                                  </ContextMenuItem>
+                                </>
+                              )}
                               {event.recurrence && (
                                 <>
                                   <ContextMenuSeparator />
@@ -930,6 +1014,60 @@ function ResizeErrorToast({
   )
 }
 
+function ScopeChoiceModal({
+  event,
+  isOpen,
+  title = 'Edit recurring event',
+  onSelect,
+  onClose,
+}: {
+  event: Event<Resource> | null
+  isOpen: boolean
+  title?: string
+  onSelect: (scope: RecurrenceEditScope) => void
+  onClose: () => void
+}) {
+  if (!isOpen) return null
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-xs bg-card border-border">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        <div className="mt-2 text-sm text-neutral-400">
+          {event?.title ?? 'Choose how to apply this recurring-event change.'}
+        </div>
+        <div className="space-y-2 mt-4">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full justify-start"
+            onClick={() => onSelect('this')}
+          >
+            This occurrence
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full justify-start"
+            onClick={() => onSelect('thisAndFollowing')}
+          >
+            This and following
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full justify-start"
+            onClick={() => onSelect('all')}
+          >
+            All events
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function CalendarView() {
   const [resources, setResources] = useState<Array<Resource>>(sampleResources)
 
@@ -937,12 +1075,23 @@ function CalendarView() {
     isOpen: boolean
     mode: 'add' | 'edit'
     eventId?: string
+    occurrenceStart?: string
+    isRecurring?: boolean
     initialData: EventFormData
   }>({
     isOpen: false,
     mode: 'add',
     initialData: emptyFormData,
   })
+
+  const [scopeChoiceEvent, setScopeChoiceEvent] =
+    useState<Event<Resource> | null>(null)
+  const [resizeScopeChoice, setResizeScopeChoice] = useState<{
+    eventId: string
+    occurrenceStart: EventDateTimeInput
+    newStart: string
+    newEnd: string
+  } | null>(null)
 
   const [resizeError, setResizeError] = useState<ResizeError | null>(null)
 
@@ -969,7 +1118,7 @@ function CalendarView() {
         ...event,
         resources:
           event.resources
-            ?.map((resource) => resourceById.get(resource.id))
+            ?.map((resource) => resourceById.get(getResourceId(resource)))
             .filter((resource): resource is Resource => resource != null) ?? [],
       }))
     },
@@ -982,6 +1131,14 @@ function CalendarView() {
       },
       onResizeError: (error) => {
         setResizeError(error)
+      },
+      onRecurringResizeEnd: (resize) => {
+        setResizeScopeChoice({
+          eventId: resize.eventId,
+          occurrenceStart: resize.occurrenceStart,
+          newStart: resize.newStart,
+          newEnd: resize.newEnd,
+        })
       },
     },
   })
@@ -1279,29 +1436,51 @@ function CalendarView() {
     })
   }
 
-  const openEditModal = (event: Event<Resource>) => {
-    const masterEvent = calendar.getMasterEvent(event)
-    const eventProps = calendar.getEventProps(masterEvent)
-    const startDate = new Date(eventProps.start)
-    const endDate = new Date(eventProps.end)
+  const handleEventClick = (
+    event: Event<Resource>,
+    scope?: RecurrenceEditScope,
+  ) => {
+    if (event.recurrence && !scope) {
+      setScopeChoiceEvent(event)
+      return
+    }
+    openEditModal(event, scope)
+  }
 
+  const openEditModal = (
+    event: Event<Resource>,
+    scope: RecurrenceEditScope = event.recurrence ? 'this' : 'all',
+  ) => {
+    const masterEvent = calendar.getMasterEvent(event)
+    const segmentInfo = calendar.getEventSegmentInfo(event)
+    const startDate = new Date(segmentInfo.originalStart)
+    const endDate = new Date(segmentInfo.originalEnd)
     const rule = masterEvent.recurrence
+    const isRecurring = !!rule
+    const eventResource = event.resources?.[0] ?? masterEvent.resources?.[0]
+    const eventResourceId = eventResource ? getResourceId(eventResource) : ''
 
     setModalState({
       isOpen: true,
       mode: 'edit',
-      eventId: masterEvent.id,
+      eventId: isRecurring ? event.id : masterEvent.id,
+      occurrenceStart: isRecurring
+        ? (event._occurrenceOriginalStart ?? segmentInfo.originalStart)
+        : undefined,
+      isRecurring,
       initialData: {
-        title: masterEvent.title,
+        title: event.title,
         startDate: formatDateToISO(startDate),
         startTime: startDate.toTimeString().slice(0, 5),
         endDate: formatDateToISO(endDate),
         endTime: endDate.toTimeString().slice(0, 5),
-        resourceId: masterEvent.resources?.[0]?.id ?? (resources[0]?.id || ''),
-        consumption: masterEvent.consumption?.[0] ?? 1,
+        resourceId: eventResourceId || resources[0]?.id || '',
+        consumption:
+          event.consumption?.[0] ?? masterEvent.consumption?.[0] ?? 1,
         recurrenceFrequency: rule?.frequency ?? 'none',
         recurrenceUntil: rule?.until ?? '',
-        allDay: !!masterEvent.allDay,
+        recurrenceEditScope: scope,
+        allDay: !!event.allDay,
       },
     })
   }
@@ -1334,17 +1513,26 @@ function CalendarView() {
         data.allDay || !selectedResource ? [] : [selectedResource]
       const eventConsumption = data.allDay ? [] : [data.consumption]
 
+      const updates: Partial<Omit<Event<Resource>, 'id'>> = {
+        title: data.title,
+        start,
+        end,
+        ...(modalState.isRecurring && data.recurrenceEditScope === 'this'
+          ? {}
+          : { recurrence }),
+        resources: eventResources,
+        consumption: eventConsumption,
+        allDay: data.allDay,
+      }
+
       const result =
         modalState.mode === 'edit' && modalState.eventId
-          ? await calendar.editEvent(modalState.eventId, {
-              title: data.title,
-              start,
-              end,
-              recurrence,
-              resources: eventResources,
-              consumption: eventConsumption,
-              allDay: data.allDay,
-            })
+          ? modalState.isRecurring
+            ? await calendar.editRecurringEvent(modalState.eventId, updates, {
+                scope: data.recurrenceEditScope,
+                occurrenceStart: modalState.occurrenceStart,
+              })
+            : await calendar.editEvent(modalState.eventId, updates)
           : await calendar.addEvent({
               id: String(Date.now()),
               title: data.title,
@@ -1355,7 +1543,6 @@ function CalendarView() {
               consumption: eventConsumption,
               allDay: data.allDay,
             })
-
       if (!result.success) {
         setResizeError(result.error)
         throw new Error('Validation failed')
@@ -1365,10 +1552,18 @@ function CalendarView() {
     }
   }
 
-  const handleDelete = () => {
-    if (modalState.eventId) {
-      calendar.removeEvent(modalState.eventId)
+  const handleDelete = (data: EventFormData) => {
+    if (!modalState.eventId) return
+
+    if (modalState.isRecurring) {
+      calendar.removeRecurringEvent(modalState.eventId, {
+        scope: data.recurrenceEditScope,
+        occurrenceStart: modalState.occurrenceStart,
+      })
+      return
     }
+
+    calendar.removeEvent(modalState.eventId)
   }
 
   return (
@@ -1508,7 +1703,7 @@ function CalendarView() {
           calendar={calendar}
           days={bufferedScheduleDays}
           resources={resources}
-          onEventClick={openEditModal}
+          onEventClick={handleEventClick}
           scrollRef={scheduleScrollRef}
           leftSentinelRef={scheduleLeftRef}
           rightSentinelRef={scheduleRightRef}
@@ -1608,7 +1803,7 @@ function CalendarView() {
                               key={`ad-${event.id}`}
                               className="cursor-pointer bg-amber-700/70 hover:bg-amber-600/80 text-amber-50 border border-amber-600/40 flex items-center gap-1.5 max-w-full flex-shrink-0 w-full"
                               title={event.title}
-                              onClick={() => openEditModal(event)}
+                              onClick={() => handleEventClick(event)}
                             >
                               <span className="truncate">{event.title}</span>
                             </Badge>
@@ -1620,7 +1815,7 @@ function CalendarView() {
                                   variant="secondary"
                                   className="cursor-pointer hover:bg-muted flex items-center gap-1.5 max-w-full flex-shrink-0 w-full"
                                   title={event.title}
-                                  onClick={() => openEditModal(event)}
+                                  onClick={() => handleEventClick(event)}
                                 >
                                   <span className="flex items-center gap-1 min-w-0">
                                     {event.recurrence && (
@@ -1653,8 +1848,28 @@ function CalendarView() {
                                 <ContextMenuItem
                                   onClick={() => openEditModal(event)}
                                 >
-                                  Edit event
+                                  {event.recurrence
+                                    ? 'Edit this occurrence'
+                                    : 'Edit event'}
                                 </ContextMenuItem>
+                                {event.recurrence && (
+                                  <>
+                                    <ContextMenuItem
+                                      onClick={() =>
+                                        openEditModal(event, 'thisAndFollowing')
+                                      }
+                                    >
+                                      Edit this and following
+                                    </ContextMenuItem>
+                                    <ContextMenuItem
+                                      onClick={() =>
+                                        openEditModal(event, 'all')
+                                      }
+                                    >
+                                      Edit series
+                                    </ContextMenuItem>
+                                  </>
+                                )}
                                 {event.recurrence && (
                                   <>
                                     <ContextMenuSeparator />
@@ -1703,6 +1918,40 @@ function CalendarView() {
         </div>
       )}
 
+      <ScopeChoiceModal
+        event={scopeChoiceEvent}
+        isOpen={!!scopeChoiceEvent}
+        onSelect={(scope) => {
+          if (scopeChoiceEvent) {
+            openEditModal(scopeChoiceEvent, scope)
+          }
+          setScopeChoiceEvent(null)
+        }}
+        onClose={() => setScopeChoiceEvent(null)}
+      />
+
+
+      <ScopeChoiceModal
+        event={null}
+        title="Resize recurring event"
+        isOpen={!!resizeScopeChoice}
+        onSelect={(scope) => {
+          const pending = resizeScopeChoice
+          setResizeScopeChoice(null)
+          if (!pending) return
+          void calendar
+            .editRecurringEvent(
+              pending.eventId,
+              { start: pending.newStart, end: pending.newEnd },
+              { scope, occurrenceStart: pending.occurrenceStart },
+            )
+            .then((result) => {
+              if (!result.success) setResizeError(result.error)
+            })
+        }}
+        onClose={() => setResizeScopeChoice(null)}
+      />
+
       <EventModal
         isOpen={modalState.isOpen}
         onClose={closeModal}
@@ -1710,6 +1959,7 @@ function CalendarView() {
         onDelete={modalState.mode === 'edit' ? handleDelete : undefined}
         initialData={modalState.initialData}
         mode={modalState.mode}
+        isRecurring={modalState.isRecurring}
         isSaving={isSaving}
         resources={resources}
       />

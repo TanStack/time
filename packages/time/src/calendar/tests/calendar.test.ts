@@ -5258,4 +5258,270 @@ describe('CalendarCore', () => {
       expect(cal.getEventsByDate(DATE_MON)).toHaveLength(1)
     })
   })
+
+  describe('recurrence exceptions', () => {
+    const recurringEvent: TestEvent = {
+      id: 'rec-ex',
+      title: 'Recurring',
+      start: '2025-06-02T09:00:00',
+      end: '2025-06-02T10:00:00',
+      recurrence: { frequency: 'weekly', interval: 1 },
+    }
+
+    test('expands recurring master occurrence and later occurrences', () => {
+      const cal = createCalendar({ events: [recurringEvent] })
+      expect(cal.getEventsByDate('2025-06-02').map((e) => e.id)).toEqual([
+        'rec-ex',
+      ])
+      expect(cal.getEventsByDate('2025-06-09').map((e) => e.id)).toEqual([
+        'rec-ex_1',
+      ])
+    })
+
+    test('EXDATE skips a specific occurrence', () => {
+      const cal = createCalendar({
+        events: [
+          {
+            ...recurringEvent,
+            recurrence: {
+              frequency: 'weekly',
+              interval: 1,
+              exDates: ['2025-06-09T09:00:00'],
+            },
+          },
+        ],
+      })
+
+      expect(cal.getEventsByDate('2025-06-09')).toHaveLength(0)
+      expect(cal.getEventsByDate('2025-06-16')).toHaveLength(1)
+    })
+
+    test('override moves one occurrence while others keep original time', () => {
+      const cal = createCalendar({
+        events: [
+          {
+            ...recurringEvent,
+            recurrence: {
+              frequency: 'weekly',
+              interval: 1,
+              overrides: [
+                {
+                  originalStart: '2025-06-09T09:00:00',
+                  start: '2025-06-10T15:00:00',
+                  end: '2025-06-10T16:00:00',
+                  title: 'Moved Tuesday',
+                },
+              ],
+            },
+          },
+        ],
+      })
+
+      const moved = cal.getEventsByDate('2025-06-10')
+      expect(moved).toHaveLength(1)
+      expect(moved[0]!.start).toBe('2025-06-10T15:00:00')
+      expect(moved[0]!._occurrenceOriginalStart).toBe('2025-06-09T09:00:00')
+      expect(moved[0]!.title).toBe('Moved Tuesday')
+      expect(cal.getEventsByDate('2025-06-17')).toHaveLength(0)
+    })
+
+    test('override and EXDATE can target original master occurrence', () => {
+      const movedCal = createCalendar({
+        events: [
+          {
+            ...recurringEvent,
+            recurrence: {
+              frequency: 'weekly',
+              overrides: [
+                {
+                  originalStart: '2025-06-02T09:00:00',
+                  start: '2025-06-02T15:00:00',
+                  end: '2025-06-02T16:00:00',
+                },
+              ],
+            },
+          },
+        ],
+      })
+      expect(movedCal.getEventsByDate('2025-06-02')[0]!.start).toBe(
+        '2025-06-02T15:00:00',
+      )
+
+      const skippedCal = createCalendar({
+        events: [
+          {
+            ...recurringEvent,
+            recurrence: {
+              frequency: 'weekly',
+              exDates: ['2025-06-02T09:00:00'],
+            },
+          },
+        ],
+      })
+      expect(skippedCal.getEventsByDate('2025-06-02')).toHaveLength(0)
+      expect(skippedCal.getEventsByDate('2025-06-09')).toHaveLength(1)
+    })
+
+    test('COUNT is based on total occurrences, not viewport emissions', () => {
+      const cal = createCalendar({
+        events: [
+          {
+            ...recurringEvent,
+            recurrence: { frequency: 'weekly', count: 2 },
+          },
+        ],
+      })
+
+      expect(cal.getEventsByDate('2025-06-02')).toHaveLength(1)
+      expect(cal.getEventsByDate('2025-06-09')).toHaveLength(1)
+      expect(cal.getEventsByDate('2025-06-16')).toHaveLength(0)
+    })
+
+    test('UNTIL remains exclusive', () => {
+      const cal = createCalendar({
+        events: [
+          {
+            ...recurringEvent,
+            recurrence: { frequency: 'weekly', until: '2025-06-16' },
+          },
+        ],
+      })
+
+      expect(cal.getEventsByDate('2025-06-02')).toHaveLength(1)
+      expect(cal.getEventsByDate('2025-06-09')).toHaveLength(1)
+      expect(cal.getEventsByDate('2025-06-16')).toHaveLength(0)
+    })
+
+    test('editRecurringEvent with scope this creates an override', async () => {
+      const cal = createCalendar({ events: [recurringEvent] })
+
+      const result = await cal.editRecurringEvent(
+        'rec-ex_1',
+        {
+          start: '2025-06-09T15:00:00',
+          end: '2025-06-09T16:00:00',
+          title: 'Moved One',
+        },
+        { scope: 'this', occurrenceStart: '2025-06-09T09:00:00' },
+      )
+
+      expect(result.success).toBe(true)
+      const master = cal.getEvents()[0]!
+      expect(master.recurrence?.overrides).toHaveLength(1)
+      const moved = cal.getEventsByDate('2025-06-09')[0]!
+      expect(moved.start).toBe('2025-06-09T15:00:00')
+      expect(moved.title).toBe('Moved One')
+      expect(cal.getEventsByDate('2025-06-16')[0]!.start).toBe(
+        '2025-06-16T09:00:00',
+      )
+    })
+
+    test('removeRecurringEvent with scope this creates EXDATE', () => {
+      const cal = createCalendar({ events: [recurringEvent] })
+
+      cal.removeRecurringEvent('rec-ex_1', {
+        scope: 'this',
+        occurrenceStart: '2025-06-09T09:00:00',
+      })
+
+      expect(cal.getEvents()[0]!.recurrence?.exDates).toEqual([
+        '2025-06-09T09:00:00',
+      ])
+      expect(cal.getEventsByDate('2025-06-09')).toHaveLength(0)
+      expect(cal.getEventsByDate('2025-06-16')).toHaveLength(1)
+    })
+
+
+    test('validateResize checks capacity for a recurring occurrence', () => {
+      const room: TestResource = {
+        id: 'rec-room',
+        label: 'Recurring Room',
+        capacity: [1],
+        availability: [
+          { weekdays: [1, 2, 3, 4, 5, 6, 7], startTime: '00:00', endTime: '24:00' },
+        ],
+      }
+      const cal = createCalendar({
+        resources: [room],
+        events: [
+          {
+            ...recurringEvent,
+            resources: [room],
+            consumption: [1],
+          },
+          {
+            id: 'blocker',
+            title: 'Blocker',
+            start: '2025-06-09T10:00:00',
+            end: '2025-06-09T11:00:00',
+            resources: [room],
+            consumption: [1],
+          },
+        ],
+      })
+
+      const result = cal.validateResize({
+        eventId: 'rec-ex_1',
+        originalStart: '2025-06-09T09:00:00',
+        originalEnd: '2025-06-09T10:00:00',
+        edge: 'bottom',
+        totalDeltaMinutes: 60,
+        targetDayDate: '2025-06-09',
+        originalDayDate: '2025-06-09',
+        occurrenceStart: '2025-06-09T09:00:00',
+        constraints: { snapToMinutes: 15, minDurationMinutes: 15 },
+      })
+
+      expect(result.blocked).toBe(true)
+      expect(result.error?.conflicts?.[0]?.resourceDetails[0]?.reason).toBe(
+        'capacity',
+      )
+    })
+
+    test('editRecurringEvent with scope thisAndFollowing splits the series', async () => {
+      const cal = createCalendar({
+        events: [
+          {
+            ...recurringEvent,
+            recurrence: { frequency: 'weekly', count: 5 },
+          },
+        ],
+      })
+
+      const result = await cal.editRecurringEvent(
+        'rec-ex_2',
+        { start: '2025-06-16T15:00:00', end: '2025-06-16T16:00:00' },
+        { scope: 'thisAndFollowing', occurrenceStart: '2025-06-16T09:00:00' },
+      )
+
+      expect(result.success).toBe(true)
+      expect(cal.getEvents()).toHaveLength(2)
+      const [oldMaster, newMaster] = cal.getEvents()
+      expect(oldMaster!.recurrence?.until).toBe('2025-06-16')
+      expect(newMaster!.start).toBe('2025-06-16T15:00:00')
+      expect(newMaster!.recurrence?.count).toBe(3)
+      expect(cal.getEventsByDate('2025-06-09')[0]!.start).toBe(
+        '2025-06-09T09:00:00',
+      )
+      expect(cal.getEventsByDate('2025-06-16')[0]!.start).toBe(
+        '2025-06-16T15:00:00',
+      )
+    })
+
+    test('scope all updates or removes master event', async () => {
+      const editCal = createCalendar({ events: [recurringEvent] })
+      const editResult = await editCal.editRecurringEvent(
+        'rec-ex_1',
+        { title: 'All Updated' },
+        { scope: 'all' },
+      )
+      expect(editResult.success).toBe(true)
+      expect(editCal.getEvents()[0]!.title).toBe('All Updated')
+
+      const removeCal = createCalendar({ events: [recurringEvent] })
+      removeCal.removeRecurringEvent('rec-ex_1', { scope: 'all' })
+      expect(removeCal.getEvents()).toHaveLength(0)
+    })
+  })
+
 })

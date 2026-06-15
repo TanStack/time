@@ -24,6 +24,7 @@ import type {
   Event,
   EventDateTimeInput,
   EventDependency,
+  RecurrenceEditScope,
   ResizeError,
   Resource,
   SaveEventResult,
@@ -157,6 +158,24 @@ interface CalendarActions<
     updates: Partial<Omit<TEvent, 'id'>>,
     options?: { dependsOn?: Array<EventDependency> },
   ) => Promise<SaveEventResult>
+  /** Edits one occurrence, this-and-following occurrences, or the whole recurring series. */
+  editRecurringEvent: (
+    eventId: string,
+    updates: Partial<Omit<TEvent, 'id'>>,
+    options: {
+      scope: RecurrenceEditScope
+      occurrenceStart?: EventDateTimeInput
+      dependsOn?: Array<EventDependency>
+    },
+  ) => Promise<SaveEventResult>
+  /** Removes one occurrence, this-and-following occurrences, or the whole recurring series. */
+  removeRecurringEvent: (
+    eventId: string,
+    options: {
+      scope: RecurrenceEditScope
+      occurrenceStart?: EventDateTimeInput
+    },
+  ) => void
   /** Removes an event by ID. */
   removeEvent: (id: Event['id']) => void
   /** Retrieves unavailable time ranges for a specific date based on resource availability. */
@@ -277,6 +296,7 @@ export interface ValidateResizeOptions {
   totalDeltaMinutes: number
   targetDayDate: string
   originalDayDate: string
+  occurrenceStart?: EventDateTimeInput
   constraints?: ResizeConstraints
 }
 
@@ -560,11 +580,15 @@ export class CalendarCore<
   private normalizeEvent<
     T extends { start: string | Date | number; end: string | Date | number },
   >(event: T): T {
+    const recurrence = (event as { recurrence?: TEvent['recurrence'] }).recurrence
     return {
       ...event,
       start: toPlainDateTimeString(event.start),
       end: toPlainDateTimeString(event.end),
-    }
+      ...(recurrence
+        ? { recurrence: this._normalizeRecurrenceDateTimeInputs(recurrence) }
+        : {}),
+    } as T
   }
 
   protected getCalendarDays() {
@@ -637,18 +661,6 @@ export class CalendarCore<
     }
 
     for (const event of this._eventMap.values()) {
-      const masterConflict =
-        event.recurrence && event.resources?.length
-          ? this.checkEventAvailability(
-              event,
-              event.start as string,
-              event.end as string,
-            )
-          : null
-      if (!masterConflict) {
-        placeEvent(event)
-      }
-
       if (event.recurrence && windowStart && windowEnd) {
         const occurrences = expandRecurringEvent<TResource, TEvent>(
           event,
@@ -667,6 +679,19 @@ export class CalendarCore<
             placeEvent(occ)
           }
         }
+        continue
+      }
+
+      const masterConflict =
+        event.recurrence && event.resources?.length
+          ? this.checkEventAvailability(
+              event,
+              event.start as string,
+              event.end as string,
+            )
+          : null
+      if (!masterConflict) {
+        placeEvent(event)
       }
     }
 
@@ -916,7 +941,10 @@ export class CalendarCore<
     const targetDate = Temporal.PlainDate.from(date).toString({
       calendarName: 'never',
     })
-    const eventMap = this.getEventMap()
+    const windowEnd = Temporal.PlainDate.from(targetDate)
+      .add({ days: 1 })
+      .toString({ calendarName: 'never' })
+    const eventMap = this.getEventMap({ start: targetDate, end: windowEnd })
     const all = eventMap.get(targetDate)
     return all ? [...all] : []
   }
@@ -925,7 +953,10 @@ export class CalendarCore<
     const targetDate = Temporal.PlainDate.from(date).toString({
       calendarName: 'never',
     })
-    const eventMap = this.getEventMap()
+    const windowEnd = Temporal.PlainDate.from(targetDate)
+      .add({ days: 1 })
+      .toString({ calendarName: 'never' })
+    const eventMap = this.getEventMap({ start: targetDate, end: windowEnd })
     const all = eventMap.get(targetDate) ?? []
     return all.filter((e) => !!e.allDay)
   }
@@ -1034,6 +1065,8 @@ export class CalendarCore<
     const oldStartStr = toPlainDateTimeString(existingEvent.start)
     const oldEndStr = toPlainDateTimeString(existingEvent.end)
 
+    const recurrenceUpdate = (updates as { recurrence?: TEvent['recurrence'] })
+      .recurrence
     const normalizedUpdates = {
       ...updates,
       ...(updates.start != null
@@ -1041,6 +1074,12 @@ export class CalendarCore<
         : {}),
       ...(updates.end != null
         ? { end: toPlainDateTimeString(updates.end) }
+        : {}),
+      ...(recurrenceUpdate != null
+        ? {
+            recurrence:
+              this._normalizeRecurrenceDateTimeInputs(recurrenceUpdate),
+          }
         : {}),
     }
 
@@ -1526,6 +1565,221 @@ export class CalendarCore<
     return undefined
   }
 
+  private _resolveOccurrenceStart(
+    master: TEvent,
+    occurrenceStart?: EventDateTimeInput,
+  ): string {
+    return occurrenceStart != null
+      ? toPlainDateTimeString(occurrenceStart)
+      : toPlainDateTimeString(master.start)
+  }
+
+  private _recurrenceInputMatchesOccurrence(
+    value: EventDateTimeInput,
+    occurrenceStart: string,
+  ): boolean {
+    if (typeof value === 'string' && !value.includes('T')) {
+      return (
+        Temporal.PlainDate.from(value).toString({ calendarName: 'never' }) ===
+        occurrenceStart.split('T')[0]
+      )
+    }
+    return toPlainDateTimeString(value) === occurrenceStart
+  }
+
+  private _compareRecurrenceInputToOccurrence(
+    value: EventDateTimeInput,
+    occurrenceStart: string,
+  ): number {
+    if (typeof value === 'string' && !value.includes('T')) {
+      return Temporal.PlainDate.compare(
+        Temporal.PlainDate.from(value),
+        Temporal.PlainDate.from(occurrenceStart.split('T')[0]!),
+      )
+    }
+    return Temporal.PlainDateTime.compare(
+      Temporal.PlainDateTime.from(toPlainDateTimeString(value)),
+      Temporal.PlainDateTime.from(occurrenceStart),
+    )
+  }
+
+  private _durationPreservingEnd(
+    originalStart: string,
+    originalEnd: string,
+    nextStart: string,
+  ): string {
+    const durationMs = Temporal.PlainDateTime.from(originalStart)
+      .toZonedDateTime('UTC')
+      .until(Temporal.PlainDateTime.from(originalEnd).toZonedDateTime('UTC'))
+      .total('milliseconds')
+    return Temporal.PlainDateTime.from(nextStart)
+      .toZonedDateTime('UTC')
+      .add({ milliseconds: durationMs })
+      .toPlainDateTime()
+      .toString({ smallestUnit: 'second' })
+  }
+
+  private _normalizeRecurrenceDateTimeInputs(
+    rule: NonNullable<TEvent['recurrence']>,
+  ): NonNullable<TEvent['recurrence']> {
+    return {
+      ...rule,
+      exDates: rule.exDates?.map((value) =>
+        typeof value === 'string' && !value.includes('T')
+          ? value
+          : toPlainDateTimeString(value),
+      ),
+      overrides: rule.overrides?.map((override) => ({
+        ...override,
+        originalStart:
+          typeof override.originalStart === 'string' &&
+          !override.originalStart.includes('T')
+            ? override.originalStart
+            : toPlainDateTimeString(override.originalStart),
+        ...(override.start != null
+          ? { start: toPlainDateTimeString(override.start) }
+          : {}),
+        ...(override.end != null
+          ? { end: toPlainDateTimeString(override.end) }
+          : {}),
+      })),
+    }
+  }
+
+  private _getRecurringOccurrence(
+    master: TEvent,
+    occurrenceStart: string,
+  ): TEvent | null {
+    const occurrenceDate = occurrenceStart.split('T')[0]!
+    let windowStart = occurrenceDate
+    let windowEnd = Temporal.PlainDate.from(occurrenceDate)
+      .add({ days: 1 })
+      .toString({ calendarName: 'never' })
+
+    const override = master.recurrence?.overrides?.find((candidate) =>
+      this._recurrenceInputMatchesOccurrence(
+        candidate.originalStart,
+        occurrenceStart,
+      ),
+    )
+    if (override?.start != null) {
+      const overrideDate = toPlainDateTimeString(override.start).split('T')[0]!
+      windowStart = overrideDate < occurrenceDate ? overrideDate : occurrenceDate
+      const maxDate = overrideDate > occurrenceDate ? overrideDate : occurrenceDate
+      windowEnd = Temporal.PlainDate.from(maxDate)
+        .add({ days: 1 })
+        .toString({ calendarName: 'never' })
+    }
+
+    const occurrences = expandRecurringEvent<TResource, TEvent>(
+      master,
+      windowStart,
+      windowEnd,
+    )
+    return (
+      occurrences.find(
+        (occ) => (occ._occurrenceOriginalStart ?? occ.start) === occurrenceStart,
+      ) ?? null
+    )
+  }
+
+  private _resolveResizeEvent(
+    eventId: string,
+    occurrenceStart?: string,
+    originalStart?: string,
+  ): TEvent | undefined {
+    const direct = this._eventMap.get(eventId)
+    const master = this._resolveMasterEvent(eventId)
+
+    if (master?.recurrence) {
+      const resolvedOccurrenceStart =
+        occurrenceStart ?? (direct ? toPlainDateTimeString(direct.start) : originalStart)
+      if (resolvedOccurrenceStart) {
+        return this._getRecurringOccurrence(master, resolvedOccurrenceStart) ?? direct ?? master
+      }
+    }
+
+    return direct
+  }
+
+  private _makeSplitRecurringEventId(master: TEvent, occurrenceStart: string) {
+    const safeStart = occurrenceStart.replace(/[^0-9A-Za-z]/g, '')
+    let id = `${master.id}_${safeStart}`
+    let suffix = 1
+    while (this._eventMap.has(id)) {
+      id = `${master.id}_${safeStart}_${suffix}`
+      suffix++
+    }
+    return id
+  }
+
+  private _commitRecurringUpdate(
+    master: TEvent,
+    nextMaster: TEvent | null,
+    addedEvents: Array<TEvent> = [],
+    emit:
+      | {
+          type: 'updated'
+          eventId: string
+          eventTitle: string
+          start: string
+          end: string
+          updates: Record<string, unknown>
+        }
+      | { type: 'removed'; eventId: string; eventTitle: string; start: string; end: string },
+  ) {
+    if (!this.options.events) return
+    const index = this.options.events.indexOf(master)
+    if (index === -1) return
+
+    this._undoStack.push(this._snapshotEvents())
+    this._redoStack = []
+
+    if (nextMaster) {
+      this.options.events[index] = nextMaster
+      this._indexUpdateEvent(master, nextMaster)
+    } else {
+      this.options.events.splice(index, 1)
+      this._indexRemoveEvent(master)
+    }
+
+    for (const added of addedEvents) {
+      this.options.events.push(added)
+      this._indexAddEvent(added)
+    }
+
+    this.store.setState((prev) => ({
+      ...prev,
+      eventsVersion: prev.eventsVersion + 1,
+    }))
+
+    for (const added of addedEvents) {
+      getTimeClient().emit('event:added', {
+        eventId: added.id,
+        eventTitle: added.title,
+        start: added.start as string,
+        end: added.end as string,
+      })
+    }
+
+    if (emit.type === 'updated') {
+      getTimeClient().emit('event:updated', {
+        eventId: emit.eventId,
+        eventTitle: emit.eventTitle,
+        start: emit.start,
+        end: emit.end,
+        updates: emit.updates,
+      })
+    } else {
+      getTimeClient().emit('event:removed', {
+        eventId: emit.eventId,
+        eventTitle: emit.eventTitle,
+        start: emit.start,
+        end: emit.end,
+      })
+    }
+  }
+
   goToNextOccurrence(eventId: string, fromDate?: EventDateTimeInput) {
     const master = this._resolveMasterEvent(eventId)
     if (!master?.recurrence) return
@@ -1561,17 +1815,16 @@ export class CalendarCore<
 
     if (masterStartStr >= activeDateStr) return
 
-    const candidates: Array<string> = [masterStartStr]
-    const occs = expandRecurringEvent<TResource, TEvent>(
+    const occurrences = expandRecurringEvent<TResource, TEvent>(
       master,
       masterStartStr,
       activeDateStr,
     )
-    for (const occ of occs) {
-      const occDateStr = (occ.start as string).split('T')[0]!
-      if (occDateStr < activeDateStr) candidates.push(occDateStr)
-    }
+    const candidates = occurrences
+      .map((occ) => (occ.start as string).split('T')[0]!)
+      .filter((occDateStr) => occDateStr < activeDateStr)
 
+    if (candidates.length === 0) return
     this.goToSpecificPeriod(candidates[candidates.length - 1]!)
   }
 
@@ -2038,6 +2291,346 @@ export class CalendarCore<
 
     this.commitUpdate(eventId, updates)
     return { success: true }
+  }
+
+  async editRecurringEvent(
+    eventId: string,
+    updates: Partial<Omit<TEvent, 'id'>>,
+    options: {
+      scope: RecurrenceEditScope
+      occurrenceStart?: EventDateTimeInput
+      dependsOn?: Array<EventDependency>
+    },
+  ): Promise<SaveEventResult> {
+    const master = this._resolveMasterEvent(eventId)
+    if (!master) {
+      return {
+        success: false,
+        error: {
+          eventId,
+          eventTitle: '',
+          reason: 'blocked',
+          message: `Event "${eventId}" not found.`,
+          originalStart: '',
+          originalEnd: '',
+        },
+      }
+    }
+
+    if (!master.recurrence || options.scope === 'all') {
+      return this.editEvent(master.id, updates, { dependsOn: options.dependsOn })
+    }
+
+    const occurrenceStart = this._resolveOccurrenceStart(
+      master,
+      options.occurrenceStart,
+    )
+    const occurrence = this._getRecurringOccurrence(master, occurrenceStart)
+    if (!occurrence) {
+      return {
+        success: false,
+        error: {
+          eventId,
+          eventTitle: master.title,
+          reason: 'blocked',
+          message: `Occurrence "${occurrenceStart}" not found.`,
+          originalStart: occurrenceStart,
+          originalEnd: occurrenceStart,
+        },
+      }
+    }
+
+    const occurrenceStartStr = toPlainDateTimeString(occurrence.start)
+    const occurrenceEndStr = toPlainDateTimeString(occurrence.end)
+    const effectiveStart =
+      updates.start != null
+        ? toPlainDateTimeString(updates.start)
+        : occurrenceStartStr
+    const effectiveEnd =
+      updates.end != null
+        ? toPlainDateTimeString(updates.end)
+        : updates.start != null
+          ? this._durationPreservingEnd(
+              occurrenceStartStr,
+              occurrenceEndStr,
+              effectiveStart,
+            )
+          : occurrenceEndStr
+
+    const oldStartDateStr = occurrenceStartStr.slice(0, 10)
+    const newStartDateStr = effectiveStart.slice(0, 10)
+    const rangeStart =
+      oldStartDateStr < newStartDateStr ? oldStartDateStr : newStartDateStr
+    const oldEndDate = Temporal.PlainDate.from(occurrenceEndStr.slice(0, 10)).add(
+      { days: 1 },
+    )
+    const newEndDate = Temporal.PlainDate.from(effectiveEnd.slice(0, 10)).add({
+      days: 1,
+    })
+    const rangeEndPlain =
+      Temporal.PlainDate.compare(oldEndDate, newEndDate) > 0
+        ? oldEndDate
+        : newEndDate
+    await this.fetchEventsForRange(
+      rangeStart,
+      rangeEndPlain.toString({ calendarName: 'never' }),
+    )
+
+    if (options.dependsOn && options.dependsOn.length > 0) {
+      const depValidation = this.validateEventDependencies(
+        {
+          id: occurrence.id,
+          title: (updates.title as string | undefined) ?? occurrence.title,
+          start: effectiveStart,
+          end: effectiveEnd,
+        },
+        options.dependsOn,
+      )
+      if (!depValidation.valid && depValidation.error) {
+        return { success: false, error: depValidation.error }
+      }
+    }
+
+    const startChanged = updates.start !== undefined
+    const endChanged = updates.end !== undefined
+    const resourcesChanged = updates.resources !== undefined
+    const consumptionChanged = updates.consumption !== undefined
+
+    if (startChanged || endChanged || resourcesChanged || consumptionChanged) {
+      const placementValidation = this.validateEventPlacement({
+        id: occurrence.id,
+        title: (updates.title as string | undefined) ?? occurrence.title,
+        start: effectiveStart,
+        end: effectiveEnd,
+        resources: updates.resources ?? occurrence.resources,
+        consumption: updates.consumption ?? occurrence.consumption,
+      })
+      if (placementValidation.blocked) {
+        return {
+          success: false,
+          error: {
+            eventId,
+            eventTitle: occurrence.title,
+            reason: 'blocked',
+            message:
+              placementValidation.message ??
+              `Cannot move "${occurrence.title}" to this position.`,
+            originalStart: occurrenceStartStr,
+            originalEnd: occurrenceEndStr,
+            attemptedStart: effectiveStart,
+            attemptedEnd: effectiveEnd,
+          },
+        }
+      }
+    }
+
+    const rule = this._normalizeRecurrenceDateTimeInputs(master.recurrence)
+    const recurrenceUpdate = (updates as { recurrence?: TEvent['recurrence'] })
+      .recurrence
+    const normalizedUpdates = {
+      ...updates,
+      ...(updates.start != null ? { start: effectiveStart } : {}),
+      ...(updates.end != null || updates.start != null
+        ? { end: effectiveEnd }
+        : {}),
+      ...(recurrenceUpdate != null
+        ? {
+            recurrence:
+              this._normalizeRecurrenceDateTimeInputs(recurrenceUpdate),
+          }
+        : {}),
+    } as Partial<Omit<TEvent, 'id'>>
+
+    if (options.scope === 'this') {
+      const exDates = (rule.exDates ?? []).filter(
+        (value) => !this._recurrenceInputMatchesOccurrence(value, occurrenceStart),
+      )
+      const overrides = (rule.overrides ?? []).filter(
+        (override) =>
+          !this._recurrenceInputMatchesOccurrence(
+            override.originalStart,
+            occurrenceStart,
+          ),
+      )
+      const overrideFields = {
+        ...(normalizedUpdates as Record<string, unknown>),
+      }
+      delete overrideFields.recurrence
+      delete overrideFields._originalStart
+      delete overrideFields._originalEnd
+      delete overrideFields._recurringMasterId
+      delete overrideFields._occurrenceIndex
+      delete overrideFields._occurrenceOriginalStart
+
+      overrides.push({
+        ...overrideFields,
+        originalStart: occurrenceStart,
+        ...(updates.start != null ? { start: effectiveStart } : {}),
+        ...(updates.end != null || updates.start != null
+          ? { end: effectiveEnd }
+          : {}),
+      })
+
+      const nextMaster = {
+        ...master,
+        recurrence: this._normalizeRecurrenceDateTimeInputs({
+          ...rule,
+          exDates,
+          overrides,
+        }),
+      } as TEvent
+
+      this._commitRecurringUpdate(master, nextMaster, [], {
+        type: 'updated',
+        eventId: occurrence.id,
+        eventTitle: (updates.title as string | undefined) ?? occurrence.title,
+        start: effectiveStart,
+        end: effectiveEnd,
+        updates: normalizedUpdates as Record<string, unknown>,
+      })
+      return { success: true }
+    }
+
+    const masterStart = toPlainDateTimeString(master.start)
+    if (occurrenceStart === masterStart) {
+      return this.editEvent(master.id, updates, { dependsOn: options.dependsOn })
+    }
+
+    const splitDate = occurrenceStart.split('T')[0]!
+    const oldRule = this._normalizeRecurrenceDateTimeInputs({
+      ...rule,
+      until: splitDate,
+    })
+    const remainingRule = this._normalizeRecurrenceDateTimeInputs({
+      ...rule,
+      ...(rule.count !== undefined && rule.until === undefined
+        ? { count: Math.max(1, rule.count - (occurrence._occurrenceIndex ?? 0)) }
+        : {}),
+      exDates: rule.exDates?.filter(
+        (value) => this._compareRecurrenceInputToOccurrence(value, occurrenceStart) > 0,
+      ),
+      overrides: rule.overrides?.filter(
+        (override) =>
+          this._compareRecurrenceInputToOccurrence(
+            override.originalStart,
+            occurrenceStart,
+          ) > 0,
+      ),
+    })
+
+    const updateFields = { ...(normalizedUpdates as Record<string, unknown>) }
+    delete updateFields.recurrence
+
+    const splitEvent = {
+      ...occurrence,
+      ...updateFields,
+      id: this._makeSplitRecurringEventId(master, occurrenceStart),
+      start: effectiveStart,
+      end: effectiveEnd,
+      recurrence:
+        recurrenceUpdate != null
+          ? this._normalizeRecurrenceDateTimeInputs(recurrenceUpdate)
+          : remainingRule,
+      _originalStart: undefined,
+      _originalEnd: undefined,
+      _recurringMasterId: undefined,
+      _occurrenceIndex: undefined,
+      _occurrenceOriginalStart: undefined,
+    } as TEvent
+
+    const nextMaster = {
+      ...master,
+      recurrence: oldRule,
+    } as TEvent
+
+    this._commitRecurringUpdate(master, nextMaster, [splitEvent], {
+      type: 'updated',
+      eventId: splitEvent.id,
+      eventTitle: splitEvent.title,
+      start: splitEvent.start as string,
+      end: splitEvent.end as string,
+      updates: normalizedUpdates as Record<string, unknown>,
+    })
+
+    return { success: true }
+  }
+
+  removeRecurringEvent(
+    eventId: string,
+    options: {
+      scope: RecurrenceEditScope
+      occurrenceStart?: EventDateTimeInput
+    },
+  ) {
+    const master = this._resolveMasterEvent(eventId)
+    if (!master) return
+
+    if (!master.recurrence || options.scope === 'all') {
+      this.removeEvent(master.id)
+      return
+    }
+
+    const occurrenceStart = this._resolveOccurrenceStart(
+      master,
+      options.occurrenceStart,
+    )
+    const occurrence = this._getRecurringOccurrence(master, occurrenceStart)
+    if (!occurrence) return
+
+    const rule = this._normalizeRecurrenceDateTimeInputs(master.recurrence)
+    const occurrenceStartStr = toPlainDateTimeString(occurrence.start)
+    const occurrenceEndStr = toPlainDateTimeString(occurrence.end)
+
+    if (options.scope === 'this') {
+      const exDates = (rule.exDates ?? []).filter(
+        (value) => !this._recurrenceInputMatchesOccurrence(value, occurrenceStart),
+      )
+      exDates.push(occurrenceStart)
+      const overrides = (rule.overrides ?? []).filter(
+        (override) =>
+          !this._recurrenceInputMatchesOccurrence(
+            override.originalStart,
+            occurrenceStart,
+          ),
+      )
+      const nextMaster = {
+        ...master,
+        recurrence: this._normalizeRecurrenceDateTimeInputs({
+          ...rule,
+          exDates,
+          overrides,
+        }),
+      } as TEvent
+      this._commitRecurringUpdate(master, nextMaster, [], {
+        type: 'removed',
+        eventId: occurrence.id,
+        eventTitle: occurrence.title,
+        start: occurrenceStartStr,
+        end: occurrenceEndStr,
+      })
+      return
+    }
+
+    if (occurrenceStart === toPlainDateTimeString(master.start)) {
+      this.removeEvent(master.id)
+      return
+    }
+
+    const nextMaster = {
+      ...master,
+      recurrence: this._normalizeRecurrenceDateTimeInputs({
+        ...rule,
+        until: occurrenceStart.split('T')[0]!,
+      }),
+    } as TEvent
+
+    this._commitRecurringUpdate(master, nextMaster, [], {
+      type: 'removed',
+      eventId: occurrence.id,
+      eventTitle: occurrence.title,
+      start: occurrenceStartStr,
+      end: occurrenceEndStr,
+    })
   }
 
   createDependency(
@@ -2551,6 +3144,7 @@ export class CalendarCore<
     endMins: number,
     eventId: string,
     resourceIds: Array<string>,
+    resizeEvent?: TEvent,
   ): Array<AvailabilityConflict> {
     const conflicts: Array<AvailabilityConflict> = []
 
@@ -2614,7 +3208,7 @@ export class CalendarCore<
 
     const eventsOnDay = this.getEventsByDate(dayDate)
 
-    const selfEvent = this._eventMap.get(eventId)
+    const selfEvent = resizeEvent ?? this._eventMap.get(eventId)
     const ownConsumptionArr = selfEvent?.consumption ?? [1]
     const ownConsumption = ownConsumptionArr.reduce((a, b) => a + b, 0)
 
@@ -2687,7 +3281,11 @@ export class CalendarCore<
       constraints,
     } = options
 
-    const event = this.options.events?.find((ev) => ev.id === eventId)
+    const occurrenceStart =
+      options.occurrenceStart != null
+        ? toPlainDateTimeString(options.occurrenceStart)
+        : undefined
+    const event = this._resolveResizeEvent(eventId, occurrenceStart, originalStart)
     const resourceIds = event ? this._getEventResourceIds(event) : undefined
 
     const unavailableRanges = this.getUnavailableMinuteRanges(targetDayDate, {
@@ -2937,6 +3535,7 @@ export class CalendarCore<
           snappedEndMinutes,
           eventId,
           resourceIds,
+          event,
         )
 
         const capacityConflicts = detailedConflicts.filter((c) =>
@@ -3007,6 +3606,7 @@ export class CalendarCore<
               overlapEndMins,
               eventId,
               resourceIds,
+              event,
             )
 
             if (dayConflicts.length > 0) {
@@ -3110,7 +3710,7 @@ export class CalendarCore<
       resourceIds?.length &&
       originalStartDate === originalEndDate
     ) {
-      const selfEvent = this._eventMap.get(eventId)
+      const selfEvent = event
       if (selfEvent) {
         const proposedNewStart =
           effectiveEdge === 'top'

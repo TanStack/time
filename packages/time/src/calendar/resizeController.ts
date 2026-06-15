@@ -5,7 +5,13 @@ import {
 } from './getResizeProps'
 import type { ResizeConstraints, ResizeEdge } from './getResizeProps'
 import type { CalendarCore } from './calendar'
-import type { Event, ResizeError, Resource } from './types'
+import type {
+  Event,
+  EventDateTimeInput,
+  RecurrenceEditScope,
+  ResizeError,
+  Resource,
+} from './types'
 
 export interface ResizeState {
   isResizing: boolean
@@ -27,6 +33,14 @@ export interface ResizeControllerOptions {
   constraints?: ResizeConstraints
   onResizeStart?: (eventId: string, edge: ResizeEdge) => void
   onResizeEnd?: (eventId: string, newStart: string, newEnd: string) => void
+  onRecurringResizeEnd?: (resize: {
+    eventId: string
+    occurrenceStart: EventDateTimeInput
+    originalStart: string
+    originalEnd: string
+    newStart: string
+    newEnd: string
+  }) => void
   onResizeError?: (error: ResizeError) => void
 }
 
@@ -35,6 +49,8 @@ export interface ResizeStartArgs {
   edge: ResizeEdge
   originalStart: string
   originalEnd: string
+  occurrenceStart?: EventDateTimeInput
+  recurrenceScope?: RecurrenceEditScope
   clientX: number
   clientY: number
   /**
@@ -94,6 +110,8 @@ export class ResizeController<
     id: string
     start: string
     end: string
+    occurrenceStart?: EventDateTimeInput
+    recurrenceScope?: RecurrenceEditScope
     edge: ResizeEdge
     startY: number
     startX: number
@@ -183,6 +201,8 @@ export class ResizeController<
       id: args.eventId,
       start: args.originalStart,
       end: args.originalEnd,
+      occurrenceStart: args.occurrenceStart,
+      recurrenceScope: args.recurrenceScope,
       edge: args.edge,
       startY: args.clientY,
       startX: args.clientX,
@@ -266,15 +286,56 @@ export class ResizeController<
         currentState.previewEnd !== original.end
 
       if (hasChanged) {
-        this._calendarCore.commitUpdate(currentState.eventId, {
-          start: currentState.previewStart,
-          end: currentState.previewEnd,
-        } as Partial<Omit<TEvent, 'id'>>)
-        this._options.onResizeEnd?.(
-          currentState.eventId,
-          currentState.previewStart,
-          currentState.previewEnd,
-        )
+        const emitResizeEnd = () => {
+          this._options.onResizeEnd?.(
+            currentState.eventId!,
+            currentState.previewStart!,
+            currentState.previewEnd!,
+          )
+        }
+
+        const commitRecurringResize = (scope: RecurrenceEditScope) => {
+          void this._calendarCore
+            .editRecurringEvent(
+              currentState.eventId!,
+              {
+                start: currentState.previewStart!,
+                end: currentState.previewEnd!,
+              } as Partial<Omit<TEvent, 'id'>>,
+              {
+                scope,
+                occurrenceStart: original!.occurrenceStart,
+              },
+            )
+            .then((result) => {
+              if (!result.success) {
+                this._options.onResizeError?.(result.error)
+                return
+              }
+              emitResizeEnd()
+            })
+        }
+
+        if (original?.occurrenceStart != null) {
+          if (!original.recurrenceScope && this._options.onRecurringResizeEnd) {
+            this._options.onRecurringResizeEnd({
+              eventId: currentState.eventId,
+              occurrenceStart: original.occurrenceStart,
+              originalStart: original.start,
+              originalEnd: original.end,
+              newStart: currentState.previewStart,
+              newEnd: currentState.previewEnd,
+            })
+          } else {
+            commitRecurringResize(original.recurrenceScope ?? 'this')
+          }
+        } else {
+          this._calendarCore.commitUpdate(currentState.eventId, {
+            start: currentState.previewStart,
+            end: currentState.previewEnd,
+          } as Partial<Omit<TEvent, 'id'>>)
+          emitResizeEnd()
+        }
       }
     }
 
@@ -383,6 +444,7 @@ export class ResizeController<
       totalDeltaMinutes,
       targetDayDate,
       originalDayDate,
+      occurrenceStart: original.occurrenceStart,
       constraints,
     })
 

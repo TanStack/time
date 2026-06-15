@@ -15,11 +15,30 @@ export interface EventDependency {
   type: DependencyType
 }
 
+/** Scope used when editing/removing a recurring event series. */
+export type RecurrenceEditScope = 'this' | 'thisAndFollowing' | 'all'
+
+/** Single-occurrence replacement keyed by the original occurrence start. */
+export interface RecurrenceOverride<TResource extends Resource = Resource> {
+  /** Original occurrence start (RECURRENCE-ID equivalent). */
+  originalStart: EventDateTimeInput
+  /** Optional replacement occurrence id. Defaults to the generated occurrence id. */
+  id?: string
+  start?: EventDateTimeInput
+  end?: EventDateTimeInput
+  title?: string
+  resources?: Array<TResource | string>
+  consumption?: Array<number>
+  dependsOn?: Array<EventDependency>
+  allDay?: boolean
+  [key: string]: unknown
+}
+
 /**
  * Defines the repetition rule for a recurring event.
  * Occurrences are expanded automatically by the calendar within the current viewport.
  */
-export interface RecurrenceRule {
+export interface RecurrenceRule<TResource extends Resource = Resource> {
   /** How often the event repeats. */
   frequency: RecurrenceFrequency
   /**
@@ -42,6 +61,10 @@ export interface RecurrenceRule {
    * Defaults to the weekday of the original event start.
    */
   byWeekday?: Array<number>
+  /** Specific occurrence starts to exclude (EXDATE). Date-only values match by occurrence date. */
+  exDates?: Array<EventDateTimeInput>
+  /** Per-occurrence replacements keyed by original occurrence start. */
+  overrides?: Array<RecurrenceOverride<TResource>>
 }
 
 export interface Availability {
@@ -87,7 +110,7 @@ export interface Event<TResource extends Resource = Resource> {
    * When a predecessor's relevant anchor shifts, this event shifts by the same delta. */
   dependsOn?: Array<EventDependency>
   /** Defines how and when this event repeats. */
-  recurrence?: RecurrenceRule
+  recurrence?: RecurrenceRule<TResource>
   /**
    * When true, event spans full day(s) and is rendered in the all-day strip
    * separately from timed events. `start` and `end` are still ISO datetime strings;
@@ -107,6 +130,8 @@ export interface Event<TResource extends Resource = Resource> {
   _recurringMasterId?: string
   /** 0-based index of this occurrence within the recurring series. */
   _occurrenceIndex?: number
+  /** Original occurrence start before EXDATE/override changes. */
+  _occurrenceOriginalStart?: string
 }
 
 export type Day<
