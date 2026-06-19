@@ -5,7 +5,7 @@ title: TimelineResourceRow
 
 # Interface: TimelineResourceRow\<TResource, TEvent\>
 
-Defined in: [calendar/types.ts:240](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L240)
+Defined in: [calendar/types.ts:265](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L265)
 
 ## Type Parameters
 
@@ -25,7 +25,7 @@ Defined in: [calendar/types.ts:240](https://github.com/TanStack/time/blob/main/p
 events: TimelineEventLayout<TResource, TEvent>[];
 ```
 
-Defined in: [calendar/types.ts:245](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L245)
+Defined in: [calendar/types.ts:270](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L270)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [calendar/types.ts:245](https://github.com/TanStack/time/blob/main/p
 laneCount: number;
 ```
 
-Defined in: [calendar/types.ts:246](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L246)
+Defined in: [calendar/types.ts:271](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L271)
 
 ***
 
@@ -45,4 +45,4 @@ Defined in: [calendar/types.ts:246](https://github.com/TanStack/time/blob/main/p
 resource: TResource;
 ```
 
-Defined in: [calendar/types.ts:244](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L244)
+Defined in: [calendar/types.ts:269](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L269)

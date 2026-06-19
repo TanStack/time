@@ -5,7 +5,7 @@ title: ResizeControllerOptions
 
 # Interface: ResizeControllerOptions
 
-Defined in: [calendar/resizeController.ts:22](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L22)
+Defined in: [calendar/resizeController.ts:28](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L28)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/resizeController.ts:22](https://github.com/TanStack/time/b
 optional constraints: ResizeConstraints;
 ```
 
-Defined in: [calendar/resizeController.ts:27](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L27)
+Defined in: [calendar/resizeController.ts:33](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L33)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [calendar/resizeController.ts:27](https://github.com/TanStack/time/b
 optional containerHeight: number;
 ```
 
-Defined in: [calendar/resizeController.ts:24](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L24)
+Defined in: [calendar/resizeController.ts:30](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L30)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [calendar/resizeController.ts:24](https://github.com/TanStack/time/b
 optional containerWidth: number;
 ```
 
-Defined in: [calendar/resizeController.ts:25](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L25)
+Defined in: [calendar/resizeController.ts:31](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L31)
 
 ***
 
@@ -45,7 +45,49 @@ Defined in: [calendar/resizeController.ts:25](https://github.com/TanStack/time/b
 optional enabled: boolean;
 ```
 
-Defined in: [calendar/resizeController.ts:23](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L23)
+Defined in: [calendar/resizeController.ts:29](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L29)
+
+***
+
+### onRecurringResizeEnd()?
+
+```ts
+optional onRecurringResizeEnd: (resize) => void;
+```
+
+Defined in: [calendar/resizeController.ts:36](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L36)
+
+#### Parameters
+
+##### resize
+
+###### eventId
+
+`string`
+
+###### newEnd
+
+`string`
+
+###### newStart
+
+`string`
+
+###### occurrenceStart
+
+[`EventDateTimeInput`](../type-aliases/EventDateTimeInput.md)
+
+###### originalEnd
+
+`string`
+
+###### originalStart
+
+`string`
+
+#### Returns
+
+`void`
 
 ***
 
@@ -55,7 +97,7 @@ Defined in: [calendar/resizeController.ts:23](https://github.com/TanStack/time/b
 optional onResizeEnd: (eventId, newStart, newEnd) => void;
 ```
 
-Defined in: [calendar/resizeController.ts:29](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L29)
+Defined in: [calendar/resizeController.ts:35](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L35)
 
 #### Parameters
 
@@ -83,7 +125,7 @@ Defined in: [calendar/resizeController.ts:29](https://github.com/TanStack/time/b
 optional onResizeError: (error) => void;
 ```
 
-Defined in: [calendar/resizeController.ts:30](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L30)
+Defined in: [calendar/resizeController.ts:44](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L44)
 
 #### Parameters
 
@@ -103,7 +145,7 @@ Defined in: [calendar/resizeController.ts:30](https://github.com/TanStack/time/b
 optional onResizeStart: (eventId, edge) => void;
 ```
 
-Defined in: [calendar/resizeController.ts:28](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L28)
+Defined in: [calendar/resizeController.ts:34](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L34)
 
 #### Parameters
 
@@ -127,4 +169,4 @@ Defined in: [calendar/resizeController.ts:28](https://github.com/TanStack/time/b
 optional orientation: "vertical" | "horizontal";
 ```
 
-Defined in: [calendar/resizeController.ts:26](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L26)
+Defined in: [calendar/resizeController.ts:32](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L32)
