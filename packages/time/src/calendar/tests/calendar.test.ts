@@ -1,5 +1,6 @@
 import { assert, beforeEach, describe, expect, test, vi } from 'vitest'
 import { CalendarCore } from '../calendar'
+import { calculateSegmentResizePreview } from '../getResizeProps'
 import type { Event, Resource } from '../types'
 
 const { emitSpy } = vi.hoisted(() => ({ emitSpy: vi.fn() }))
@@ -4653,6 +4654,72 @@ describe('CalendarCore', () => {
           cal.getEvents().find((e) => e.id === 'e1')!,
         )
         expect(props.overlappingEvents.some((e) => e.id === 'e2')).toBe(true)
+      })
+
+      test('renders an event at its true height (no min-height floor)', () => {
+        // Regression: a min-height floor padded the box downward from the
+        // start, so the rendered bottom (start + floor) did not match the real
+        // end. Resizing one edge then revealed the true size, making the other
+        // (fixed) edge jump. Geometry must be exactly proportional.
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: 'week' },
+          events: [
+            {
+              id: 'e1',
+              title: 'Short',
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T09:20:00`, // 20 min
+            },
+          ],
+        })
+        cal.goToSpecificPeriod(DATE_MON)
+
+        const props = cal.getEventProps(cal.getEvents()[0]!) as {
+          style: { top: string; height: string }
+        }
+        expect(props.style.top).toBe(`${(540 / 1440) * 100}%`)
+        expect(props.style.height).toBe(`${(20 / 1440) * 100}%`)
+      })
+
+      test('top-edge resize keeps the bottom (end) fixed at the real end', () => {
+        const day = DATE_MON
+        const originalEnd = `${day}T09:20:00`
+        const realBottom = (560 / 1440) * 100 // 09:20
+
+        for (const previewStart of [
+          `${day}T08:57:00`,
+          `${day}T08:45:00`,
+          `${day}T08:00:00`,
+        ]) {
+          const preview = calculateSegmentResizePreview({
+            dayDate: day,
+            originalStart: `${day}T09:00:00`,
+            originalEnd,
+            previewStart,
+            previewEnd: originalEnd,
+          })
+          expect(preview.previewStyle).not.toBeNull()
+          const top = parseFloat(preview.previewStyle!.top)
+          const height = parseFloat(preview.previewStyle!.height)
+          // bottom = top + height stays exactly at the real end — no drift.
+          expect(top + height).toBeCloseTo(realBottom, 6)
+        }
+      })
+
+      test('bottom-edge resize keeps the start (top) fixed at the real start', () => {
+        const day = DATE_MON
+        const originalStart = `${day}T09:00:00`
+        const realTop = (540 / 1440) * 100
+
+        const preview = calculateSegmentResizePreview({
+          dayDate: day,
+          originalStart,
+          originalEnd: `${day}T09:20:00`,
+          previewStart: originalStart,
+          previewEnd: `${day}T10:30:00`,
+        })
+        expect(preview.previewStyle).not.toBeNull()
+        expect(parseFloat(preview.previewStyle!.top)).toBeCloseTo(realTop, 6)
       })
     })
 

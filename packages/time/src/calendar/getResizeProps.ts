@@ -352,13 +352,15 @@ export function calculateSegmentResizePreview(
     return { shouldHide: true, previewStyle: null, hasChanged }
   }
 
-  const minHeightPercent = (30 / MINUTES_IN_DAY) * 100
-
+  // Render the real geometry — never a min-height floor. Flooring pads the box
+  // beyond the real edge, so resizing one edge makes the *other* (fixed) edge
+  // appear to jump when the true size is revealed. Keeping geometry real means
+  // the edge you are not dragging never moves.
   return {
     shouldHide: false,
     previewStyle: {
       top: `${topPercent}%`,
-      height: `${Math.max(heightPercent, minHeightPercent)}%`,
+      height: `${heightPercent}%`,
     },
     hasChanged,
   }
@@ -426,11 +428,9 @@ export function calculateGhostPreviewStyle(
     return null
   }
 
-  const minHeightPercent = (30 / MINUTES_IN_DAY) * 100
-
   return {
     top: `${ghostTop}%`,
-    height: `${Math.max(ghostHeight, minHeightPercent)}%`,
+    height: `${ghostHeight}%`,
   }
 }
 

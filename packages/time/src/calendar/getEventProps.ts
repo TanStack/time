@@ -7,7 +7,6 @@ interface GetEventPropsOptions {
 }
 
 const MINUTES_IN_DAY = 24 * 60
-const MIN_EVENT_HEIGHT_MINUTES = 30
 
 const toZonedDateTime = (
   dateInput: EventDateTimeInput,
@@ -113,7 +112,7 @@ export const getEventProps = (
     ...baseProps,
     style: {
       top: `${toPercent(startMinutes)}%`,
-      height: `${Math.max(toPercent(durationMinutes), toPercent(MIN_EVENT_HEIGHT_MINUTES))}%`,
+      height: `${toPercent(durationMinutes)}%`,
       left:
         overlappingCount > 0 ? `${(eventIndex * 100) / columnCount}%` : '0%',
       width: overlappingCount > 0 ? `${100 / columnCount}%` : '100%',

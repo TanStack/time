@@ -549,16 +549,28 @@ function EventModal({
 
 interface ResizeHandleProps {
   edge: 'top' | 'bottom'
+  /**
+   * When the event is too short to host two stacked handles inside it, float
+   * the handle just outside the box (above for top, below for bottom) so the
+   * two handles never overlap and the event stays resizable at any height.
+   */
+  floating?: boolean
   onMouseDown: (e: React.MouseEvent) => void
 }
 
-function ResizeHandle({ edge, onMouseDown }: ResizeHandleProps) {
+function ResizeHandle({ edge, floating, onMouseDown }: ResizeHandleProps) {
+  const edgePosition = floating
+    ? edge === 'top'
+      ? '-top-3'
+      : '-bottom-3'
+    : edge === 'top'
+      ? 'top-0'
+      : 'bottom-0'
+
   return (
     <div
       data-resize-handle
-      className={`absolute left-0 right-0 h-3 cursor-ns-resize z-30 bg-transparent hover:bg-neutral-500/30 pointer-events-auto ${
-        edge === 'top' ? 'top-0' : 'bottom-0'
-      }`}
+      className={`absolute left-0 right-0 h-3 cursor-ns-resize z-30 bg-transparent hover:bg-neutral-500/30 pointer-events-auto ${edgePosition}`}
       onMouseDown={onMouseDown}
       onClick={(e) => {
         e.stopPropagation()
@@ -757,6 +769,20 @@ function ScheduleView({
                           ? { ...style, ...resizePreview.previewStyle }
                           : style
 
+                        // Events render at their true height (no min-height
+                        // floor). A very short event can't host two stacked
+                        // 12px handles inside it without them overlapping and
+                        // stealing each other's clicks — so for those, float
+                        // the handles just outside the box. Still resizable.
+                        const RESIZE_HANDLE_PX = 12 // ResizeHandle `h-3`
+                        const DAY_COLUMN_HEIGHT_PX = 1440 // the `h-[1440px]` grid
+                        const renderedHeightPx = style?.height
+                          ? (parseFloat(style.height) / 100) *
+                            DAY_COLUMN_HEIGHT_PX
+                          : Infinity
+                        const floatHandles =
+                          renderedHeightPx < RESIZE_HANDLE_PX * 2
+
                         const showTopHandle = !isSplitEvent || isFirstSegment
                         const showBottomHandle = !isSplitEvent || isLastSegment
                         const isActivelyResized =
@@ -774,7 +800,11 @@ function ScheduleView({
                         return (
                           <ContextMenu key={`${event.id}-${eventIndex}`}>
                             <ContextMenuTrigger
-                              className={`group absolute z-10 bg-neutral-800 text-white rounded px-2 py-1 text-xs font-medium overflow-hidden transition-colors border border-neutral-700 ${
+                              className={`group absolute z-10 bg-neutral-800 text-white rounded px-2 py-1 text-xs font-medium transition-colors border border-neutral-700 ${
+                                // Floating handles sit outside the box, so they
+                                // must not be clipped.
+                                floatHandles ? '' : 'overflow-hidden'
+                              } ${
                                 isActivelyResized
                                   ? 'bg-neutral-700 ring-2 ring-neutral-500 z-20'
                                   : 'cursor-pointer hover:bg-neutral-700'
@@ -794,6 +824,7 @@ function ScheduleView({
                               {showTopHandle && (
                                 <ResizeHandle
                                   edge="top"
+                                  floating={floatHandles}
                                   {...getResizeHandleProps(
                                     event.id,
                                     'top',
@@ -842,6 +873,7 @@ function ScheduleView({
                               {showBottomHandle && (
                                 <ResizeHandle
                                   edge="bottom"
+                                  floating={floatHandles}
                                   {...getResizeHandleProps(
                                     event.id,
                                     'bottom',
@@ -1929,7 +1961,6 @@ function CalendarView() {
         }}
         onClose={() => setScopeChoiceEvent(null)}
       />
-
 
       <ScopeChoiceModal
         event={null}
