@@ -31,7 +31,7 @@ function getEventProps(
 };
 ```
 
-Defined in: [calendar/getEventProps.ts:60](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getEventProps.ts#L60)
+Defined in: [calendar/getEventProps.ts:59](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getEventProps.ts#L59)
 
 ## Parameters
 
