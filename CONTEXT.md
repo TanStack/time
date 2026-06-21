@@ -25,8 +25,8 @@ the internal-only counterpart.
 _Avoid_: plain date (Temporal-internal term), date-only
 
 **Data Strategy**:
-The pluggable choice (`client` | `server`) of *where the projection/validation pipeline
-executes*, analogous to AG Grid's row model. In `client` mode every stage runs in-process over
+The pluggable choice (`client` | `server`) of _where the projection/validation pipeline
+executes_, analogous to AG Grid's row model. In `client` mode every stage runs in-process over
 a supplied event set; in `server` mode the delegatable stages (sourcing, recurrence-expand,
 conflict, slot-generation) run on the server via the shared Validation Core, returning
 materialized results. Clip-to-viewport and layout always run client-side. The consumer's
@@ -44,7 +44,7 @@ _Avoid_: core, engine (informal synonyms; "kernel" is canonical)
 **Module**:
 A unit of opt-in feature behavior that extends the kernel (recurrence, availability,
 dependencies, drag-resize, undo/redo, scheduling). Modeled on TanStack Table v9 / AG Grid
-modules so unused features tree-shake away. A module *adds capability and state*.
+modules so unused features tree-shake away. A module _adds capability and state_.
 _Avoid_: plugin, feature, extension (pick one canonical term — see open question)
 
 **Product**:
@@ -148,6 +148,6 @@ a timeline view.
 
 **View** (a.k.a. Renderer):
 A way of presenting a kernel's projection (day, week, month, agenda, timeline strip). A
-view *reads* the projection; it does not add capability. This is the line that separates a
+view _reads_ the projection; it does not add capability. This is the line that separates a
 view from a module.
 _Avoid_: layout, display (too vague)
