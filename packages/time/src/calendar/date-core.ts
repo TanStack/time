@@ -54,6 +54,11 @@ export interface DateCoreOptions {
   viewMode: ViewMode
   /** Optional locale for date formatting. Uses a BCP 47 language tag. */
   locale?: Intl.UnicodeBCP47LocaleIdentifier
+  /**
+   * Optional first day of the week (ISO: 1=Mon … 7=Sun). Overrides the
+   * locale-derived first day across all views when provided.
+   */
+  weekStartsOn?: number
   /** Optional time zone specification. */
   timeZone?: Temporal.TimeZoneLike
   /** Optional calendar system to be used. */
@@ -78,10 +83,12 @@ export interface DateCoreOptions {
 
 export interface ParsedDateCoreOptions extends Omit<
   Required<DateCoreOptions>,
-  'range' | 'fixedWeeks' | 'dateFormatter' | 'timeFormatter' | 'dateTimeFormatter'
+  'range' | 'fixedWeeks' | 'weekStartsOn' | 'dateFormatter' | 'timeFormatter' | 'dateTimeFormatter'
 > {
   range: ParsedDateRange
   fixedWeeks?: boolean
+  /** ISO 1=Mon … 7=Sun, or undefined to derive from the locale. */
+  weekStartsOn?: number
 }
 
 export abstract class DateCore {
@@ -162,6 +169,7 @@ export abstract class DateCore {
     return getFirstDayOfWeek(
       this.store.state.currentPeriod.toString(),
       this.options.locale,
+      this.options.weekStartsOn,
     )
   }
 

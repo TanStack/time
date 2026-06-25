@@ -13,15 +13,18 @@ export function getFirstDayOfMonth(yearMonth: string): Temporal.PlainDate {
 }
 
 /**
- * Get the first day of the week for a given date string and locale
+ * Get the first day of the week for a given date string and locale.
+ *
+ * `weekStartsOn` (ISO: 1=Mon … 7=Sun) overrides the locale-derived first day
+ * when provided; otherwise the locale's own convention is used.
  */
 export function getFirstDayOfWeek(
   dateString: string,
   locale: string,
+  weekStartsOn?: number,
 ): Temporal.PlainDate {
   const date = Temporal.PlainDate.from(dateString)
-  const weekInfo = getWeekInfo(locale)
-  const firstDayOfWeek = weekInfo.firstDay
+  const firstDayOfWeek = weekStartsOn ?? getWeekInfo(locale).firstDay
   const dayOfWeek = date.dayOfWeek
   const daysToSubtract = (dayOfWeek - firstDayOfWeek + 7) % 7
 
