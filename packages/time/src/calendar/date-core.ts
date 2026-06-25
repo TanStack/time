@@ -60,6 +60,14 @@ export interface DateCoreOptions {
   calendar?: Temporal.CalendarLike
   /** Optional range of dates to be used. */
   range?: DateRange
+  /**
+   * When `true`, the month view always spans a fixed 6 week-rows (the maximum
+   * any month can occupy) instead of the natural 4/5/6, padding with leading
+   * days of the following month. Keeps the grid height stable across months.
+   * Only affects the `month` view mode; ignored for week/day/workWeek.
+   * @default false
+   */
+  fixedWeeks?: boolean
   /** Optional date formatter. */
   dateFormatter?: Intl.DateTimeFormat
   /** Optional time formatter. */
@@ -70,9 +78,10 @@ export interface DateCoreOptions {
 
 export interface ParsedDateCoreOptions extends Omit<
   Required<DateCoreOptions>,
-  'range' | 'dateFormatter' | 'timeFormatter' | 'dateTimeFormatter'
+  'range' | 'fixedWeeks' | 'dateFormatter' | 'timeFormatter' | 'dateTimeFormatter'
 > {
   range: ParsedDateRange
+  fixedWeeks?: boolean
 }
 
 export abstract class DateCore {
@@ -194,6 +203,21 @@ export abstract class DateCore {
             7) %
           7
         end = lastDayOfMonth.add({ days: 6 - lastDayOfMonthWeekDay })
+        // Pad short months up to a fixed 6 week-rows so the grid never shifts.
+        // Only extends (never truncates), so multi-month spans (>6 weeks) are
+        // left untouched.
+        if (this.options.fixedWeeks) {
+          const FIXED_WEEKS = 6
+          // start and end are both week-boundary aligned, so the span is a whole
+          // number of weeks; round defensively so a fractional value can never
+          // reach Temporal's integer-only `add`.
+          const spanWeeks = Math.round(
+            (start.until(end, { largestUnit: 'day' }).days + 1) / 7,
+          )
+          if (spanWeeks < FIXED_WEEKS) {
+            end = end.add({ weeks: FIXED_WEEKS - spanWeeks })
+          }
+        }
         break
       }
       case 'week': {
