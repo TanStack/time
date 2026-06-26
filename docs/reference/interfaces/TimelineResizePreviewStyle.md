@@ -5,7 +5,7 @@ title: TimelineResizePreviewStyle
 
 # Interface: TimelineResizePreviewStyle
 
-Defined in: [calendar/getResizeProps.ts:444](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L444)
+Defined in: [calendar/getResizeProps.ts:445](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L445)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/getResizeProps.ts:444](https://github.com/TanStack/time/bl
 left: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:445](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L445)
+Defined in: [calendar/getResizeProps.ts:446](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L446)
 
 ***
 
@@ -25,4 +25,4 @@ Defined in: [calendar/getResizeProps.ts:445](https://github.com/TanStack/time/bl
 width: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:446](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L446)
+Defined in: [calendar/getResizeProps.ts:447](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L447)

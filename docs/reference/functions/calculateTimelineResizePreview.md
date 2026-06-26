@@ -9,7 +9,7 @@ title: calculateTimelineResizePreview
 function calculateTimelineResizePreview(options): TimelineResizePreviewStyle;
 ```
 
-Defined in: [calendar/getResizeProps.ts:452](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L452)
+Defined in: [calendar/getResizeProps.ts:453](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L453)
 
 Calculates left/width percentages for timeline resize preview
 

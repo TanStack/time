@@ -9,7 +9,7 @@ title: getEventDisplayTimeRange
 function getEventDisplayTimeRange(options): EventTimeRange;
 ```
 
-Defined in: [calendar/getResizeProps.ts:513](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L513)
+Defined in: [calendar/getResizeProps.ts:514](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L514)
 
 Gets the time range to display for an event, considering resize state
 

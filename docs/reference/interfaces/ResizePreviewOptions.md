@@ -5,7 +5,7 @@ title: ResizePreviewOptions
 
 # Interface: ResizePreviewOptions
 
-Defined in: [calendar/getResizeProps.ts:283](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L283)
+Defined in: [calendar/getResizeProps.ts:284](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L284)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/getResizeProps.ts:283](https://github.com/TanStack/time/bl
 dayDate: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:285](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L285)
+Defined in: [calendar/getResizeProps.ts:286](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L286)
 
 The date string of the day being rendered (YYYY-MM-DD)
 
@@ -27,7 +27,7 @@ The date string of the day being rendered (YYYY-MM-DD)
 originalEnd: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:289](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L289)
+Defined in: [calendar/getResizeProps.ts:290](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L290)
 
 The original end of the event (before resize)
 
@@ -39,7 +39,7 @@ The original end of the event (before resize)
 originalStart: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:287](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L287)
+Defined in: [calendar/getResizeProps.ts:288](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L288)
 
 The original start of the event (before resize)
 
@@ -51,7 +51,7 @@ The original start of the event (before resize)
 previewEnd: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:293](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L293)
+Defined in: [calendar/getResizeProps.ts:294](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L294)
 
 The preview end during resize
 
@@ -63,6 +63,6 @@ The preview end during resize
 previewStart: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:291](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L291)
+Defined in: [calendar/getResizeProps.ts:292](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L292)
 
 The preview start during resize

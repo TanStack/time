@@ -9,7 +9,7 @@ title: calculateGhostPreviewStyle
 function calculateGhostPreviewStyle(options): PositionStyle | null;
 ```
 
-Defined in: [calendar/getResizeProps.ts:381](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L381)
+Defined in: [calendar/getResizeProps.ts:382](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L382)
 
 Calculates the ghost preview style for a day that doesn't have an existing segment
 

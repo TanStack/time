@@ -12,7 +12,7 @@ function formatEventTimeRange(
    options): FormattedEventTime;
 ```
 
-Defined in: [calendar/getResizeProps.ts:562](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L562)
+Defined in: [calendar/getResizeProps.ts:563](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L563)
 
 Formats an event's time range for display
 For multi-day events: includes date and time

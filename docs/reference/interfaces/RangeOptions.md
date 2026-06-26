@@ -5,7 +5,7 @@ title: RangeOptions
 
 # Interface: RangeOptions
 
-Defined in: [date/range/range.ts:7](https://github.com/TanStack/time/blob/main/packages/time/src/date/range/range.ts#L7)
+Defined in: [date/range/range.ts:10](https://github.com/TanStack/time/blob/main/packages/time/src/date/range/range.ts#L10)
 
 ## Extends
 
@@ -35,7 +35,7 @@ DateOperationOptions.calendar
 end: DateInput;
 ```
 
-Defined in: [date/range/range.ts:9](https://github.com/TanStack/time/blob/main/packages/time/src/date/range/range.ts#L9)
+Defined in: [date/range/range.ts:12](https://github.com/TanStack/time/blob/main/packages/time/src/date/range/range.ts#L12)
 
 ***
 
@@ -61,7 +61,7 @@ DateOperationOptions.returnFormat
 start: DateInput;
 ```
 
-Defined in: [date/range/range.ts:8](https://github.com/TanStack/time/blob/main/packages/time/src/date/range/range.ts#L8)
+Defined in: [date/range/range.ts:11](https://github.com/TanStack/time/blob/main/packages/time/src/date/range/range.ts#L11)
 
 ***
 
@@ -71,7 +71,7 @@ Defined in: [date/range/range.ts:8](https://github.com/TanStack/time/blob/main/p
 step: DurationLike;
 ```
 
-Defined in: [date/range/range.ts:10](https://github.com/TanStack/time/blob/main/packages/time/src/date/range/range.ts#L10)
+Defined in: [date/range/range.ts:13](https://github.com/TanStack/time/blob/main/packages/time/src/date/range/range.ts#L13)
 
 ***
 

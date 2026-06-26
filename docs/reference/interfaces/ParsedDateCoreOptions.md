@@ -51,7 +51,7 @@ Optional locale for date formatting. Uses a BCP 47 language tag.
 range: ParsedDateRange;
 ```
 
-Defined in: [calendar/date-core.ts:75](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L75)
+Defined in: [calendar/date-core.ts:76](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L76)
 
 ***
 

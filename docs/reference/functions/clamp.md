@@ -9,7 +9,7 @@ title: clamp
 function clamp(input, options): object;
 ```
 
-Defined in: [date/clamp/clamp.ts:10](https://github.com/TanStack/time/blob/main/packages/time/src/date/clamp/clamp.ts#L10)
+Defined in: [date/clamp/clamp.ts:13](https://github.com/TanStack/time/blob/main/packages/time/src/date/clamp/clamp.ts#L13)
 
 ## Parameters
 

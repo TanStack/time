@@ -5,7 +5,7 @@ title: EventTimeRange
 
 # Interface: EventTimeRange
 
-Defined in: [calendar/getResizeProps.ts:504](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L504)
+Defined in: [calendar/getResizeProps.ts:505](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L505)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/getResizeProps.ts:504](https://github.com/TanStack/time/bl
 end: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:506](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L506)
+Defined in: [calendar/getResizeProps.ts:507](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L507)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [calendar/getResizeProps.ts:506](https://github.com/TanStack/time/bl
 isMultiDay: boolean;
 ```
 
-Defined in: [calendar/getResizeProps.ts:507](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L507)
+Defined in: [calendar/getResizeProps.ts:508](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L508)
 
 ***
 
@@ -35,4 +35,4 @@ Defined in: [calendar/getResizeProps.ts:507](https://github.com/TanStack/time/bl
 start: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:505](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L505)
+Defined in: [calendar/getResizeProps.ts:506](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L506)

@@ -5,7 +5,7 @@ title: ClampOptions
 
 # Interface: ClampOptions
 
-Defined in: [date/clamp/clamp.ts:6](https://github.com/TanStack/time/blob/main/packages/time/src/date/clamp/clamp.ts#L6)
+Defined in: [date/clamp/clamp.ts:9](https://github.com/TanStack/time/blob/main/packages/time/src/date/clamp/clamp.ts#L9)
 
 ## Extends
 
@@ -33,7 +33,7 @@ Defined in: [date/types.ts:11](https://github.com/TanStack/time/blob/main/packag
 range: Range;
 ```
 
-Defined in: [date/clamp/clamp.ts:7](https://github.com/TanStack/time/blob/main/packages/time/src/date/clamp/clamp.ts#L7)
+Defined in: [date/clamp/clamp.ts:10](https://github.com/TanStack/time/blob/main/packages/time/src/date/clamp/clamp.ts#L10)
 
 ***
 

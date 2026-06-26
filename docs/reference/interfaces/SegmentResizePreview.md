@@ -5,7 +5,7 @@ title: SegmentResizePreview
 
 # Interface: SegmentResizePreview
 
-Defined in: [calendar/getResizeProps.ts:274](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L274)
+Defined in: [calendar/getResizeProps.ts:275](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L275)
 
 Result of resize preview calculation for a segment
 
@@ -17,7 +17,7 @@ Result of resize preview calculation for a segment
 hasChanged: boolean;
 ```
 
-Defined in: [calendar/getResizeProps.ts:280](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L280)
+Defined in: [calendar/getResizeProps.ts:281](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L281)
 
 Whether the preview has changed from the original
 
@@ -29,7 +29,7 @@ Whether the preview has changed from the original
 previewStyle: PositionStyle | null;
 ```
 
-Defined in: [calendar/getResizeProps.ts:278](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L278)
+Defined in: [calendar/getResizeProps.ts:279](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L279)
 
 The preview style to apply, if any
 
@@ -41,6 +41,6 @@ The preview style to apply, if any
 shouldHide: boolean;
 ```
 
-Defined in: [calendar/getResizeProps.ts:276](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L276)
+Defined in: [calendar/getResizeProps.ts:277](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L277)
 
 Whether the segment should be hidden (shrunk away)
