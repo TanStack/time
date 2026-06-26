@@ -1,2 +1,2 @@
-export { isBefore } from './isBefore'
-export type { IsBeforeOptions } from './isBefore'
+export { isBefore } from "./isBefore";
+export type { IsBeforeOptions } from "./isBefore";

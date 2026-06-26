@@ -1,1 +1,1 @@
-export * from './TimeClient'
+export * from "./TimeClient";

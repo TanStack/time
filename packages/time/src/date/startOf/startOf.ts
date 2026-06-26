@@ -1,19 +1,19 @@
-import { withDateOperation } from '../withDateOperation'
-import type { DateOperationOptions } from '../withDateOperation'
-import type { DateInput } from '../types'
+import { withDateOperation } from "../withDateOperation";
+import type { DateOperationOptions } from "../withDateOperation";
+import type { DateInput } from "../types";
 
 export type StartOfUnit =
-  | 'year'
-  | 'month'
-  | 'week'
-  | 'day'
-  | 'hour'
-  | 'minute'
-  | 'second'
-  | 'millisecond'
+  | "year"
+  | "month"
+  | "week"
+  | "day"
+  | "hour"
+  | "minute"
+  | "second"
+  | "millisecond";
 
 export interface StartOfOptions extends DateOperationOptions {
-  unit: StartOfUnit
+  unit: StartOfUnit;
 }
 
 /**
@@ -23,7 +23,7 @@ export interface StartOfOptions extends DateOperationOptions {
 export function startOf(input: DateInput, options: StartOfOptions) {
   return withDateOperation<StartOfOptions>((zdt, { unit }) => {
     switch (unit) {
-      case 'year':
+      case "year":
         return zdt.with({
           month: 1,
           day: 1,
@@ -33,8 +33,8 @@ export function startOf(input: DateInput, options: StartOfOptions) {
           millisecond: 0,
           microsecond: 0,
           nanosecond: 0,
-        })
-      case 'month':
+        });
+      case "month":
         return zdt.with({
           day: 1,
           hour: 0,
@@ -43,14 +43,14 @@ export function startOf(input: DateInput, options: StartOfOptions) {
           millisecond: 0,
           microsecond: 0,
           nanosecond: 0,
-        })
-      case 'week': {
-        const dayOfWeek = zdt.dayOfWeek
-        const firstDayOfWeek = 1
-        const daysToSubtract = (dayOfWeek - firstDayOfWeek + 7) % 7
-        return zdt.subtract({ days: daysToSubtract })
+        });
+      case "week": {
+        const dayOfWeek = zdt.dayOfWeek;
+        const firstDayOfWeek = 1;
+        const daysToSubtract = (dayOfWeek - firstDayOfWeek + 7) % 7;
+        return zdt.subtract({ days: daysToSubtract });
       }
-      case 'day':
+      case "day":
         return zdt.with({
           hour: 0,
           minute: 0,
@@ -58,28 +58,28 @@ export function startOf(input: DateInput, options: StartOfOptions) {
           millisecond: 0,
           microsecond: 0,
           nanosecond: 0,
-        })
-      case 'hour':
+        });
+      case "hour":
         return zdt.with({
           minute: 0,
           second: 0,
           millisecond: 0,
           microsecond: 0,
           nanosecond: 0,
-        })
-      case 'minute':
+        });
+      case "minute":
         return zdt.with({
           second: 0,
           millisecond: 0,
           microsecond: 0,
           nanosecond: 0,
-        })
-      case 'second':
-        return zdt.with({ millisecond: 0, microsecond: 0, nanosecond: 0 })
-      case 'millisecond':
-        return zdt.with({ microsecond: 0, nanosecond: 0 })
+        });
+      case "second":
+        return zdt.with({ millisecond: 0, microsecond: 0, nanosecond: 0 });
+      case "millisecond":
+        return zdt.with({ microsecond: 0, nanosecond: 0 });
       default:
-        return zdt
+        return zdt;
     }
-  })(input, options)
+  })(input, options);
 }

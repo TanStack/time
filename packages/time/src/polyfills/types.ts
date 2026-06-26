@@ -1,15 +1,15 @@
 export interface WeekInfo {
-  firstDay: number
-  weekend: Array<number>
-  minimalDays: number
+  firstDay: number;
+  weekend: Array<number>;
+  minimalDays: number;
 }
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
+  // oxlint-disable-next-line no-namespace
   namespace Intl {
     interface Locale {
-      getWeekInfo: () => WeekInfo
-      weekInfo?: WeekInfo
+      getWeekInfo: () => WeekInfo;
+      weekInfo?: WeekInfo;
     }
   }
 }

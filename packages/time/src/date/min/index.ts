@@ -1,1 +1,1 @@
-export * from './min'
+export * from "./min";

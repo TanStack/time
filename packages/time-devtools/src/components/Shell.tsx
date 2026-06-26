@@ -1,4 +1,4 @@
-import { For, Show, createMemo, createSignal } from 'solid-js'
+import { For, Show, createMemo, createSignal } from "solid-js";
 import {
   Button,
   Header,
@@ -8,185 +8,185 @@ import {
   MainPanel,
   Tag,
   X,
-} from '@tanstack/devtools-ui'
-import { useStyles } from '../styles/use-styles'
-import { TimeProvider, useTimeStore } from '../store/time-context'
-import type { TimeEventInfo } from '@tanstack/time'
-import type { ActivityLogEntry } from '../store/time-context'
+} from "@tanstack/devtools-ui";
+import { useStyles } from "../styles/use-styles";
+import { TimeProvider, useTimeStore } from "../store/time-context";
+import type { TimeEventInfo } from "@tanstack/time";
+import type { ActivityLogEntry } from "../store/time-context";
 
 export default function Devtools() {
   return (
     <TimeProvider>
       <DevtoolsContent />
     </TimeProvider>
-  )
+  );
 }
 
 const formatTime = (timestamp: number) => {
-  const date = new Date(timestamp)
-  return date.toLocaleTimeString('en-US', {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString("en-US", {
     hour12: false,
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  })
-}
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+};
 
 const getEventTypeLabel = (
   type: string,
 ): {
-  text: string
+  text: string;
   color:
-    | 'green'
-    | 'blue'
-    | 'red'
-    | 'yellow'
-    | 'purple'
-    | 'pink'
-    | 'gray'
-    | 'teal'
+    | "green"
+    | "blue"
+    | "red"
+    | "yellow"
+    | "purple"
+    | "pink"
+    | "gray"
+    | "teal";
 } => {
   switch (type) {
-    case 'time:events:set':
-      return { text: 'Loaded', color: 'green' }
-    case 'time:event:added':
-      return { text: 'Added', color: 'green' }
-    case 'time:event:updated':
-      return { text: 'Updated', color: 'blue' }
-    case 'time:event:removed':
-      return { text: 'Removed', color: 'red' }
-    case 'time:event:resized':
-      return { text: 'Resized', color: 'yellow' }
-    case 'time:event:update:error':
-      return { text: 'Update Error', color: 'red' }
-    case 'time:calendar:navigate':
-      return { text: 'Navigate', color: 'purple' }
-    case 'time:event:undo':
-      return { text: 'Undo', color: 'yellow' }
-    case 'time:event:redo':
-      return { text: 'Redo', color: 'yellow' }
-    case 'time:calendar:viewMode:changed':
-      return { text: 'View Mode', color: 'pink' }
+    case "time:events:set":
+      return { text: "Loaded", color: "green" };
+    case "time:event:added":
+      return { text: "Added", color: "green" };
+    case "time:event:updated":
+      return { text: "Updated", color: "blue" };
+    case "time:event:removed":
+      return { text: "Removed", color: "red" };
+    case "time:event:resized":
+      return { text: "Resized", color: "yellow" };
+    case "time:event:update:error":
+      return { text: "Update Error", color: "red" };
+    case "time:calendar:navigate":
+      return { text: "Navigate", color: "purple" };
+    case "time:event:undo":
+      return { text: "Undo", color: "yellow" };
+    case "time:event:redo":
+      return { text: "Redo", color: "yellow" };
+    case "time:calendar:viewMode:changed":
+      return { text: "View Mode", color: "pink" };
     default:
-      return { text: type, color: 'gray' }
+      return { text: type, color: "gray" };
   }
-}
+};
 
 const getEventDescription = (entry: ActivityLogEntry): string => {
-  const { type, details } = entry
+  const { type, details } = entry;
 
   switch (type) {
-    case 'time:events:set':
-      const evts = details.events as Array<unknown> | undefined
-      return `Batched ${evts?.length || 0} events`
-    case 'time:event:added':
-      return `${details.eventTitle || 'Event'} (ID: ${String(details.eventId).slice(0, 8)}...)`
-    case 'time:event:updated':
-      return `${details.eventTitle || 'Event'} - ${Object.keys(details.updates || {}).join(', ')}`
-    case 'time:event:removed':
-      return `${details.eventTitle || 'Event'}`
-    case 'time:event:resized':
-      return `Resized to ${String(details.start)} - ${String(details.end)}`
-    case 'time:event:update:error':
-      return `${details.eventTitle || 'Event'} - ${String(details.message)}`
-    case 'time:event:undo': {
+    case "time:events:set":
+      const evts = details.events as Array<unknown> | undefined;
+      return `Batched ${evts?.length || 0} events`;
+    case "time:event:added":
+      return `${details.eventTitle || "Event"} (ID: ${String(details.eventId).slice(0, 8)}...)`;
+    case "time:event:updated":
+      return `${details.eventTitle || "Event"} - ${Object.keys(details.updates || {}).join(", ")}`;
+    case "time:event:removed":
+      return `${details.eventTitle || "Event"}`;
+    case "time:event:resized":
+      return `Resized to ${String(details.start)} - ${String(details.end)}`;
+    case "time:event:update:error":
+      return `${details.eventTitle || "Event"} - ${String(details.message)}`;
+    case "time:event:undo": {
       const d = details as {
-        added?: Array<TimeEventInfo>
-        removed?: Array<TimeEventInfo>
-        updated?: Array<TimeEventInfo>
-      }
-      const parts: Array<string> = []
-      if (d.added?.length) parts.push(`${d.added.length} added`)
-      if (d.removed?.length) parts.push(`${d.removed.length} removed`)
-      if (d.updated?.length) parts.push(`${d.updated.length} updated`)
-      return parts.length ? `Undo: ${parts.join(', ')}` : 'Undo'
+        added?: Array<TimeEventInfo>;
+        removed?: Array<TimeEventInfo>;
+        updated?: Array<TimeEventInfo>;
+      };
+      const parts: Array<string> = [];
+      if (d.added?.length) parts.push(`${d.added.length} added`);
+      if (d.removed?.length) parts.push(`${d.removed.length} removed`);
+      if (d.updated?.length) parts.push(`${d.updated.length} updated`);
+      return parts.length ? `Undo: ${parts.join(", ")}` : "Undo";
     }
-    case 'time:event:redo': {
+    case "time:event:redo": {
       const d = details as {
-        added?: Array<TimeEventInfo>
-        removed?: Array<TimeEventInfo>
-        updated?: Array<TimeEventInfo>
-      }
-      const parts: Array<string> = []
-      if (d.added?.length) parts.push(`${d.added.length} added`)
-      if (d.removed?.length) parts.push(`${d.removed.length} removed`)
-      if (d.updated?.length) parts.push(`${d.updated.length} updated`)
-      return parts.length ? `Redo: ${parts.join(', ')}` : 'Redo'
+        added?: Array<TimeEventInfo>;
+        removed?: Array<TimeEventInfo>;
+        updated?: Array<TimeEventInfo>;
+      };
+      const parts: Array<string> = [];
+      if (d.added?.length) parts.push(`${d.added.length} added`);
+      if (d.removed?.length) parts.push(`${d.removed.length} removed`);
+      if (d.updated?.length) parts.push(`${d.updated.length} updated`);
+      return parts.length ? `Redo: ${parts.join(", ")}` : "Redo";
     }
-    case 'time:calendar:navigate':
-      return `${String(details.direction)} → ${String(details.targetDate)}`
-    case 'time:calendar:viewMode:changed':
+    case "time:calendar:navigate":
+      return `${String(details.direction)} → ${String(details.targetDate)}`;
+    case "time:calendar:viewMode:changed":
       const viewMode = details.viewMode as
         | { value?: number; unit?: string }
-        | undefined
-      return `${viewMode?.value || ''} ${viewMode?.unit || ''}`
+        | undefined;
+      return `${viewMode?.value || ""} ${viewMode?.unit || ""}`;
     default:
-      return ''
+      return "";
   }
-}
+};
 
 function DevtoolsContent() {
-  const { state, clearLog } = useTimeStore()
-  const styles = useStyles()
-  const [activeTab, setActiveTab] = createSignal<'log' | 'events'>('log')
+  const { state, clearLog } = useTimeStore();
+  const styles = useStyles();
+  const [activeTab, setActiveTab] = createSignal<"log" | "events">("log");
 
-  const [selectedId, setSelectedId] = createSignal<string | null>(null)
-  const [search, setSearch] = createSignal('')
+  const [selectedId, setSelectedId] = createSignal<string | null>(null);
+  const [search, setSearch] = createSignal("");
 
   const filteredLog = createMemo(() => {
-    const s = search().toLowerCase()
+    const s = search().toLowerCase();
     return state.activityLog.filter((entry) => {
-      if (!s) return true
+      if (!s) return true;
       return (
         entry.type.toLowerCase().includes(s) ||
         getEventDescription(entry).toLowerCase().includes(s)
-      )
-    })
-  })
+      );
+    });
+  });
 
   const filteredEvents = createMemo(() => {
-    const s = search().toLowerCase()
+    const s = search().toLowerCase();
     return (Object.values(state.events).filter(Boolean) as Array<any>).filter(
       (event) => {
-        if (!s) return true
+        if (!s) return true;
         return (
           event.title.toLowerCase().includes(s) ||
           event.id.toLowerCase().includes(s)
-        )
+        );
       },
-    )
-  })
+    );
+  });
 
   const selectedEntry = createMemo(() => {
-    const id = selectedId()
-    if (!id) return null
-    if (activeTab() === 'log') {
-      return state.activityLog.find((e) => e.id === id)
+    const id = selectedId();
+    if (!id) return null;
+    if (activeTab() === "log") {
+      return state.activityLog.find((e) => e.id === id);
     }
-    return state.events[id]
-  })
+    return state.events[id];
+  });
 
   return (
     <MainPanel class={styles().shellRoot}>
       <Header>
-        <HeaderLogo flavor={{ light: '#9dec48', dark: '#9dec48' }}>
+        <HeaderLogo flavor={{ light: "#9dec48", dark: "#9dec48" }}>
           TanStack Time v0
         </HeaderLogo>
         <div
           style={{
-            display: 'flex',
-            gap: '0.5rem',
-            'margin-left': '1.5rem',
+            display: "flex",
+            gap: "0.5rem",
+            "margin-left": "1.5rem",
             flex: 1,
           }}
         >
           <Show
-            when={activeTab() === 'log'}
+            when={activeTab() === "log"}
             fallback={
               <Button
                 onClick={() => {
-                  setActiveTab('log')
-                  setSelectedId(null)
+                  setActiveTab("log");
+                  setSelectedId(null);
                 }}
                 variant="primary"
                 outline
@@ -197,8 +197,8 @@ function DevtoolsContent() {
           >
             <Button
               onClick={() => {
-                setActiveTab('log')
-                setSelectedId(null)
+                setActiveTab("log");
+                setSelectedId(null);
               }}
               variant="primary"
             >
@@ -206,12 +206,12 @@ function DevtoolsContent() {
             </Button>
           </Show>
           <Show
-            when={activeTab() === 'events'}
+            when={activeTab() === "events"}
             fallback={
               <Button
                 onClick={() => {
-                  setActiveTab('events')
-                  setSelectedId(null)
+                  setActiveTab("events");
+                  setSelectedId(null);
                 }}
                 variant="primary"
                 outline
@@ -222,8 +222,8 @@ function DevtoolsContent() {
           >
             <Button
               onClick={() => {
-                setActiveTab('events')
-                setSelectedId(null)
+                setActiveTab("events");
+                setSelectedId(null);
               }}
               variant="primary"
             >
@@ -243,16 +243,18 @@ function DevtoolsContent() {
         <div class={styles().sidebar}>
           <div class={styles().searchArea}>
             <Input
-              placeholder={`Filter ${activeTab() === 'log' ? 'activity' : 'events'}...`}
+              placeholder={`Filter ${
+                activeTab() === "log" ? "activity" : "events"
+              }...`}
               value={search()}
               onChange={(val) => setSearch(val)}
             />
           </div>
 
           <div class={styles().list}>
-            <Show when={activeTab() === 'log'}>
+            <Show when={activeTab() === "log"}>
               <div class={styles().sectionHeader}>
-                <span style={{ 'font-size': '11px', color: '#9ca3af' }}>
+                <span style={{ "font-size": "11px", color: "#9ca3af" }}>
                   {filteredLog().length} Entries
                 </span>
                 <Button onClick={clearLog} variant="secondary">
@@ -266,7 +268,7 @@ function DevtoolsContent() {
                 }
               >
                 {(entry) => {
-                  const label = getEventTypeLabel(entry.type)
+                  const label = getEventTypeLabel(entry.type);
                   return (
                     <div
                       class={styles().listItem}
@@ -281,14 +283,14 @@ function DevtoolsContent() {
                         {getEventDescription(entry)}
                       </span>
                     </div>
-                  )
+                  );
                 }}
               </For>
             </Show>
 
-            <Show when={activeTab() === 'events'}>
+            <Show when={activeTab() === "events"}>
               <div class={styles().sectionHeader}>
-                <span style={{ 'font-size': '11px', color: '#9ca3af' }}>
+                <span style={{ "font-size": "11px", color: "#9ca3af" }}>
                   {filteredEvents().length} Events
                 </span>
               </div>
@@ -306,14 +308,14 @@ function DevtoolsContent() {
                   >
                     <div
                       style={{
-                        display: 'flex',
-                        'flex-direction': 'column',
-                        gap: '2px',
+                        display: "flex",
+                        "flex-direction": "column",
+                        gap: "2px",
                       }}
                     >
-                      <div style={{ 'font-weight': 600 }}>{event.title}</div>
-                      <div style={{ 'font-size': '10px', color: '#9ca3af' }}>
-                        {event.start.split('T')[0]} → {event.end.split('T')[0]}
+                      <div style={{ "font-weight": 600 }}>{event.title}</div>
+                      <div style={{ "font-size": "10px", color: "#9ca3af" }}>
+                        {event.start.split("T")[0]} → {event.end.split("T")[0]}
                       </div>
                     </div>
                   </div>
@@ -338,12 +340,12 @@ function DevtoolsContent() {
                 <div class={styles().detailsHeader}>
                   <div
                     style={{
-                      display: 'flex',
-                      'align-items': 'center',
-                      gap: '8px',
+                      display: "flex",
+                      "align-items": "center",
+                      gap: "8px",
                     }}
                   >
-                    <Show when={activeTab() === 'log'}>
+                    <Show when={activeTab() === "log"}>
                       <Tag
                         label={
                           getEventTypeLabel((entry() as ActivityLogEntry).type)
@@ -355,8 +357,8 @@ function DevtoolsContent() {
                         }
                       />
                     </Show>
-                    <span style={{ 'font-weight': 600 }}>
-                      {activeTab() === 'log'
+                    <span style={{ "font-weight": 600 }}>
+                      {activeTab() === "log"
                         ? (entry() as ActivityLogEntry).type
                         : (entry() as any).title}
                     </span>
@@ -364,18 +366,18 @@ function DevtoolsContent() {
                   <Button
                     onClick={() => setSelectedId(null)}
                     variant="secondary"
-                    style={{ padding: '4px' }}
+                    style={{ padding: "4px" }}
                   >
                     <X />
                   </Button>
                 </div>
                 <div class={styles().detailsContent}>
-                  <div style={{ 'margin-bottom': '16px' }}>
+                  <div style={{ "margin-bottom": "16px" }}>
                     <div
                       style={{
-                        'font-size': '11px',
-                        color: '#9ca3af',
-                        'margin-bottom': '4px',
+                        "font-size": "11px",
+                        color: "#9ca3af",
+                        "margin-bottom": "4px",
                       }}
                     >
                       Raw Data
@@ -383,7 +385,7 @@ function DevtoolsContent() {
                     <div class={styles().jsonTreeContainer}>
                       <JsonTree
                         value={
-                          activeTab() === 'log'
+                          activeTab() === "log"
                             ? (entry() as ActivityLogEntry).details
                             : entry()
                         }
@@ -392,12 +394,12 @@ function DevtoolsContent() {
                     </div>
                   </div>
 
-                  <Show when={activeTab() === 'log'}>
+                  <Show when={activeTab() === "log"}>
                     <div
                       style={{
-                        'font-size': '11px',
-                        color: '#9ca3af',
-                        'margin-bottom': '4px',
+                        "font-size": "11px",
+                        color: "#9ca3af",
+                        "margin-bottom": "4px",
                       }}
                     >
                       Metadata
@@ -421,5 +423,5 @@ function DevtoolsContent() {
         </div>
       </div>
     </MainPanel>
-  )
+  );
 }

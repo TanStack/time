@@ -12,8 +12,8 @@
 - `pnpm test:lib` — run Vitest tests
 - `pnpm test:lib:dev` — watch mode
 - `pnpm test:types` — TypeScript type checking via `tsc --noEmit`
-- `pnpm test:eslint` — linting
-- `pnpm test:ci` — full CI suite (eslint, sherif, knip, docs, lib, types, build)
+- `pnpm test:lint` — linting
+- `pnpm test:ci` — full CI suite (oxlint, sherif, knip, docs, lib, types, build)
 
 ## Coverage Expectations
 

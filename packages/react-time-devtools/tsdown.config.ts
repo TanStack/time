@@ -1,8 +1,8 @@
-import { defineConfig } from 'tsdown'
+import { defineConfig } from "tsdown";
 
 export default defineConfig({
-  entry: ['./src/index.ts'],
-  format: ['esm', 'cjs'],
+  entry: ["./src/index.ts"],
+  format: ["esm", "cjs"],
   unbundle: true,
   dts: true,
   sourcemap: true,
@@ -11,9 +11,9 @@ export default defineConfig({
   fixedExtension: false,
   exports: true,
   esbuild: {
-    jsx: 'automatic',
+    jsx: "automatic",
   },
   publint: {
     strict: true,
   },
-})
+});

@@ -1,15 +1,15 @@
-import { toZonedDateTime } from '../helpers'
-import type { DateInput, DateOptions } from '../types'
-import { getDateTimeDefaults } from '~/utils'
+import { toZonedDateTime } from "../helpers";
+import type { DateInput, DateOptions } from "../types";
+import { getDateTimeDefaults } from "~/utils";
 
 export interface GetWeekOptions extends DateOptions {}
 
 export function getWeek(date: DateInput, options?: GetWeekOptions): number {
   const { timeZone: defaultTimeZone, calendar: defaultCalendar } =
-    getDateTimeDefaults()
+    getDateTimeDefaults();
   const { timeZone = defaultTimeZone, calendar = defaultCalendar } =
-    options ?? {}
+    options ?? {};
 
-  const zdt = toZonedDateTime(date, timeZone, calendar)
-  return zdt.weekOfYear ?? 0
+  const zdt = toZonedDateTime(date, timeZone, calendar);
+  return zdt.weekOfYear ?? 0;
 }

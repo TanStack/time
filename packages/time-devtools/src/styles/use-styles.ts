@@ -1,8 +1,8 @@
-import * as goober from 'goober'
-import { createEffect, createSignal } from 'solid-js'
+import * as goober from "goober";
+import { createEffect, createSignal } from "solid-js";
 
 const stylesFactory = () => {
-  const css = goober.css
+  const css = goober.css;
 
   return {
     connectedStatus: css`
@@ -142,13 +142,13 @@ const stylesFactory = () => {
       margin-top: 12px;
       border: 1px solid #1f2937;
     `,
-  }
-}
+  };
+};
 
 export function useStyles() {
-  const [styles, setStyles] = createSignal(stylesFactory())
+  const [styles, setStyles] = createSignal(stylesFactory());
   createEffect(() => {
-    setStyles(stylesFactory())
-  })
-  return styles
+    setStyles(stylesFactory());
+  });
+  return styles;
 }

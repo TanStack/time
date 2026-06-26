@@ -1,9 +1,9 @@
-import { defineConfig } from 'tsdown'
-import solid from 'rolldown-plugin-solid'
+import { defineConfig } from "tsdown";
+import solid from "rolldown-plugin-solid";
 
 export default defineConfig({
-  entry: ['./src/index.ts'],
-  format: ['esm', 'cjs'],
+  entry: ["./src/index.ts"],
+  format: ["esm", "cjs"],
   unbundle: true,
   dts: true,
   sourcemap: true,
@@ -15,4 +15,4 @@ export default defineConfig({
     strict: true,
   },
   plugins: [solid()],
-})
+});

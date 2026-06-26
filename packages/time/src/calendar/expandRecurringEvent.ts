@@ -1,6 +1,6 @@
-import { Temporal } from '@js-temporal/polyfill'
-import type { Event, Resource } from './types'
-import { toPlainDateTimeString } from '~/date/parse'
+import { Temporal } from "@js-temporal/polyfill";
+import type { Event, Resource } from "./types";
+import { toPlainDateTimeString } from "~/date/parse";
 
 /**
  * Expand a single recurring master event into individual occurrence instances
@@ -23,89 +23,89 @@ export function expandRecurringEvent<
   TResource extends Resource = Resource,
   TEvent extends Event<TResource> = Event<TResource>,
 >(event: TEvent, windowStart: string, windowEnd: string): Array<TEvent> {
-  const rule = (event as Event<TResource>).recurrence
-  if (!rule) return []
+  const rule = (event as Event<TResource>).recurrence;
+  if (!rule) return [];
 
-  const masterStartStr = toPlainDateTimeString(event.start)
-  const masterEndStr = toPlainDateTimeString(event.end)
+  const masterStartStr = toPlainDateTimeString(event.start);
+  const masterEndStr = toPlainDateTimeString(event.end);
 
-  const masterStart = Temporal.PlainDateTime.from(masterStartStr)
-  const masterEnd = Temporal.PlainDateTime.from(masterEndStr)
+  const masterStart = Temporal.PlainDateTime.from(masterStartStr);
+  const masterEnd = Temporal.PlainDateTime.from(masterEndStr);
 
   const durationMs = masterStart
-    .toZonedDateTime('UTC')
-    .until(masterEnd.toZonedDateTime('UTC'))
-    .total('milliseconds')
+    .toZonedDateTime("UTC")
+    .until(masterEnd.toZonedDateTime("UTC"))
+    .total("milliseconds");
 
-  const interval = Math.max(1, rule.interval ?? 1)
-  const windowStartDate = Temporal.PlainDate.from(windowStart)
-  const windowEndDate = Temporal.PlainDate.from(windowEnd)
-  const untilDate = rule.until ? Temporal.PlainDate.from(rule.until) : null
-  const frequency = rule.frequency
+  const interval = Math.max(1, rule.interval ?? 1);
+  const windowStartDate = Temporal.PlainDate.from(windowStart);
+  const windowEndDate = Temporal.PlainDate.from(windowEnd);
+  const untilDate = rule.until ? Temporal.PlainDate.from(rule.until) : null;
+  const frequency = rule.frequency;
 
   const byWeekday =
-    frequency === 'weekly'
+    frequency === "weekly"
       ? (rule.byWeekday?.length ? rule.byWeekday : [masterStart.dayOfWeek])
           .filter((day) => day >= 1 && day <= 7)
           .filter((day, index, all) => all.indexOf(day) === index)
           .sort((a, b) => a - b)
-      : null
+      : null;
 
-  const exDateTimes = new Set<string>()
-  const exDates = new Set<string>()
+  const exDateTimes = new Set<string>();
+  const exDates = new Set<string>();
   for (const exDate of rule.exDates ?? []) {
-    if (typeof exDate === 'string' && !exDate.includes('T')) {
+    if (typeof exDate === "string" && !exDate.includes("T")) {
       exDates.add(
-        Temporal.PlainDate.from(exDate).toString({ calendarName: 'never' }),
-      )
+        Temporal.PlainDate.from(exDate).toString({ calendarName: "never" }),
+      );
     } else {
-      const normalized = toPlainDateTimeString(exDate)
-      exDateTimes.add(normalized)
+      const normalized = toPlainDateTimeString(exDate);
+      exDateTimes.add(normalized);
       exDates.add(
         Temporal.PlainDateTime.from(normalized)
           .toPlainDate()
-          .toString({ calendarName: 'never' }),
-      )
+          .toString({ calendarName: "never" }),
+      );
     }
   }
 
   const overridesByDateTime = new Map<
     string,
     NonNullable<typeof rule.overrides>[number]
-  >()
+  >();
   const overridesByDate = new Map<
     string,
     NonNullable<typeof rule.overrides>[number]
-  >()
+  >();
   for (const override of rule.overrides ?? []) {
-    const originalStart = override.originalStart
-    if (typeof originalStart === 'string' && !originalStart.includes('T')) {
+    const originalStart = override.originalStart;
+    if (typeof originalStart === "string" && !originalStart.includes("T")) {
       overridesByDate.set(
         Temporal.PlainDate.from(originalStart).toString({
-          calendarName: 'never',
+          calendarName: "never",
         }),
         override,
-      )
+      );
     } else {
-      const normalized = toPlainDateTimeString(originalStart)
-      overridesByDateTime.set(normalized, override)
+      const normalized = toPlainDateTimeString(originalStart);
+      overridesByDateTime.set(normalized, override);
       overridesByDate.set(
         Temporal.PlainDateTime.from(normalized)
           .toPlainDate()
-          .toString({ calendarName: 'never' }),
+          .toString({ calendarName: "never" }),
         override,
-      )
+      );
     }
   }
 
-  const occurrences: Array<TEvent> = []
-  let occurrenceIndex = 0
-  let step = 0
-  const MAX_STEPS = 3650
+  const occurrences: Array<TEvent> = [];
+  let occurrenceIndex = 0;
+  let step = 0;
+  const MAX_STEPS = 3650;
 
   const masterMonday = masterStart
     .toPlainDate()
-    .subtract({ days: masterStart.dayOfWeek - 1 })
+    .subtract({ days: masterStart.dayOfWeek - 1 });
 
   const toDateTimeOnMasterTime = (date: Temporal.PlainDate) =>
     Temporal.PlainDateTime.from({
@@ -115,40 +115,40 @@ export function expandRecurringEvent<
       hour: masterStart.hour,
       minute: masterStart.minute,
       second: masterStart.second,
-    })
+    });
 
   const addDuration = (start: string) =>
     Temporal.PlainDateTime.from(start)
-      .toZonedDateTime('UTC')
+      .toZonedDateTime("UTC")
       .add({ milliseconds: durationMs })
       .toPlainDateTime()
-      .toString({ smallestUnit: 'second' })
+      .toString({ smallestUnit: "second" });
 
   while (step <= MAX_STEPS) {
-    const candidates: Array<Temporal.PlainDateTime> = []
+    const candidates: Array<Temporal.PlainDateTime> = [];
 
     switch (frequency) {
-      case 'daily':
-        candidates.push(masterStart.add({ days: step * interval }))
-        break
-      case 'weekly': {
-        const targetMonday = masterMonday.add({ weeks: step * interval })
-        if (step === 0) candidates.push(masterStart)
+      case "daily":
+        candidates.push(masterStart.add({ days: step * interval }));
+        break;
+      case "weekly": {
+        const targetMonday = masterMonday.add({ weeks: step * interval });
+        if (step === 0) candidates.push(masterStart);
         for (const targetWeekday of byWeekday ?? [masterStart.dayOfWeek]) {
-          const targetDate = targetMonday.add({ days: targetWeekday - 1 })
-          candidates.push(toDateTimeOnMasterTime(targetDate))
+          const targetDate = targetMonday.add({ days: targetWeekday - 1 });
+          candidates.push(toDateTimeOnMasterTime(targetDate));
         }
-        break
+        break;
       }
-      case 'monthly':
-        candidates.push(addSafeMonths(masterStart, step * interval))
-        break
-      case 'yearly':
-        candidates.push(addSafeMonths(masterStart, step * interval * 12))
-        break
+      case "monthly":
+        candidates.push(addSafeMonths(masterStart, step * interval));
+        break;
+      case "yearly":
+        candidates.push(addSafeMonths(masterStart, step * interval * 12));
+        break;
       default:
-        candidates.push(masterStart.add({ days: step * interval }))
-        break
+        candidates.push(masterStart.add({ days: step * interval }));
+        break;
     }
 
     const uniqueCandidates = Array.from(
@@ -160,21 +160,23 @@ export function expandRecurringEvent<
           )
           .sort(Temporal.PlainDateTime.compare)
           .map((candidate) => [
-            candidate.toString({ smallestUnit: 'second' }),
+            candidate.toString({ smallestUnit: "second" }),
             candidate,
           ]),
       ).values(),
-    )
+    );
 
     for (const candidateStart of uniqueCandidates) {
-      const candidateDate = candidateStart.toPlainDate()
-      const candidateDateStr = candidateDate.toString({ calendarName: 'never' })
+      const candidateDate = candidateStart.toPlainDate();
+      const candidateDateStr = candidateDate.toString({
+        calendarName: "never",
+      });
 
       if (
         untilDate &&
         Temporal.PlainDate.compare(candidateDate, untilDate) >= 0
       ) {
-        return occurrences
+        return occurrences;
       }
 
       if (
@@ -182,57 +184,57 @@ export function expandRecurringEvent<
         rule.count !== undefined &&
         occurrenceIndex >= rule.count
       ) {
-        return occurrences
+        return occurrences;
       }
 
       const originalStartStr = candidateStart.toString({
-        smallestUnit: 'second',
-      })
-      const originalEndStr = addDuration(originalStartStr)
+        smallestUnit: "second",
+      });
+      const originalEndStr = addDuration(originalStartStr);
       const override =
         overridesByDateTime.get(originalStartStr) ??
-        overridesByDate.get(candidateDateStr)
+        overridesByDate.get(candidateDateStr);
 
       const excluded =
-        exDateTimes.has(originalStartStr) || exDates.has(candidateDateStr)
+        exDateTimes.has(originalStartStr) || exDates.has(candidateDateStr);
 
       if (!excluded) {
         const generatedId =
-          occurrenceIndex === 0 ? event.id : `${event.id}_${occurrenceIndex}`
-        const overrideStart = override?.start
-        const overrideEnd = override?.end
+          occurrenceIndex === 0 ? event.id : `${event.id}_${occurrenceIndex}`;
+        const overrideStart = override?.start;
+        const overrideEnd = override?.end;
         const occurrenceStartStr =
           overrideStart != null
             ? toPlainDateTimeString(overrideStart)
-            : originalStartStr
+            : originalStartStr;
         const occurrenceEndStr =
           overrideEnd != null
             ? toPlainDateTimeString(overrideEnd)
             : overrideStart != null
               ? addDuration(occurrenceStartStr)
-              : originalEndStr
+              : originalEndStr;
 
         const occurrenceDate = Temporal.PlainDateTime.from(occurrenceStartStr)
           .toPlainDate()
-          .toString({ calendarName: 'never' })
+          .toString({ calendarName: "never" });
 
         if (
           occurrenceDate >=
-            windowStartDate.toString({ calendarName: 'never' }) &&
-          occurrenceDate < windowEndDate.toString({ calendarName: 'never' })
+            windowStartDate.toString({ calendarName: "never" }) &&
+          occurrenceDate < windowEndDate.toString({ calendarName: "never" })
         ) {
           const overrideFields = override
             ? ({ ...override } as Record<string, unknown>)
-            : {}
-          delete overrideFields.originalStart
-          delete overrideFields.id
-          delete overrideFields.start
-          delete overrideFields.end
+            : {};
+          delete overrideFields.originalStart;
+          delete overrideFields.id;
+          delete overrideFields.start;
+          delete overrideFields.end;
 
           occurrences.push({
             ...event,
             ...overrideFields,
-            id: (override?.id ?? generatedId) as TEvent['id'],
+            id: (override?.id ?? generatedId) as TEvent["id"],
             start: occurrenceStartStr,
             end: occurrenceEndStr,
             _recurringMasterId: event.id,
@@ -240,21 +242,21 @@ export function expandRecurringEvent<
             _occurrenceOriginalStart: originalStartStr,
             _originalStart: undefined,
             _originalEnd: undefined,
-          } as TEvent)
+          } as TEvent);
         }
       }
 
-      occurrenceIndex++
+      occurrenceIndex++;
 
       if (Temporal.PlainDate.compare(candidateDate, windowEndDate) >= 0) {
-        return occurrences
+        return occurrences;
       }
     }
 
-    step++
+    step++;
   }
 
-  return occurrences
+  return occurrences;
 }
 
 /**
@@ -265,20 +267,20 @@ function addSafeMonths(
   dt: Temporal.PlainDateTime,
   months: number,
 ): Temporal.PlainDateTime {
-  let year = dt.year
-  let month = dt.month + months
+  let year = dt.year;
+  let month = dt.month + months;
 
   // Normalise month overflow
-  year += Math.floor((month - 1) / 12)
-  month = ((month - 1) % 12) + 1
+  year += Math.floor((month - 1) / 12);
+  month = ((month - 1) % 12) + 1;
 
   // Clamp day to last valid day in target month
   const daysInMonth = Temporal.PlainDate.from({
     year,
     month,
     day: 1,
-  }).daysInMonth
-  const day = Math.min(dt.day, daysInMonth)
+  }).daysInMonth;
+  const day = Math.min(dt.day, daysInMonth);
 
   return Temporal.PlainDateTime.from({
     year,
@@ -287,5 +289,5 @@ function addSafeMonths(
     hour: dt.hour,
     minute: dt.minute,
     second: dt.second,
-  })
+  });
 }

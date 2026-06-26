@@ -1,1 +1,1 @@
-export * from './ceil'
+export * from "./ceil";

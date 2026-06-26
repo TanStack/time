@@ -1,60 +1,60 @@
-import { EventClient } from '@tanstack/devtools-event-client'
+import { EventClient } from "@tanstack/devtools-event-client";
 import type {
   AvailabilityConflict,
   UnavailabilityReason,
-} from '../calendar/types'
+} from "../calendar/types";
 
 export interface TimeEventInfo {
-  eventId: string
-  eventTitle: string
-  start: string
-  end: string
+  eventId: string;
+  eventTitle: string;
+  start: string;
+  end: string;
 }
 
 /**
  * Event map for TimeClient events
  */
 export interface TimeEventMap {
-  'time:event:added': TimeEventInfo
-  'time:events:set': {
-    events: Array<TimeEventInfo>
-  }
-  'time:event:updated': TimeEventInfo & {
-    updates: Record<string, unknown>
-  }
-  'time:event:removed': TimeEventInfo
-  'time:event:undo': {
-    added: Array<TimeEventInfo>
-    removed: Array<TimeEventInfo>
-    updated: Array<TimeEventInfo>
-  }
-  'time:event:redo': {
-    added: Array<TimeEventInfo>
-    removed: Array<TimeEventInfo>
-    updated: Array<TimeEventInfo>
-  }
-  'time:event:resized': TimeEventInfo
-  'time:event:update:error': {
-    eventId: string
-    eventTitle: string
-    reason: 'unavailable-time' | 'invalid-time' | 'min-duration' | 'blocked'
-    message: string
-    originalStart: string
-    originalEnd: string
-    attemptedStart?: string
-    attemptedEnd?: string
-    conflicts?: Array<AvailabilityConflict>
-  }
-  'time:calendar:navigate': {
-    direction: 'previous' | 'next' | 'current' | 'specific'
-    targetDate: string
-  }
-  'time:calendar:viewMode:changed': {
+  "time:event:added": TimeEventInfo;
+  "time:events:set": {
+    events: Array<TimeEventInfo>;
+  };
+  "time:event:updated": TimeEventInfo & {
+    updates: Record<string, unknown>;
+  };
+  "time:event:removed": TimeEventInfo;
+  "time:event:undo": {
+    added: Array<TimeEventInfo>;
+    removed: Array<TimeEventInfo>;
+    updated: Array<TimeEventInfo>;
+  };
+  "time:event:redo": {
+    added: Array<TimeEventInfo>;
+    removed: Array<TimeEventInfo>;
+    updated: Array<TimeEventInfo>;
+  };
+  "time:event:resized": TimeEventInfo;
+  "time:event:update:error": {
+    eventId: string;
+    eventTitle: string;
+    reason: "unavailable-time" | "invalid-time" | "min-duration" | "blocked";
+    message: string;
+    originalStart: string;
+    originalEnd: string;
+    attemptedStart?: string;
+    attemptedEnd?: string;
+    conflicts?: Array<AvailabilityConflict>;
+  };
+  "time:calendar:navigate": {
+    direction: "previous" | "next" | "current" | "specific";
+    targetDate: string;
+  };
+  "time:calendar:viewMode:changed": {
     viewMode: {
-      value: number
-      unit: string
-    }
-  }
+      value: number;
+      unit: string;
+    };
+  };
 }
 
 /**
@@ -62,12 +62,12 @@ export interface TimeEventMap {
  * Used by devtools to monitor and display activity
  */
 class TimeClient extends EventClient<TimeEventMap> {
-  private static instance: TimeClient | null = null
+  private static instance: TimeClient | null = null;
 
   private constructor() {
     super({
-      pluginId: 'time',
-    })
+      pluginId: "time",
+    });
   }
 
   /**
@@ -75,9 +75,9 @@ class TimeClient extends EventClient<TimeEventMap> {
    */
   static getInstance(): TimeClient {
     if (!TimeClient.instance) {
-      TimeClient.instance = new TimeClient()
+      TimeClient.instance = new TimeClient();
     }
-    return TimeClient.instance
+    return TimeClient.instance;
   }
 }
 
@@ -85,7 +85,7 @@ class TimeClient extends EventClient<TimeEventMap> {
  * Get the global TimeClient instance
  */
 export function getTimeClient(): TimeClient {
-  return TimeClient.getInstance()
+  return TimeClient.getInstance();
 }
 
-export type { AvailabilityConflict, UnavailabilityReason }
+export type { AvailabilityConflict, UnavailabilityReason };

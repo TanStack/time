@@ -24,12 +24,9 @@
       ],
       "dependencies": ["@tanstack/react-store", "@tanstack/time"],
       "devDependencies": [
-        "@eslint-react/eslint-plugin",
         "@testing-library/react",
         "@types/react",
         "@vitejs/plugin-react",
-        "eslint-plugin-react-compiler",
-        "eslint-plugin-react-hooks",
         "react"
       ],
       "peerDependencies": ["react", "react-dom"],
@@ -47,11 +44,8 @@
       "exports": ["TimeDevtoolsPanel", "timeDevtoolsPlugin"],
       "dependencies": ["@tanstack/devtools-utils", "@tanstack/time-devtools"],
       "devDependencies": [
-        "@eslint-react/eslint-plugin",
         "@types/react",
         "@vitejs/plugin-react",
-        "eslint-plugin-react-compiler",
-        "eslint-plugin-react-hooks",
         "react",
         "solid-js"
       ],

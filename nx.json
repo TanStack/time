@@ -21,7 +21,7 @@
     "production": [
       "default",
       "!{projectRoot}/tests/**/*",
-      "!{projectRoot}/eslint.config.js"
+      "!{projectRoot}/.oxlintrc.json"
     ]
   },
   "targetDefaults": {
@@ -31,10 +31,10 @@
       "inputs": ["default", "^production"],
       "outputs": ["{projectRoot}/coverage"]
     },
-    "test:eslint": {
+    "test:lint": {
       "cache": true,
       "dependsOn": ["^build"],
-      "inputs": ["default", "^production", "{workspaceRoot}/eslint.config.js"]
+      "inputs": ["default", "^production", "{workspaceRoot}/.oxlintrc.json"]
     },
     "test:types": {
       "cache": true,

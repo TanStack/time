@@ -1,4 +1,4 @@
-import type { Temporal } from '@js-temporal/polyfill'
+import type { Temporal } from "@js-temporal/polyfill";
 
 /**
  * Normalizes a ZonedDateTime to midnight for week-level comparisons
@@ -14,5 +14,5 @@ export function normalizeWeek(
     millisecond: 0,
     microsecond: 0,
     nanosecond: 0,
-  })
+  });
 }

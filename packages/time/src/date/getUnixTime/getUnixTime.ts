@@ -1,6 +1,6 @@
-import { toZonedDateTime } from '../helpers'
-import type { DateInput, DateOptions } from '../types'
-import { getDateTimeDefaults } from '~/utils'
+import { toZonedDateTime } from "../helpers";
+import type { DateInput, DateOptions } from "../types";
+import { getDateTimeDefaults } from "~/utils";
 
 export interface GetUnixTimeOptions extends DateOptions {}
 
@@ -9,10 +9,10 @@ export function getUnixTime(
   options?: GetUnixTimeOptions,
 ): number {
   const { timeZone: defaultTimeZone, calendar: defaultCalendar } =
-    getDateTimeDefaults()
+    getDateTimeDefaults();
   const { timeZone = defaultTimeZone, calendar = defaultCalendar } =
-    options ?? {}
+    options ?? {};
 
-  const zdt = toZonedDateTime(date, timeZone, calendar)
-  return Number(zdt.epochNanoseconds / 1_000_000_000n)
+  const zdt = toZonedDateTime(date, timeZone, calendar);
+  return Number(zdt.epochNanoseconds / 1_000_000_000n);
 }

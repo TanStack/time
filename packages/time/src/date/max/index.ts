@@ -1,1 +1,1 @@
-export * from './max'
+export * from "./max";

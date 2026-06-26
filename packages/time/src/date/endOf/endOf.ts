@@ -1,19 +1,19 @@
-import { withDateOperation } from '../withDateOperation'
-import type { DateOperationOptions } from '../withDateOperation'
-import type { DateInput } from '../types'
+import { withDateOperation } from "../withDateOperation";
+import type { DateOperationOptions } from "../withDateOperation";
+import type { DateInput } from "../types";
 
 export type EndOfUnit =
-  | 'year'
-  | 'month'
-  | 'week'
-  | 'day'
-  | 'hour'
-  | 'minute'
-  | 'second'
-  | 'millisecond'
+  | "year"
+  | "month"
+  | "week"
+  | "day"
+  | "hour"
+  | "minute"
+  | "second"
+  | "millisecond";
 
 export interface EndOfOptions extends DateOperationOptions {
-  unit: EndOfUnit
+  unit: EndOfUnit;
 }
 
 /**
@@ -23,7 +23,7 @@ export interface EndOfOptions extends DateOperationOptions {
 export function endOf(input: DateInput, options: EndOfOptions) {
   return withDateOperation<EndOfOptions>((zdt, { unit }) => {
     switch (unit) {
-      case 'year':
+      case "year":
         return zdt.with({
           month: 12,
           day: 31,
@@ -33,9 +33,9 @@ export function endOf(input: DateInput, options: EndOfOptions) {
           millisecond: 999,
           microsecond: 0,
           nanosecond: 0,
-        })
-      case 'month': {
-        const daysInMonth = zdt.daysInMonth
+        });
+      case "month": {
+        const daysInMonth = zdt.daysInMonth;
         return zdt.with({
           day: daysInMonth,
           hour: 23,
@@ -44,13 +44,13 @@ export function endOf(input: DateInput, options: EndOfOptions) {
           millisecond: 999,
           microsecond: 0,
           nanosecond: 0,
-        })
+        });
       }
-      case 'week': {
-        const dayOfWeek = zdt.dayOfWeek
-        const daysToAdd = dayOfWeek === 7 ? 0 : 7 - dayOfWeek
+      case "week": {
+        const dayOfWeek = zdt.dayOfWeek;
+        const daysToAdd = dayOfWeek === 7 ? 0 : 7 - dayOfWeek;
         const endOfWeekDay =
-          daysToAdd === 0 ? zdt : zdt.add({ days: daysToAdd })
+          daysToAdd === 0 ? zdt : zdt.add({ days: daysToAdd });
         return endOfWeekDay.with({
           hour: 23,
           minute: 59,
@@ -58,9 +58,9 @@ export function endOf(input: DateInput, options: EndOfOptions) {
           millisecond: 999,
           microsecond: 0,
           nanosecond: 0,
-        })
+        });
       }
-      case 'day':
+      case "day":
         return zdt.with({
           hour: 23,
           minute: 59,
@@ -68,28 +68,28 @@ export function endOf(input: DateInput, options: EndOfOptions) {
           millisecond: 999,
           microsecond: 0,
           nanosecond: 0,
-        })
-      case 'hour':
+        });
+      case "hour":
         return zdt.with({
           minute: 59,
           second: 59,
           millisecond: 999,
           microsecond: 0,
           nanosecond: 0,
-        })
-      case 'minute':
+        });
+      case "minute":
         return zdt.with({
           second: 59,
           millisecond: 999,
           microsecond: 0,
           nanosecond: 0,
-        })
-      case 'second':
-        return zdt.with({ millisecond: 999, microsecond: 0, nanosecond: 0 })
-      case 'millisecond':
-        return zdt.with({ microsecond: 999, nanosecond: 0 })
+        });
+      case "second":
+        return zdt.with({ millisecond: 999, microsecond: 0, nanosecond: 0 });
+      case "millisecond":
+        return zdt.with({ microsecond: 999, nanosecond: 0 });
       default:
-        return zdt
+        return zdt;
     }
-  })(input, options)
+  })(input, options);
 }

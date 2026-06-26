@@ -1,7 +1,7 @@
-import { Temporal } from '@js-temporal/polyfill'
-import { toZonedDateTime } from '../helpers'
-import type { DateInput, DateOptions } from '../types'
-import { getDateTimeDefaults } from '~/utils'
+import { Temporal } from "@js-temporal/polyfill";
+import { toZonedDateTime } from "../helpers";
+import type { DateInput, DateOptions } from "../types";
+import { getDateTimeDefaults } from "~/utils";
 
 export interface IsBeforeOptions extends DateOptions {}
 
@@ -15,12 +15,12 @@ export function isBefore(
   options?: IsBeforeOptions,
 ): boolean {
   const { timeZone: defaultTimeZone, calendar: defaultCalendar } =
-    getDateTimeDefaults()
+    getDateTimeDefaults();
   const { timeZone = defaultTimeZone, calendar = defaultCalendar } =
-    options ?? {}
+    options ?? {};
 
-  const zdt1 = toZonedDateTime(date1, timeZone, calendar)
-  const zdt2 = toZonedDateTime(date2, timeZone, calendar)
+  const zdt1 = toZonedDateTime(date1, timeZone, calendar);
+  const zdt2 = toZonedDateTime(date2, timeZone, calendar);
 
-  return Temporal.ZonedDateTime.compare(zdt1, zdt2) < 0
+  return Temporal.ZonedDateTime.compare(zdt1, zdt2) < 0;
 }

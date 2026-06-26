@@ -1,1 +1,1 @@
-export * from './getWeek'
+export * from "./getWeek";

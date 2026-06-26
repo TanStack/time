@@ -2,8 +2,8 @@ import type {
   DateFormatterOptions,
   DateTimeFormatterOptions,
   TimeFormatterOptions,
-} from './shared'
-import { getDateTimeDefaults } from '~/utils'
+} from "./shared";
+import { getDateTimeDefaults } from "~/utils";
 
 /**
  * @typedef {Object} DateFormatterOptions
@@ -87,5 +87,5 @@ export function extractLocaleOptions({
     hourCycle,
     timeZone,
     formatOptions,
-  }
+  };
 }

@@ -1,1 +1,1 @@
-export * from './isFuture'
+export * from "./isFuture";

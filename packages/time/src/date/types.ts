@@ -1,20 +1,20 @@
-import type { Temporal } from '@js-temporal/polyfill'
+import type { Temporal } from "@js-temporal/polyfill";
 
 export type DateInput =
   | string
   | number
   | Date
   | Temporal.ZonedDateTime
-  | Temporal.PlainDate
+  | Temporal.PlainDate;
 
 export interface DateOptions {
-  calendar?: string
-  timeZone?: string
+  calendar?: string;
+  timeZone?: string;
 }
 
-export type DurationLike = Temporal.DurationLike
+export type DurationLike = Temporal.DurationLike;
 
 export interface Range {
-  start: DateInput
-  end: DateInput
+  start: DateInput;
+  end: DateInput;
 }

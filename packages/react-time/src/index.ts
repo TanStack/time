@@ -1,9 +1,9 @@
-export { useCalendar } from './useCalendar'
+export { useCalendar } from "./useCalendar";
 export type {
   ResizeState,
   ResizeOptions,
   UseCalendarOptions,
-} from './useCalendar'
+} from "./useCalendar";
 
 // Re-export ResizeError and AvailabilityConflict from core package
 export type {
@@ -11,7 +11,7 @@ export type {
   AvailabilityConflict,
   UnavailabilityReason,
   SaveEventResult,
-} from '@tanstack/time'
+} from "@tanstack/time";
 
 export {
   calculateGhostPreviewStyle,
@@ -21,7 +21,7 @@ export {
   getEventDisplayTimeRange,
   getSegmentInfo,
   isMultiDayEvent,
-} from '@tanstack/time'
+} from "@tanstack/time";
 
 export type {
   EventTimeRange,
@@ -34,4 +34,4 @@ export type {
   SegmentResizePreview,
   TimelineResizePreviewOptions,
   TimelineResizePreviewStyle,
-} from '@tanstack/time'
+} from "@tanstack/time";

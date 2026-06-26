@@ -20,7 +20,7 @@ TanStack Time is a headless, framework-agnostic date/time and calendar utility l
 - **Type Safety**: All public APIs fully typed. No `any` in the public surface. Generics for calendar resources and events.
 - **Performance**: Date primitives should be fast enough for frequent re-renders. Avoid creating unnecessary Temporal objects.
 - **Edge Cases**: Handle leap years, timezone transitions, and calendar variants correctly.
-- **CI Gate**: `pnpm test:pr` (eslint, sherif, knip, docs, lib, types, build) must pass before merge.
+- **CI Gate**: `pnpm test:pr` (oxlint, sherif, knip, docs, lib, types, build) must pass before merge.
 
 ## Technical Decisions
 

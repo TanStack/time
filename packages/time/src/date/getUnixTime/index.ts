@@ -1,1 +1,1 @@
-export * from './getUnixTime'
+export * from "./getUnixTime";

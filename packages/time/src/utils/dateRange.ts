@@ -1,10 +1,10 @@
-import { Temporal } from '@js-temporal/polyfill'
-import type { DateInput } from '../date/types'
-import type { DateRange } from '../calendar/types'
+import { Temporal } from "@js-temporal/polyfill";
+import type { DateInput } from "../date/types";
+import type { DateRange } from "../calendar/types";
 
 export interface ParsedDateRange {
-  start: Temporal.PlainDate | null
-  end: Temporal.PlainDate | null
+  start: Temporal.PlainDate | null;
+  end: Temporal.PlainDate | null;
 }
 
 function toPlainDate(
@@ -12,32 +12,32 @@ function toPlainDate(
   calendar: Temporal.CalendarLike,
 ): Temporal.PlainDate {
   if (input instanceof Temporal.PlainDate) {
-    return input.withCalendar(calendar)
+    return input.withCalendar(calendar);
   }
   if (input instanceof Temporal.ZonedDateTime) {
-    return input.toPlainDate().withCalendar(calendar)
+    return input.toPlainDate().withCalendar(calendar);
   }
   if (input instanceof Date) {
     return Temporal.PlainDate.from({
       year: input.getFullYear(),
       month: input.getMonth() + 1,
       day: input.getDate(),
-    }).withCalendar(calendar)
+    }).withCalendar(calendar);
   }
-  if (typeof input === 'number') {
-    const date = new Date(input)
+  if (typeof input === "number") {
+    const date = new Date(input);
     return Temporal.PlainDate.from({
       year: date.getFullYear(),
       month: date.getMonth() + 1,
       day: date.getDate(),
-    }).withCalendar(calendar)
+    }).withCalendar(calendar);
   }
-  return Temporal.PlainDate.from(input).withCalendar(calendar)
+  return Temporal.PlainDate.from(input).withCalendar(calendar);
 }
 
 export interface ParseDateRangeOptions {
-  range?: DateRange
-  calendar: Temporal.CalendarLike
+  range?: DateRange;
+  calendar: Temporal.CalendarLike;
 }
 
 export function parseDateRange({
@@ -45,52 +45,52 @@ export function parseDateRange({
   calendar,
 }: ParseDateRangeOptions): ParsedDateRange {
   if (!range) {
-    return { start: null, end: null }
+    return { start: null, end: null };
   }
 
   return {
     start: range.start ? toPlainDate(range.start, calendar) : null,
     end: range.end ? toPlainDate(range.end, calendar) : null,
-  }
+  };
 }
 
 export interface IsDateInRangeOptions {
-  date: Temporal.PlainDate
-  range: ParsedDateRange
+  date: Temporal.PlainDate;
+  range: ParsedDateRange;
 }
 
 export function isDateInRange({ date, range }: IsDateInRangeOptions): boolean {
-  const { start, end } = range
+  const { start, end } = range;
 
   if (start && Temporal.PlainDate.compare(date, start) < 0) {
-    return false
+    return false;
   }
 
   if (end && Temporal.PlainDate.compare(date, end) > 0) {
-    return false
+    return false;
   }
 
-  return true
+  return true;
 }
 
 export interface ConstrainDateToRangeOptions {
-  date: Temporal.PlainDate
-  range: ParsedDateRange
+  date: Temporal.PlainDate;
+  range: ParsedDateRange;
 }
 
 export function constrainDateToRange({
   date,
   range,
 }: ConstrainDateToRangeOptions): Temporal.PlainDate {
-  const { start, end } = range
+  const { start, end } = range;
 
   if (start && Temporal.PlainDate.compare(date, start) < 0) {
-    return start
+    return start;
   }
 
   if (end && Temporal.PlainDate.compare(date, end) > 0) {
-    return end
+    return end;
   }
 
-  return date
+  return date;
 }

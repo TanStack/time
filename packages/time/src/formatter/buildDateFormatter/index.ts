@@ -1,1 +1,1 @@
-export * from './buildDateFormatter'
+export * from "./buildDateFormatter";

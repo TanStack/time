@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-export { TimeDevtoolsPanel } from './TimeDevtools'
+export { TimeDevtoolsPanel } from "./TimeDevtools";
 
-export type { TimeDevtoolsReactInit } from './TimeDevtools'
+export type { TimeDevtoolsReactInit } from "./TimeDevtools";
 
-export { TimeDevtoolsPlugin } from './plugin'
+export { TimeDevtoolsPlugin } from "./plugin";

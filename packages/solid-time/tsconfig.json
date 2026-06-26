@@ -5,5 +5,5 @@
     "jsxImportSource": "solid-js"
   },
   "include": ["src", "vitest.config.ts", "tests"],
-  "exclude": ["eslint.config.js"]
+  "exclude": [],
 }

@@ -1,26 +1,26 @@
-import { toZonedDateTime } from '../helpers'
-import type { DateInput, DateOptions } from '../types'
+import { toZonedDateTime } from "../helpers";
+import type { DateInput, DateOptions } from "../types";
 import type {
   DateFormatterBuildParams,
   DateTimeFormatterBuildParams,
   TimeFormatterBuildParams,
-} from '~/formatter/shared'
-import { getDateTimeDefaults } from '~/utils'
-import { buildFinalFormatter } from '~/formatter/buildFinalFormatter'
-import { buildDateFormatter } from '~/formatter/buildDateFormatter'
-import { buildTimeFormatter } from '~/formatter/buildTimeFormatter'
-import { buildDateTimeFormatter } from '~/formatter/buildDateTimeFormatter'
+} from "~/formatter/shared";
+import { getDateTimeDefaults } from "~/utils";
+import { buildFinalFormatter } from "~/formatter/buildFinalFormatter";
+import { buildDateFormatter } from "~/formatter/buildDateFormatter";
+import { buildTimeFormatter } from "~/formatter/buildTimeFormatter";
+import { buildDateTimeFormatter } from "~/formatter/buildDateTimeFormatter";
 
-export type FormatType = 'date' | 'time' | 'datetime'
+export type FormatType = "date" | "time" | "datetime";
 
 export interface FormatDateOptions extends DateOptions {
-  type?: FormatType
-  locale?: string | Intl.Locale | Array<string> | Array<Intl.Locale>
+  type?: FormatType;
+  locale?: string | Intl.Locale | Array<string> | Array<Intl.Locale>;
   options?:
     | string
-    | DateFormatterBuildParams['options']
-    | TimeFormatterBuildParams['options']
-    | DateTimeFormatterBuildParams['options']
+    | DateFormatterBuildParams["options"]
+    | TimeFormatterBuildParams["options"]
+    | DateTimeFormatterBuildParams["options"];
 }
 
 /**
@@ -37,55 +37,55 @@ export function format(
     locale: defaultLocale,
     timeZone: defaultTimeZone,
     calendar: defaultCalendar,
-  } = getDateTimeDefaults()
+  } = getDateTimeDefaults();
   const {
-    type = 'datetime',
+    type = "datetime",
     locale = defaultLocale,
     timeZone = defaultTimeZone,
     calendar = defaultCalendar,
     options,
-  } = formatOptions ?? {}
+  } = formatOptions ?? {};
 
-  const zdt = toZonedDateTime(date, timeZone, calendar)
-  const dateObj = new Date(Number(zdt.epochNanoseconds / 1_000_000n))
+  const zdt = toZonedDateTime(date, timeZone, calendar);
+  const dateObj = new Date(Number(zdt.epochNanoseconds / 1_000_000n));
 
   const mergedOptions =
-    typeof options === 'string'
+    typeof options === "string"
       ? options
       : {
           ...options,
           timeZone,
           calendar,
-        }
+        };
 
-  let formatter: Intl.DateTimeFormat
+  let formatter: Intl.DateTimeFormat;
 
   switch (type) {
-    case 'date':
+    case "date":
       formatter = buildDateFormatter({
         locale,
-        options: mergedOptions as DateFormatterBuildParams['options'],
-      })
-      break
-    case 'time':
+        options: mergedOptions as DateFormatterBuildParams["options"],
+      });
+      break;
+    case "time":
       formatter = buildTimeFormatter({
         locale,
-        options: mergedOptions as TimeFormatterBuildParams['options'],
-      })
-      break
-    case 'datetime':
+        options: mergedOptions as TimeFormatterBuildParams["options"],
+      });
+      break;
+    case "datetime":
     default:
       formatter = buildDateTimeFormatter({
         locale,
-        options: mergedOptions as DateTimeFormatterBuildParams['options'],
-      })
-      break
+        options: mergedOptions as DateTimeFormatterBuildParams["options"],
+      });
+      break;
   }
 
   const formatFn = buildFinalFormatter({
     formatter,
-    formatterName: 'format',
-  })
+    formatterName: "format",
+  });
 
-  return formatFn(dateObj)
+  return formatFn(dateObj);
 }

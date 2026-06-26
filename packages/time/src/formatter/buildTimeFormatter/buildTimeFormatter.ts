@@ -1,7 +1,7 @@
-import type { TimeFormatterBuildParams, TimeFormatterOptions } from '../shared'
-import { getDateTimeDefaults } from '~/utils'
-import { normalizeLocale } from '~/date/helpers'
-import { extractLocaleOptions } from '~/formatter/extractLocaleOptions'
+import type { TimeFormatterBuildParams, TimeFormatterOptions } from "../shared";
+import { getDateTimeDefaults } from "~/utils";
+import { normalizeLocale } from "~/date/helpers";
+import { extractLocaleOptions } from "~/formatter/extractLocaleOptions";
 
 /**
  * Function: buildTimeFormatter
@@ -28,14 +28,14 @@ export function buildTimeFormatter({
   locale = getDateTimeDefaults().locale,
   options,
 }: TimeFormatterBuildParams): Intl.DateTimeFormat {
-  const normalizedLocale = normalizeLocale(locale)
+  const normalizedLocale = normalizeLocale(locale);
   const opts =
-    typeof options === 'string' ? { dateStyle: options } : (options ?? {})
-  const { formatOptions = {}, ...localeOptions } = extractLocaleOptions(opts)
-  const { timeStyle, ...rest } = formatOptions as TimeFormatterOptions
+    typeof options === "string" ? { dateStyle: options } : (options ?? {});
+  const { formatOptions = {}, ...localeOptions } = extractLocaleOptions(opts);
+  const { timeStyle, ...rest } = formatOptions as TimeFormatterOptions;
   const newOptions = {
     ...localeOptions,
     ...(timeStyle ? { timeStyle } : rest),
-  }
-  return new Intl.DateTimeFormat(normalizedLocale, newOptions)
+  };
+  return new Intl.DateTimeFormat(normalizedLocale, newOptions);
 }
