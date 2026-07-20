@@ -5,7 +5,7 @@ title: CalendarCoreOptions
 
 # Interface: CalendarCoreOptions\<TResource, TEvent\>
 
-Defined in: [calendar/calendar.ts:53](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L53)
+Defined in: [calendar/calendar.ts:61](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L61)
 
 Configuration options for initializing a CalendarCore instance, allowing customization
 of events, locale, time zone, and the calendar system.
@@ -82,7 +82,7 @@ Optional date time formatter.
 optional events: TEvent[] | null;
 ```
 
-Defined in: [calendar/calendar.ts:58](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L58)
+Defined in: [calendar/calendar.ts:66](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L66)
 
 An optional array of events to be handled by the calendar.
 
@@ -94,7 +94,7 @@ An optional array of events to be handled by the calendar.
 optional fetchEvents: (range) => Promise<TEvent[]>;
 ```
 
-Defined in: [calendar/calendar.ts:67](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L67)
+Defined in: [calendar/calendar.ts:75](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L75)
 
 Optional async callback for lazy/on-demand event loading.
 Called whenever the current viewport window is not yet fully loaded.
@@ -157,7 +157,7 @@ Optional range of dates to be used.
 optional resources: TResource[] | null;
 ```
 
-Defined in: [calendar/calendar.ts:60](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L60)
+Defined in: [calendar/calendar.ts:68](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L68)
 
 Optional resources to be used in the calendar.
 
