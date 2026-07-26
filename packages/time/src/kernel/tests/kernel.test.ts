@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Kernel } from "../index";
-import type {
-  Conflict,
-  KernelEvent,
-  KernelOptions,
-  Module,
-} from "../index";
+import type { Conflict, KernelEvent, KernelOptions, Module } from "../index";
 
 interface TestEvent extends KernelEvent {
   title: string;
@@ -159,10 +154,20 @@ describe("Kernel", () => {
               {
                 code: "blocked",
                 message: "nope",
+<<<<<<< HEAD
                 eventIds: batch.ops.flatMap((o) => {
                   if (o.kind === "intent") return [];
                   return [o.kind === "add" ? o.event.id : o.id];
                 }),
+=======
+                eventIds: batch.ops.map((o) =>
+                  o.kind === "remove"
+                    ? o.id
+                    : o.kind === "update"
+                      ? o.id
+                      : o.event.id,
+                ),
+>>>>>>> 6740d0a8b81238eb6194130c7bf8a5b01d093162
               },
             ],
           },

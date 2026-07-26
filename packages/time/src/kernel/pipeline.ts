@@ -67,15 +67,11 @@ export class StageRegistry<E extends KernelEvent> {
     return (this.projection.get(stage) ?? []).map((e) => e.run);
   }
 
-  transformStages(
-    stage: WriteTransformStageName,
-  ): Array<TransformStage<E>> {
+  transformStages(stage: WriteTransformStageName): Array<TransformStage<E>> {
     return (this.transform.get(stage) ?? []).map((e) => e.run);
   }
 
-  validateStages(
-    stage: WriteValidateStageName,
-  ): Array<ValidateStage<E>> {
+  validateStages(stage: WriteValidateStageName): Array<ValidateStage<E>> {
     return (this.validate.get(stage) ?? []).map((e) => e.run);
   }
 
