@@ -69,7 +69,7 @@ export function availabilityModule<E extends KernelEvent>(
           const conflicts: Array<Conflict> = [];
 
           for (const op of batch.ops) {
-            if (op.kind === "remove") continue;
+            if (op.kind === "remove" || op.kind === "intent") continue;
             const event = (
               op.kind === "add" ? op.event : op.after
             ) as CalendarLikeEvent;

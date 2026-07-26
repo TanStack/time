@@ -46,6 +46,30 @@ type TransformStage<E> = (batch: WriteBatch<E>, ctx: WriteCtx<E>) => WriteBatch<
 type ValidateStage<E> = (batch: WriteBatch<E>, ctx: WriteCtx<E>) => Conflict[];
 ```
 
+### Intent ops: how feature-shaped writes stay out of the kernel
+
+Some user actions are not a plain `add`/`update`/`remove` — a recurring edit carries
+`{ scope, occurrenceStart, updates }` and expands into *several* concrete ops (master update
++ split add). Putting `edit-occurrence` into the kernel's op union would bake recurrence into
+the feature-agnostic kernel, breaking ADR 0001.
+
+Instead the kernel has one extra **opaque** op kind:
+
+```ts
+type WriteOp<E> = ConcreteWriteOp<E> | { kind: "intent"; intent: string; payload: unknown }
+```
+
+The kernel knows only that an intent exists and that **a module must expand it**. Modules
+claim intents by namespaced name (`recurrence/edit-occurrence`) in an early transform stage
+and replace them with concrete ops. The kernel enforces the invariant: **if any intent
+survives the transform stages, `write()` throws** — an unclaimed intent is a wiring error, not
+a domain conflict, so it fails loudly rather than silently committing nothing.
+
+Consequences: `commit`/`rollback` only ever see concrete ops; a materialized multi-op
+expansion is still **one atomic batch** (so undo wraps the whole split); and
+`getRequiredRange` returns `Viewport | null`, since an intent's range can only be supplied by
+the module that understands its payload.
+
 Rules (ADR 0001): a user action → **one atomic write batch** (original + cascaded) so undo
 wraps the batch; validation is **veto-only, separate from transform**; modules never call each
 other directly; stage order is kernel-defined; per-module priority within a stage.
@@ -90,9 +114,13 @@ and solver reuse:
 The class methods become thin wrappers over these. **This is the ADR 0004 refactor; do it
 once, both sides import it.**
 
-### Step 3 — Recurrence module
+### Step 3 — Recurrence module ✅
 `recurrence-expand` projection stage + `recurrence-materialize` transform stage, over 2c.
-Owns `getMasterEvent`, `editRecurringEvent`, `removeRecurringEvent`, `goTo*Occurrence`.
+Materialize claims the `recurrence/edit-occurrence` and `recurrence/remove-occurrence`
+intents (see above) and expands them via the pure `materializeRecurringEdit` /
+`materializeRecurringRemove`. Still to move onto the module: `getMasterEvent`,
+`goTo*Occurrence`, and the god class's `editRecurringEvent`/`removeRecurringEvent` entry
+points (they delegate to the pure core today but still own fetch/validate/commit/emit).
 
 ### Step 4 — Availability module
 `availability-validate` **veto** stage over 2a. Owns `getUnavailableRanges` (drop

@@ -1,11 +1,13 @@
 import { StageRegistry } from "./pipeline";
 import {
+  isIntentOp,
   PROJECTION_ORDER,
   WRITE_EMIT_STAGE,
   WRITE_TRANSFORM_ORDER,
   WRITE_VALIDATE_STAGE,
 } from "./types";
 import type {
+  ConcreteWriteOp,
   KernelConfig,
   KernelDateInput,
   KernelEvent,
@@ -40,6 +42,7 @@ function widen(a: Viewport | null, b: Viewport | null): Viewport | null {
 }
 
 function opSpan<E extends KernelEvent>(op: WriteOp<E>): Viewport | null {
+  if (isIntentOp(op)) return null;
   const event =
     op.kind === "add" ? op.event : op.kind === "update" ? op.after : op.event;
   const startMs = toMs(event.start);
@@ -85,14 +88,14 @@ export class Kernel<E extends KernelEvent> {
     return this.events.get(id);
   }
 
-  getRequiredRange(op: WriteOp<E>): Viewport {
+  getRequiredRange(op: WriteOp<E>): Viewport | null {
     let range = opSpan(op);
     for (const module of this.modules) {
       if (module.getRequiredRange) {
         range = widen(range, module.getRequiredRange(op, this.config));
       }
     }
-    return range ?? opSpan(op)!;
+    return range;
   }
 
   project(viewport: Viewport): Array<E> {
@@ -111,12 +114,24 @@ export class Kernel<E extends KernelEvent> {
 
   write(op: WriteOp<E>): WriteResult<E> {
     const ctx = this.writeCtx();
-    let batch: WriteBatch<E> = { reason: op.kind, ops: [op] };
+    let batch: WriteBatch<E> = {
+      reason: isIntentOp(op) ? op.intent : op.kind,
+      ops: [op],
+    };
 
     for (const stageName of WRITE_TRANSFORM_ORDER) {
       for (const run of this.registry.transformStages(stageName)) {
         batch = run(batch, ctx);
       }
+    }
+
+    const unresolved = batch.ops.filter(isIntentOp);
+    if (unresolved.length > 0) {
+      throw new Error(
+        `Kernel: unresolved intent op(s) after the write transform stages: ${unresolved
+          .map((o) => o.intent)
+          .join(", ")}. Register a module that expands them.`,
+      );
     }
 
     const conflicts = this.registry
@@ -139,25 +154,28 @@ export class Kernel<E extends KernelEvent> {
     const batch = this.history.pop();
     if (!batch) return null;
     for (let i = batch.ops.length - 1; i >= 0; i--) {
-      this.invert(batch.ops[i]!);
+      const op = batch.ops[i]!;
+      if (isIntentOp(op)) continue;
+      this.invert(op);
     }
     return batch;
   }
 
   private commit(batch: WriteBatch<E>) {
     for (const op of batch.ops) {
+      if (isIntentOp(op)) continue;
       this.apply(op);
     }
     this.history.push(batch);
   }
 
-  private apply(op: WriteOp<E>) {
+  private apply(op: ConcreteWriteOp<E>) {
     if (op.kind === "add") this.events.set(op.event.id, op.event);
     else if (op.kind === "update") this.events.set(op.id, op.after);
     else this.events.delete(op.id);
   }
 
-  private invert(op: WriteOp<E>) {
+  private invert(op: ConcreteWriteOp<E>) {
     if (op.kind === "add") this.events.delete(op.event.id);
     else if (op.kind === "update") this.events.set(op.id, op.before);
     else this.events.set(op.id, op.event);

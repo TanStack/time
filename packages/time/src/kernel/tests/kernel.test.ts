@@ -159,9 +159,10 @@ describe("Kernel", () => {
               {
                 code: "blocked",
                 message: "nope",
-                eventIds: batch.ops.map((o) =>
-                  o.kind === "remove" ? o.id : o.kind === "update" ? o.id : o.event.id,
-                ),
+                eventIds: batch.ops.flatMap((o) => {
+                  if (o.kind === "intent") return [];
+                  return [o.kind === "add" ? o.event.id : o.id];
+                }),
               },
             ],
           },
@@ -200,8 +201,8 @@ describe("Kernel", () => {
         kind: "add",
         event: evt("a", "2026-01-01T09:00:00Z", "2026-01-01T10:00:00Z"),
       });
-      expect(toDay(range.start)).toBe("2026-01-01");
-      expect(toDay(range.end)).toBe("2026-01-01");
+      expect(toDay(range!.start)).toBe("2026-01-01");
+      expect(toDay(range!.end)).toBe("2026-01-01");
     });
 
     it("widens to a module-declared required range", () => {
@@ -219,8 +220,8 @@ describe("Kernel", () => {
         kind: "add",
         event: evt("a", "2026-01-01T09:00:00Z", "2026-01-01T10:00:00Z"),
       });
-      expect(toDay(range.start)).toBe("2025-12-01");
-      expect(toDay(range.end)).toBe("2026-03-01");
+      expect(toDay(range!.start)).toBe("2025-12-01");
+      expect(toDay(range!.end)).toBe("2026-03-01");
     });
   });
 });

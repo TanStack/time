@@ -1,7 +1,15 @@
 import { Temporal } from "@js-temporal/polyfill";
 import { getTimeClient } from "../client";
 import { splitMultiDayEvents } from "./splitMultiDayEvents";
-import { expandRecurringEvent } from "./expandRecurringEvent";
+import {
+  durationPreservingEnd,
+  expandRecurringEvent,
+  getRecurringOccurrence,
+  materializeRecurringEdit,
+  materializeRecurringRemove,
+  normalizeRecurrenceRule,
+  resolveOccurrenceStart,
+} from "~/recurrence";
 import { getEventProps } from "./getEventProps";
 import { groupDaysBy } from "./groupDaysBy";
 import { getTimeSlots } from "./getTimeSlots";
@@ -43,6 +51,13 @@ import {
   resourceDayAvail,
 } from "~/validation/availability";
 import type { AvailabilityOtherEvent } from "~/validation/availability";
+import {
+  computeCascade,
+  requiredBackwardShiftMs,
+  requiredForwardShiftMs,
+  validateDependencies,
+} from "~/validation/dependency";
+import type { DependencyGraphEvent } from "~/validation/dependency";
 
 export type * from "./types";
 export * from "./date-core";
@@ -1236,86 +1251,44 @@ export class CalendarCore<
     }
   }
 
+  private _dependencyGraphEvents(): Array<DependencyGraphEvent> {
+    const events: Array<DependencyGraphEvent> = [];
+    for (const e of this._eventMap.values()) {
+      events.push({
+        id: e.id,
+        title: e.title,
+        start: toPlainDateTimeString(e.start),
+        end: toPlainDateTimeString(e.end),
+        dependsOn: e.dependsOn,
+      });
+    }
+    return events;
+  }
+
   private getAffectedByDelta(
     sourceId: string,
     deltaMs: number,
     visited: Set<string>,
   ): Array<{ event: TEvent; newStart: string; newEnd: string }> {
-    if (deltaMs === 0) return [];
+    const shifts = computeCascade({
+      sourceId,
+      deltaMs,
+      events: this._dependencyGraphEvents(),
+      timeZone: this.options.timeZone,
+      visited,
+    });
 
-    const tz = this.options.timeZone;
     const affected: Array<{ event: TEvent; newStart: string; newEnd: string }> =
       [];
-
-    const projected = new Map<string, { startMs: number; endMs: number }>();
-
-    const sourceEvent = this._eventMap.get(sourceId);
-    if (!sourceEvent) return [];
-
-    const srcStartMs =
-      Temporal.PlainDateTime.from(
-        toPlainDateTimeString(sourceEvent.start),
-      ).toZonedDateTime(tz).epochMilliseconds + deltaMs;
-    const srcEndMs =
-      Temporal.PlainDateTime.from(
-        toPlainDateTimeString(sourceEvent.end),
-      ).toZonedDateTime(tz).epochMilliseconds + deltaMs;
-    projected.set(sourceId, { startMs: srcStartMs, endMs: srcEndMs });
-
-    const queue: Array<string> = [sourceId];
-
-    while (queue.length > 0) {
-      const currentId = queue.shift()!;
-      const cur = projected.get(currentId)!;
-
-      const successorIds = this._dependentsMap.get(currentId);
-      if (!successorIds || successorIds.size === 0) continue;
-
-      for (const sId of successorIds) {
-        if (visited.has(sId)) continue;
-        const s = this._eventMap.get(sId);
-        if (!s) continue;
-
-        const link = s.dependsOn?.find((d) => d.id === currentId);
-        if (!link) continue;
-
-        const sStartStr = toPlainDateTimeString(s.start);
-        const sEndStr = toPlainDateTimeString(s.end);
-        const sStartMs =
-          Temporal.PlainDateTime.from(sStartStr).toZonedDateTime(
-            tz,
-          ).epochMilliseconds;
-        const sEndMs =
-          Temporal.PlainDateTime.from(sEndStr).toZonedDateTime(
-            tz,
-          ).epochMilliseconds;
-
-        const shiftMs = requiredForwardShiftMs(
-          link.type,
-          cur.startMs,
-          cur.endMs,
-          sStartMs,
-          sEndMs,
-        );
-        if (shiftMs <= 0) continue;
-
-        visited.add(sId);
-        const newStart = Temporal.PlainDateTime.from(sStartStr)
-          .add({ milliseconds: shiftMs })
-          .toString({ smallestUnit: "second" });
-        const newEnd = Temporal.PlainDateTime.from(sEndStr)
-          .add({ milliseconds: shiftMs })
-          .toString({ smallestUnit: "second" });
-        affected.push({ event: s, newStart, newEnd });
-
-        projected.set(sId, {
-          startMs: sStartMs + shiftMs,
-          endMs: sEndMs + shiftMs,
-        });
-        queue.push(sId);
-      }
+    for (const shift of shifts) {
+      const event = this._eventMap.get(shift.id);
+      if (!event) continue;
+      affected.push({
+        event,
+        newStart: shift.newStart,
+        newEnd: shift.newEnd,
+      });
     }
-
     return affected;
   }
 
@@ -1384,38 +1357,7 @@ export class CalendarCore<
     master: TEvent,
     occurrenceStart?: EventDateTimeInput,
   ): string {
-    return occurrenceStart != null
-      ? toPlainDateTimeString(occurrenceStart)
-      : toPlainDateTimeString(master.start);
-  }
-
-  private _recurrenceInputMatchesOccurrence(
-    value: EventDateTimeInput,
-    occurrenceStart: string,
-  ): boolean {
-    if (typeof value === "string" && !value.includes("T")) {
-      return (
-        Temporal.PlainDate.from(value).toString({ calendarName: "never" }) ===
-        occurrenceStart.split("T")[0]
-      );
-    }
-    return toPlainDateTimeString(value) === occurrenceStart;
-  }
-
-  private _compareRecurrenceInputToOccurrence(
-    value: EventDateTimeInput,
-    occurrenceStart: string,
-  ): number {
-    if (typeof value === "string" && !value.includes("T")) {
-      return Temporal.PlainDate.compare(
-        Temporal.PlainDate.from(value),
-        Temporal.PlainDate.from(occurrenceStart.split("T")[0]!),
-      );
-    }
-    return Temporal.PlainDateTime.compare(
-      Temporal.PlainDateTime.from(toPlainDateTimeString(value)),
-      Temporal.PlainDateTime.from(occurrenceStart),
-    );
+    return resolveOccurrenceStart(master.start, occurrenceStart);
   }
 
   private _durationPreservingEnd(
@@ -1423,82 +1365,20 @@ export class CalendarCore<
     originalEnd: string,
     nextStart: string,
   ): string {
-    const durationMs = Temporal.PlainDateTime.from(originalStart)
-      .toZonedDateTime("UTC")
-      .until(Temporal.PlainDateTime.from(originalEnd).toZonedDateTime("UTC"))
-      .total("milliseconds");
-    return Temporal.PlainDateTime.from(nextStart)
-      .toZonedDateTime("UTC")
-      .add({ milliseconds: durationMs })
-      .toPlainDateTime()
-      .toString({ smallestUnit: "second" });
+    return durationPreservingEnd(originalStart, originalEnd, nextStart);
   }
 
   private _normalizeRecurrenceDateTimeInputs(
     rule: NonNullable<TEvent["recurrence"]>,
   ): NonNullable<TEvent["recurrence"]> {
-    return {
-      ...rule,
-      exDates: rule.exDates?.map((value) =>
-        typeof value === "string" && !value.includes("T")
-          ? value
-          : toPlainDateTimeString(value),
-      ),
-      overrides: rule.overrides?.map((override) => ({
-        ...override,
-        originalStart:
-          typeof override.originalStart === "string" &&
-          !override.originalStart.includes("T")
-            ? override.originalStart
-            : toPlainDateTimeString(override.originalStart),
-        ...(override.start != null
-          ? { start: toPlainDateTimeString(override.start) }
-          : {}),
-        ...(override.end != null
-          ? { end: toPlainDateTimeString(override.end) }
-          : {}),
-      })),
-    };
+    return normalizeRecurrenceRule(rule) as NonNullable<TEvent["recurrence"]>;
   }
 
   private _getRecurringOccurrence(
     master: TEvent,
     occurrenceStart: string,
   ): TEvent | null {
-    const occurrenceDate = occurrenceStart.split("T")[0]!;
-    let windowStart = occurrenceDate;
-    let windowEnd = Temporal.PlainDate.from(occurrenceDate)
-      .add({ days: 1 })
-      .toString({ calendarName: "never" });
-
-    const override = master.recurrence?.overrides?.find((candidate) =>
-      this._recurrenceInputMatchesOccurrence(
-        candidate.originalStart,
-        occurrenceStart,
-      ),
-    );
-    if (override?.start != null) {
-      const overrideDate = toPlainDateTimeString(override.start).split("T")[0]!;
-      windowStart =
-        overrideDate < occurrenceDate ? overrideDate : occurrenceDate;
-      const maxDate =
-        overrideDate > occurrenceDate ? overrideDate : occurrenceDate;
-      windowEnd = Temporal.PlainDate.from(maxDate)
-        .add({ days: 1 })
-        .toString({ calendarName: "never" });
-    }
-
-    const occurrences = expandRecurringEvent<TResource, TEvent>(
-      master,
-      windowStart,
-      windowEnd,
-    );
-    return (
-      occurrences.find(
-        (occ) =>
-          (occ._occurrenceOriginalStart ?? occ.start) === occurrenceStart,
-      ) ?? null
-    );
+    return getRecurringOccurrence<TResource, TEvent>(master, occurrenceStart);
   }
 
   private _resolveResizeEvent(
@@ -1523,17 +1403,6 @@ export class CalendarCore<
     }
 
     return direct;
-  }
-
-  private _makeSplitRecurringEventId(master: TEvent, occurrenceStart: string) {
-    const safeStart = occurrenceStart.replace(/[^0-9A-Za-z]/g, "");
-    let id = `${master.id}_${safeStart}`;
-    let suffix = 1;
-    while (this._eventMap.has(id)) {
-      id = `${master.id}_${safeStart}_${suffix}`;
-      suffix++;
-    }
-    return id;
   }
 
   private _commitRecurringUpdate(
@@ -1878,53 +1747,25 @@ export class CalendarCore<
   ): { valid: boolean; error?: ResizeError } {
     if (this._eventMap.size === 0) return { valid: true };
 
-    const tz = this.options.timeZone;
-    const newStartMs = Temporal.PlainDateTime.from(event.start).toZonedDateTime(
-      tz,
-    ).epochMilliseconds;
-    const newEndMs = Temporal.PlainDateTime.from(event.end).toZonedDateTime(
-      tz,
-    ).epochMilliseconds;
+    const [conflict] = validateDependencies({
+      event,
+      dependsOn,
+      events: this._dependencyGraphEvents(),
+      timeZone: this.options.timeZone,
+    });
 
-    for (const dep of dependsOn) {
-      const pred = this._eventMap.get(dep.id);
-      if (!pred) continue;
-
-      const predStartMs = Temporal.PlainDateTime.from(
-        toPlainDateTimeString(pred.start),
-      ).toZonedDateTime(tz).epochMilliseconds;
-      const predEndMs = Temporal.PlainDateTime.from(
-        toPlainDateTimeString(pred.end),
-      ).toZonedDateTime(tz).epochMilliseconds;
-
-      const shortfall = requiredForwardShiftMs(
-        dep.type,
-        predStartMs,
-        predEndMs,
-        newStartMs,
-        newEndMs,
-      );
-
-      if (shortfall > 0) {
-        const reason = {
-          FS: `cannot start before "${pred.title}" ends`,
-          SS: `cannot start before "${pred.title}" starts`,
-          FF: `cannot end before "${pred.title}" ends`,
-          SF: `cannot end before "${pred.title}" starts`,
-        }[dep.type];
-
-        return {
-          valid: false,
-          error: {
-            eventId: event.id ?? "",
-            eventTitle: event.title,
-            reason: "blocked",
-            message: `"${event.title}" ${reason} (${dep.type})`,
-            originalStart: event.start,
-            originalEnd: event.end,
-          },
-        };
-      }
+    if (conflict) {
+      return {
+        valid: false,
+        error: {
+          eventId: conflict.eventId,
+          eventTitle: conflict.eventTitle,
+          reason: "blocked",
+          message: conflict.message,
+          originalStart: conflict.originalStart,
+          originalEnd: conflict.originalEnd,
+        },
+      };
     }
     return { valid: true };
   }
@@ -2255,7 +2096,6 @@ export class CalendarCore<
       }
     }
 
-    const rule = this._normalizeRecurrenceDateTimeInputs(master.recurrence);
     const recurrenceUpdate = (updates as { recurrence?: TEvent["recurrence"] })
       .recurrence;
     const normalizedUpdates = {
@@ -2273,44 +2113,17 @@ export class CalendarCore<
     } as Partial<Omit<TEvent, "id">>;
 
     if (options.scope === "this") {
-      const exDates = (rule.exDates ?? []).filter(
-        (value) =>
-          !this._recurrenceInputMatchesOccurrence(value, occurrenceStart),
-      );
-      const overrides = (rule.overrides ?? []).filter(
-        (override) =>
-          !this._recurrenceInputMatchesOccurrence(
-            override.originalStart,
-            occurrenceStart,
-          ),
-      );
-      const overrideFields = {
-        ...(normalizedUpdates as Record<string, unknown>),
-      };
-      delete overrideFields.recurrence;
-      delete overrideFields._originalStart;
-      delete overrideFields._originalEnd;
-      delete overrideFields._recurringMasterId;
-      delete overrideFields._occurrenceIndex;
-      delete overrideFields._occurrenceOriginalStart;
-
-      overrides.push({
-        ...overrideFields,
-        originalStart: occurrenceStart,
-        ...(updates.start != null ? { start: effectiveStart } : {}),
-        ...(updates.end != null || updates.start != null
-          ? { end: effectiveEnd }
-          : {}),
+      const { nextMaster } = materializeRecurringEdit<TResource, TEvent>({
+        master,
+        scope: "this",
+        occurrence,
+        occurrenceStart,
+        effectiveStart,
+        effectiveEnd,
+        normalizedUpdates,
+        recurrenceUpdate,
+        isTaken: (id) => this._eventMap.has(id),
       });
-
-      const nextMaster = {
-        ...master,
-        recurrence: this._normalizeRecurrenceDateTimeInputs({
-          ...rule,
-          exDates,
-          overrides,
-        }),
-      } as TEvent;
 
       this._commitRecurringUpdate(master, nextMaster, [], {
         type: "updated",
@@ -2330,55 +2143,21 @@ export class CalendarCore<
       });
     }
 
-    const splitDate = occurrenceStart.split("T")[0]!;
-    const oldRule = this._normalizeRecurrenceDateTimeInputs({
-      ...rule,
-      until: splitDate,
+    const { nextMaster, addedEvents } = materializeRecurringEdit<
+      TResource,
+      TEvent
+    >({
+      master,
+      scope: "thisAndFollowing",
+      occurrence,
+      occurrenceStart,
+      effectiveStart,
+      effectiveEnd,
+      normalizedUpdates,
+      recurrenceUpdate,
+      isTaken: (id) => this._eventMap.has(id),
     });
-    const remainingRule = this._normalizeRecurrenceDateTimeInputs({
-      ...rule,
-      ...(rule.count !== undefined && rule.until === undefined
-        ? {
-            count: Math.max(1, rule.count - (occurrence._occurrenceIndex ?? 0)),
-          }
-        : {}),
-      exDates: rule.exDates?.filter(
-        (value) =>
-          this._compareRecurrenceInputToOccurrence(value, occurrenceStart) > 0,
-      ),
-      overrides: rule.overrides?.filter(
-        (override) =>
-          this._compareRecurrenceInputToOccurrence(
-            override.originalStart,
-            occurrenceStart,
-          ) > 0,
-      ),
-    });
-
-    const updateFields = { ...(normalizedUpdates as Record<string, unknown>) };
-    delete updateFields.recurrence;
-
-    const splitEvent = {
-      ...occurrence,
-      ...updateFields,
-      id: this._makeSplitRecurringEventId(master, occurrenceStart),
-      start: effectiveStart,
-      end: effectiveEnd,
-      recurrence:
-        recurrenceUpdate != null
-          ? this._normalizeRecurrenceDateTimeInputs(recurrenceUpdate)
-          : remainingRule,
-      _originalStart: undefined,
-      _originalEnd: undefined,
-      _recurringMasterId: undefined,
-      _occurrenceIndex: undefined,
-      _occurrenceOriginalStart: undefined,
-    } as TEvent;
-
-    const nextMaster = {
-      ...master,
-      recurrence: oldRule,
-    } as TEvent;
+    const splitEvent = addedEvents[0]!;
 
     this._commitRecurringUpdate(master, nextMaster, [splitEvent], {
       type: "updated",
@@ -2414,31 +2193,15 @@ export class CalendarCore<
     const occurrence = this._getRecurringOccurrence(master, occurrenceStart);
     if (!occurrence) return;
 
-    const rule = this._normalizeRecurrenceDateTimeInputs(master.recurrence);
     const occurrenceStartStr = toPlainDateTimeString(occurrence.start);
     const occurrenceEndStr = toPlainDateTimeString(occurrence.end);
 
     if (options.scope === "this") {
-      const exDates = (rule.exDates ?? []).filter(
-        (value) =>
-          !this._recurrenceInputMatchesOccurrence(value, occurrenceStart),
-      );
-      exDates.push(occurrenceStart);
-      const overrides = (rule.overrides ?? []).filter(
-        (override) =>
-          !this._recurrenceInputMatchesOccurrence(
-            override.originalStart,
-            occurrenceStart,
-          ),
-      );
-      const nextMaster = {
-        ...master,
-        recurrence: this._normalizeRecurrenceDateTimeInputs({
-          ...rule,
-          exDates,
-          overrides,
-        }),
-      } as TEvent;
+      const { nextMaster } = materializeRecurringRemove<TResource, TEvent>({
+        master,
+        scope: "this",
+        occurrenceStart,
+      });
       this._commitRecurringUpdate(master, nextMaster, [], {
         type: "removed",
         eventId: occurrence.id,
@@ -2454,13 +2217,11 @@ export class CalendarCore<
       return;
     }
 
-    const nextMaster = {
-      ...master,
-      recurrence: this._normalizeRecurrenceDateTimeInputs({
-        ...rule,
-        until: occurrenceStart.split("T")[0]!,
-      }),
-    } as TEvent;
+    const { nextMaster } = materializeRecurringRemove<TResource, TEvent>({
+      master,
+      scope: "thisAndFollowing",
+      occurrenceStart,
+    });
 
     this._commitRecurringUpdate(master, nextMaster, [], {
       type: "removed",
@@ -3588,40 +3349,3 @@ export class CalendarCore<
   }
 }
 
-function requiredForwardShiftMs(
-  type: DependencyType,
-  predStartMs: number,
-  predEndMs: number,
-  succStartMs: number,
-  succEndMs: number,
-): number {
-  switch (type) {
-    case "FS":
-      return predEndMs - succStartMs;
-    case "SS":
-      return predStartMs - succStartMs;
-    case "FF":
-      return predEndMs - succEndMs;
-    case "SF":
-      return predStartMs - succEndMs;
-  }
-}
-
-function requiredBackwardShiftMs(
-  type: DependencyType,
-  predStartMs: number,
-  predEndMs: number,
-  succStartMs: number,
-  succEndMs: number,
-): number {
-  switch (type) {
-    case "FS":
-      return predEndMs - succStartMs;
-    case "SS":
-      return predStartMs - succStartMs;
-    case "FF":
-      return predEndMs - succEndMs;
-    case "SF":
-      return predStartMs - succEndMs;
-  }
-}

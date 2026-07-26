@@ -16,10 +16,24 @@ export interface KernelConfig {
   [key: string]: unknown;
 }
 
-export type WriteOp<E extends KernelEvent> =
+export interface IntentOp {
+  kind: "intent";
+  intent: string;
+  payload: unknown;
+}
+
+export type ConcreteWriteOp<E extends KernelEvent> =
   | { kind: "add"; event: E }
   | { kind: "update"; id: string; before: E; after: E }
   | { kind: "remove"; id: string; event: E };
+
+export type WriteOp<E extends KernelEvent> = ConcreteWriteOp<E> | IntentOp;
+
+export function isIntentOp<E extends KernelEvent>(
+  op: WriteOp<E>,
+): op is IntentOp {
+  return op.kind === "intent";
+}
 
 export interface WriteBatch<E extends KernelEvent> {
   reason: string;

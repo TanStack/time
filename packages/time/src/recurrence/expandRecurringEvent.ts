@@ -1,5 +1,5 @@
 import { Temporal } from "@js-temporal/polyfill";
-import type { Event, Resource } from "./types";
+import type { Event, Resource } from "~/calendar/types";
 import { toPlainDateTimeString } from "~/date/parse";
 
 /**
