@@ -1,6 +1,43 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --font-sans: "Geist Variable", system-ui, sans-serif;
+  --font-heading: "Geist Variable", system-ui, sans-serif;
+}
 
 @layer base {
   :root {
@@ -33,13 +70,10 @@
     --ring: 0 0% 55.6%;
 
     --radius: 0.625rem;
-
-    --font-sans: 'Geist Variable', sans-serif;
-    --font-heading: var(--font-sans);
   }
 
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
 
   body {
@@ -47,52 +81,10 @@
     color: hsl(var(--foreground));
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    font-family: var(--font-sans), system-ui, sans-serif;
+    font-family: var(--font-sans);
   }
 
   html {
-    font-family: var(--font-sans), system-ui, sans-serif;
-  }
-}
-
-@layer utilities {
-  .bg-background {
-    background-color: hsl(var(--background));
-  }
-  .text-foreground {
-    color: hsl(var(--foreground));
-  }
-  .bg-card {
-    background-color: hsl(var(--card));
-  }
-  .text-card-foreground {
-    color: hsl(var(--card-foreground));
-  }
-  .bg-primary {
-    background-color: hsl(var(--primary));
-  }
-  .text-primary-foreground {
-    color: hsl(var(--primary-foreground));
-  }
-  .bg-secondary {
-    background-color: hsl(var(--secondary));
-  }
-  .text-secondary-foreground {
-    color: hsl(var(--secondary-foreground));
-  }
-  .text-muted-foreground {
-    color: hsl(var(--muted-foreground));
-  }
-  .border-border {
-    border-color: hsl(var(--border));
-  }
-  .bg-input {
-    background-color: hsl(var(--input));
-  }
-  .ring-ring {
-    --tw-ring-color: hsl(var(--ring));
-  }
-  .outline-ring {
-    outline-color: hsl(var(--ring));
+    font-family: var(--font-sans);
   }
 }

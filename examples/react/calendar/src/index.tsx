@@ -390,7 +390,7 @@ function EventModal({
               <Label htmlFor="resourceId">Resource</Label>
               <select
                 id="resourceId"
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
                 value={formData.resourceId}
                 onChange={(e) =>
                   setFormData({ ...formData, resourceId: e.target.value })
@@ -455,7 +455,7 @@ function EventModal({
               <Label htmlFor="recurrenceEditScope">Apply changes to</Label>
               <select
                 id="recurrenceEditScope"
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
                 value={formData.recurrenceEditScope}
                 onChange={(e) =>
                   setFormData({
@@ -481,7 +481,7 @@ function EventModal({
             <Label htmlFor="recurrenceFrequency">Repeat</Label>
             <select
               id="recurrenceFrequency"
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
               value={formData.recurrenceFrequency}
               onChange={(e) =>
                 setFormData({
@@ -555,28 +555,18 @@ function EventModal({
 
 interface ResizeHandleProps {
   edge: "top" | "bottom";
-  /**
-   * When the event is too short to host two stacked handles inside it, float
-   * the handle just outside the box (above for top, below for bottom) so the
-   * two handles never overlap and the event stays resizable at any height.
-   */
-  floating?: boolean;
   onMouseDown: (e: React.MouseEvent) => void;
 }
 
-function ResizeHandle({ edge, floating, onMouseDown }: ResizeHandleProps) {
-  const edgePosition = floating
-    ? edge === "top"
-      ? "-top-3"
-      : "-bottom-3"
-    : edge === "top"
-      ? "top-0"
-      : "bottom-0";
-
+function ResizeHandle({ edge, onMouseDown }: ResizeHandleProps) {
   return (
     <div
       data-resize-handle
-      className={`absolute left-0 right-0 h-3 cursor-ns-resize z-30 bg-transparent hover:bg-neutral-500/30 pointer-events-auto ${edgePosition}`}
+      className={`absolute left-0 right-0 h-3 cursor-ns-resize z-30 bg-transparent hover:bg-neutral-500/30 pointer-events-auto ${
+        edge === "top"
+          ? "top-0 [@container_event_(height<24px)]:-top-3"
+          : "bottom-0 [@container_event_(height<24px)]:-bottom-3"
+      }`}
       onMouseDown={onMouseDown}
       onClick={(e) => {
         e.stopPropagation();
@@ -584,7 +574,7 @@ function ResizeHandle({ edge, floating, onMouseDown }: ResizeHandleProps) {
       style={{ touchAction: "none" }}
     >
       <div
-        className={`absolute left-1/2 -translate-x-1/2 w-8 h-1 bg-neutral-400 rounded opacity-50 group-hover:opacity-100 transition-opacity ${
+        className={`absolute left-1/2 -translate-x-1/2 w-8 h-1 bg-neutral-400 rounded opacity-0 group-hover:opacity-100 transition-opacity ${
           edge === "top" ? "top-1" : "bottom-1"
         }`}
       />
@@ -731,10 +721,10 @@ function ScheduleView({
                         return resourceRanges.map((range, rangeIdx) => (
                           <div
                             key={`${resource.id}-${rangeIdx}`}
-                            className="absolute left-0 right-0 pointer-events-none z-0 bg-[length:10px_10px] bg-fixed"
+                            className="absolute left-0 right-0 pointer-events-none z-0 bg-size-[10px_10px] bg-fixed"
                             style={{
-                              top: `${range.top}px`,
-                              height: `${range.height}px`,
+                              top: range.top,
+                              height: range.height,
                               backgroundImage: `repeating-linear-gradient(315deg, ${color} 0, ${color} 1px, transparent 0, transparent 50%)`,
                             }}
                             title={`Unavailable - ${resource.label}`}
@@ -778,20 +768,6 @@ function ScheduleView({
                           ? { ...style, ...resizePreview.previewStyle }
                           : style;
 
-                        // Events render at their true height (no min-height
-                        // floor). A very short event can't host two stacked
-                        // 12px handles inside it without them overlapping and
-                        // stealing each other's clicks — so for those, float
-                        // the handles just outside the box. Still resizable.
-                        const RESIZE_HANDLE_PX = 12; // ResizeHandle `h-3`
-                        const DAY_COLUMN_HEIGHT_PX = 1440; // the `h-[1440px]` grid
-                        const renderedHeightPx = style?.height
-                          ? (parseFloat(style.height) / 100) *
-                            DAY_COLUMN_HEIGHT_PX
-                          : Infinity;
-                        const floatHandles =
-                          renderedHeightPx < RESIZE_HANDLE_PX * 2;
-
                         const showTopHandle = !isSplitEvent || isFirstSegment;
                         const showBottomHandle = !isSplitEvent || isLastSegment;
                         const isActivelyResized =
@@ -810,11 +786,7 @@ function ScheduleView({
                         return (
                           <ContextMenu key={`${event.id}-${eventIndex}`}>
                             <ContextMenuTrigger
-                              className={`group absolute z-10 bg-neutral-800 text-white rounded px-2 py-1 text-xs font-medium transition-colors border border-neutral-700 ${
-                                // Floating handles sit outside the box, so they
-                                // must not be clipped.
-                                floatHandles ? "" : "overflow-hidden"
-                              } ${
+                              className={`@container/event [container-type:size] group absolute z-10 bg-neutral-800 text-white rounded text-xs font-medium transition-colors border border-neutral-700 ${
                                 isActivelyResized
                                   ? "bg-neutral-700 ring-2 ring-neutral-500 z-20"
                                   : "cursor-pointer hover:bg-neutral-700"
@@ -834,7 +806,6 @@ function ScheduleView({
                               {showTopHandle && (
                                 <ResizeHandle
                                   edge="top"
-                                  floating={floatHandles}
                                   {...getResizeHandleProps(
                                     event.id,
                                     "top",
@@ -847,43 +818,41 @@ function ScheduleView({
                                   )}
                                 />
                               )}
-                              <div className="font-semibold pt-1 flex items-center gap-1.5">
-                                <span className="flex items-center gap-1 min-w-0">
-                                  {event.recurrence && (
-                                    <span
-                                      className="opacity-60 flex-shrink-0"
-                                      title="Recurring event"
-                                    >
-                                      ↻
+                              <div className="absolute inset-0 overflow-hidden rounded-[inherit] px-2 py-3 [@container_event_(24px<=height<40px)]:py-1 [@container_event_(height<24px)]:py-0">
+                                <div className="font-semibold flex items-center gap-1.5 leading-tight">
+                                  <span className="flex items-center gap-1 min-w-0">
+                                    {event.recurrence && (
+                                      <span
+                                        className="opacity-60 shrink-0"
+                                        title="Recurring event"
+                                      >
+                                        ↻
+                                      </span>
+                                    )}
+                                    <span className="truncate">
+                                      {event.title}
                                     </span>
-                                  )}
-                                  <span className="truncate">
-                                    {event.title}
                                   </span>
-                                </span>
-                                {event.consumption &&
-                                  event.consumption.length > 0 && (
-                                    <span
-                                      className="text-[10px] leading-none rounded bg-black/40 px-1 py-0.5 font-semibold flex-shrink-0"
-                                      title="Consumption"
-                                    >
-                                      {event.consumption.reduce(
-                                        (a, b) => a + b,
-                                        0,
-                                      )}
-                                    </span>
-                                  )}
+                                  {event.consumption &&
+                                    event.consumption.length > 0 && (
+                                      <span
+                                        className="text-[10px] leading-none rounded bg-black/40 px-1 py-0.5 font-semibold shrink-0"
+                                        title="Consumption"
+                                      >
+                                        {event.consumption.reduce(
+                                          (a, b) => a + b,
+                                          0,
+                                        )}
+                                      </span>
+                                    )}
+                                </div>
+                                <div className="hidden [@container_event_(height>=56px)]:block text-xs opacity-90 mt-0.5 leading-tight truncate">
+                                  {timeRange.rangeFormatted}
+                                </div>
                               </div>
-                              {displayStyle &&
-                                parseFloat(displayStyle.height) > 2 && (
-                                  <div className="text-xs opacity-90 mt-0.5">
-                                    {timeRange.rangeFormatted}
-                                  </div>
-                                )}
                               {showBottomHandle && (
                                 <ResizeHandle
                                   edge="bottom"
-                                  floating={floatHandles}
                                   {...getResizeHandleProps(
                                     event.id,
                                     "bottom",
@@ -1831,7 +1800,7 @@ function CalendarView() {
                         }`}
                       >
                         <div
-                          className={`text-sm mb-1 flex-shrink-0 ${
+                          className={`text-sm mb-1 shrink-0 ${
                             isToday
                               ? "font-bold text-white"
                               : isInCurrentPeriod
@@ -1845,7 +1814,7 @@ function CalendarView() {
                           {day.allDayEvents.map((event) => (
                             <Badge
                               key={`ad-${event.id}`}
-                              className="cursor-pointer bg-amber-700/70 hover:bg-amber-600/80 text-amber-50 border border-amber-600/40 flex items-center gap-1.5 max-w-full flex-shrink-0 w-full"
+                              className="cursor-pointer bg-amber-700/70 hover:bg-amber-600/80 text-amber-50 border border-amber-600/40 flex items-center gap-1.5 max-w-full shrink-0 w-full"
                               title={event.title}
                               onClick={() => handleEventClick(event)}
                             >
@@ -1857,14 +1826,14 @@ function CalendarView() {
                               <ContextMenuTrigger className="contents">
                                 <Badge
                                   variant="secondary"
-                                  className="cursor-pointer hover:bg-muted flex items-center gap-1.5 max-w-full flex-shrink-0 w-full"
+                                  className="cursor-pointer hover:bg-muted flex items-center gap-1.5 max-w-full shrink-0 w-full"
                                   title={event.title}
                                   onClick={() => handleEventClick(event)}
                                 >
                                   <span className="flex items-center gap-1 min-w-0">
                                     {event.recurrence && (
                                       <span
-                                        className="opacity-60 flex-shrink-0"
+                                        className="opacity-60 shrink-0"
                                         title="Recurring event"
                                       >
                                         ↻
@@ -1877,7 +1846,7 @@ function CalendarView() {
                                   {event.consumption &&
                                     event.consumption.length > 0 && (
                                       <span
-                                        className="text-[10px] leading-none rounded bg-black/40 px-1 py-0.5 font-semibold flex-shrink-0"
+                                        className="text-[10px] leading-none rounded bg-black/40 px-1 py-0.5 font-semibold shrink-0"
                                         title="Consumption"
                                       >
                                         {event.consumption.reduce(

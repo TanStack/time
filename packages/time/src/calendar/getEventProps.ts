@@ -1,12 +1,11 @@
 import { Temporal } from "@js-temporal/polyfill";
-import type { CalendarStore, Event, EventDateTimeInput } from "./types";
+import { layoutDaySegments, toLayoutStyle } from "~/projection";
 import { toPlainDateTimeString } from "~/date/parse";
+import type { CalendarStore, Event, EventDateTimeInput } from "./types";
 
 interface GetEventPropsOptions {
   timeZone: Temporal.TimeZoneLike;
 }
-
-const MINUTES_IN_DAY = 24 * 60;
 
 const toZonedDateTime = (
   dateInput: EventDateTimeInput,
@@ -15,11 +14,6 @@ const toZonedDateTime = (
   Temporal.PlainDateTime.from(toPlainDateTimeString(dateInput)).toZonedDateTime(
     timeZone,
   );
-
-const toMinutes = (date: Temporal.ZonedDateTime): number =>
-  date.hour * 60 + date.minute;
-
-const toPercent = (minutes: number): number => (minutes / MINUTES_IN_DAY) * 100;
 
 const hasTimeOverlap = (
   aStart: Temporal.ZonedDateTime,
@@ -56,6 +50,13 @@ const getFullEventTimes = (
   };
 };
 
+const dayKeyOf = (value: EventDateTimeInput): string =>
+  toPlainDateTimeString(value).slice(0, 10);
+
+const sameSegment = (a: Event, b: Event): boolean =>
+  a.id === b.id &&
+  toPlainDateTimeString(a.start) === toPlainDateTimeString(b.start);
+
 export const getEventProps = (
   eventMap: Map<string, Array<Event>>,
   event: Event,
@@ -88,34 +89,16 @@ export const getEventProps = (
     return baseProps;
   }
 
-  const startMinutes = toMinutes(segmentStart);
-  const endMinutes = toMinutes(segmentEnd);
-  const durationMinutes = endMinutes - startMinutes;
+  const daySegments = eventMap.get(dayKeyOf(event.start)) ?? [];
+  const knownIndex = daySegments.findIndex((e) => sameSegment(e, event));
+  const laidOut = knownIndex >= 0 ? daySegments : [...daySegments, event];
+  const index = knownIndex >= 0 ? knownIndex : laidOut.length - 1;
 
-  const overlappingCount = overlappingEvents.length;
-  const columnCount = overlappingCount + 1;
-
-  const eventIndex =
-    overlappingCount > 0
-      ? overlappingEvents.filter((e) => {
-          const eStart = toZonedDateTime(e.start, timeZone);
-          const comparison = Temporal.ZonedDateTime.compare(
-            eStart,
-            segmentStart,
-          );
-          if (comparison !== 0) return comparison < 0;
-          return e.id < event.id;
-        }).length
-      : 0;
+  const layout = layoutDaySegments(laidOut)[index]!;
 
   return {
     ...baseProps,
-    style: {
-      top: `${toPercent(startMinutes)}%`,
-      height: `${toPercent(durationMinutes)}%`,
-      left:
-        overlappingCount > 0 ? `${(eventIndex * 100) / columnCount}%` : "0%",
-      width: overlappingCount > 0 ? `${100 / columnCount}%` : "100%",
-    },
+    layout,
+    style: toLayoutStyle(layout),
   };
 };

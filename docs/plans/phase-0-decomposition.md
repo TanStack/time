@@ -139,10 +139,22 @@ stop re-implementing availability/dependency checks inline.
 `emit` stage. Convert full-snapshot stacks → **command diffs** (ROADMAP Phase 0 item). Wraps
 one write batch = one undo entry.
 
-### Step 8 — Views + `%` layout (ADR 0003)
-Move `getEventProps` / `getTimelineLayout` into a view owning the `layout` stage. Convert px
-outputs → **fractions/%** (`startFraction`, `endFraction`, `column`, `columnCount`, `lane`).
-Kernel stays pixel- and dimension-free.
+### Step 8 — Views + `%` layout (ADR 0003) ✅ (core landed)
+`projection/layout.ts` owns the logical layout: `layoutDaySegments(segments) → {startFraction,
+endFraction, column, columnCount}` with interval-graph coloring scoped per overlap cluster,
+plus `toLayoutStyle(layout, orientation)` mapping fractions → `%` for vertical/horizontal.
+`layoutModule` mounts it as the kernel `layout` stage (splits multi-day, lays out per day,
+attaches `layout` to each segment). `getUnavailableRanges` dropped `containerHeight` and now
+returns `startFraction`/`endFraction` + `%` strings.
+
+`getEventProps` and `getTimelineLayout` now delegate: `getEventProps` lays out the event's own
+day bucket via `layoutDaySegments` + `toLayoutStyle` and also returns the raw `layout`;
+`getTimelineLayout` uses `layoutTimelineRange` (fraction positions + lane packing across the
+visible range) and `currentTimeFraction`, and exposes `startFraction`/`endFraction` next to the
+existing `left`/`width` percentages. `computeTimelineEventPosition` is gone.
+
+Behaviour change (intentional, ADR 0003): overlap columns come from cluster coloring, so
+chained overlaps no longer over-narrow and events outside a busy cluster keep full width.
 
 ### Step 9 — Boundary types (ADR 0002) — last
 Swap `Day.date`, `currentPeriod`, `activeDate` from `Temporal.PlainDate` → ISO strings;

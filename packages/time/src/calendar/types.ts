@@ -161,10 +161,14 @@ export interface TimeSlot {
 }
 
 export interface UnavailableRange {
-  /** Top position in pixels */
-  top: number;
-  /** Height in pixels */
-  height: number;
+  /** Start of the range as a fraction of the day (0-1) */
+  startFraction: number;
+  /** End of the range as a fraction of the day (0-1) */
+  endFraction: number;
+  /** Style-ready offset along the time axis, e.g. "33.333%" */
+  top: string;
+  /** Style-ready size along the time axis, e.g. "20.833%" */
+  height: string;
   /** Start time as HH:mm string */
   startTime: string;
   /** End time as HH:mm string */
@@ -253,9 +257,15 @@ export interface TimelineEventLayout<
   TEvent extends Event<TResource> = Event<TResource>,
 > {
   event: TEvent;
+  /** Offset along the time axis as a percentage of the visible range */
   left: number;
+  /** Size along the time axis as a percentage of the visible range */
   width: number;
   lane: number;
+  /** Start as a fraction of the visible range (0-1) */
+  startFraction: number;
+  /** End as a fraction of the visible range (0-1) */
+  endFraction: number;
   /** True when the event starts before the first visible day (left edge is clipped) */
   isStartClipped: boolean;
   /** True when the event ends after the last visible day (right edge is clipped) */

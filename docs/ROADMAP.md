@@ -26,8 +26,12 @@ Prerequisite for everything. Nothing user-facing.
       conflicts`) — no store/viewport/DOM (ADR 0004).
 - [ ] Migrate boundary types: `Day.date`, `currentPeriod`, `activeDate` from
       `Temporal.PlainDate` → ISO strings; instants → native `Date` (ADR 0002).
-- [ ] Remove pixels from the core: drop `containerHeight` from `getUnavailableRanges`; make
-      `getTimelineLayout` / `getEventProps` emit **fractions/%**, not px (ADR 0003).
+- [x] Remove pixels from the core: `containerHeight` dropped from `getUnavailableRanges`
+      (now `startFraction`/`endFraction` + `%`); logical layout (`startFraction`,
+      `endFraction`, `column`, `columnCount`) lives in the `layout` projection stage with
+      `toLayoutStyle` for `%` output. `getEventProps` / `getTimelineLayout` delegate to the
+      pure cores (`layoutDaySegments`, `layoutTimelineRange`) and expose raw fractions
+      (ADR 0003).
 - [ ] Undo/redo → **command diffs**, not full-event snapshots (memory).
 
 ## Phase 1 — Alpha (Calendar product, React)

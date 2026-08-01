@@ -422,7 +422,7 @@ describe("CalendarCore", () => {
     test("returns empty when no resources", () => {
       const cal = createCalendar({ resources: [] });
       expect(
-        cal.getUnavailableRanges(DATE_MON, { containerHeight: 800 }),
+        cal.getUnavailableRanges(DATE_MON),
       ).toHaveLength(0);
     });
 
@@ -440,13 +440,16 @@ describe("CalendarCore", () => {
       });
 
       const ranges = cal.getUnavailableRanges(DATE_MON, {
-        containerHeight: 800,
         resourceIds: ["r-wknd"],
       });
 
       expect(ranges).toHaveLength(1);
-      expect(ranges[0]!.top).toBe(0);
-      expect(ranges[0]!.height).toBe(800);
+      expect(ranges[0]).toMatchObject({
+        startFraction: 0,
+        endFraction: 1,
+        top: "0%",
+        height: "100%",
+      });
     });
 
     test("returns unavailable ranges before and after availability window", () => {
@@ -455,13 +458,12 @@ describe("CalendarCore", () => {
       });
 
       const ranges = cal.getUnavailableRanges(DATE_MON, {
-        containerHeight: 540,
         resourceIds: ["r1"],
       });
 
       expect(ranges).toHaveLength(2);
       expect(ranges[0]).toMatchObject({
-        top: 0,
+        top: "0%",
         startTime: "00:00",
         endTime: "08:00",
       });
@@ -476,9 +478,7 @@ describe("CalendarCore", () => {
         resources: [weekdayResource, afternoonResource],
       });
 
-      const ranges = cal.getUnavailableRanges(DATE_MON, {
-        containerHeight: 540,
-      });
+      const ranges = cal.getUnavailableRanges(DATE_MON);
 
       expect(ranges).toHaveLength(2);
     });
@@ -489,7 +489,6 @@ describe("CalendarCore", () => {
       });
 
       const ranges = cal.getUnavailableRanges(DATE_MON, {
-        containerHeight: 540,
         resourceIds: ["r2"],
       });
 
@@ -502,7 +501,6 @@ describe("CalendarCore", () => {
       });
 
       const ranges = cal.getUnavailableRanges(DATE_MON, {
-        containerHeight: 800,
         resourceIds: ["r3"],
       });
 
@@ -515,25 +513,30 @@ describe("CalendarCore", () => {
       });
 
       const ranges = cal.getUnavailableRanges(DATE_MON, {
-        containerHeight: 800,
         resourceIds: ["r4"],
       });
 
       expect(ranges).toHaveLength(1);
-      expect(ranges[0]!.height).toBe(800);
+      expect(ranges[0]!.height).toBe("100%");
     });
 
-    test("scales pixel positions to containerHeight", () => {
+    test("emits fractions and percentage styles, never pixels", () => {
       const cal = createCalendar({
         resources: [weekdayResource],
       });
 
       const ranges = cal.getUnavailableRanges(DATE_MON, {
-        containerHeight: 540,
         resourceIds: ["r1"],
       });
 
-      expect(ranges[0]!.height).toBeLessThan(540);
+      expect(ranges[0]).toMatchObject({
+        startFraction: 0,
+        endFraction: 8 / 24,
+        top: "0%",
+        height: `${(8 / 24) * 100}%`,
+      });
+      expect(ranges[1]!.startFraction).toBeCloseTo(17 / 24);
+      expect(ranges[1]!.endFraction).toBe(1);
     });
   });
 
@@ -4456,6 +4459,32 @@ describe("CalendarCore", () => {
         expect(lanes).toEqual([0, 1]);
       });
 
+      test("exposes fractions consistent with the percentage positions", () => {
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: "week" },
+          resources: [allDayResource],
+          events: [
+            {
+              id: "e1",
+              title: "E1",
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+              resources: [allDayResource],
+            },
+          ],
+        });
+        cal.goToSpecificPeriod(DATE_MON);
+
+        const item = cal.getTimelineLayout().rows[0]!.events[0]!;
+
+        expect(item.left).toBeCloseTo(item.startFraction * 100);
+        expect(item.width).toBeCloseTo(
+          (item.endFraction - item.startFraction) * 100,
+        );
+        expect(item.startFraction).toBeGreaterThan(0);
+        expect(item.endFraction).toBeLessThan(1);
+      });
+
       test("currentTimePosition is null when today is not in the visible range", () => {
         const cal = createCalendar({
           viewMode: { value: 1, unit: "week" },
@@ -4628,6 +4657,110 @@ describe("CalendarCore", () => {
         expect(props.start).toBe(`${DATE_MON}T09:00:00`);
         expect(props.end).toBe(`${DATE_MON}T10:00:00`);
         expect(Array.isArray(props.overlappingEvents)).toBe(true);
+      });
+
+      test("exposes the logical layout alongside the style", () => {
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: "week" },
+          events: [
+            {
+              id: "e1",
+              title: "E1",
+              start: `${DATE_MON}T06:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+            },
+          ],
+        });
+        cal.goToSpecificPeriod(DATE_MON);
+
+        const props = cal.getEventProps(cal.getEvents()[0]!) as {
+          layout: {
+            startFraction: number;
+            endFraction: number;
+            column: number;
+            columnCount: number;
+          };
+        };
+
+        expect(props.layout).toMatchObject({
+          startFraction: 0.25,
+          endFraction: 0.5,
+          column: 0,
+          columnCount: 1,
+        });
+      });
+
+      test("columns a chained overlap by cluster, not by pairwise count", () => {
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: "week" },
+          events: [
+            {
+              id: "a",
+              title: "A",
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:30:00`,
+            },
+            {
+              id: "b",
+              title: "B",
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:30:00`,
+            },
+            {
+              id: "c",
+              title: "C",
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:30:00`,
+            },
+          ],
+        });
+        cal.goToSpecificPeriod(DATE_MON);
+
+        const widths = cal.getEvents().map((event) => {
+          const props = cal.getEventProps(event) as {
+            style: { left: string; width: string };
+          };
+          return [event.id, props.style.left, props.style.width];
+        });
+
+        expect(widths).toEqual([
+          ["a", "0%", "50%"],
+          ["b", "50%", "50%"],
+          ["c", "0%", "50%"],
+        ]);
+      });
+
+      test("keeps an event outside the busy cluster at full width", () => {
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: "week" },
+          events: [
+            {
+              id: "x",
+              title: "X",
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T10:00:00`,
+            },
+            {
+              id: "y",
+              title: "Y",
+              start: `${DATE_MON}T09:30:00`,
+              end: `${DATE_MON}T10:30:00`,
+            },
+            {
+              id: "alone",
+              title: "Alone",
+              start: `${DATE_MON}T15:00:00`,
+              end: `${DATE_MON}T16:00:00`,
+            },
+          ],
+        });
+        cal.goToSpecificPeriod(DATE_MON);
+
+        const props = cal.getEventProps(
+          cal.getEvents().find((e) => e.id === "alone")!,
+        ) as { style: { left: string; width: string } };
+
+        expect(props.style).toMatchObject({ left: "0%", width: "100%" });
       });
 
       test("detects overlap with a sibling event", () => {
@@ -5252,13 +5385,11 @@ describe("CalendarCore", () => {
     test("replaces resources and invalidates availability caches", () => {
       const cal = createCalendar({ resources: [weekdayResource] });
       const ranges1 = cal.getUnavailableRanges(DATE_MON, {
-        containerHeight: 1000,
         resourceIds: [weekdayResource.id],
       });
       expect(ranges1.length).toBeGreaterThan(0);
       cal.setResources([allDayResource]);
       const ranges2 = cal.getUnavailableRanges(DATE_MON, {
-        containerHeight: 1000,
         resourceIds: [allDayResource.id],
       });
       expect(ranges2).toHaveLength(0);
@@ -5268,7 +5399,6 @@ describe("CalendarCore", () => {
       const cal = createCalendar({ resources: [weekdayResource] });
       cal.setResources(null);
       const ranges = cal.getUnavailableRanges(DATE_MON, {
-        containerHeight: 1000,
         resourceIds: [weekdayResource.id],
       });
       expect(ranges).toHaveLength(0);
@@ -5591,6 +5721,95 @@ describe("CalendarCore", () => {
       const removeCal = createCalendar({ events: [recurringEvent] });
       removeCal.removeRecurringEvent("rec-ex_1", { scope: "all" });
       expect(removeCal.getEvents()).toHaveLength(0);
+    });
+  });
+
+  describe("read path does not filter by availability", () => {
+    const mondayOnlyResource: TestResource = {
+      id: "r-mon",
+      label: "Monday Room",
+      availability: [{ weekdays: [1], startTime: "09:00", endTime: "17:00" }],
+    };
+
+    test("renders a recurring occurrence that violates resource availability", () => {
+      const cal = createCalendar({
+        resources: [mondayOnlyResource],
+        events: [
+          {
+            id: "daily",
+            title: "Daily standup",
+            start: "2025-06-02T10:00:00",
+            end: "2025-06-02T11:00:00",
+            resources: ["r-mon"],
+            recurrence: { frequency: "daily" },
+          },
+        ],
+      });
+      cal.goToSpecificPeriod("2025-06-02");
+
+      expect(cal.getEventsByDate("2025-06-02")).toHaveLength(1);
+      expect(cal.getEventsByDate("2025-06-03")).toHaveLength(1);
+      expect(cal.getEventsByDate("2025-06-04")).toHaveLength(1);
+    });
+
+    test("treats recurring and non-recurring violations identically", () => {
+      const recurring = createCalendar({
+        resources: [mondayOnlyResource],
+        events: [
+          {
+            id: "rec",
+            title: "Recurring",
+            start: "2025-06-02T10:00:00",
+            end: "2025-06-02T11:00:00",
+            resources: ["r-mon"],
+            recurrence: { frequency: "daily" },
+          },
+        ],
+      });
+      recurring.goToSpecificPeriod("2025-06-03");
+
+      const plain = createCalendar({
+        resources: [mondayOnlyResource],
+        events: [
+          {
+            id: "one",
+            title: "One off",
+            start: "2025-06-03T10:00:00",
+            end: "2025-06-03T11:00:00",
+            resources: ["r-mon"],
+          },
+        ],
+      });
+      plain.goToSpecificPeriod("2025-06-03");
+
+      expect(recurring.getEventsByDate("2025-06-03")).toHaveLength(
+        plain.getEventsByDate("2025-06-03").length,
+      );
+    });
+
+    test("still reports the violation through validation", () => {
+      const cal = createCalendar({
+        resources: [mondayOnlyResource],
+        events: [
+          {
+            id: "daily",
+            title: "Daily standup",
+            start: "2025-06-02T10:00:00",
+            end: "2025-06-02T11:00:00",
+            resources: ["r-mon"],
+            recurrence: { frequency: "daily" },
+          },
+        ],
+      });
+
+      const placement = cal.validateEventPlacement({
+        title: "Tuesday attempt",
+        start: "2025-06-03T10:00:00",
+        end: "2025-06-03T11:00:00",
+        resources: ["r-mon"],
+      });
+
+      expect(placement.blocked).toBe(true);
     });
   });
 });

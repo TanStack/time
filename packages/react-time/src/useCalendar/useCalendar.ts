@@ -273,17 +273,14 @@ export const useCalendar = <
     [calendarCore],
   );
 
-  const containerHeight = resize?.containerHeight ?? 0;
-
   const getUnavailableRanges = useCallback<
     typeof calendarCore.getUnavailableRanges
   >(
     (date, rangeOptions) =>
       calendarCore.getUnavailableRanges(date, {
-        containerHeight: rangeOptions?.containerHeight ?? containerHeight,
         resourceIds: rangeOptions?.resourceIds,
       }),
-    [calendarCore, containerHeight],
+    [calendarCore],
   );
 
   const getEventsByResource = useCallback<

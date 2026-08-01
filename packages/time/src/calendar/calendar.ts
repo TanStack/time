@@ -1,6 +1,11 @@
 import { Temporal } from "@js-temporal/polyfill";
 import { getTimeClient } from "../client";
-import { splitMultiDayEvents } from "./splitMultiDayEvents";
+import {
+  bucketByDay,
+  currentTimeFraction,
+  layoutTimelineRange,
+} from "~/projection";
+import type { EventLayout, LayoutStyle } from "~/projection";
 import {
   durationPreservingEnd,
   expandRecurringEvent,
@@ -139,12 +144,9 @@ interface CalendarActions<
     overlappingEvents: Array<TEvent>;
     start: string;
     end: string;
-    style?: {
-      top: string;
-      height: string;
-      left: string;
-      width: string;
-    };
+    /** Logical layout of the event within its day, free of pixels and orientation. */
+    layout?: EventLayout;
+    style?: LayoutStyle;
   };
   /** Retrieves the names of the days of the week, based on the current locale. */
   getDaysNames: (weekday?: "long" | "short") => Array<string>;
@@ -205,7 +207,6 @@ interface CalendarActions<
   getUnavailableRanges: (
     date: string,
     options?: {
-      containerHeight?: number;
       resourceIds?: Array<TResource["id"]>;
     },
   ) => Array<UnavailableRange>;
@@ -594,72 +595,22 @@ export class CalendarCore<
     const cached = this._eventMapCache.get(cacheKey);
     if (cached) return cached;
 
-    const map = new Map<string, Array<TEvent>>();
-
-    const placeEvent = (ev: TEvent) => {
-      const startStr = ev.start as string;
-      const endStr = ev.end as string;
-
-      const startDt = Temporal.PlainDateTime.from(startStr);
-      const endDt = Temporal.PlainDateTime.from(endStr);
-      const startPlainDate = startDt.toPlainDate();
-      const endPlainDate = endDt.toPlainDate();
-
-      if (Temporal.PlainDate.compare(startPlainDate, endPlainDate) !== 0) {
-        const splitEvents = splitMultiDayEvents<TResource, TEvent>(
-          ev,
-          this.options.timeZone,
-        );
-        splitEvents.forEach((splitEvent) => {
-          const dateKey = Temporal.PlainDateTime.from(
-            toPlainDateTimeString(splitEvent.start),
-          )
-            .toPlainDate()
-            .toString({ calendarName: "never" });
-          if (!map.has(dateKey)) map.set(dateKey, []);
-          map.get(dateKey)!.push(splitEvent);
-        });
-      } else {
-        const dateKey = startPlainDate.toString({ calendarName: "never" });
-        if (!map.has(dateKey)) map.set(dateKey, []);
-        map.get(dateKey)!.push(ev);
-      }
-    };
-
+    const projected: Array<TEvent> = [];
     for (const event of this._eventMap.values()) {
       if (event.recurrence && windowStart && windowEnd) {
-        const occurrences = expandRecurringEvent<TResource, TEvent>(
-          event,
-          windowStart,
-          windowEnd,
+        projected.push(
+          ...expandRecurringEvent<TResource, TEvent>(
+            event,
+            windowStart,
+            windowEnd,
+          ),
         );
-        for (const occ of occurrences) {
-          const conflict = occ.resources?.length
-            ? this.checkEventAvailability(
-                occ,
-                occ.start as string,
-                occ.end as string,
-              )
-            : null;
-          if (!conflict) {
-            placeEvent(occ);
-          }
-        }
         continue;
       }
-
-      const masterConflict =
-        event.recurrence && event.resources?.length
-          ? this.checkEventAvailability(
-              event,
-              event.start as string,
-              event.end as string,
-            )
-          : null;
-      if (!masterConflict) {
-        placeEvent(event);
-      }
+      projected.push(event);
     }
+
+    const map = bucketByDay<TEvent>(projected, this.options.timeZone);
 
     this._eventMapCache.set(cacheKey, map);
     return map;
@@ -2392,26 +2343,27 @@ export class CalendarCore<
   getUnavailableRanges(
     date: string,
     options?: {
-      containerHeight?: number;
       resourceIds?: Array<TResource["id"]>;
     },
   ): Array<UnavailableRange> {
-    const containerHeight = options?.containerHeight ?? 1440;
     const merged = this._getMergedUnavailableMinuteRanges(
       date,
       options?.resourceIds,
     );
     if (merged === null) return [];
 
-    const dayEndMinutes = MINUTES_IN_DAY;
-    const scale = containerHeight / dayEndMinutes;
-
-    return merged.map((range) => ({
-      top: range.startMinutes * scale,
-      height: (range.endMinutes - range.startMinutes) * scale,
-      startTime: formatMinutesToTime(range.startMinutes),
-      endTime: formatMinutesToTime(range.endMinutes),
-    }));
+    return merged.map((range) => {
+      const startFraction = range.startMinutes / MINUTES_IN_DAY;
+      const endFraction = range.endMinutes / MINUTES_IN_DAY;
+      return {
+        startFraction,
+        endFraction,
+        top: `${startFraction * 100}%`,
+        height: `${(endFraction - startFraction) * 100}%`,
+        startTime: formatMinutesToTime(range.startMinutes),
+        endTime: formatMinutesToTime(range.endMinutes),
+      };
+    });
   }
 
   private _getMergedUnavailableMinuteRanges(
@@ -2548,121 +2500,50 @@ export class CalendarCore<
       return { rows: [], currentTimePosition: null };
     }
 
-    const firstDay = days[0]!.date;
-    const totalDays = days.length;
+    const isoDates = days.map((d) =>
+      d.date.toString({ calendarName: "never" }),
+    );
     const eventsByResource = this.getMergedEventsByResource(days);
 
     const rows: Array<TimelineResourceRow<TResource, TEvent>> = (
       this.options.resources ?? []
     ).map((resource) => {
       const resourceEvents = eventsByResource.get(resource.id) ?? [];
-
-      const positioned = resourceEvents
-        .map((event) => {
-          const pos = this.computeTimelineEventPosition(
-            event,
-            firstDay,
-            totalDays,
-          );
-          if (pos.width <= 0) return null;
-          return { event, ...pos, right: pos.left + pos.width };
-        })
-        .filter((v): v is NonNullable<typeof v> => v !== null);
-
-      const lanes: Array<Array<{ left: number; right: number }>> = [];
-      const withLanes = positioned.map((item) => {
-        let assignedLane = 0;
-        for (assignedLane = 0; assignedLane < lanes.length; assignedLane++) {
-          const hasOverlap = lanes[assignedLane]!.some(
-            (existing) =>
-              item.left < existing.right && item.right > existing.left,
-          );
-          if (!hasOverlap) break;
-        }
-        if (!lanes[assignedLane]) lanes[assignedLane] = [];
-        lanes[assignedLane]!.push({ left: item.left, right: item.right });
-        return {
-          event: item.event,
-          left: item.left,
-          width: item.width,
-          lane: assignedLane,
-          isStartClipped: item.isStartClipped,
-          isEndClipped: item.isEndClipped,
-        };
+      const { items, laneCount } = layoutTimelineRange({
+        events: resourceEvents,
+        firstDay: isoDates[0]!,
+        totalDays: isoDates.length,
       });
 
       return {
         resource,
-        events: withLanes,
-        laneCount: Math.max(1, lanes.length),
+        events: items.map((item) => ({
+          event: resourceEvents[item.index]!,
+          left: item.startFraction * 100,
+          width: item.durationFraction * 100,
+          lane: item.lane,
+          startFraction: item.startFraction,
+          endFraction: item.endFraction,
+          isStartClipped: item.isStartClipped,
+          isEndClipped: item.isEndClipped,
+        })),
+        laneCount,
       };
     });
 
-    let currentTimePosition: number | null = null;
     const now = Temporal.Now.zonedDateTimeISO(this.options.timeZone);
-    const todayStr = now.toPlainDate().toString({ calendarName: "never" });
-    const todayIndex = days.findIndex(
-      (d) => d.date.toString({ calendarName: "never" }) === todayStr,
-    );
-    if (todayIndex >= 0) {
-      const hourFraction = now.hour + now.minute / 60;
-      const totalHours = totalDays * 24;
-      currentTimePosition =
-        ((todayIndex * 24 + hourFraction) / totalHours) * 100;
-    }
-
-    return { rows, currentTimePosition };
-  }
-
-  private computeTimelineEventPosition(
-    event: TEvent,
-    firstDay: Temporal.PlainDate,
-    totalDays: number,
-  ): {
-    left: number;
-    width: number;
-    isStartClipped: boolean;
-    isEndClipped: boolean;
-  } {
-    const startStr = toPlainDateTimeString(event.start);
-    const endStr = toPlainDateTimeString(event.end);
-
-    const startDateStr = startStr.split("T")[0]!;
-    const endDateStr = endStr.split("T")[0]!;
-    const startTimeStr = startStr.split("T")[1] ?? "00:00:00";
-    const endTimeStr = endStr.split("T")[1] ?? "00:00:00";
-
-    const startTimeParts = startTimeStr.split(":").map(Number);
-    const endTimeParts = endTimeStr.split(":").map(Number);
-
-    const firstDayIso = firstDay.toString({ calendarName: "never" });
-    const startDayOffset = Temporal.PlainDate.from(firstDayIso).until(
-      Temporal.PlainDate.from(startDateStr),
-    ).days;
-    const endDayOffset = Temporal.PlainDate.from(firstDayIso).until(
-      Temporal.PlainDate.from(endDateStr),
-    ).days;
-
-    const startHours =
-      startDayOffset * 24 +
-      (startTimeParts[0] ?? 0) +
-      (startTimeParts[1] ?? 0) / 60;
-    const endHours =
-      endDayOffset * 24 + (endTimeParts[0] ?? 0) + (endTimeParts[1] ?? 0) / 60;
-
-    const totalHours = totalDays * 24;
-
-    const rawLeft = (startHours / totalHours) * 100;
-    const rawRight = (endHours / totalHours) * 100;
-
-    const left = Math.max(0, rawLeft);
-    const right = Math.min(100, rawRight);
+    const fraction = currentTimeFraction({
+      isoDates,
+      now: {
+        isoDate: now.toPlainDate().toString({ calendarName: "never" }),
+        hour: now.hour,
+        minute: now.minute,
+      },
+    });
 
     return {
-      left,
-      width: right - left,
-      isStartClipped: rawLeft < 0,
-      isEndClipped: rawRight > 100,
+      rows,
+      currentTimePosition: fraction === null ? null : fraction * 100,
     };
   }
 

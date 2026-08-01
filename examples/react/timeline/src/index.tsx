@@ -373,10 +373,10 @@ function DependencyTypeModal({
                 key={type}
                 type="button"
                 onClick={() => onChoose(type)}
-                className="group flex items-center gap-3 rounded-md border border-neutral-700 bg-neutral-900/40 px-3 py-2.5 text-left transition-colors hover:border-neutral-500 hover:bg-neutral-800/60 focus:outline-none focus:ring-2 focus:ring-neutral-500"
+                className="group flex items-center gap-3 rounded-md border border-neutral-700 bg-neutral-900/40 px-3 py-2.5 text-left transition-colors hover:border-neutral-500 hover:bg-neutral-800/60 focus:outline-hidden focus:ring-2 focus:ring-neutral-500"
               >
                 <span
-                  className={`${style.badgeBg} text-white text-xs font-bold rounded px-2 py-1 min-w-[2.5rem] text-center`}
+                  className={`${style.badgeBg} text-white text-xs font-bold rounded px-2 py-1 min-w-10 text-center`}
                 >
                   {style.label}
                 </span>
@@ -1156,7 +1156,7 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
       data-event-id={event.id}
       data-left={left}
       data-width={width}
-      className={`group absolute border ${color.bg} ${color.border} ${color.text} flex items-center text-xs font-medium overflow-hidden shadow-sm z-30 cursor-pointer hover:brightness-110 transition-[filter] pointer-events-auto ${
+      className={`group absolute border ${color.bg} ${color.border} ${color.text} flex items-center text-xs font-medium overflow-hidden shadow-xs z-30 cursor-pointer hover:brightness-110 transition-[filter] pointer-events-auto ${
         isDragging ? "opacity-40 shadow-xl z-50" : ""
       } ${
         !isStartClipped && !isEndClipped
@@ -1217,7 +1217,7 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
         <span className="truncate">{event.title}</span>
         {depCount > 0 && (
           <span
-            className="flex-shrink-0 text-[10px] leading-none rounded bg-amber-500/40 border border-amber-300/60 px-1 py-0.5 font-semibold"
+            className="shrink-0 text-[10px] leading-none rounded bg-amber-500/40 border border-amber-300/60 px-1 py-0.5 font-semibold"
             title={`${depCount} dependenc${depCount === 1 ? "y" : "ies"}`}
           >
             ↳{depCount}
@@ -1225,7 +1225,7 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
         )}
         {event.consumption && event.consumption.length > 0 && (
           <span
-            className="flex-shrink-0 text-[10px] leading-none rounded bg-black/30 px-1 py-0.5 font-semibold"
+            className="shrink-0 text-[10px] leading-none rounded bg-black/30 px-1 py-0.5 font-semibold"
             title="Consumption"
           >
             {event.consumption.reduce((a, b) => a + b, 0)}
@@ -1333,7 +1333,7 @@ const HorizontalTimelineRow = React.memo(function HorizontalTimelineRow({
               return (
                 <div
                   key={rangeIdx}
-                  className="absolute top-0 bottom-0 pointer-events-none z-0 bg-[length:8px_8px]"
+                  className="absolute top-0 bottom-0 pointer-events-none z-0 bg-size-[8px_8px]"
                   style={{
                     left: `${startFraction * 100}%`,
                     width: `${(endFraction - startFraction) * 100}%`,
@@ -1878,7 +1878,7 @@ function TimelineDemo() {
 
         <div className="border border-neutral-800 rounded-lg overflow-hidden bg-black">
           <div className="flex">
-            <div className="w-36 flex-shrink-0 border-r border-neutral-800 bg-neutral-950 z-10">
+            <div className="w-36 shrink-0 border-r border-neutral-800 bg-neutral-950 z-10">
               <div className="h-10 border-b border-neutral-800/50" />
               <div className="h-8 border-b border-neutral-800 px-3 flex items-end pb-1">
                 <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
@@ -1895,7 +1895,7 @@ function TimelineDemo() {
                     className="h-14 border-b border-neutral-800/50 px-3 flex items-center gap-2"
                   >
                     <div
-                      className="w-3 h-3 flex-shrink-0 rounded-sm bg-[length:6px_6px]"
+                      className="w-3 h-3 shrink-0 rounded-sm bg-size-[6px_6px]"
                       style={{
                         backgroundImage: `repeating-linear-gradient(315deg, ${zoneColor} 0, ${zoneColor} 1px, transparent 0, transparent 50%)`,
                         backgroundColor: zoneColor,
@@ -1919,7 +1919,7 @@ function TimelineDemo() {
 
             <ScrollArea
               viewportRef={scrollContainerRef}
-              viewportClassName="max-h-[600px] [&>div]:!block"
+              viewportClassName="max-h-[600px] [&>div]:block!"
               className="flex-1 min-w-0"
             >
               <div
@@ -2086,7 +2086,7 @@ function TimelineDemo() {
                   className="flex items-center gap-2"
                   title={style.description}
                 >
-                  <svg width="28" height="10" className="flex-shrink-0">
+                  <svg width="28" height="10" className="shrink-0">
                     <line
                       x1="0"
                       y1="5"
@@ -2142,7 +2142,7 @@ function TimelineDemo() {
                   className="gap-1.5 font-normal"
                 >
                   <div
-                    className="w-2.5 h-2.5 rounded-sm bg-[length:6px_6px]"
+                    className="w-2.5 h-2.5 rounded-sm bg-size-[6px_6px]"
                     style={{
                       backgroundImage: `repeating-linear-gradient(315deg, ${zoneColor} 0, ${zoneColor} 1px, transparent 0, transparent 50%)`,
                       backgroundColor: zoneColor,
@@ -2198,7 +2198,7 @@ function TimelineDemo() {
         {activeDragEvent && (
           <DragOverlay dropAnimation={null}>
             <div
-              className={`group absolute border ${activeDragEvent.color.bg} ${activeDragEvent.color.border} ${activeDragEvent.color.text} px-2.5 flex items-center text-xs font-medium overflow-hidden shadow-sm z-[9999] rounded-md`}
+              className={`group absolute border ${activeDragEvent.color.bg} ${activeDragEvent.color.border} ${activeDragEvent.color.text} px-2.5 flex items-center text-xs font-medium overflow-hidden shadow-xs z-9999 rounded-md`}
               style={{
                 width: `${containerWidthRef.current * (activeDragEvent.width / 100)}px`,
                 height: `${(activeDragEvent.laneHeightPct / 100) * 56 - EVENT_GAP_PX * 2}px`,
