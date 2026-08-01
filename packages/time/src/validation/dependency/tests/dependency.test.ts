@@ -39,7 +39,12 @@ describe("shift math", () => {
 describe("validateDependencies", () => {
   it("passes when the successor starts after the predecessor ends (FS)", () => {
     const conflicts = validateDependencies({
-      event: { id: "b", title: "B", start: "2026-01-05T11:00:00", end: "2026-01-05T12:00:00" },
+      event: {
+        id: "b",
+        title: "B",
+        start: "2026-01-05T11:00:00",
+        end: "2026-01-05T12:00:00",
+      },
       dependsOn: [{ id: "a", type: "FS" }],
       events: [pred],
       timeZone: UTC,
@@ -67,7 +72,12 @@ describe("validateDependencies", () => {
 
   it("returns no conflict when the predecessor is unknown", () => {
     const conflicts = validateDependencies({
-      event: { id: "b", title: "B", start: "2026-01-05T09:00:00", end: "2026-01-05T10:00:00" },
+      event: {
+        id: "b",
+        title: "B",
+        start: "2026-01-05T09:00:00",
+        end: "2026-01-05T10:00:00",
+      },
       dependsOn: [{ id: "missing", type: "FS" }],
       events: [pred],
       timeZone: UTC,
@@ -98,7 +108,11 @@ describe("computeCascade", () => {
     const shifts: Array<CascadeShift> = computeCascade(input);
 
     expect(shifts).toEqual([
-      { id: "b", newStart: "2026-01-05T11:00:00", newEnd: "2026-01-05T12:00:00" },
+      {
+        id: "b",
+        newStart: "2026-01-05T11:00:00",
+        newEnd: "2026-01-05T12:00:00",
+      },
     ]);
   });
 

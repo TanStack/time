@@ -79,7 +79,8 @@ describe("recurrenceModule projection", () => {
 describe("recurrenceModule materialize", () => {
   it("tags intents with the module's namespaced intent names", () => {
     expect(
-      editOccurrenceIntent({ masterId: "m", scope: "this", updates: {} }).intent,
+      editOccurrenceIntent({ masterId: "m", scope: "this", updates: {} })
+        .intent,
     ).toBe(EDIT_OCCURRENCE_INTENT);
     expect(
       removeOccurrenceIntent({ masterId: "m", scope: "this" }).intent,
@@ -103,9 +104,11 @@ describe("recurrenceModule materialize", () => {
       expect(result.batch.ops[0]!.kind).toBe("update");
     }
 
-    const override = kernel.getEvent("m")!.recurrence!.overrides!.find(
-      (o) => o.originalStart === "2026-01-08T09:00:00",
-    );
+    const override = kernel
+      .getEvent("m")!
+      .recurrence!.overrides!.find(
+        (o) => o.originalStart === "2026-01-08T09:00:00",
+      );
     expect(override!.start).toBe("2026-01-08T14:00:00");
     expect(override!.end).toBe("2026-01-08T15:00:00");
   });
@@ -151,9 +154,7 @@ describe("recurrenceModule materialize", () => {
 
   it('expands a remove intent with scope "all" into a master remove', () => {
     const kernel = makeKernel();
-    kernel.write(
-      removeOccurrenceIntent({ masterId: "m", scope: "all" }),
-    );
+    kernel.write(removeOccurrenceIntent({ masterId: "m", scope: "all" }));
     expect(kernel.getEvents()).toHaveLength(0);
   });
 

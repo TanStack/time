@@ -49,7 +49,8 @@ export function buildDays<E extends SplittableEvent>(
 ): Array<DayView<E>> {
   const buckets = bucketByDay(input.events, input.timeZone);
   const today =
-    input.today ?? Temporal.Now.plainDateISO().toString({ calendarName: "never" });
+    input.today ??
+    Temporal.Now.plainDateISO().toString({ calendarName: "never" });
 
   return input.isoDates.map((isoDate) => {
     const dailyEvents = buckets.get(isoDate) ?? [];

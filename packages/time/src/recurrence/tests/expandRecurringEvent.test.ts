@@ -2,9 +2,7 @@ import { describe, expect, it } from "vitest";
 import { expandRecurringEvent } from "../index";
 import type { Event } from "~/calendar/types";
 
-const daily = (
-  overrides: Partial<Event> = {},
-): Event => ({
+const daily = (overrides: Partial<Event> = {}): Event => ({
   id: "m",
   title: "Daily",
   start: "2026-01-05T09:00:00",
@@ -63,10 +61,7 @@ describe("expandRecurringEvent", () => {
       "2026-01-05",
       "2026-01-31",
     );
-    expect(starts(occ)).toEqual([
-      "2026-01-05T09:00:00",
-      "2026-01-06T09:00:00",
-    ]);
+    expect(starts(occ)).toEqual(["2026-01-05T09:00:00", "2026-01-06T09:00:00"]);
   });
 
   it("excludes exDates", () => {
@@ -75,10 +70,7 @@ describe("expandRecurringEvent", () => {
       "2026-01-05",
       "2026-01-08",
     );
-    expect(starts(occ)).toEqual([
-      "2026-01-05T09:00:00",
-      "2026-01-07T09:00:00",
-    ]);
+    expect(starts(occ)).toEqual(["2026-01-05T09:00:00", "2026-01-07T09:00:00"]);
   });
 
   it("applies per-occurrence overrides", () => {
@@ -112,10 +104,7 @@ describe("expandRecurringEvent", () => {
       "2026-01-05",
       "2026-01-12",
     );
-    expect(starts(occ)).toEqual([
-      "2026-01-05T09:00:00",
-      "2026-01-07T09:00:00",
-    ]);
+    expect(starts(occ)).toEqual(["2026-01-05T09:00:00", "2026-01-07T09:00:00"]);
   });
 
   it("clamps monthly day-of-month overflow", () => {
@@ -128,10 +117,7 @@ describe("expandRecurringEvent", () => {
       "2026-01-01",
       "2026-03-31",
     );
-    expect(starts(occ)).toEqual([
-      "2026-01-31T09:00:00",
-      "2026-02-28T09:00:00",
-    ]);
+    expect(starts(occ)).toEqual(["2026-01-31T09:00:00", "2026-02-28T09:00:00"]);
   });
 
   it("tags occurrences with master id and index", () => {

@@ -3229,4 +3229,3 @@ export class CalendarCore<
     this.options.events?.forEach((e) => this._indexAddEvent(e));
   }
 }
-

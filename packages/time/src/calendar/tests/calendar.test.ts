@@ -421,9 +421,7 @@ describe("CalendarCore", () => {
   describe("getUnavailableRanges", () => {
     test("returns empty when no resources", () => {
       const cal = createCalendar({ resources: [] });
-      expect(
-        cal.getUnavailableRanges(DATE_MON),
-      ).toHaveLength(0);
+      expect(cal.getUnavailableRanges(DATE_MON)).toHaveLength(0);
     });
 
     test("returns full day unavailable when resource has no availability for that weekday", () => {
