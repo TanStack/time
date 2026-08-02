@@ -156,6 +156,20 @@ existing `left`/`width` percentages. `computeTimelineEventPosition` is gone.
 Behaviour change (intentional, ADR 0003): overlap columns come from cluster coloring, so
 chained overlaps no longer over-narrow and events outside a busy cluster keep full width.
 
+The primitive is `analyzeOverlaps(segments) → Array<OverlapInfo>`: per event the time fractions
+plus the overlap facts — `overlapping` (ids), `concurrency`, `depth`, `cluster`/`clusterSize`/
+`clusterDepth`/`clusterConcurrency`, `column`/`columnCount`/`columnSpan`. No geometry opinion.
+
+A layout strategy is just `(info: OverlapInfo) => { crossStart, crossSize, zIndex? }`.
+`LayoutOptions.strategy` takes either a function or the name of a built-in — `columns`
+(default), `expand`, `cascade` (tuned by `cascadeOffset` / `minCrossSize`); the built-ins are
+exported as `columnsStrategy` / `expandStrategy` / `cascadeStrategy(options)` so they can be
+composed or replaced. `toLayoutStyle` maps whatever comes back, so no strategy touches CSS.
+
+Set it on `new CalendarCore({ layout })` or override per `getEventProps(event, layout)` call.
+Consumers that want to do their own thing read `getEventProps(event).layout` (an `OverlapInfo`)
+or call `analyzeOverlaps` directly and ignore the strategy layer.
+
 ### Step 9 — Boundary types (ADR 0002) — last
 Swap `Day.date`, `currentPeriod`, `activeDate` from `Temporal.PlainDate` → ISO strings;
 instants → native `Date`. Done last so refactor churn doesn't multiply the type migration.

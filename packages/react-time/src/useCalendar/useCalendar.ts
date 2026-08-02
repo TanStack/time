@@ -205,7 +205,7 @@ export const useCalendar = <
   );
 
   const getEventProps = useCallback<typeof calendarCore.getEventProps>(
-    (id) => calendarCore.getEventProps(id),
+    (id, layoutOptions) => calendarCore.getEventProps(id, layoutOptions),
     [calendarCore],
   );
 

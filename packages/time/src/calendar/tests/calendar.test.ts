@@ -4730,6 +4730,206 @@ describe("CalendarCore", () => {
         ]);
       });
 
+      test("agrees on geometry for days rendered outside the current viewport", () => {
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: "week" },
+          events: [
+            {
+              id: "standup",
+              title: "Stand-up",
+              start: "2024-03-18T11:00:00",
+              end: "2024-03-18T12:30:00",
+              recurrence: { frequency: "daily", interval: 1 },
+            },
+            {
+              id: "meeting",
+              title: "Meeting",
+              start: "2024-04-08T11:30:00",
+              end: "2024-04-08T12:00:00",
+            },
+            {
+              id: "interview",
+              title: "Interview",
+              start: "2024-04-08T12:00:00",
+              end: "2024-04-08T13:30:00",
+            },
+          ],
+        });
+        cal.goToSpecificPeriod(DATE_MON);
+
+        const bufferedDay = cal
+          .getDaysInRange("2024-04-08", "2024-04-14")
+          .find((d) => d.isoDate === "2024-04-08")!;
+
+        expect(bufferedDay.events).toHaveLength(3);
+
+        const geometry = bufferedDay.events.map((event) => {
+          const props = cal.getEventProps(event) as {
+            layout: { columnCount: number };
+            style: { width: string };
+          };
+          return [props.layout.columnCount, props.style.width];
+        });
+
+        expect(geometry).toEqual([
+          [2, "50%"],
+          [2, "50%"],
+          [2, "50%"],
+        ]);
+      });
+
+      test("does not let all-day events take a column in the timed grid", () => {
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: "week" },
+          events: [
+            {
+              id: "holiday",
+              title: "Holiday",
+              start: `${DATE_MON}T00:00:00`,
+              end: `${DATE_MON}T23:59:59`,
+              allDay: true,
+            },
+            {
+              id: "meeting",
+              title: "Meeting",
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+            },
+            {
+              id: "interview",
+              title: "Interview",
+              start: `${DATE_MON}T11:30:00`,
+              end: `${DATE_MON}T13:00:00`,
+            },
+          ],
+        });
+        cal.goToSpecificPeriod(DATE_MON);
+
+        const timed = cal
+          .getEvents()
+          .filter((e) => !e.allDay)
+          .map((event) => {
+            const props = cal.getEventProps(event) as {
+              layout: { concurrency: number; columnCount: number };
+              style: { left: string; width: string };
+            };
+            return [
+              event.id,
+              props.layout.concurrency,
+              props.layout.columnCount,
+              props.style.left,
+              props.style.width,
+            ];
+          });
+
+        expect(timed).toEqual([
+          ["meeting", 2, 2, "0%", "50%"],
+          ["interview", 2, 2, "50%", "50%"],
+        ]);
+      });
+
+      test("lays all-day events out against each other, not against timed ones", () => {
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: "week" },
+          events: [
+            {
+              id: "holiday",
+              title: "Holiday",
+              start: `${DATE_MON}T00:00:00`,
+              end: `${DATE_MON}T23:59:59`,
+              allDay: true,
+            },
+            {
+              id: "timed",
+              title: "Timed",
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+            },
+          ],
+        });
+        cal.goToSpecificPeriod(DATE_MON);
+
+        const props = cal.getEventProps(
+          cal.getEvents().find((e) => e.id === "holiday")!,
+        ) as { layout: { concurrency: number }; style: { width: string } };
+
+        expect(props.layout.concurrency).toBe(1);
+        expect(props.style.width).toBe("100%");
+      });
+
+      test("honours the constructor layout strategy", () => {
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: "week" },
+          layout: { strategy: "cascade", cascadeOffset: 0.25 },
+          events: [
+            {
+              id: "a",
+              title: "A",
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+            },
+            {
+              id: "b",
+              title: "B",
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+            },
+          ],
+        });
+        cal.goToSpecificPeriod(DATE_MON);
+
+        const styles = cal.getEvents().map((event) => {
+          const props = cal.getEventProps(event) as {
+            style: { left: string; width: string; zIndex?: number };
+          };
+          return props.style;
+        });
+
+        expect(styles[0]).toMatchObject({
+          left: "0%",
+          width: "100%",
+          zIndex: 0,
+        });
+        expect(styles[1]).toMatchObject({
+          left: "25%",
+          width: "75%",
+          zIndex: 1,
+        });
+      });
+
+      test("lets a call override the configured layout strategy", () => {
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: "week" },
+          layout: { strategy: "cascade" },
+          events: [
+            {
+              id: "a",
+              title: "A",
+              start: `${DATE_MON}T09:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+            },
+            {
+              id: "b",
+              title: "B",
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+            },
+          ],
+        });
+        cal.goToSpecificPeriod(DATE_MON);
+
+        const event = cal.getEvents().find((e) => e.id === "b")!;
+        const cascade = cal.getEventProps(event) as {
+          style: { left: string; width: string };
+        };
+        const columns = cal.getEventProps(event, { strategy: "columns" }) as {
+          style: { left: string; width: string };
+        };
+
+        expect(cascade.style).toMatchObject({ left: "20%", width: "80%" });
+        expect(columns.style).toMatchObject({ left: "50%", width: "50%" });
+      });
+
       test("keeps an event outside the busy cluster at full width", () => {
         const cal = createCalendar({
           viewMode: { value: 1, unit: "week" },

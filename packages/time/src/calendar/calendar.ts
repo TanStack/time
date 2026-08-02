@@ -5,7 +5,7 @@ import {
   currentTimeFraction,
   layoutTimelineRange,
 } from "~/projection";
-import type { EventLayout, LayoutStyle } from "~/projection";
+import type { EventLayout, LayoutOptions, LayoutStyle } from "~/projection";
 import {
   durationPreservingEnd,
   expandRecurringEvent,
@@ -96,6 +96,8 @@ export interface CalendarCoreOptions<
     start: string;
     end: string;
   }) => Promise<Array<TEvent>>;
+  /** How concurrent events share the cross axis. Overridable per `getEventProps` call. */
+  layout?: LayoutOptions;
 }
 
 /**
@@ -139,7 +141,10 @@ interface CalendarActions<
   /** Changes the current view mode of the calendar. */
   changeViewMode: (newViewMode: CalendarStore["viewMode"]) => void;
   /** Retrieves styling properties for a specific event. */
-  getEventProps: (event: TEvent) => {
+  getEventProps: (
+    event: TEvent,
+    layoutOptions?: LayoutOptions,
+  ) => {
     isSplitEvent: boolean;
     overlappingEvents: Array<TEvent>;
     start: string;
@@ -349,6 +354,7 @@ type ParsedCalendarCoreOptions<
     start: string;
     end: string;
   }) => Promise<Array<TEvent>>;
+  layout?: LayoutOptions;
 };
 
 export class CalendarCore<
@@ -828,10 +834,24 @@ export class CalendarCore<
     });
   }
 
-  getEventProps(event: TEvent) {
+  getEventProps(event: TEvent, layoutOptions?: LayoutOptions) {
     return getEventProps(this.getEventMap(), event, this.store.state, {
       timeZone: this.options.timeZone,
+      ...this.options.layout,
+      ...layoutOptions,
+      daySegments: this._getDaySegments(event),
     }) as ReturnType<CalendarActions<TResource, TEvent>["getEventProps"]>;
+  }
+
+  private _getDaySegments(event: TEvent): Array<TEvent> {
+    const isoDate = toPlainDateTimeString(event.start).slice(0, 10);
+    const nextDay = Temporal.PlainDate.from(isoDate)
+      .add({ days: 1 })
+      .toString({ calendarName: "never" });
+
+    return (
+      this.getEventMap({ start: isoDate, end: nextDay }).get(isoDate) ?? []
+    );
   }
 
   groupDaysBy({

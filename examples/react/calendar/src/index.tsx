@@ -13,6 +13,8 @@ import type {
   Day,
   Event,
   EventDateTimeInput,
+  LayoutStrategyFn,
+  OverlapStrategy,
   RecurrenceEditScope,
   RecurrenceFrequency,
   RecurrenceRule,
@@ -85,6 +87,38 @@ function dateTimeOnWeekday(
 function getResourceId(resource: Resource | string): string {
   return typeof resource === "string" ? resource : resource.id;
 }
+
+const LEAD_SHARE = 0.6;
+
+const focusStrategy: LayoutStrategyFn = (info) => {
+  if (info.concurrency === 1) return { crossStart: 0, crossSize: 1 };
+  if (info.depth === 0) {
+    return { crossStart: 0, crossSize: LEAD_SHARE, zIndex: 0 };
+  }
+
+  const slice = (1 - LEAD_SHARE) / (info.concurrency - 1);
+  return {
+    crossStart: LEAD_SHARE + (info.depth - 1) * slice,
+    crossSize: slice,
+    zIndex: info.depth,
+  };
+};
+
+const overlapModes = {
+  columns: "columns",
+  expand: "expand",
+  cascade: "cascade",
+  focus: focusStrategy,
+} satisfies Record<string, OverlapStrategy | LayoutStrategyFn>;
+
+type OverlapMode = keyof typeof overlapModes;
+
+const overlapModeLabels: Record<OverlapMode, string> = {
+  columns: "Side by side",
+  expand: "Expand",
+  cascade: "Cascade",
+  focus: "Focus first",
+};
 
 const sampleResources: Array<Resource> = [
   {
@@ -591,6 +625,7 @@ function ScheduleView({
   leftSentinelRef,
   rightSentinelRef,
   periodDayCount,
+  overlapMode,
 }: {
   calendar: ReturnType<typeof useCalendar<Resource, Event<Resource>>>;
   days: Array<Day<Resource, Event<Resource>>>;
@@ -600,6 +635,7 @@ function ScheduleView({
   leftSentinelRef: React.RefObject<HTMLDivElement | null>;
   rightSentinelRef: React.RefObject<HTMLDivElement | null>;
   periodDayCount: number;
+  overlapMode: OverlapMode;
 }) {
   const timeSlots = calendar.getTimeSlots();
   const {
@@ -732,8 +768,11 @@ function ScheduleView({
                         ));
                       })}
                       {day.events.map((event, eventIndex) => {
-                        const eventProps = calendar.getEventProps(event);
-                        const { style, isSplitEvent } = eventProps;
+                        const eventProps = calendar.getEventProps(event, {
+                          strategy: overlapModes[overlapMode],
+                        });
+                        const { style, isSplitEvent, layout } = eventProps;
+                        const concurrency = layout?.concurrency ?? 1;
 
                         const segmentInfo = calendar.getEventSegmentInfo(event);
                         const {
@@ -774,6 +813,16 @@ function ScheduleView({
                           isBeingResized &&
                           resizePreview?.previewStyle !== null;
 
+                        const stackedStyle =
+                          displayStyle?.zIndex === undefined
+                            ? displayStyle
+                            : {
+                                ...displayStyle,
+                                zIndex:
+                                  (isActivelyResized ? 20 : 10) +
+                                  displayStyle.zIndex,
+                              };
+
                         const timeRange = formatEventTimeRange(
                           isBeingResized && resizeState.previewStart
                             ? resizeState.previewStart
@@ -791,7 +840,7 @@ function ScheduleView({
                                   ? "bg-neutral-700 ring-2 ring-neutral-500 z-20"
                                   : "cursor-pointer hover:bg-neutral-700"
                               }`}
-                              style={displayStyle as React.CSSProperties}
+                              style={stackedStyle as React.CSSProperties}
                               onClick={(e: React.MouseEvent) => {
                                 if (
                                   !resizeState.isResizing &&
@@ -845,6 +894,14 @@ function ScheduleView({
                                         )}
                                       </span>
                                     )}
+                                  {concurrency > 1 && (
+                                    <span
+                                      className="text-[10px] leading-none rounded bg-amber-500/20 text-amber-200 px-1 py-0.5 font-semibold shrink-0"
+                                      title={`Overlaps ${concurrency - 1} other event(s)`}
+                                    >
+                                      ⇄{concurrency}
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="hidden [@container_event_(height>=56px)]:block text-xs opacity-90 mt-0.5 leading-tight truncate">
                                   {timeRange.rangeFormatted}
@@ -1105,6 +1162,7 @@ function CalendarView() {
   } | null>(null);
 
   const [resizeError, setResizeError] = useState<ResizeError | null>(null);
+  const [overlapMode, setOverlapMode] = useState<OverlapMode>("columns");
 
   const calendar = useCalendar<Resource, Event<Resource>>({
     viewMode: { value: 1, unit: "month" },
@@ -1665,6 +1723,31 @@ function CalendarView() {
           </div>
         </div>
 
+        {isScheduleView && (
+          <div className="mb-4 rounded-lg border border-neutral-800 bg-neutral-950 px-4 py-3">
+            <div className="mb-2 text-xs uppercase tracking-wide text-neutral-500">
+              Overlap Layout
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {(Object.keys(overlapModes) as Array<OverlapMode>).map((mode) => (
+                <Button
+                  key={mode}
+                  onClick={() => setOverlapMode(mode)}
+                  variant={overlapMode === mode ? "secondary" : "outline"}
+                  size="sm"
+                >
+                  {overlapModeLabels[mode]}
+                </Button>
+              ))}
+              <span className="ml-2 text-xs text-neutral-500">
+                {overlapMode === "focus"
+                  ? "Custom strategy: reads layout.concurrency / layout.depth"
+                  : `Built-in "${overlapModes[overlapMode] as string}" strategy`}
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="mb-4 rounded-lg border border-neutral-800 bg-neutral-950 px-4 py-3">
           <div className="mb-2 text-xs uppercase tracking-wide text-neutral-500">
             Capacity Controls
@@ -1721,6 +1804,7 @@ function CalendarView() {
           leftSentinelRef={scheduleLeftRef}
           rightSentinelRef={scheduleRightRef}
           periodDayCount={periodDayCount}
+          overlapMode={overlapMode}
         />
       ) : (
         <div className="border border-neutral-800 rounded-lg overflow-hidden bg-black">

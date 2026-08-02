@@ -4,13 +4,14 @@ import {
   layoutDaySegments,
   splitEventsByDay,
   type EventLayout,
+  type LayoutOptions,
   type SplittableEvent,
 } from "~/projection";
 import type { KernelEvent, Module } from "../types";
 
 export const LAYOUT_FIELD = "layout";
 
-export interface LayoutModuleOptions {
+export interface LayoutModuleOptions extends LayoutOptions {
   timeZone: Temporal.TimeZoneLike;
   priority?: number;
   splitMultiDayEvents?: boolean;
@@ -42,7 +43,7 @@ export function layoutModule<E extends KernelEvent>(
 
           const byDay = new Map<string, Array<number>>();
           segments.forEach((segment, index) => {
-            const key = dayKeyOf(segment.start);
+            const key = `${dayKeyOf(segment.start)}|${segment.allDay ? "all-day" : "timed"}`;
             const bucket = byDay.get(key);
             if (bucket) bucket.push(index);
             else byDay.set(key, [index]);
@@ -52,6 +53,7 @@ export function layoutModule<E extends KernelEvent>(
           for (const indices of byDay.values()) {
             const layouts = layoutDaySegments(
               indices.map((index) => segments[index]!),
+              options,
             );
             indices.forEach((index, position) => {
               out[index] = {

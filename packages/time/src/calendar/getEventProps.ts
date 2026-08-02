@@ -1,10 +1,17 @@
 import { Temporal } from "@js-temporal/polyfill";
 import { layoutDaySegments, toLayoutStyle } from "~/projection";
 import { toPlainDateTimeString } from "~/date/parse";
+import type { LayoutOptions, LayoutOrientation } from "~/projection";
 import type { CalendarStore, Event, EventDateTimeInput } from "./types";
 
-interface GetEventPropsOptions {
+interface GetEventPropsOptions extends LayoutOptions {
   timeZone: Temporal.TimeZoneLike;
+  orientation?: LayoutOrientation;
+  /**
+   * Segments sharing the event's day. Every event of a day must be laid out against the same
+   * list, otherwise their column counts disagree and the boxes do not line up.
+   */
+  daySegments?: Array<Event>;
 }
 
 const toZonedDateTime = (
@@ -89,16 +96,18 @@ export const getEventProps = (
     return baseProps;
   }
 
-  const daySegments = eventMap.get(dayKeyOf(event.start)) ?? [];
+  const daySegments = (
+    options.daySegments ?? eventMap.get(dayKeyOf(event.start)) ?? []
+  ).filter((e) => Boolean(e.allDay) === Boolean(event.allDay));
   const knownIndex = daySegments.findIndex((e) => sameSegment(e, event));
   const laidOut = knownIndex >= 0 ? daySegments : [...daySegments, event];
   const index = knownIndex >= 0 ? knownIndex : laidOut.length - 1;
 
-  const layout = layoutDaySegments(laidOut)[index]!;
+  const layout = layoutDaySegments(laidOut, options)[index]!;
 
   return {
     ...baseProps,
     layout,
-    style: toLayoutStyle(layout),
+    style: toLayoutStyle(layout, options.orientation),
   };
 };

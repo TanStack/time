@@ -35,13 +35,17 @@ describe("layoutModule", () => {
 
     const [projected] = kernel.project(viewport);
 
-    expect(layoutOf(projected!)).toEqual({
+    expect(layoutOf(projected!)).toMatchObject({
       id: "a",
       startFraction: 0.25,
       endFraction: 0.5,
       durationFraction: 0.25,
+      concurrency: 1,
+      overlapping: [],
       column: 0,
       columnCount: 1,
+      crossStart: 0,
+      crossSize: 1,
     });
   });
 
@@ -77,6 +81,36 @@ describe("layoutModule", () => {
     expect(layoutOf(segments[0]!).columnCount).toBe(1);
     expect(layoutOf(segments[0]!).endFraction).toBeCloseTo(1, 4);
     expect(layoutOf(segments[1]!)).toMatchObject({ columnCount: 2 });
+  });
+
+  it("lays out all-day and timed events on separate tracks", () => {
+    const kernel = new Kernel<TestEvent>({
+      events: [
+        { ...evt("holiday", "2025-06-03T00:00:00", "2025-06-03T23:59:59"), allDay: true },
+        evt("meeting", "2025-06-03T11:00:00", "2025-06-03T12:00:00"),
+        evt("interview", "2025-06-03T11:30:00", "2025-06-03T13:00:00"),
+      ],
+    }).use(layoutModule<TestEvent>({ timeZone: UTC }));
+
+    const layouts = new Map(
+      kernel.project(viewport).map((e) => [e.id, layoutOf(e)]),
+    );
+
+    expect(layouts.get("holiday")).toMatchObject({
+      concurrency: 1,
+      columnCount: 1,
+      crossSize: 1,
+    });
+    expect(layouts.get("meeting")).toMatchObject({
+      concurrency: 2,
+      column: 0,
+      columnCount: 2,
+    });
+    expect(layouts.get("interview")).toMatchObject({
+      concurrency: 2,
+      column: 1,
+      columnCount: 2,
+    });
   });
 
   it("skips splitting when splitMultiDayEvents is false", () => {
