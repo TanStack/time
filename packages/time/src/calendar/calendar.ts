@@ -4,6 +4,7 @@ import {
   bucketByDay,
   currentTimeFraction,
   layoutTimelineRange,
+  toUnavailableRanges,
 } from "~/projection";
 import type { EventLayout, LayoutOptions, LayoutStyle } from "~/projection";
 import {
@@ -53,9 +54,14 @@ import {
   formatMinutesToTime,
   getUnavailabilityDetails as computeUnavailabilityDetails,
   getWeekday,
+  mergeUnavailableMinuteRanges,
+  MINUTES_IN_DAY,
   resourceDayAvail,
 } from "~/validation/availability";
-import type { AvailabilityOtherEvent } from "~/validation/availability";
+import type {
+  AvailabilityOtherEvent,
+  MinuteRange,
+} from "~/validation/availability";
 import {
   computeCascade,
   requiredBackwardShiftMs,
@@ -342,8 +348,6 @@ export interface ValidateResizeResult {
   targetDayDate: string;
 }
 
-const MINUTES_IN_DAY = 24 * 60;
-
 type ParsedCalendarCoreOptions<
   TResource extends Resource,
   TEvent extends Event<TResource>,
@@ -382,10 +386,7 @@ export class CalendarCore<
       slotsForWeekday: Array<{ startMinutes: number; endMinutes: number }>;
     }
   >();
-  private _mergedUnavailMinuteCache = new Map<
-    string,
-    Array<{ startMinutes: number; endMinutes: number }>
-  >();
+  private _mergedUnavailMinuteCache = new Map<string, Array<MinuteRange>>();
   private _weekdayCache = new Map<string, number>();
 
   /**
@@ -2372,82 +2373,34 @@ export class CalendarCore<
     );
     if (merged === null) return [];
 
-    return merged.map((range) => {
-      const startFraction = range.startMinutes / MINUTES_IN_DAY;
-      const endFraction = range.endMinutes / MINUTES_IN_DAY;
-      return {
-        startFraction,
-        endFraction,
-        top: `${startFraction * 100}%`,
-        height: `${(endFraction - startFraction) * 100}%`,
-        startTime: formatMinutesToTime(range.startMinutes),
-        endTime: formatMinutesToTime(range.endMinutes),
-      };
-    });
+    return toUnavailableRanges(merged);
   }
 
   private _getMergedUnavailableMinuteRanges(
     date: string,
     resourceIds?: Array<TResource["id"]>,
-  ): Array<{ startMinutes: number; endMinutes: number }> | null {
+  ): Array<MinuteRange> | null {
     const allResources = this.options.resources;
     if (!allResources || allResources.length === 0) return null;
 
-    const resources = resourceIds
-      ? allResources.filter((r) => resourceIds.includes(r.id))
-      : allResources;
-    if (resources.length === 0) return null;
+    const ids = (
+      resourceIds
+        ? allResources
+            .filter((r) => resourceIds.includes(r.id))
+            .map((r) => r.id)
+        : allResources.map((r) => r.id)
+    ).slice();
+    if (ids.length === 0) return null;
 
-    const sortedIds = resources
-      .map((r) => r.id)
-      .slice()
-      .sort()
-      .join(",");
-    const cacheKey = `${sortedIds}|${date}`;
+    const cacheKey = `${ids.slice().sort().join(",")}|${date}`;
     const cached = this._mergedUnavailMinuteCache.get(cacheKey);
     if (cached) return cached;
 
-    const weekday = this._getWeekday(date);
+    const merged = mergeUnavailableMinuteRanges(allResources, date, ids);
+    if (merged === null) return null;
 
-    const availableRanges: Array<{ startMinutes: number; endMinutes: number }> =
-      [];
-    for (const resource of resources) {
-      if (!resource.availability) continue;
-      const info = this._getResourceDayAvail(resource, weekday);
-      for (const a of info.available) availableRanges.push(a);
-    }
-
-    if (availableRanges.length === 0) {
-      const fullDay = [{ startMinutes: 0, endMinutes: MINUTES_IN_DAY }];
-      this._mergedUnavailMinuteCache.set(cacheKey, fullDay);
-      return fullDay;
-    }
-
-    availableRanges.sort((a, b) => a.startMinutes - b.startMinutes);
-    const mergedAvail: Array<{ startMinutes: number; endMinutes: number }> = [];
-    for (const range of availableRanges) {
-      const last = mergedAvail[mergedAvail.length - 1];
-      if (last && range.startMinutes <= last.endMinutes) {
-        last.endMinutes = Math.max(last.endMinutes, range.endMinutes);
-      } else {
-        mergedAvail.push({ ...range });
-      }
-    }
-
-    const unavailable: Array<{ startMinutes: number; endMinutes: number }> = [];
-    let cursor = 0;
-    for (const a of mergedAvail) {
-      if (cursor < a.startMinutes) {
-        unavailable.push({ startMinutes: cursor, endMinutes: a.startMinutes });
-      }
-      cursor = a.endMinutes;
-    }
-    if (cursor < MINUTES_IN_DAY) {
-      unavailable.push({ startMinutes: cursor, endMinutes: MINUTES_IN_DAY });
-    }
-
-    this._mergedUnavailMinuteCache.set(cacheKey, unavailable);
-    return unavailable;
+    this._mergedUnavailMinuteCache.set(cacheKey, merged);
+    return merged;
   }
 
   getUnavailabilityDetails(
@@ -3243,8 +3196,6 @@ export class CalendarCore<
     this._dateIndex.clear();
     this._resourceDayAvailCache.clear();
     this._mergedUnavailMinuteCache.clear();
-    // _indexAddEvent bumps the version per event, but an empty/null list adds
-    // nothing — bump explicitly so the memoized event map is invalidated.
     this._bumpMapVersion();
     this.options.events?.forEach((e) => this._indexAddEvent(e));
   }

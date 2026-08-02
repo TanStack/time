@@ -122,9 +122,32 @@ intents (see above) and expands them via the pure `materializeRecurringEdit` /
 `goTo*Occurrence`, and the god class's `editRecurringEvent`/`removeRecurringEvent` entry
 points (they delegate to the pure core today but still own fetch/validate/commit/emit).
 
-### Step 4 — Availability module
-`availability-validate` **veto** stage over 2a. Owns `getUnavailableRanges` (drop
-`containerHeight` per ADR 0003 → return minute ranges/fractions), `getUnavailabilityDetails`.
+### Step 4 — Availability module ✅
+`availability-validate` **veto** stage over 2a (`availabilityModule`, calling the pure
+`checkAvailability`).
+
+The read side is pure functions, not module methods: the kernel has no read/query seam yet, so
+a module cannot expose one without inventing API the cutover would replace. What matters for
+ADR 0004 is that the rules are importable with plain args and zero kernel construction:
+
+- `mergeUnavailableMinuteRanges(resources, date, resourceIds?)` (`validation/availability`) —
+  merged unavailable minutes for a day. Union semantics: a minute is unavailable only when
+  every selected resource is unavailable. Returns `null` when availability is unknowable (no
+  resources, or none matching `resourceIds`) so callers can tell "no constraint" from
+  "blocked all day".
+- `toUnavailableRanges(ranges)` (`projection`) — the ADR 0003 view mapping: minutes →
+  `startFraction`/`endFraction` + `%` strings + `HH:mm` labels. Owns the `UnavailableRange`
+  type; `calendar/types.ts` re-exports it.
+- `getUnavailabilityDetails(resources, date, startMinutes, endMinutes)` — per-resource reasons,
+  already pure since Step 2.
+- `mergeMinuteRanges` / `invertMinuteRanges` extracted from `resourceDayAvail`, which had the
+  same merge-then-invert inline.
+
+`CalendarCore.getUnavailableRanges` / `getUnavailabilityDetails` are now wrappers; the class
+keeps only its per-day memo cache. `containerHeight` was already dropped in Step 8.
+
+Still inline in the god class: `getResizeConflicts` re-derives which resources block a span —
+Step 6 consumes these functions instead.
 
 ### Step 5 — Dependency module (+ solver seam)
 `schedule` transform stage over 2b — delta-cascade **now**; the stage is shaped to host the

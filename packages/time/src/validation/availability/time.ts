@@ -26,6 +26,39 @@ export function getWeekday(date: string): number {
   return jsDow === 0 ? 7 : jsDow;
 }
 
+export function mergeMinuteRanges(
+  ranges: Array<MinuteRange>,
+): Array<MinuteRange> {
+  const sorted = ranges.slice().sort((a, b) => a.startMinutes - b.startMinutes);
+  const merged: Array<MinuteRange> = [];
+  for (const range of sorted) {
+    const last = merged[merged.length - 1];
+    if (last && range.startMinutes <= last.endMinutes) {
+      last.endMinutes = Math.max(last.endMinutes, range.endMinutes);
+    } else {
+      merged.push({ ...range });
+    }
+  }
+  return merged;
+}
+
+export function invertMinuteRanges(
+  merged: Array<MinuteRange>,
+): Array<MinuteRange> {
+  const gaps: Array<MinuteRange> = [];
+  let cursor = 0;
+  for (const range of merged) {
+    if (cursor < range.startMinutes) {
+      gaps.push({ startMinutes: cursor, endMinutes: range.startMinutes });
+    }
+    cursor = range.endMinutes;
+  }
+  if (cursor < MINUTES_IN_DAY) {
+    gaps.push({ startMinutes: cursor, endMinutes: MINUTES_IN_DAY });
+  }
+  return gaps;
+}
+
 export interface ResourceDayAvailability {
   available: Array<MinuteRange>;
   unavailable: Array<MinuteRange>;
@@ -55,31 +88,11 @@ export function resourceDayAvail(
   }
 
   slotsForWeekday.sort((a, b) => a.startMinutes - b.startMinutes);
-  const available: Array<MinuteRange> = [];
-  for (const r of slotsForWeekday) {
-    const last = available[available.length - 1];
-    if (last && r.startMinutes <= last.endMinutes) {
-      last.endMinutes = Math.max(last.endMinutes, r.endMinutes);
-    } else {
-      available.push({ ...r });
-    }
-  }
-
-  const unavailable: Array<MinuteRange> = [];
-  let cursor = 0;
-  for (const a of available) {
-    if (cursor < a.startMinutes) {
-      unavailable.push({ startMinutes: cursor, endMinutes: a.startMinutes });
-    }
-    cursor = a.endMinutes;
-  }
-  if (cursor < MINUTES_IN_DAY) {
-    unavailable.push({ startMinutes: cursor, endMinutes: MINUTES_IN_DAY });
-  }
+  const available = mergeMinuteRanges(slotsForWeekday);
 
   return {
     available,
-    unavailable,
+    unavailable: invertMinuteRanges(available),
     hasAvailability: !!availability,
     slotsForWeekday,
   };
