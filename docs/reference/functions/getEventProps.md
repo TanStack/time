@@ -27,7 +27,7 @@ function getEventProps(
 };
 ```
 
-Defined in: [calendar/getEventProps.ts:60](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getEventProps.ts#L60)
+Defined in: [calendar/getEventProps.ts:67](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getEventProps.ts#L67)
 
 ## Parameters
 
@@ -58,8 +58,8 @@ Defined in: [calendar/getEventProps.ts:60](https://github.com/TanStack/time/blob
   \| \{
   `end`: `string`;
   `isSplitEvent`: `boolean`;
-  `layout`: `EventLayout`;
+  `layout`: [`EventLayout`](../type-aliases/EventLayout.md);
   `overlappingEvents`: [`Event`](../interfaces/Event.md)\<[`Resource`](../interfaces/Resource.md)\>[];
   `start`: `string`;
-  `style`: `LayoutStyle`;
+  `style`: [`LayoutStyle`](../interfaces/LayoutStyle.md);
 \}

@@ -86,7 +86,10 @@ describe("layoutModule", () => {
   it("lays out all-day and timed events on separate tracks", () => {
     const kernel = new Kernel<TestEvent>({
       events: [
-        { ...evt("holiday", "2025-06-03T00:00:00", "2025-06-03T23:59:59"), allDay: true },
+        {
+          ...evt("holiday", "2025-06-03T00:00:00", "2025-06-03T23:59:59"),
+          allDay: true,
+        },
         evt("meeting", "2025-06-03T11:00:00", "2025-06-03T12:00:00"),
         evt("interview", "2025-06-03T11:30:00", "2025-06-03T13:00:00"),
       ],

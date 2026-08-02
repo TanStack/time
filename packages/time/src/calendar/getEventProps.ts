@@ -97,7 +97,9 @@ export const getEventProps = (
   }
 
   const daySegments = (
-    options.daySegments ?? eventMap.get(dayKeyOf(event.start)) ?? []
+    options.daySegments ??
+    eventMap.get(dayKeyOf(event.start)) ??
+    []
   ).filter((e) => Boolean(e.allDay) === Boolean(event.allDay));
   const knownIndex = daySegments.findIndex((e) => sameSegment(e, event));
   const laidOut = knownIndex >= 0 ? daySegments : [...daySegments, event];

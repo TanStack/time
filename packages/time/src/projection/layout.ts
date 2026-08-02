@@ -288,8 +288,7 @@ export function toLayoutStyle(
   const timeSize = percent(layout.durationFraction);
   const crossStart = percent(layout.crossStart);
   const crossSize = percent(layout.crossSize);
-  const stacking =
-    layout.zIndex === undefined ? {} : { zIndex: layout.zIndex };
+  const stacking = layout.zIndex === undefined ? {} : { zIndex: layout.zIndex };
 
   if (orientation === "horizontal") {
     return {

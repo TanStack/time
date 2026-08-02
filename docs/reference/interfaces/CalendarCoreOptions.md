@@ -119,6 +119,18 @@ When omitted the calendar operates in fully-eager mode (no change in behaviour).
 
 ***
 
+### layout?
+
+```ts
+optional layout: LayoutOptions;
+```
+
+Defined in: [calendar/calendar.ts:100](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L100)
+
+How concurrent events share the cross axis. Overridable per `getEventProps` call.
+
+***
+
 ### locale?
 
 ```ts

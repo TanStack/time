@@ -43,7 +43,9 @@ export function layoutModule<E extends KernelEvent>(
 
           const byDay = new Map<string, Array<number>>();
           segments.forEach((segment, index) => {
-            const key = `${dayKeyOf(segment.start)}|${segment.allDay ? "all-day" : "timed"}`;
+            const key = `${dayKeyOf(segment.start)}|${
+              segment.allDay ? "all-day" : "timed"
+            }`;
             const bucket = byDay.get(key);
             if (bucket) bucket.push(index);
             else byDay.set(key, [index]);
