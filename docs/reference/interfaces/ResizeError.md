@@ -5,7 +5,7 @@ title: ResizeError
 
 # Interface: ResizeError
 
-Defined in: [calendar/types.ts:229](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L229)
+Defined in: [calendar/types.ts:216](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L216)
 
 Error information when a resize operation is blocked
 
@@ -17,7 +17,7 @@ Error information when a resize operation is blocked
 optional attemptedEnd: string;
 ```
 
-Defined in: [calendar/types.ts:237](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L237)
+Defined in: [calendar/types.ts:224](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L224)
 
 ***
 
@@ -27,7 +27,7 @@ Defined in: [calendar/types.ts:237](https://github.com/TanStack/time/blob/main/p
 optional attemptedStart: string;
 ```
 
-Defined in: [calendar/types.ts:236](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L236)
+Defined in: [calendar/types.ts:223](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L223)
 
 ***
 
@@ -37,7 +37,7 @@ Defined in: [calendar/types.ts:236](https://github.com/TanStack/time/blob/main/p
 optional conflicts: AvailabilityConflict[];
 ```
 
-Defined in: [calendar/types.ts:239](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L239)
+Defined in: [calendar/types.ts:226](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L226)
 
 Specific availability conflicts that prevented the resize
 
@@ -49,7 +49,7 @@ Specific availability conflicts that prevented the resize
 eventId: string;
 ```
 
-Defined in: [calendar/types.ts:230](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L230)
+Defined in: [calendar/types.ts:217](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L217)
 
 ***
 
@@ -59,7 +59,7 @@ Defined in: [calendar/types.ts:230](https://github.com/TanStack/time/blob/main/p
 eventTitle: string;
 ```
 
-Defined in: [calendar/types.ts:231](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L231)
+Defined in: [calendar/types.ts:218](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L218)
 
 ***
 
@@ -69,7 +69,7 @@ Defined in: [calendar/types.ts:231](https://github.com/TanStack/time/blob/main/p
 message: string;
 ```
 
-Defined in: [calendar/types.ts:233](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L233)
+Defined in: [calendar/types.ts:220](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L220)
 
 ***
 
@@ -79,7 +79,7 @@ Defined in: [calendar/types.ts:233](https://github.com/TanStack/time/blob/main/p
 originalEnd: string;
 ```
 
-Defined in: [calendar/types.ts:235](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L235)
+Defined in: [calendar/types.ts:222](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L222)
 
 ***
 
@@ -89,7 +89,7 @@ Defined in: [calendar/types.ts:235](https://github.com/TanStack/time/blob/main/p
 originalStart: string;
 ```
 
-Defined in: [calendar/types.ts:234](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L234)
+Defined in: [calendar/types.ts:221](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L221)
 
 ***
 
@@ -99,4 +99,4 @@ Defined in: [calendar/types.ts:234](https://github.com/TanStack/time/blob/main/p
 reason: "unavailable-time" | "invalid-time" | "min-duration" | "blocked";
 ```
 
-Defined in: [calendar/types.ts:232](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L232)
+Defined in: [calendar/types.ts:219](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L219)

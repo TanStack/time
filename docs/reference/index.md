@@ -197,4 +197,5 @@ title: "@tanstack/time"
 - [toPlainDateString](functions/toPlainDateString.md)
 - [toPlainDateTimeString](functions/toPlainDateTimeString.md)
 - [toPlainTimeString](functions/toPlainTimeString.md)
+- [toUnavailableRanges](functions/toUnavailableRanges.md)
 - [until](functions/until.md)
