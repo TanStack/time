@@ -67,9 +67,9 @@ export function validateDependencies(
     const pred = byId.get(dep.id);
     if (!pred) continue;
 
-    const predStartMs = Temporal.PlainDateTime.from(
-      pred.start,
-    ).toZonedDateTime(timeZone).epochMilliseconds;
+    const predStartMs = Temporal.PlainDateTime.from(pred.start).toZonedDateTime(
+      timeZone,
+    ).epochMilliseconds;
     const predEndMs = Temporal.PlainDateTime.from(pred.end).toZonedDateTime(
       timeZone,
     ).epochMilliseconds;

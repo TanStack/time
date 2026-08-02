@@ -73,7 +73,10 @@ describe("layoutDaySegments", () => {
 
   it("splits two overlapping events into two columns", () => {
     const layouts = byId(
-      layoutDaySegments([seg("a", "09:00", "11:00"), seg("b", "10:00", "12:00")]),
+      layoutDaySegments([
+        seg("a", "09:00", "11:00"),
+        seg("b", "10:00", "12:00"),
+      ]),
     );
 
     expect(layouts.get("a")).toMatchObject({ column: 0, columnCount: 2 });

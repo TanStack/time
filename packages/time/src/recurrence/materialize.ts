@@ -188,7 +188,9 @@ export function materializeRecurringEdit<
           occurrenceStart,
         ),
     );
-    const overrideFields = { ...(normalizedUpdates as Record<string, unknown>) };
+    const overrideFields = {
+      ...(normalizedUpdates as Record<string, unknown>),
+    };
     delete overrideFields.recurrence;
     delete overrideFields._originalStart;
     delete overrideFields._originalEnd;

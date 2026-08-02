@@ -13,7 +13,9 @@ interface CalEvent extends KernelEvent {
 const options: DependencyModuleOptions = { timeZone: "UTC" };
 
 const seed = () => {
-  const kernel = new Kernel<CalEvent>().use(dependencyModule<CalEvent>(options));
+  const kernel = new Kernel<CalEvent>().use(
+    dependencyModule<CalEvent>(options),
+  );
   kernel.write({
     kind: "add",
     event: {

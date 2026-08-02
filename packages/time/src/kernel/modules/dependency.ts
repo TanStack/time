@@ -23,9 +23,7 @@ function epochMs(value: unknown, timeZone: Temporal.TimeZoneLike): number {
   ).toZonedDateTime(timeZone).epochMilliseconds;
 }
 
-function toGraph(
-  events: Array<DependencyEvent>,
-): Array<DependencyGraphEvent> {
+function toGraph(events: Array<DependencyEvent>): Array<DependencyGraphEvent> {
   return events.map((e) => ({
     id: e.id,
     title: e.title ?? e.id,

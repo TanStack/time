@@ -9,13 +9,25 @@ Defined in: [calendar/types.ts:163](https://github.com/TanStack/time/blob/main/p
 
 ## Properties
 
+### endFraction
+
+```ts
+endFraction: number;
+```
+
+Defined in: [calendar/types.ts:167](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L167)
+
+End of the range as a fraction of the day (0-1)
+
+***
+
 ### endTime
 
 ```ts
 endTime: string;
 ```
 
-Defined in: [calendar/types.ts:171](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L171)
+Defined in: [calendar/types.ts:175](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L175)
 
 End time as HH:mm string
 
@@ -24,12 +36,24 @@ End time as HH:mm string
 ### height
 
 ```ts
-height: number;
+height: string;
 ```
 
-Defined in: [calendar/types.ts:167](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L167)
+Defined in: [calendar/types.ts:171](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L171)
 
-Height in pixels
+Style-ready size along the time axis, e.g. "20.833%"
+
+***
+
+### startFraction
+
+```ts
+startFraction: number;
+```
+
+Defined in: [calendar/types.ts:165](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L165)
+
+Start of the range as a fraction of the day (0-1)
 
 ***
 
@@ -39,7 +63,7 @@ Height in pixels
 startTime: string;
 ```
 
-Defined in: [calendar/types.ts:169](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L169)
+Defined in: [calendar/types.ts:173](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L173)
 
 Start time as HH:mm string
 
@@ -48,9 +72,9 @@ Start time as HH:mm string
 ### top
 
 ```ts
-top: number;
+top: string;
 ```
 
-Defined in: [calendar/types.ts:165](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L165)
+Defined in: [calendar/types.ts:169](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L169)
 
-Top position in pixels
+Style-ready offset along the time axis, e.g. "33.333%"

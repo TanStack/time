@@ -37,9 +37,7 @@ const hoursFromFirstDay = (
 ): number => {
   const dt = Temporal.PlainDateTime.from(toPlainDateTimeString(value));
   const dayOffset = firstDay.until(dt.toPlainDate()).days;
-  return (
-    dayOffset * HOURS_IN_DAY + dt.hour + dt.minute / 60 + dt.second / 3600
-  );
+  return dayOffset * HOURS_IN_DAY + dt.hour + dt.minute / 60 + dt.second / 3600;
 };
 
 export function layoutTimelineRange<E extends TimelineSpanEvent>(

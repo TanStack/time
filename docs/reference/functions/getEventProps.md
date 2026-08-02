@@ -20,18 +20,14 @@ function getEventProps(
   | {
   end: string;
   isSplitEvent: boolean;
+  layout: EventLayout;
   overlappingEvents: Event<Resource>[];
   start: string;
-  style: {
-     height: string;
-     left: string;
-     top: string;
-     width: string;
-  };
+  style: LayoutStyle;
 };
 ```
 
-Defined in: [calendar/getEventProps.ts:59](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getEventProps.ts#L59)
+Defined in: [calendar/getEventProps.ts:60](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getEventProps.ts#L60)
 
 ## Parameters
 
@@ -62,12 +58,8 @@ Defined in: [calendar/getEventProps.ts:59](https://github.com/TanStack/time/blob
   \| \{
   `end`: `string`;
   `isSplitEvent`: `boolean`;
+  `layout`: `EventLayout`;
   `overlappingEvents`: [`Event`](../interfaces/Event.md)\<[`Resource`](../interfaces/Resource.md)\>[];
   `start`: `string`;
-  `style`: \{
-     `height`: `string`;
-     `left`: `string`;
-     `top`: `string`;
-     `width`: `string`;
-  \};
+  `style`: `LayoutStyle`;
 \}

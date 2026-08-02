@@ -5,7 +5,7 @@ title: TimelineEventLayout
 
 # Interface: TimelineEventLayout\<TResource, TEvent\>
 
-Defined in: [calendar/types.ts:251](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L251)
+Defined in: [calendar/types.ts:255](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L255)
 
 ## Type Parameters
 
@@ -19,13 +19,25 @@ Defined in: [calendar/types.ts:251](https://github.com/TanStack/time/blob/main/p
 
 ## Properties
 
+### endFraction
+
+```ts
+endFraction: number;
+```
+
+Defined in: [calendar/types.ts:268](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L268)
+
+End as a fraction of the visible range (0-1)
+
+***
+
 ### event
 
 ```ts
 event: TEvent;
 ```
 
-Defined in: [calendar/types.ts:255](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L255)
+Defined in: [calendar/types.ts:259](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L259)
 
 ***
 
@@ -35,7 +47,7 @@ Defined in: [calendar/types.ts:255](https://github.com/TanStack/time/blob/main/p
 isEndClipped: boolean;
 ```
 
-Defined in: [calendar/types.ts:262](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L262)
+Defined in: [calendar/types.ts:272](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L272)
 
 True when the event ends after the last visible day (right edge is clipped)
 
@@ -47,7 +59,7 @@ True when the event ends after the last visible day (right edge is clipped)
 isStartClipped: boolean;
 ```
 
-Defined in: [calendar/types.ts:260](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L260)
+Defined in: [calendar/types.ts:270](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L270)
 
 True when the event starts before the first visible day (left edge is clipped)
 
@@ -59,7 +71,7 @@ True when the event starts before the first visible day (left edge is clipped)
 lane: number;
 ```
 
-Defined in: [calendar/types.ts:258](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L258)
+Defined in: [calendar/types.ts:264](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L264)
 
 ***
 
@@ -69,7 +81,21 @@ Defined in: [calendar/types.ts:258](https://github.com/TanStack/time/blob/main/p
 left: number;
 ```
 
-Defined in: [calendar/types.ts:256](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L256)
+Defined in: [calendar/types.ts:261](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L261)
+
+Offset along the time axis as a percentage of the visible range
+
+***
+
+### startFraction
+
+```ts
+startFraction: number;
+```
+
+Defined in: [calendar/types.ts:266](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L266)
+
+Start as a fraction of the visible range (0-1)
 
 ***
 
@@ -79,4 +105,6 @@ Defined in: [calendar/types.ts:256](https://github.com/TanStack/time/blob/main/p
 width: number;
 ```
 
-Defined in: [calendar/types.ts:257](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L257)
+Defined in: [calendar/types.ts:263](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L263)
+
+Size along the time axis as a percentage of the visible range
