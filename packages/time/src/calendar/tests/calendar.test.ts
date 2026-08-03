@@ -848,6 +848,54 @@ describe("CalendarCore", () => {
         expect(result.error?.reason).toBe("unavailable-time");
       });
 
+      test("names the saturated resource when a resize overruns capacity", () => {
+        const resource: TestResource = {
+          id: "r-cap",
+          label: "Capacity 1",
+          capacity: [1],
+          availability: [
+            { weekdays: [1, 2, 3, 4, 5], startTime: "09:00", endTime: "17:00" },
+          ],
+        };
+
+        const cal = createCalendar({
+          events: [
+            {
+              id: "e1",
+              title: "E1",
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: [resource],
+            },
+            {
+              id: "e2",
+              title: "E2",
+              start: `${DATE_MON}T14:00:00`,
+              end: `${DATE_MON}T15:00:00`,
+              resources: [resource],
+            },
+          ],
+          resources: [resource],
+        });
+
+        const result = cal.validateResize({
+          eventId: "e2",
+          originalStart: `${DATE_MON}T14:00:00`,
+          originalEnd: `${DATE_MON}T15:00:00`,
+          edge: "top",
+          totalDeltaMinutes: -240,
+          targetDayDate: DATE_MON,
+          originalDayDate: DATE_MON,
+          ...baseResizeOptions,
+        });
+
+        assert(result.blocked);
+        expect(result.error?.reason).toBe("unavailable-time");
+        expect(result.error?.message).toBe(
+          "Unavailable: Event at 10:00-15:00 conflicts with Capacity 1 (capacity)",
+        );
+      });
+
       test("allows resize when capacity is not exceeded", () => {
         const resource: TestResource = {
           id: "r-cap",

@@ -178,9 +178,33 @@ Apply was authoritative; validation follows it now.
 Still god-class orchestration until cutover: `createDependency` / `validateMove` own
 fetch/validate/commit/emit and build the user-facing messages.
 
-### Step 6 — Drag-resize module
-`createResizeController`, `validateResize`, `getResizeProps` — reuse Steps 4 & 5 modules,
-stop re-implementing availability/dependency checks inline.
+### Step 6 — Drag-resize module ✅
+`resizeModule` claims the `resize/apply` intent in a new **`resize-materialize`** transform
+stage, the first stage in `WRITE_TRANSFORM_ORDER`. It turns `{eventId, edge, deltaMinutes}` into
+one concrete update op via the pure `calculateResizedEvent`, so everything downstream — the
+dependency `schedule` cascade, the availability veto — applies to a resize for free, in one
+atomic batch. Resource availability is looked up through `mergeUnavailableMinuteRanges` (Step 4)
+unless the payload passes explicit ranges.
+
+Stage order matters: resize expands **before** `recurrence-materialize`, leaving room for a
+resize of a recurring occurrence to expand into a recurrence intent later. Today the module only
+handles plain events; resizing an occurrence stays in the god class until cutover.
+
+Pure rules added to `validation/availability`:
+
+- `checkDaySpan` — the god class's `getResizeConflicts`: which resources block a minute span on
+  one day, plus the capacity check against the other events sharing that day. Collects **all**
+  conflicts, unlike `checkAvailability`, which bails at the first one and prefixes messages with
+  the event title.
+- `toUnavailabilityConflict` / `describeUnavailability` — the conflict-shaping and
+  `"Label (reason)"` text that `validateResize` had open-coded **five** times.
+
+Deleting `getResizeConflicts`'s body also killed `_getWeekday`, `_getResourceDayAvail` and their
+two caches — the last availability logic living on the class.
+
+Coverage note: neutering `checkDaySpan` only broke 2 of 253 calendar tests, so the capacity
+branch was untested. Added a characterization test that pins the "conflicts with … (capacity)"
+message, verified against the pre-extraction implementation.
 
 ### Step 7 — Undo module
 `emit` stage. Convert full-snapshot stacks → **command diffs** (ROADMAP Phase 0 item). Wraps

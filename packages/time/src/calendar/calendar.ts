@@ -51,12 +51,13 @@ import type {
 import { toPlainDateString, toPlainDateTimeString } from "~/date/parse";
 import {
   checkAvailability,
+  checkDaySpan,
+  describeUnavailability,
   formatMinutesToTime,
   getUnavailabilityDetails as computeUnavailabilityDetails,
-  getWeekday,
   mergeUnavailableMinuteRanges,
   MINUTES_IN_DAY,
-  resourceDayAvail,
+  toUnavailabilityConflict,
 } from "~/validation/availability";
 import type {
   AvailabilityOtherEvent,
@@ -383,17 +384,7 @@ export class CalendarCore<
   private _undoStack: Array<Array<TEvent>> = [];
   private _redoStack: Array<Array<TEvent>> = [];
 
-  private _resourceDayAvailCache = new Map<
-    string,
-    {
-      available: Array<{ startMinutes: number; endMinutes: number }>;
-      unavailable: Array<{ startMinutes: number; endMinutes: number }>;
-      hasAvailability: boolean;
-      slotsForWeekday: Array<{ startMinutes: number; endMinutes: number }>;
-    }
-  >();
   private _mergedUnavailMinuteCache = new Map<string, Array<MinuteRange>>();
-  private _weekdayCache = new Map<string, number>();
 
   /**
    * Monotonic counter bumped whenever event state or resource availability
@@ -528,32 +519,6 @@ export class CalendarCore<
       }
     }
     this._loadedRanges = merged;
-  }
-
-  private _getWeekday(date: string): number {
-    const cached = this._weekdayCache.get(date);
-    if (cached !== undefined) return cached;
-    const iso = getWeekday(date);
-    this._weekdayCache.set(date, iso);
-    return iso;
-  }
-
-  private _getResourceDayAvail(
-    resource: TResource,
-    weekday: number,
-  ): {
-    available: Array<{ startMinutes: number; endMinutes: number }>;
-    unavailable: Array<{ startMinutes: number; endMinutes: number }>;
-    hasAvailability: boolean;
-    slotsForWeekday: Array<{ startMinutes: number; endMinutes: number }>;
-  } {
-    const key = `${resource.id}:${weekday}`;
-    const cached = this._resourceDayAvailCache.get(key);
-    if (cached) return cached;
-
-    const result = resourceDayAvail(resource.availability, weekday);
-    this._resourceDayAvailCache.set(key, result);
-    return result;
   }
 
   private normalizeEvent<
@@ -2313,127 +2278,31 @@ export class CalendarCore<
     resourceIds: Array<string>,
     resizeEvent?: TEvent,
   ): Array<AvailabilityConflict> {
-    const conflicts: Array<AvailabilityConflict> = [];
-
-    const details = this.getUnavailabilityDetails(dayDate, startMins, endMins, {
-      resourceIds,
-    });
-
-    const unavailableRangesForDay = this.getUnavailableMinuteRanges(dayDate, {
-      resourceIds,
-    });
-
-    const weekday = this._getWeekday(dayDate);
-
-    for (const range of unavailableRangesForDay) {
-      if (startMins < range.endMinutes && endMins > range.startMinutes) {
-        const overlappingDetails = details.filter((d) => {
-          const resource = this.options.resources?.find(
-            (r) => r.id === d.resourceId,
-          );
-          if (!resource) return false;
-
-          const resourceAvailableSlots = this._getResourceDayAvail(
-            resource,
-            weekday,
-          ).slotsForWeekday;
-
-          if (resourceAvailableSlots.length === 0) return true;
-
-          return !resourceAvailableSlots.some(
-            (slot) =>
-              !(
-                range.endMinutes <= slot.startMinutes ||
-                range.startMinutes >= slot.endMinutes
-              ),
-          );
-        });
-
-        if (overlappingDetails.length > 0) {
-          conflicts.push({
-            date: dayDate,
-            conflictRange: {
-              start: formatMinutesToTime(
-                Math.max(startMins, range.startMinutes),
-              ),
-              end: formatMinutesToTime(Math.min(endMins, range.endMinutes)),
-            },
-            resourceIds: overlappingDetails.map((d) => d.resourceId),
-            resourceDetails: overlappingDetails.map((d) => ({
-              resourceId: d.resourceId,
-              resourceLabel: d.resourceLabel,
-              reason: d.reason,
-              description: d.description,
-            })),
-            description: overlappingDetails
-              .map((d) => d.description)
-              .join("; "),
-          });
-        }
-      }
-    }
-
-    const eventsOnDay = this.getEventsByDate(dayDate);
-
+    const resources = (this.options.resources ?? []).filter((resource) =>
+      resourceIds.includes(resource.id),
+    );
     const selfEvent = resizeEvent ?? this._eventMap.get(eventId);
-    const ownConsumptionArr = selfEvent?.consumption ?? [1];
-    const ownConsumption = ownConsumptionArr.reduce((a, b) => a + b, 0);
 
-    for (const resourceId of resourceIds) {
-      const resource = this.options.resources?.find((r) => r.id === resourceId);
-      if (!resource || !resource.capacity || resource.capacity.length === 0)
-        continue;
-
-      const overlappingEvents = eventsOnDay.filter((e) => {
-        if (e.id === eventId) return false;
-
-        const eventResourceIds = this._getEventResourceIds(e);
-        if (!eventResourceIds.includes(resourceId)) return false;
-
-        const eventStart = new Date(e.start);
-        const eventEnd = new Date(e.end);
-        const eventStartMins =
-          eventStart.getHours() * 60 + eventStart.getMinutes();
-        const eventEndMins = eventEnd.getHours() * 60 + eventEnd.getMinutes();
-
-        return startMins < eventEndMins && endMins > eventStartMins;
-      });
-
-      const usedByOthers = overlappingEvents.reduce((acc, e) => {
-        const c = e.consumption ?? [1];
-        return acc + c.reduce((a, b) => a + b, 0);
-      }, 0);
-
-      const resourceCapacitySum = resource.capacity.reduce((a, b) => a + b, 0);
-      const totalUsage = usedByOthers + ownConsumption;
-
-      if (totalUsage > resourceCapacitySum) {
-        conflicts.push({
-          date: dayDate,
-          conflictRange: {
-            start: formatMinutesToTime(startMins),
-            end: formatMinutesToTime(endMins),
-          },
-          resourceIds: [resourceId],
-          resourceDetails: [
-            {
-              resourceId: resource.id,
-              resourceLabel: resource.label,
-              reason: "capacity",
-              description: `${resource.label}: Capacity exceeded (${totalUsage}/${resourceCapacitySum} units used)`,
-              capacityInfo: {
-                max: resourceCapacitySum,
-                used: totalUsage,
-                remaining: 0,
-              },
-            },
-          ],
-          description: `${resource.label}: Capacity exceeded (${totalUsage}/${resourceCapacitySum} units used)`,
-        });
-      }
-    }
-
-    return conflicts;
+    return checkDaySpan({
+      date: dayDate,
+      startMinutes: startMins,
+      endMinutes: endMins,
+      resources,
+      consumption: selfEvent?.consumption,
+      otherEvents: this.getEventsByDate(dayDate)
+        .filter((event) => event.id !== eventId)
+        .map((event) => {
+          const start = new Date(event.start);
+          const end = new Date(event.end);
+          return {
+            id: event.id,
+            startMinutes: start.getHours() * 60 + start.getMinutes(),
+            endMinutes: end.getHours() * 60 + end.getMinutes(),
+            resourceIds: this._getEventResourceIds(event),
+            consumption: event.consumption,
+          };
+        }),
+    });
   }
 
   validateResize(options: ValidateResizeOptions): ValidateResizeResult {
@@ -2511,27 +2380,15 @@ export class CalendarCore<
         if (unavailabilityDetails.length > 0) {
           shouldBlockResize = true;
           blockReason = "unavailable-time";
-          const detailsText = unavailabilityDetails
-            .map((d) => `${d.resourceLabel} (${d.reason})`)
-            .join(", ");
-          blockMessage = `Unavailable: Event at ${formatMinutesToTime(snappedTargetStartMinutes)} conflicts with ${detailsText}`;
-          conflicts.push({
-            date: targetDayDate,
-            conflictRange: {
-              start: formatMinutesToTime(snappedTargetStartMinutes),
-              end: formatMinutesToTime(MINUTES_IN_DAY),
-            },
-            resourceIds: unavailabilityDetails.map((d) => d.resourceId),
-            resourceDetails: unavailabilityDetails.map((d) => ({
-              resourceId: d.resourceId,
-              resourceLabel: d.resourceLabel,
-              reason: d.reason,
-              description: d.description,
-            })),
-            description: unavailabilityDetails
-              .map((d) => d.description)
-              .join("; "),
-          });
+          blockMessage = `Unavailable: Event at ${formatMinutesToTime(snappedTargetStartMinutes)} conflicts with ${describeUnavailability(unavailabilityDetails)}`;
+          conflicts.push(
+            toUnavailabilityConflict({
+              date: targetDayDate,
+              startMinutes: snappedTargetStartMinutes,
+              endMinutes: MINUTES_IN_DAY,
+              details: unavailabilityDetails,
+            }),
+          );
         }
       }
 
@@ -2546,27 +2403,15 @@ export class CalendarCore<
         if (sourceUnavailabilityDetails.length > 0) {
           shouldBlockResize = true;
           blockReason = "unavailable-time";
-          const detailsText = sourceUnavailabilityDetails
-            .map((d) => `${d.resourceLabel} (${d.reason})`)
-            .join(", ");
-          blockMessage = `Cannot resize: Would need to pass through unavailable time on ${originalStartDate} - ${detailsText}`;
-          conflicts.push({
-            date: originalStartDate,
-            conflictRange: {
-              start: formatMinutesToTime(0),
-              end: formatMinutesToTime(currentStartMinutes),
-            },
-            resourceIds: sourceUnavailabilityDetails.map((d) => d.resourceId),
-            resourceDetails: sourceUnavailabilityDetails.map((d) => ({
-              resourceId: d.resourceId,
-              resourceLabel: d.resourceLabel,
-              reason: d.reason,
-              description: d.description,
-            })),
-            description: sourceUnavailabilityDetails
-              .map((d) => d.description)
-              .join("; "),
-          });
+          blockMessage = `Cannot resize: Would need to pass through unavailable time on ${originalStartDate} - ${describeUnavailability(sourceUnavailabilityDetails)}`;
+          conflicts.push(
+            toUnavailabilityConflict({
+              date: originalStartDate,
+              startMinutes: 0,
+              endMinutes: currentStartMinutes,
+              details: sourceUnavailabilityDetails,
+            }),
+          );
         }
       }
     } else if (effectiveEdge === "bottom" && targetDayDate > originalEndDate) {
@@ -2587,27 +2432,15 @@ export class CalendarCore<
         if (unavailabilityDetails.length > 0) {
           shouldBlockResize = true;
           blockReason = "unavailable-time";
-          const detailsText = unavailabilityDetails
-            .map((d) => `${d.resourceLabel} (${d.reason})`)
-            .join(", ");
-          blockMessage = `Unavailable: Event ending at ${formatMinutesToTime(snappedTargetEndMinutes)} conflicts with ${detailsText}`;
-          conflicts.push({
-            date: targetDayDate,
-            conflictRange: {
-              start: formatMinutesToTime(0),
-              end: formatMinutesToTime(snappedTargetEndMinutes),
-            },
-            resourceIds: unavailabilityDetails.map((d) => d.resourceId),
-            resourceDetails: unavailabilityDetails.map((d) => ({
-              resourceId: d.resourceId,
-              resourceLabel: d.resourceLabel,
-              reason: d.reason,
-              description: d.description,
-            })),
-            description: unavailabilityDetails
-              .map((d) => d.description)
-              .join("; "),
-          });
+          blockMessage = `Unavailable: Event ending at ${formatMinutesToTime(snappedTargetEndMinutes)} conflicts with ${describeUnavailability(unavailabilityDetails)}`;
+          conflicts.push(
+            toUnavailabilityConflict({
+              date: targetDayDate,
+              startMinutes: 0,
+              endMinutes: snappedTargetEndMinutes,
+              details: unavailabilityDetails,
+            }),
+          );
         }
       }
 
@@ -2622,27 +2455,15 @@ export class CalendarCore<
         if (sourceUnavailabilityDetails.length > 0) {
           shouldBlockResize = true;
           blockReason = "unavailable-time";
-          const detailsText = sourceUnavailabilityDetails
-            .map((d) => `${d.resourceLabel} (${d.reason})`)
-            .join(", ");
-          blockMessage = `Cannot resize: Would need to pass through unavailable time on ${originalEndDate} - ${detailsText}`;
-          conflicts.push({
-            date: originalEndDate,
-            conflictRange: {
-              start: formatMinutesToTime(currentEndMinutes),
-              end: formatMinutesToTime(MINUTES_IN_DAY),
-            },
-            resourceIds: sourceUnavailabilityDetails.map((d) => d.resourceId),
-            resourceDetails: sourceUnavailabilityDetails.map((d) => ({
-              resourceId: d.resourceId,
-              resourceLabel: d.resourceLabel,
-              reason: d.reason,
-              description: d.description,
-            })),
-            description: sourceUnavailabilityDetails
-              .map((d) => d.description)
-              .join("; "),
-          });
+          blockMessage = `Cannot resize: Would need to pass through unavailable time on ${originalEndDate} - ${describeUnavailability(sourceUnavailabilityDetails)}`;
+          conflicts.push(
+            toUnavailabilityConflict({
+              date: originalEndDate,
+              startMinutes: currentEndMinutes,
+              endMinutes: MINUTES_IN_DAY,
+              details: sourceUnavailabilityDetails,
+            }),
+          );
         }
       }
     }
@@ -2675,27 +2496,15 @@ export class CalendarCore<
         if (unavailabilityDetails.length > 0) {
           shouldBlockResize = true;
           blockReason = "unavailable-time";
-          const detailsText = unavailabilityDetails
-            .map((d) => `${d.resourceLabel} (${d.reason})`)
-            .join(", ");
-          blockMessage = `Unavailable: Event at ${formatMinutesToTime(snappedStartMinutes)}-${formatMinutesToTime(snappedEndMinutes)} conflicts with ${detailsText}`;
-          conflicts.push({
-            date: targetDayDate,
-            conflictRange: {
-              start: formatMinutesToTime(snappedStartMinutes),
-              end: formatMinutesToTime(snappedEndMinutes),
-            },
-            resourceIds: unavailabilityDetails.map((d) => d.resourceId),
-            resourceDetails: unavailabilityDetails.map((d) => ({
-              resourceId: d.resourceId,
-              resourceLabel: d.resourceLabel,
-              reason: d.reason,
-              description: d.description,
-            })),
-            description: unavailabilityDetails
-              .map((d) => d.description)
-              .join("; "),
-          });
+          blockMessage = `Unavailable: Event at ${formatMinutesToTime(snappedStartMinutes)}-${formatMinutesToTime(snappedEndMinutes)} conflicts with ${describeUnavailability(unavailabilityDetails)}`;
+          conflicts.push(
+            toUnavailabilityConflict({
+              date: targetDayDate,
+              startMinutes: snappedStartMinutes,
+              endMinutes: snappedEndMinutes,
+              details: unavailabilityDetails,
+            }),
+          );
         }
       }
 
@@ -2716,10 +2525,9 @@ export class CalendarCore<
         if (capacityConflicts.length > 0) {
           shouldBlockResize = true;
           blockReason = "unavailable-time";
-          const conflict = capacityConflicts[0]!;
-          const detailsText = conflict.resourceDetails
-            .map((d) => `${d.resourceLabel} (${d.reason})`)
-            .join(", ");
+          const detailsText = describeUnavailability(
+            capacityConflicts[0]!.resourceDetails,
+          );
           blockMessage = `Unavailable: Event at ${formatMinutesToTime(snappedStartMinutes)}-${formatMinutesToTime(snappedEndMinutes)} conflicts with ${detailsText}`;
           conflicts.push(...capacityConflicts);
         }
@@ -2783,10 +2591,9 @@ export class CalendarCore<
             if (dayConflicts.length > 0) {
               shouldBlockResize = true;
               blockReason = "unavailable-time";
-              const conflict = dayConflicts[0]!;
-              const detailsText = conflict.resourceDetails
-                .map((d) => `${d.resourceLabel} (${d.reason})`)
-                .join(", ");
+              const detailsText = describeUnavailability(
+                dayConflicts[0]!.resourceDetails,
+              );
               blockMessage = `Unavailable: ${dayStr} ${formatMinutesToTime(overlapStartMins)}–${formatMinutesToTime(overlapEndMins)} conflicts with ${detailsText}`;
               conflicts.push(...dayConflicts);
             }
@@ -2949,7 +2756,6 @@ export class CalendarCore<
    */
   setResources(resources: Array<TResource> | null) {
     this.options.resources = resources;
-    this._resourceDayAvailCache.clear();
     this._mergedUnavailMinuteCache.clear();
     // Recurring-event availability conflicts depend on resources, so the
     // memoized event map must be invalidated.
@@ -2964,7 +2770,6 @@ export class CalendarCore<
     this._eventMap.clear();
     this._dependentsMap.clear();
     this._dateIndex.clear();
-    this._resourceDayAvailCache.clear();
     this._mergedUnavailMinuteCache.clear();
     this._bumpMapVersion();
     this.options.events?.forEach((e) => this._indexAddEvent(e));

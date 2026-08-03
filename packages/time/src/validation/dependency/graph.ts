@@ -1,6 +1,5 @@
 import type { DependencyGraphEvent } from "./validateDependencies";
 
-/** True when `fromId` reaches `toId` by following `dependsOn` links, so adding the reverse cycles. */
 export function hasDependencyPath(
   events: Array<DependencyGraphEvent>,
   fromId: string,

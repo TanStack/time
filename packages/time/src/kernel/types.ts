@@ -83,6 +83,7 @@ export type ProjectionStageName =
   | "layout";
 
 export type WriteTransformStageName =
+  | "resize-materialize"
   | "recurrence-materialize"
   | "schedule"
   | "emit";
@@ -101,6 +102,7 @@ export const PROJECTION_ORDER: ReadonlyArray<ProjectionStageName> = [
 ];
 
 export const WRITE_TRANSFORM_ORDER: ReadonlyArray<WriteTransformStageName> = [
+  "resize-materialize",
   "recurrence-materialize",
   "schedule",
 ];
