@@ -5,7 +5,7 @@ title: UnavailableRange
 
 # Interface: UnavailableRange
 
-Defined in: [calendar/types.ts:163](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L163)
+Defined in: [projection/unavailability.ts:7](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L7)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/types.ts:163](https://github.com/TanStack/time/blob/main/p
 endFraction: number;
 ```
 
-Defined in: [calendar/types.ts:167](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L167)
+Defined in: [projection/unavailability.ts:11](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L11)
 
 End of the range as a fraction of the day (0-1)
 
@@ -27,7 +27,7 @@ End of the range as a fraction of the day (0-1)
 endTime: string;
 ```
 
-Defined in: [calendar/types.ts:175](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L175)
+Defined in: [projection/unavailability.ts:19](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L19)
 
 End time as HH:mm string
 
@@ -39,7 +39,7 @@ End time as HH:mm string
 height: string;
 ```
 
-Defined in: [calendar/types.ts:171](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L171)
+Defined in: [projection/unavailability.ts:15](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L15)
 
 Style-ready size along the time axis, e.g. "20.833%"
 
@@ -51,7 +51,7 @@ Style-ready size along the time axis, e.g. "20.833%"
 startFraction: number;
 ```
 
-Defined in: [calendar/types.ts:165](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L165)
+Defined in: [projection/unavailability.ts:9](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L9)
 
 Start of the range as a fraction of the day (0-1)
 
@@ -63,7 +63,7 @@ Start of the range as a fraction of the day (0-1)
 startTime: string;
 ```
 
-Defined in: [calendar/types.ts:173](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L173)
+Defined in: [projection/unavailability.ts:17](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L17)
 
 Start time as HH:mm string
 
@@ -75,6 +75,6 @@ Start time as HH:mm string
 top: string;
 ```
 
-Defined in: [calendar/types.ts:169](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L169)
+Defined in: [projection/unavailability.ts:13](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L13)
 
 Style-ready offset along the time axis, e.g. "33.333%"
