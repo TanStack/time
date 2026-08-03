@@ -59,6 +59,53 @@ describe("dependencyModule", () => {
     expect(b.end).toBe("2026-01-05T12:00:00");
   });
 
+  it("cascades when only the end moves", () => {
+    const kernel = seed();
+
+    kernel.write({
+      kind: "update",
+      id: "a",
+      before: kernel.getEvent("a")!,
+      after: { ...kernel.getEvent("a")!, end: "2026-01-05T11:00:00" },
+    });
+
+    const b = kernel.getEvent("b")!;
+    expect(b.start).toBe("2026-01-05T11:00:00");
+    expect(b.end).toBe("2026-01-05T12:00:00");
+  });
+
+  it("pulls a predecessor back when the dependent moves earlier", () => {
+    const kernel = seed();
+
+    kernel.write({
+      kind: "update",
+      id: "b",
+      before: kernel.getEvent("b")!,
+      after: {
+        ...kernel.getEvent("b")!,
+        start: "2026-01-05T09:00:00",
+        end: "2026-01-05T10:00:00",
+      },
+    });
+
+    const a = kernel.getEvent("a")!;
+    expect(a.start).toBe("2026-01-05T08:00:00");
+    expect(a.end).toBe("2026-01-05T09:00:00");
+  });
+
+  it("ignores updates that move neither edge", () => {
+    const kernel = seed();
+
+    kernel.write({
+      kind: "update",
+      id: "a",
+      before: kernel.getEvent("a")!,
+      after: { ...kernel.getEvent("a")!, title: "Renamed" },
+    });
+
+    expect(kernel.getEvent("b")!.start).toBe("2026-01-05T10:00:00");
+  });
+
   it("leaves dependents untouched when no constraint is violated", () => {
     const kernel = seed();
 

@@ -64,11 +64,17 @@ import type {
 } from "~/validation/availability";
 import {
   computeCascade,
-  requiredBackwardShiftMs,
+  hasDependencyPath,
+  propagateToDependents,
+  propagateToPredecessors,
   requiredForwardShiftMs,
+  shiftToSatisfyLink,
   validateDependencies,
 } from "~/validation/dependency";
-import type { DependencyGraphEvent } from "~/validation/dependency";
+import type {
+  CascadeShift,
+  DependencyGraphEvent,
+} from "~/validation/dependency";
 
 export type * from "./types";
 export * from "./date-core";
@@ -1034,15 +1040,29 @@ export class CalendarCore<
 
     const newStart = normalizedUpdates.start as string | undefined;
     const newEnd = normalizedUpdates.end as string | undefined;
-    if (newStart && newStart !== oldStartStr) {
-      this.propagateStartDeltaBackward(id, visited);
-    }
-
     const startChanged = newStart && newStart !== oldStartStr;
     const endChanged = newEnd && newEnd !== oldEndStr;
 
+    if (startChanged) {
+      this._applyDependencyShifts(
+        propagateToPredecessors({
+          sourceId: id,
+          events: this._dependencyGraphEvents(),
+          timeZone: this.options.timeZone,
+          visited,
+        }),
+      );
+    }
+
     if (startChanged || endChanged) {
-      this.propagateEndDelta(id, 0, visited);
+      this._applyDependencyShifts(
+        propagateToDependents({
+          sourceId: id,
+          events: this._dependencyGraphEvents(),
+          timeZone: this.options.timeZone,
+          visited,
+        }),
+      );
     }
 
     this.store.setState((prev) => ({
@@ -1059,178 +1079,51 @@ export class CalendarCore<
     });
   }
 
-  private propagateStartDeltaBackward(sourceId: string, visited: Set<string>) {
-    const sourceEvent = this._eventMap.get(sourceId);
-    if (!sourceEvent?.dependsOn?.length) return;
+  private _applyDependencyShifts(shifts: Array<CascadeShift>) {
+    const events = this.options.events;
+    if (!events) return;
 
-    const sourceStartStr = toPlainDateTimeString(sourceEvent.start);
-    const sourceEndStr = toPlainDateTimeString(sourceEvent.end);
-    const tz = this.options.timeZone;
-    const sourceStartMs =
-      Temporal.PlainDateTime.from(sourceStartStr).toZonedDateTime(
-        tz,
-      ).epochMilliseconds;
-    const sourceEndMs =
-      Temporal.PlainDateTime.from(sourceEndStr).toZonedDateTime(
-        tz,
-      ).epochMilliseconds;
+    for (const shift of shifts) {
+      const event = this._eventMap.get(shift.id);
+      if (!event) continue;
 
-    for (const dep of sourceEvent.dependsOn) {
-      if (visited.has(dep.id)) continue;
-
-      const pred = this._eventMap.get(dep.id);
-      if (!pred) continue;
-      const predArr = this.options.events;
-      if (!predArr) continue;
-      const predIndex = predArr.indexOf(pred);
-      if (predIndex === -1) continue;
-
-      const predStartStr = toPlainDateTimeString(pred.start);
-      const predEndStr = toPlainDateTimeString(pred.end);
-      const predStartMs =
-        Temporal.PlainDateTime.from(predStartStr).toZonedDateTime(
-          tz,
-        ).epochMilliseconds;
-      const predEndMs =
-        Temporal.PlainDateTime.from(predEndStr).toZonedDateTime(
-          tz,
-        ).epochMilliseconds;
-
-      const pullBackMs = requiredBackwardShiftMs(
-        dep.type,
-        predStartMs,
-        predEndMs,
-        sourceStartMs,
-        sourceEndMs,
-      );
-      if (pullBackMs <= 0) continue;
-
-      visited.add(dep.id);
-
-      const shiftedStart = Temporal.PlainDateTime.from(predStartStr)
-        .subtract({ milliseconds: pullBackMs })
-        .toString({ smallestUnit: "second" });
-      const shiftedEnd = Temporal.PlainDateTime.from(predEndStr)
-        .subtract({ milliseconds: pullBackMs })
-        .toString({ smallestUnit: "second" });
+      const index = events.indexOf(event);
+      if (index === -1) continue;
 
       const updated = {
-        ...pred,
-        start: shiftedStart,
-        end: shiftedEnd,
+        ...event,
+        start: shift.newStart,
+        end: shift.newEnd,
       } as TEvent;
-      predArr[predIndex] = updated;
-      this._indexUpdateEvent(pred, updated);
+      events[index] = updated;
+      this._indexUpdateEvent(event, updated);
 
       getTimeClient().emit("event:updated", {
-        eventId: pred.id,
-        eventTitle: pred.title,
-        start: shiftedStart,
-        end: shiftedEnd,
-        updates: { start: shiftedStart, end: shiftedEnd } as Record<
+        eventId: event.id,
+        eventTitle: event.title,
+        start: shift.newStart,
+        end: shift.newEnd,
+        updates: { start: shift.newStart, end: shift.newEnd } as Record<
           string,
           unknown
         >,
       });
-
-      this.propagateStartDeltaBackward(dep.id, visited);
     }
   }
 
-  private propagateEndDelta(
-    sourceId: string,
-    _deltaMs: number,
-    visited: Set<string>,
-  ) {
-    const sourceEvent = this._eventMap.get(sourceId);
-    if (!sourceEvent) return;
-
-    const tz = this.options.timeZone;
-    const sourceStartMs = Temporal.PlainDateTime.from(
-      toPlainDateTimeString(sourceEvent.start),
-    ).toZonedDateTime(tz).epochMilliseconds;
-    const sourceEndMs = Temporal.PlainDateTime.from(
-      toPlainDateTimeString(sourceEvent.end),
-    ).toZonedDateTime(tz).epochMilliseconds;
-
-    const dependentIds = this._dependentsMap.get(sourceId);
-    if (!dependentIds || dependentIds.size === 0) return;
-
-    const eventsArr = this.options.events;
-    if (!eventsArr) return;
-
-    for (const depId of dependentIds) {
-      if (visited.has(depId)) continue;
-
-      const dependent = this._eventMap.get(depId);
-      if (!dependent) continue;
-
-      const link = dependent.dependsOn?.find((d) => d.id === sourceId);
-      if (!link) continue;
-
-      visited.add(dependent.id);
-
-      const eventIndex = eventsArr.indexOf(dependent);
-      if (eventIndex === -1) continue;
-
-      const depStartStr = toPlainDateTimeString(dependent.start);
-      const depEndStr = toPlainDateTimeString(dependent.end);
-      const depStartMs =
-        Temporal.PlainDateTime.from(depStartStr).toZonedDateTime(
-          tz,
-        ).epochMilliseconds;
-      const depEndMs =
-        Temporal.PlainDateTime.from(depEndStr).toZonedDateTime(
-          tz,
-        ).epochMilliseconds;
-
-      const shiftMs = requiredForwardShiftMs(
-        link.type,
-        sourceStartMs,
-        sourceEndMs,
-        depStartMs,
-        depEndMs,
-      );
-      if (shiftMs <= 0) continue;
-
-      const shiftedStart = Temporal.PlainDateTime.from(depStartStr)
-        .add({ milliseconds: shiftMs })
-        .toString({ smallestUnit: "second" });
-      const shiftedEnd = Temporal.PlainDateTime.from(depEndStr)
-        .add({ milliseconds: shiftMs })
-        .toString({ smallestUnit: "second" });
-
-      const updated = {
-        ...dependent,
-        start: shiftedStart,
-        end: shiftedEnd,
-      } as TEvent;
-      eventsArr[eventIndex] = updated;
-      this._indexUpdateEvent(dependent, updated);
-
-      getTimeClient().emit("event:updated", {
-        eventId: dependent.id,
-        eventTitle: dependent.title,
-        start: shiftedStart,
-        end: shiftedEnd,
-        updates: { start: shiftedStart, end: shiftedEnd } as Record<
-          string,
-          unknown
-        >,
-      });
-
-      this.propagateEndDelta(dependent.id, shiftMs, visited);
-    }
-  }
-
-  private _dependencyGraphEvents(): Array<DependencyGraphEvent> {
+  private _dependencyGraphEvents(override?: {
+    id: string;
+    start: string;
+    end: string;
+  }): Array<DependencyGraphEvent> {
     const events: Array<DependencyGraphEvent> = [];
     for (const e of this._eventMap.values()) {
+      const moved = override?.id === e.id;
       events.push({
         id: e.id,
         title: e.title,
-        start: toPlainDateTimeString(e.start),
-        end: toPlainDateTimeString(e.end),
+        start: moved ? override.start : toPlainDateTimeString(e.start),
+        end: moved ? override.end : toPlainDateTimeString(e.end),
         dependsOn: e.dependsOn,
       });
     }
@@ -1523,68 +1416,27 @@ export class CalendarCore<
       Temporal.PlainDateTime.from(newEnd).toZonedDateTime(tz).epochMilliseconds;
 
     if (event.dependsOn?.length) {
-      const visited = new Set<string>([eventId]);
-      const queue: Array<{ id: string; startMs: number; endMs: number }> = [
-        { id: eventId, startMs: newStartMs, endMs: newEndMs },
-      ];
+      const pulled = propagateToPredecessors({
+        sourceId: eventId,
+        events: this._dependencyGraphEvents({
+          id: eventId,
+          start: newStart,
+          end: newEnd,
+        }),
+        timeZone: tz,
+        visited: new Set([eventId]),
+      });
 
-      while (queue.length > 0) {
-        const current = queue.shift()!;
-        const currentEvent = this._eventMap.get(current.id);
-        if (!currentEvent?.dependsOn?.length) continue;
+      for (const shift of pulled) {
+        const pred = this._eventMap.get(shift.id);
+        if (!pred) continue;
 
-        for (const dep of currentEvent.dependsOn) {
-          if (visited.has(dep.id)) continue;
-          const pred = this._eventMap.get(dep.id);
-          if (!pred) continue;
-
-          const predStartStr = toPlainDateTimeString(pred.start);
-          const predEndStr = toPlainDateTimeString(pred.end);
-          const predStartMs =
-            Temporal.PlainDateTime.from(predStartStr).toZonedDateTime(
-              tz,
-            ).epochMilliseconds;
-          const predEndMs =
-            Temporal.PlainDateTime.from(predEndStr).toZonedDateTime(
-              tz,
-            ).epochMilliseconds;
-
-          const pullBackMs = requiredBackwardShiftMs(
-            dep.type,
-            predStartMs,
-            predEndMs,
-            current.startMs,
-            current.endMs,
-          );
-          if (pullBackMs <= 0) continue;
-
-          visited.add(dep.id);
-
-          const shiftedStart = Temporal.PlainDateTime.from(predStartStr)
-            .subtract({ milliseconds: pullBackMs })
-            .toString({ smallestUnit: "second" });
-          const shiftedEnd = Temporal.PlainDateTime.from(predEndStr)
-            .subtract({ milliseconds: pullBackMs })
-            .toString({ smallestUnit: "second" });
-
-          const predConflict = this.checkEventAvailability(
-            pred,
-            shiftedStart,
-            shiftedEnd,
-          );
-          if (predConflict) {
-            return {
-              blocked: true,
-              blockedEventTitle: pred.title,
-              message: `"${pred.title}" would be pulled into unavailable time.`,
-            };
-          }
-
-          queue.push({
-            id: dep.id,
-            startMs: predStartMs - pullBackMs,
-            endMs: predEndMs - pullBackMs,
-          });
+        if (this.checkEventAvailability(pred, shift.newStart, shift.newEnd)) {
+          return {
+            blocked: true,
+            blockedEventTitle: pred.title,
+            message: `"${pred.title}" would be pulled into unavailable time.`,
+          };
         }
       }
     }
@@ -1643,69 +1495,29 @@ export class CalendarCore<
     const endDeltaMs = newEndMs - oldEndMs;
 
     if (endDeltaMs > 0) {
-      const endVisited = new Set<string>([eventId]);
-      const endQueue: Array<{
-        id: string;
-        projStartMs: number;
-        projEndMs: number;
-      }> = [{ id: eventId, projStartMs: newStartMs, projEndMs: newEndMs }];
+      const pushed = propagateToDependents({
+        sourceId: eventId,
+        events: this._dependencyGraphEvents({
+          id: eventId,
+          start: newStart,
+          end: newEnd,
+        }),
+        timeZone: tz,
+        visited: new Set([eventId]),
+      });
 
-      while (endQueue.length > 0) {
-        const { id: curId, projStartMs, projEndMs } = endQueue.shift()!;
-        const succIds = this._dependentsMap.get(curId);
-        if (!succIds?.size) continue;
+      for (const shift of pushed) {
+        const successor = this._eventMap.get(shift.id);
+        if (!successor) continue;
 
-        for (const sId of succIds) {
-          if (endVisited.has(sId)) continue;
-          const s = this._eventMap.get(sId);
-          if (!s) continue;
-
-          const link = s.dependsOn?.find((d) => d.id === curId);
-          if (!link) continue;
-
-          const sStartStr = toPlainDateTimeString(s.start);
-          const sEndStr = toPlainDateTimeString(s.end);
-          const sStartMs =
-            Temporal.PlainDateTime.from(sStartStr).toZonedDateTime(
-              tz,
-            ).epochMilliseconds;
-          const sEndMs =
-            Temporal.PlainDateTime.from(sEndStr).toZonedDateTime(
-              tz,
-            ).epochMilliseconds;
-
-          const shiftMs = requiredForwardShiftMs(
-            link.type,
-            projStartMs,
-            projEndMs,
-            sStartMs,
-            sEndMs,
-          );
-          if (shiftMs <= 0) continue;
-
-          endVisited.add(sId);
-
-          const sNewStart = Temporal.PlainDateTime.from(sStartStr)
-            .add({ milliseconds: shiftMs })
-            .toString({ smallestUnit: "second" });
-          const sNewEnd = Temporal.PlainDateTime.from(sEndStr)
-            .add({ milliseconds: shiftMs })
-            .toString({ smallestUnit: "second" });
-
-          const sConflict = this.checkEventAvailability(s, sNewStart, sNewEnd);
-          if (sConflict) {
-            return {
-              blocked: true,
-              blockedEventTitle: s.title,
-              message: `"${s.title}" would be pushed into unavailable time.`,
-            };
-          }
-
-          endQueue.push({
-            id: sId,
-            projStartMs: sStartMs + shiftMs,
-            projEndMs: sEndMs + shiftMs,
-          });
+        if (
+          this.checkEventAvailability(successor, shift.newStart, shift.newEnd)
+        ) {
+          return {
+            blocked: true,
+            blockedEventTitle: successor.title,
+            message: `"${successor.title}" would be pushed into unavailable time.`,
+          };
         }
       }
     }
@@ -2232,80 +2044,38 @@ export class CalendarCore<
       };
     }
 
-    const visited = new Set<string>();
-    const stack = [sourceId];
-    while (stack.length > 0) {
-      const currentId = stack.pop()!;
-      if (currentId === targetId) {
-        return {
-          blocked: true,
-          error: {
-            eventId: targetId,
-            eventTitle: targetEvent.title,
-            reason: "blocked",
-            message: `circular dependency: ${sourceId} already depends on ${targetId} (directly or indirectly)`,
-            originalStart: toPlainDateTimeString(targetEvent.start),
-            originalEnd: toPlainDateTimeString(targetEvent.end),
-          },
-        };
-      }
-      if (visited.has(currentId)) continue;
-      visited.add(currentId);
-      const currentEvent = this._eventMap.get(currentId);
-      if (currentEvent) {
-        for (const dep of currentEvent.dependsOn ?? []) {
-          stack.push(dep.id);
-        }
-      }
+    if (hasDependencyPath(this._dependencyGraphEvents(), sourceId, targetId)) {
+      return {
+        blocked: true,
+        error: {
+          eventId: targetId,
+          eventTitle: targetEvent.title,
+          reason: "blocked",
+          message: `circular dependency: ${sourceId} already depends on ${targetId} (directly or indirectly)`,
+          originalStart: toPlainDateTimeString(targetEvent.start),
+          originalEnd: toPlainDateTimeString(targetEvent.end),
+        },
+      };
     }
 
-    const tz = this.options.timeZone;
-    const sourceStartStr = toPlainDateTimeString(sourceEvent.start);
-    const sourceEndStr = toPlainDateTimeString(sourceEvent.end);
     const targetStartStr = toPlainDateTimeString(targetEvent.start);
     const targetEndStr = toPlainDateTimeString(targetEvent.end);
 
-    const sStartMs =
-      Temporal.PlainDateTime.from(sourceStartStr).toZonedDateTime(
-        tz,
-      ).epochMilliseconds;
-    const sEndMs =
-      Temporal.PlainDateTime.from(sourceEndStr).toZonedDateTime(
-        tz,
-      ).epochMilliseconds;
-    const tStartMs =
-      Temporal.PlainDateTime.from(targetStartStr).toZonedDateTime(
-        tz,
-      ).epochMilliseconds;
-    const tEndMs =
-      Temporal.PlainDateTime.from(targetEndStr).toZonedDateTime(
-        tz,
-      ).epochMilliseconds;
-
-    const shiftMs = requiredForwardShiftMs(
+    const rescheduled = shiftToSatisfyLink({
       type,
-      sStartMs,
-      sEndMs,
-      tStartMs,
-      tEndMs,
-    );
-    const needsReschedule = shiftMs > 0;
+      predecessor: {
+        start: toPlainDateTimeString(sourceEvent.start),
+        end: toPlainDateTimeString(sourceEvent.end),
+      },
+      successor: { start: targetStartStr, end: targetEndStr },
+      timeZone: this.options.timeZone,
+    });
 
-    let newTargetStart = targetStartStr;
-    let newTargetEnd = targetEndStr;
-
-    if (needsReschedule) {
-      newTargetStart = Temporal.PlainDateTime.from(targetStartStr)
-        .add({ milliseconds: shiftMs })
-        .toString({ smallestUnit: "second" });
-      newTargetEnd = Temporal.PlainDateTime.from(targetEndStr)
-        .add({ milliseconds: shiftMs })
-        .toString({ smallestUnit: "second" });
-
+    if (rescheduled) {
       const validation = this.validateMove(
         targetId,
-        newTargetStart,
-        newTargetEnd,
+        rescheduled.start,
+        rescheduled.end,
       );
       if (validation.blocked) {
         return {
@@ -2319,8 +2089,8 @@ export class CalendarCore<
               `Cannot connect (${type}): the resulting schedule would fall in unavailable time.`,
             originalStart: targetStartStr,
             originalEnd: targetEndStr,
-            attemptedStart: newTargetStart,
-            attemptedEnd: newTargetEnd,
+            attemptedStart: rescheduled.start,
+            attemptedEnd: rescheduled.end,
           },
         };
       }
@@ -2328,7 +2098,7 @@ export class CalendarCore<
 
     this.commitUpdate(targetId, {
       dependsOn: [...currentDeps, { id: sourceId, type }],
-      ...(needsReschedule && { start: newTargetStart, end: newTargetEnd }),
+      ...(rescheduled && { start: rescheduled.start, end: rescheduled.end }),
     } as Partial<Omit<TEvent, "id">>);
 
     return { blocked: false };

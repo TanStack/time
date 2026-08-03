@@ -149,10 +149,34 @@ keeps only its per-day memo cache. `containerHeight` was already dropped in Step
 Still inline in the god class: `getResizeConflicts` re-derives which resources block a span —
 Step 6 consumes these functions instead.
 
-### Step 5 — Dependency module (+ solver seam)
-`schedule` transform stage over 2b — delta-cascade **now**; the stage is shaped to host the
-ADR 0007 fixpoint solver **later** without re-plumbing. Owns `createDependency`,
-`validateMove`, `propagate*`.
+### Step 5 — Dependency module (+ solver seam) ✅
+`schedule` transform stage over 2b (`dependencyModule`), shaped to host the ADR 0007 fixpoint
+solver later: the stage hands a graph snapshot to a pure resolver and turns the returned shifts
+into extra write ops, so swapping delta-cascade for a fixpoint pass touches one call.
+
+Pure rules added to `validation/dependency`:
+
+- `propagateToDependents` / `propagateToPredecessors` — the constraint walkers, extracted from
+  the god class's `propagateEndDelta` / `propagateStartDeltaBackward`. They return
+  `Array<CascadeShift>` and thread each hop's new position, so a chain settles in one pass. The
+  optional `visited` set is shared across calls to stop the two directions from fighting over an
+  event.
+- `shiftToSatisfyLink` — the single-hop version, for `createDependency`.
+- `hasDependencyPath` — cycle check, extracted from `createDependency`'s inline DFS.
+
+The god class now computes shifts, then applies them: `_applyDependencyShifts` is the only place
+that writes and emits. `validateMove` had two more hand-rolled copies of the same walkers (they
+checked availability at each hop instead of collecting shifts) — both are gone, replaced by
+"propagate, then check availability per shift". `computeCascade` stays for the delta-preview path
+(`getAffectedByDelta`).
+
+Behaviour note: validation and apply now walk with identical visited semantics. They differed
+before — the validate copies marked a successor visited only after a positive shift, the apply
+copy marked it on sight — so in a diamond graph the two could disagree about which events move.
+Apply was authoritative; validation follows it now.
+
+Still god-class orchestration until cutover: `createDependency` / `validateMove` own
+fetch/validate/commit/emit and build the user-facing messages.
 
 ### Step 6 — Drag-resize module
 `createResizeController`, `validateResize`, `getResizeProps` — reuse Steps 4 & 5 modules,

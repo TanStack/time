@@ -1,7 +1,9 @@
 import { Temporal } from "@js-temporal/polyfill";
 import { toPlainDateTimeString } from "~/date/parse";
 import {
-  computeCascade,
+  propagateToDependents,
+  propagateToPredecessors,
+  type CascadeShift,
   type DependencyGraphEvent,
   type DependencyLink,
 } from "~/validation/dependency";
@@ -33,6 +35,36 @@ function toGraph(events: Array<DependencyEvent>): Array<DependencyGraphEvent> {
   }));
 }
 
+function withSource(
+  graph: Array<DependencyGraphEvent>,
+  sourceId: string,
+  after: DependencyEvent,
+): Array<DependencyGraphEvent> {
+  return graph.map((event) =>
+    event.id === sourceId
+      ? {
+          ...event,
+          start: toPlainDateTimeString(after.start),
+          end: toPlainDateTimeString(after.end),
+        }
+      : event,
+  );
+}
+
+function applyShifts(
+  graph: Array<DependencyGraphEvent>,
+  shifts: Array<CascadeShift>,
+): Array<DependencyGraphEvent> {
+  if (shifts.length === 0) return graph;
+  const byId = new Map(shifts.map((shift) => [shift.id, shift]));
+  return graph.map((event) => {
+    const shift = byId.get(event.id);
+    return shift
+      ? { ...event, start: shift.newStart, end: shift.newEnd }
+      : event;
+  });
+}
+
 export function dependencyModule<E extends KernelEvent>(
   options: DependencyModuleOptions = {},
 ): Module<E> {
@@ -51,17 +83,42 @@ export function dependencyModule<E extends KernelEvent>(
 
           for (const op of batch.ops) {
             if (op.kind !== "update") continue;
-            const deltaMs =
-              epochMs(op.after.start, timeZone) -
-              epochMs(op.before.start, timeZone);
-            if (deltaMs === 0) continue;
 
-            const shifts = computeCascade({
-              sourceId: op.id,
-              deltaMs,
-              events: toGraph(ctx.getEvents() as Array<DependencyEvent>),
-              timeZone,
-            });
+            const startChanged =
+              epochMs(op.after.start, timeZone) !==
+              epochMs(op.before.start, timeZone);
+            const endChanged =
+              epochMs(op.after.end, timeZone) !==
+              epochMs(op.before.end, timeZone);
+            if (!startChanged && !endChanged) continue;
+
+            const graph = withSource(
+              toGraph(ctx.getEvents() as Array<DependencyEvent>),
+              op.id,
+              op.after as DependencyEvent,
+            );
+            const visited = new Set([op.id]);
+            const shifts: Array<CascadeShift> = [];
+
+            if (startChanged) {
+              shifts.push(
+                ...propagateToPredecessors({
+                  sourceId: op.id,
+                  events: graph,
+                  timeZone,
+                  visited,
+                }),
+              );
+            }
+
+            shifts.push(
+              ...propagateToDependents({
+                sourceId: op.id,
+                events: applyShifts(graph, shifts),
+                timeZone,
+                visited,
+              }),
+            );
 
             for (const shift of shifts) {
               const before = ctx.getEvent(shift.id);

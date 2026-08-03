@@ -1686,6 +1686,80 @@ describe("CalendarCore", () => {
       expect(c.start).toBe(`${DATE_MON}T13:00:00`);
     });
 
+    test("pulls a predecessor back when the dependent moves earlier", () => {
+      const cal = createCalendar({
+        timeZone: "UTC",
+        events: [
+          {
+            id: "p",
+            title: "P",
+            start: `${DATE_MON}T10:00:00`,
+            end: `${DATE_MON}T11:00:00`,
+            resources: [weekdayResource],
+          },
+          {
+            id: "s",
+            title: "S",
+            start: `${DATE_MON}T11:00:00`,
+            end: `${DATE_MON}T12:00:00`,
+            resources: [weekdayResource],
+            dependsOn: [{ id: "p", type: "FS" }],
+          },
+        ],
+        resources: [weekdayResource],
+      });
+
+      cal.commitUpdate("s", {
+        start: `${DATE_MON}T10:00:00`,
+        end: `${DATE_MON}T11:00:00`,
+      });
+
+      const p = cal.getEvents().find((e) => e.id === "p")!;
+      expect(p.start).toBe(`${DATE_MON}T09:00:00`);
+      expect(p.end).toBe(`${DATE_MON}T10:00:00`);
+    });
+
+    test("pulls a whole predecessor chain back", () => {
+      const cal = createCalendar({
+        timeZone: "UTC",
+        events: [
+          {
+            id: "q",
+            title: "Q",
+            start: `${DATE_MON}T09:00:00`,
+            end: `${DATE_MON}T10:00:00`,
+            resources: [weekdayResource],
+          },
+          {
+            id: "p",
+            title: "P",
+            start: `${DATE_MON}T10:00:00`,
+            end: `${DATE_MON}T11:00:00`,
+            resources: [weekdayResource],
+            dependsOn: [{ id: "q", type: "FS" }],
+          },
+          {
+            id: "s",
+            title: "S",
+            start: `${DATE_MON}T11:00:00`,
+            end: `${DATE_MON}T12:00:00`,
+            resources: [weekdayResource],
+            dependsOn: [{ id: "p", type: "FS" }],
+          },
+        ],
+        resources: [weekdayResource],
+      });
+
+      cal.commitUpdate("s", {
+        start: `${DATE_MON}T10:00:00`,
+        end: `${DATE_MON}T11:00:00`,
+      });
+
+      const byId = new Map(cal.getEvents().map((e) => [e.id, e]));
+      expect(byId.get("p")!.start).toBe(`${DATE_MON}T09:00:00`);
+      expect(byId.get("q")!.start).toBe(`${DATE_MON}T08:00:00`);
+    });
+
     test("shifts multiple dependents of the same predecessor", () => {
       const cal = createCalendar({
         timeZone: "UTC",
