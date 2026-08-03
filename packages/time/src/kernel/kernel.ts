@@ -1,3 +1,4 @@
+import { invertWriteOp } from "./history";
 import { StageRegistry } from "./pipeline";
 import {
   isIntentOp,
@@ -176,9 +177,7 @@ export class Kernel<E extends KernelEvent> {
   }
 
   private invert(op: ConcreteWriteOp<E>) {
-    if (op.kind === "add") this.events.delete(op.event.id);
-    else if (op.kind === "update") this.events.set(op.id, op.before);
-    else this.events.set(op.id, op.event);
+    this.apply(invertWriteOp(op));
   }
 
   private writeCtx(): WriteCtx<E> {

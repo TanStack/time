@@ -32,7 +32,10 @@ Prerequisite for everything. Nothing user-facing.
       `toLayoutStyle` for `%` output. `getEventProps` / `getTimelineLayout` delegate to the
       pure cores (`layoutDaySegments`, `layoutTimelineRange`) and expose raw fractions
       (ADR 0003).
-- [ ] Undo/redo → **command diffs**, not full-event snapshots (memory).
+- [ ] Undo/redo → **command diffs**, not full-event snapshots (memory). Kernel side done:
+      `undoModule` records one entry per committed write batch as inverse ops
+      (`invertWriteOps`), and `history/undo` / `history/redo` intents replay them.
+      `CalendarCore` keeps its snapshot stacks until the cutover gives it batches.
 
 ## Phase 1 — Alpha (Calendar product, React)
 

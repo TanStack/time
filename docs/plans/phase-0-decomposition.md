@@ -206,9 +206,27 @@ Coverage note: neutering `checkDaySpan` only broke 2 of 253 calendar tests, so t
 branch was untested. Added a characterization test that pins the "conflicts with … (capacity)"
 message, verified against the pre-extraction implementation.
 
-### Step 7 — Undo module
-`emit` stage. Convert full-snapshot stacks → **command diffs** (ROADMAP Phase 0 item). Wraps
-one write batch = one undo entry.
+### Step 7 — Undo module ✅
+`undoModule` records **command diffs**, not snapshots: its `emit` contribution stores one entry
+per committed batch (`{reason, ops}`), so a resize plus the dependency cascade it triggered undo
+together. Recording in `emit` means a vetoed write leaves no entry.
+
+Undo and redo are intents (`history/undo`, `history/redo`) claimed in a new
+**`history-materialize`** stage, first in `WRITE_TRANSFORM_ORDER`. Undo pushes
+`invertWriteOps(entry.ops)`, redo replays the entry as-is, and both go through the normal write
+path — so an undo is validated and cascaded like any other write instead of force-writing state.
+An intent with an empty stack expands to nothing and commits nothing.
+
+`invertWriteOp` / `invertWriteOps` / `concreteWriteOps` live in `kernel/history.ts`;
+`Kernel.rollback` uses the same inversion now rather than its own copy. Note `rollback` still
+bypasses the stages, so it does not touch the module's stacks — it is the kernel's own escape
+hatch, not user-facing undo.
+
+The module exposes `canUndo` / `canRedo` / `undoStack` / `redoStack` / `clearHistory` alongside
+its contributions, and takes a `limit` that drops the oldest entries.
+
+`CalendarCore` still snapshots the whole event array per write; converting it needs the batch
+abstraction it only gets at cutover, so its stacks stay as they are for now.
 
 ### Step 8 — Views + `%` layout (ADR 0003) ✅ (core landed)
 `projection/layout.ts` owns the logical layout: `layoutDaySegments(segments) → {startFraction,
