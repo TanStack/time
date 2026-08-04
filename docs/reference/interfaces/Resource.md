@@ -5,7 +5,7 @@ title: Resource
 
 # Interface: Resource
 
-Defined in: [calendar/types.ts:79](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L79)
+Defined in: [calendar/types.ts:78](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L78)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/types.ts:79](https://github.com/TanStack/time/blob/main/pa
 optional availability: Availability[];
 ```
 
-Defined in: [calendar/types.ts:82](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L82)
+Defined in: [calendar/types.ts:81](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L81)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [calendar/types.ts:82](https://github.com/TanStack/time/blob/main/pa
 optional buffer: object;
 ```
 
-Defined in: [calendar/types.ts:84](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L84)
+Defined in: [calendar/types.ts:83](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L83)
 
 #### after?
 
@@ -47,7 +47,7 @@ optional before: number;
 optional capacity: number[];
 ```
 
-Defined in: [calendar/types.ts:83](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L83)
+Defined in: [calendar/types.ts:82](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L82)
 
 ***
 
@@ -57,7 +57,7 @@ Defined in: [calendar/types.ts:83](https://github.com/TanStack/time/blob/main/pa
 id: string;
 ```
 
-Defined in: [calendar/types.ts:80](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L80)
+Defined in: [calendar/types.ts:79](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L79)
 
 ***
 
@@ -67,4 +67,4 @@ Defined in: [calendar/types.ts:80](https://github.com/TanStack/time/blob/main/pa
 label: string;
 ```
 
-Defined in: [calendar/types.ts:81](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L81)
+Defined in: [calendar/types.ts:80](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L80)

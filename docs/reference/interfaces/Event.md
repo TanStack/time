@@ -5,7 +5,7 @@ title: Event
 
 # Interface: Event\<TResource\>
 
-Defined in: [calendar/types.ts:101](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L101)
+Defined in: [calendar/types.ts:100](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L100)
 
 ## Type Parameters
 
@@ -21,7 +21,7 @@ Defined in: [calendar/types.ts:101](https://github.com/TanStack/time/blob/main/p
 optional _occurrenceIndex: number;
 ```
 
-Defined in: [calendar/types.ts:132](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L132)
+Defined in: [calendar/types.ts:131](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L131)
 
 0-based index of this occurrence within the recurring series.
 
@@ -33,7 +33,7 @@ Defined in: [calendar/types.ts:132](https://github.com/TanStack/time/blob/main/p
 optional _occurrenceOriginalStart: string;
 ```
 
-Defined in: [calendar/types.ts:134](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L134)
+Defined in: [calendar/types.ts:133](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L133)
 
 Original occurrence start before EXDATE/override changes.
 
@@ -45,7 +45,7 @@ Original occurrence start before EXDATE/override changes.
 optional _originalEnd: string;
 ```
 
-Defined in: [calendar/types.ts:125](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L125)
+Defined in: [calendar/types.ts:124](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L124)
 
 Original end time before splitting (only set on split segments of multi-day events)
 
@@ -57,7 +57,7 @@ Original end time before splitting (only set on split segments of multi-day even
 optional _originalStart: string;
 ```
 
-Defined in: [calendar/types.ts:123](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L123)
+Defined in: [calendar/types.ts:122](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L122)
 
 Original start time before splitting (only set on split segments of multi-day events)
 
@@ -69,7 +69,7 @@ Original start time before splitting (only set on split segments of multi-day ev
 optional _recurringMasterId: string;
 ```
 
-Defined in: [calendar/types.ts:130](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L130)
+Defined in: [calendar/types.ts:129](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L129)
 
 ID of the master recurring event this occurrence was generated from.
 Only present on ephemeral occurrence instances (index > 0).
@@ -82,7 +82,7 @@ Only present on ephemeral occurrence instances (index > 0).
 optional allDay: boolean;
 ```
 
-Defined in: [calendar/types.ts:121](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L121)
+Defined in: [calendar/types.ts:120](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L120)
 
 When true, event spans full day(s) and is rendered in the all-day strip
 separately from timed events. `start` and `end` are still ISO datetime strings;
@@ -98,7 +98,7 @@ are split per-day like regular events.
 optional consumption: number[];
 ```
 
-Defined in: [calendar/types.ts:107](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L107)
+Defined in: [calendar/types.ts:106](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L106)
 
 ***
 
@@ -108,7 +108,7 @@ Defined in: [calendar/types.ts:107](https://github.com/TanStack/time/blob/main/p
 optional dependsOn: EventDependency[];
 ```
 
-Defined in: [calendar/types.ts:111](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L111)
+Defined in: [calendar/types.ts:110](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L110)
 
 Dependency links to other events this event is constrained by.
 Each link has an `id` (predecessor event) and a `type` (FS/SS/FF/SF).
@@ -122,7 +122,7 @@ When a predecessor's relevant anchor shifts, this event shifts by the same delta
 end: EventDateTimeInput;
 ```
 
-Defined in: [calendar/types.ts:104](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L104)
+Defined in: [calendar/types.ts:103](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L103)
 
 ***
 
@@ -132,7 +132,7 @@ Defined in: [calendar/types.ts:104](https://github.com/TanStack/time/blob/main/p
 id: string;
 ```
 
-Defined in: [calendar/types.ts:102](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L102)
+Defined in: [calendar/types.ts:101](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L101)
 
 ***
 
@@ -142,7 +142,7 @@ Defined in: [calendar/types.ts:102](https://github.com/TanStack/time/blob/main/p
 optional recurrence: RecurrenceRule<TResource>;
 ```
 
-Defined in: [calendar/types.ts:113](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L113)
+Defined in: [calendar/types.ts:112](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L112)
 
 Defines how and when this event repeats.
 
@@ -154,7 +154,7 @@ Defines how and when this event repeats.
 optional resources: (string | TResource)[];
 ```
 
-Defined in: [calendar/types.ts:106](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L106)
+Defined in: [calendar/types.ts:105](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L105)
 
 ***
 
@@ -164,7 +164,7 @@ Defined in: [calendar/types.ts:106](https://github.com/TanStack/time/blob/main/p
 start: EventDateTimeInput;
 ```
 
-Defined in: [calendar/types.ts:103](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L103)
+Defined in: [calendar/types.ts:102](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L102)
 
 ***
 
@@ -174,4 +174,4 @@ Defined in: [calendar/types.ts:103](https://github.com/TanStack/time/blob/main/p
 title: string;
 ```
 
-Defined in: [calendar/types.ts:105](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L105)
+Defined in: [calendar/types.ts:104](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L104)

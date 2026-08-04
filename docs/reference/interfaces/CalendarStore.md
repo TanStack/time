@@ -5,27 +5,31 @@ title: CalendarStore
 
 # Interface: CalendarStore
 
-Defined in: [calendar/types.ts:165](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L165)
+Defined in: [calendar/types.ts:163](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L163)
 
 ## Properties
 
 ### activeDate
 
 ```ts
-activeDate: PlainDate;
+activeDate: string;
 ```
 
 Defined in: [calendar/types.ts:167](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L167)
+
+ISO date (YYYY-MM-DD) currently focused.
 
 ***
 
 ### currentPeriod
 
 ```ts
-currentPeriod: PlainDate;
+currentPeriod: string;
 ```
 
-Defined in: [calendar/types.ts:166](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L166)
+Defined in: [calendar/types.ts:165](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L165)
+
+ISO date (YYYY-MM-DD) the view is anchored to.
 
 ***
 

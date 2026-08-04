@@ -11,7 +11,7 @@ type GroupDaysByProps<TResource, TEvent> =
 | GroupDaysByWeekProps<TResource, TEvent>;
 ```
 
-Defined in: [calendar/groupDaysBy.ts:30](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/groupDaysBy.ts#L30)
+Defined in: [calendar/groupDaysBy.ts:43](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/groupDaysBy.ts#L43)
 
 ## Type Parameters
 

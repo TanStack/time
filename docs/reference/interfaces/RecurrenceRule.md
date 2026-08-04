@@ -5,7 +5,7 @@ title: RecurrenceRule
 
 # Interface: RecurrenceRule\<TResource\>
 
-Defined in: [calendar/types.ts:41](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L41)
+Defined in: [calendar/types.ts:40](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L40)
 
 Defines the repetition rule for a recurring event.
 Occurrences are expanded automatically by the calendar within the current viewport.
@@ -24,7 +24,7 @@ Occurrences are expanded automatically by the calendar within the current viewpo
 optional byWeekday: number[];
 ```
 
-Defined in: [calendar/types.ts:63](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L63)
+Defined in: [calendar/types.ts:62](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L62)
 
 For `weekly` frequency: ISO weekdays (1 = Mon … 7 = Sun) to repeat on.
 Defaults to the weekday of the original event start.
@@ -37,7 +37,7 @@ Defaults to the weekday of the original event start.
 optional count: number;
 ```
 
-Defined in: [calendar/types.ts:58](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L58)
+Defined in: [calendar/types.ts:57](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L57)
 
 Maximum total occurrences to generate (including the original).
 Only used when `until` is not set.
@@ -50,7 +50,7 @@ Only used when `until` is not set.
 optional exDates: EventDateTimeInput[];
 ```
 
-Defined in: [calendar/types.ts:65](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L65)
+Defined in: [calendar/types.ts:64](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L64)
 
 Specific occurrence starts to exclude (EXDATE). Date-only values match by occurrence date.
 
@@ -62,7 +62,7 @@ Specific occurrence starts to exclude (EXDATE). Date-only values match by occurr
 frequency: RecurrenceFrequency;
 ```
 
-Defined in: [calendar/types.ts:43](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L43)
+Defined in: [calendar/types.ts:42](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L42)
 
 How often the event repeats.
 
@@ -74,7 +74,7 @@ How often the event repeats.
 optional interval: number;
 ```
 
-Defined in: [calendar/types.ts:48](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L48)
+Defined in: [calendar/types.ts:47](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L47)
 
 Repeat every N frequencies (default 1).
 E.g. `{ frequency: 'weekly', interval: 2 }` = every other week.
@@ -87,7 +87,7 @@ E.g. `{ frequency: 'weekly', interval: 2 }` = every other week.
 optional overrides: RecurrenceOverride<TResource>[];
 ```
 
-Defined in: [calendar/types.ts:67](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L67)
+Defined in: [calendar/types.ts:66](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L66)
 
 Per-occurrence replacements keyed by original occurrence start.
 
@@ -99,7 +99,7 @@ Per-occurrence replacements keyed by original occurrence start.
 optional until: string;
 ```
 
-Defined in: [calendar/types.ts:53](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L53)
+Defined in: [calendar/types.ts:52](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L52)
 
 ISO date string (YYYY-MM-DD) — no occurrences start on or after this date.
 Takes precedence over `count`.
