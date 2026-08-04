@@ -327,11 +327,51 @@ Kernel changes this needed:
 Fetch paths (`fetchEvents`) push straight into `options.events`, so they re-seed the kernel
 (`_syncKernel`) instead of writing — loading data is not a user write and must not enter history.
 
-Remaining slices: move `getMasterEvent` / `goTo*Occurrence` onto the recurrence module, route
-`editRecurringEvent` / `removeRecurringEvent` and the resize controller through intents (they
-build ops by hand today), mount `availabilityModule` so writes are vetoed by the pipeline rather
-than pre-checked, and hand event storage (`_eventMap`, `_dateIndex`, `_loadedRanges`) to the
-kernel so `_syncKernel` and the mirroring in `_write` can go.
+Slice 3 ✅ — **recurrence writes go through intents.** `recurrenceModule` is mounted on the
+kernel, and `editRecurringEvent` / `removeRecurringEvent` write `recurrence/edit-occurrence` and
+`recurrence/remove-occurrence` intents instead of calling `materializeRecurringEdit` /
+`materializeRecurringRemove` themselves and hand-assembling ops. `_commitRecurringUpdate` is gone;
+the god class reads the split event back off the committed batch for its `event:added` emit.
+
+Both sides ran the same pure core before, so the ops are identical — the point is that the
+duplicate call sites are gone. The branches that were never `_commitRecurringUpdate`
+(`scope: "all"`, and `thisAndFollowing` at the master's own start) still route through
+`editEvent` / `removeEvent`, which carry the validation the module's equivalent branches do not.
+
+Occurrence navigation moved to pure `~/recurrence` helpers rather than a module, since navigation
+belongs to `DateCore`: `masterIdOf` (the `_12` suffix rule, previously an inline regex),
+`nextOccurrenceDate` and `previousOccurrenceDate` (horizon-bounded window expansion). Each is
+callable with plain args and covered directly.
+
+Slice 4 ✅ — **the kernel owns the events.** `options.events` is a lazily cached view over
+`kernel.getEvents()`, rebuilt only when a write lands; assigning to it routes to `setEvents`.
+Nothing in `CalendarCore` touches an event array any more (`this.options.events` appears zero
+times), and `_write` no longer mirrors ops into one — it just maintains the derived indexes and
+drops the cached view.
+
+`Kernel.load(events, {replace})` is the seam for data that is **not** a user write: `fetchEvents`
+merges pages through it, so lazy loading stays out of undo history without rebuilding the kernel
+(the previous `_syncKernel` threw the kernel away on every fetch). `setEvents` seeds a fresh
+kernel, which is also what clears history.
+
+Reads that used to scan the array (`options.events.find(...)` in `validateResize`) now use
+`_eventMap`, which was already maintained beside it.
+
+Not done, and deliberately: **the resize controller keeps committing through `commitUpdate`**
+rather than a `resize/apply` intent. It resolves the span itself during the drag from pixel
+geometry and day rects, so it holds a start/end, not an `{edge, deltaMinutes}` — feeding a delta
+back through the module would re-snap and re-clamp what the preview already decided. The intent is
+the right entry point for non-DOM callers (server, keyboard, tests); the controller is not one.
+
+Also not done: mounting `availabilityModule` on the god class's kernel. `commitAdd` / `commitUpdate`
+are *commit* APIs — validation happens earlier in `editEvent` / `validateResize`, which return
+structured results. A veto stage would turn those into silent no-ops. The veto belongs on the
+assembly that replaces `CalendarCore`, where the write entry point validates and reports.
+
+Remaining for the cutover: `_eventMap` / `_dateIndex` / `_dependentsMap` still live on the class as
+projection-side indexes, and `_loadedRanges` still tracks fetch coverage there. Those move when the
+kernel grows a projection cache and a sourcing module (ADR 0006), which is Phase 1 work, not
+Phase 0.
 
 ---
 
@@ -353,3 +393,27 @@ Kernel constructs with no modules and does plain CRUD + projection. Calendar pro
 kernel + {recurrence, availability, dependency, drag-resize, undo} + day/week/timeline views.
 Unused modules tree-shake. Validation core imports and runs with no store. All 239 tests
 green; new purity + `%`-layout tests added.
+
+### Where it landed
+
+| Criterion | State |
+|---|---|
+| Kernel alone does CRUD + projection | ✅ `new Kernel()` with no modules, covered in `kernel.test.ts` |
+| Modules exist per rule cluster | ✅ recurrence, availability, dependency, resize, undo, layout |
+| Calendar product = kernel + modules | ⚠️ `CalendarCore` mounts recurrence + dependency + undo. `availabilityModule` is deliberately not mounted (its `commit*` methods are post-validation APIs; a veto would make them silent no-ops) and the resize controller commits a resolved span rather than a `resize/apply` intent |
+| Unused modules tree-shake | ✅ `sideEffects: false`, one output file per module |
+| Validation core runs with no store | ✅ enforced by `validation/tests/purity.test.ts`, which fails if a pure core imports the store, client, kernel or `CalendarCore`, or touches the DOM |
+| Tests green | ✅ 1000 (was 239 at the start of Phase 0), 264 of them the `CalendarCore` characterization suite |
+
+`CalendarCore`: 3,872 → 2,755 lines. What remains there is orchestration (validate-then-commit
+entry points, user-facing messages, emits) and read-side indexes (`_eventMap`, `_dateIndex`,
+`_dependentsMap`, `_loadedRanges`) — no scheduling, availability, recurrence or layout rules.
+
+Deferred out of Phase 0 with a home already assigned:
+
+- Date Primitives still return `{ value, options, asDate, asZonedDateTime }`, contradicting
+  ADR 0002 → Phase 1 audit item.
+- Read-side indexes and `_loadedRanges` move when the kernel grows a projection cache and a
+  sourcing module (ADR 0006) → Phase 1.
+- `overlappingEvents` (whole-map, time-overlap) vs `layout.overlapping` (day + track scoped) still
+  read as the same thing and are not; renaming is breaking, so it needs a call.

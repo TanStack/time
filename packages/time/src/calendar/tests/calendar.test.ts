@@ -5881,6 +5881,68 @@ describe("CalendarCore", () => {
     });
   });
 
+  describe("event storage", () => {
+    const seed = () =>
+      createCalendar({
+        events: [
+          {
+            id: "e1",
+            title: "E1",
+            start: `${DATE_MON}T09:00:00`,
+            end: `${DATE_MON}T10:00:00`,
+          } as TestEvent,
+        ],
+      });
+
+    test("reads options.events back as the current collection", () => {
+      const cal = seed();
+
+      expect(cal.options.events?.map((e) => e.id)).toEqual(["e1"]);
+    });
+
+    test("reuses the same array until a write lands", () => {
+      const cal = seed();
+
+      expect(cal.options.events).toBe(cal.options.events);
+
+      const before = cal.options.events;
+      cal.commitAdd({
+        id: "e2",
+        title: "E2",
+        start: `${DATE_MON}T11:00:00`,
+        end: `${DATE_MON}T12:00:00`,
+      } as TestEvent);
+
+      expect(cal.options.events).not.toBe(before);
+      expect(cal.options.events?.map((e) => e.id)).toEqual(["e1", "e2"]);
+    });
+
+    test("treats assigning options.events as a replacement", () => {
+      const cal = seed();
+
+      cal.options.events = [
+        {
+          id: "other",
+          title: "Other",
+          start: `${DATE_TUE}T09:00:00`,
+          end: `${DATE_TUE}T10:00:00`,
+        } as TestEvent,
+      ];
+
+      expect(cal.getEvents().map((e) => e.id)).toEqual(["other"]);
+      expect(cal.getEventsByDate(DATE_TUE)).toHaveLength(1);
+      expect(cal.canUndo()).toBe(false);
+    });
+
+    test("keeps a removed event out of the collection", () => {
+      const cal = seed();
+
+      cal.removeEvent("e1");
+
+      expect(cal.options.events).toEqual([]);
+    });
+  });
+
   describe("setEvents", () => {
     test("replaces events and invalidates availability caches", () => {
       const res: TestResource = {

@@ -23,6 +23,41 @@ describe("Kernel", () => {
       expect(kernel.getEvents()).toHaveLength(1);
       expect(kernel.getEvent("a")?.title).toBe("a");
     });
+
+    it("merges loaded events over the ones already held", () => {
+      const kernel = new Kernel<TestEvent>({
+        events: [evt("a", "2026-01-01T09:00:00Z", "2026-01-01T10:00:00Z")],
+      });
+
+      kernel.load([
+        evt("a", "2026-01-01T09:00:00Z", "2026-01-01T11:00:00Z", "renamed"),
+        evt("b", "2026-01-02T09:00:00Z", "2026-01-02T10:00:00Z"),
+      ]);
+
+      expect(kernel.getEvents().map((e) => e.id)).toEqual(["a", "b"]);
+      expect(kernel.getEvent("a")?.title).toBe("renamed");
+    });
+
+    it("swaps the whole collection when loading with replace", () => {
+      const kernel = new Kernel<TestEvent>({
+        events: [evt("a", "2026-01-01T09:00:00Z", "2026-01-01T10:00:00Z")],
+      });
+
+      kernel.load([evt("b", "2026-01-02T09:00:00Z", "2026-01-02T10:00:00Z")], {
+        replace: true,
+      });
+
+      expect(kernel.getEvents().map((e) => e.id)).toEqual(["b"]);
+    });
+
+    it("loads without producing a batch to roll back", () => {
+      const kernel = new Kernel<TestEvent>();
+
+      kernel.load([evt("a", "2026-01-01T09:00:00Z", "2026-01-01T10:00:00Z")]);
+
+      expect(kernel.rollback()).toBeNull();
+      expect(kernel.getEvents()).toHaveLength(1);
+    });
   });
 
   describe("projection pipeline", () => {

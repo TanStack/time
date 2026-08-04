@@ -7,9 +7,10 @@ geometry, editors, arrows, histograms).
 
 The phase ordering is gated by two rules the team confirmed:
 
-1. **Kernel first.** No new features land on the 3,872-line `CalendarCore` monolith. The
-   ADR 0001 decomposition happens **before** the alpha; alpha slips rather than shipping the
-   god class (resolves the "alpha now vs freeze features" tension in favour of freeze).
+1. **Kernel first.** No new features land on the `CalendarCore` monolith (3,872 lines when this
+   was written, 2,755 once Phase 0 landed). The ADR 0001 decomposition happens **before** the
+   alpha; alpha slips rather than shipping the god class (resolves the "alpha now vs freeze
+   features" tension in favour of freeze).
 2. **Breaking changes are fine pre-1.0.** Calendar-hierarchy (ADR 0008) and solver-driven
    event-model additions (ADR 0007) land as breaking changes before/at the alpha so
    consumers migrate once.
@@ -20,10 +21,17 @@ The phase ordering is gated by two rules the team confirmed:
 
 Prerequisite for everything. Nothing user-facing.
 
-- [ ] Decompose `CalendarCore` into **one feature-agnostic kernel + modules as pipeline
-      stages** (ADR 0001).
-- [ ] Extract **pure, isomorphic validation core** (`validate(write, events, config) →
-      conflicts`) — no store/viewport/DOM (ADR 0004).
+- [x] Decompose `CalendarCore` into **one feature-agnostic kernel + modules as pipeline
+      stages** (ADR 0001). `Kernel` + `{recurrence, availability, dependency, resize, undo,
+      layout}` modules; `CalendarCore` writes through the kernel and the kernel owns the events.
+      What is left on the class is orchestration and read-side indexes, not rules — see
+      `docs/plans/phase-0-decomposition.md`.
+- [x] Extract **pure, isomorphic validation core** — no store/viewport/DOM (ADR 0004). The rules
+      live in `validation/{availability,dependency}`, `recurrence/`, and `projection/`, called
+      with plain serializable args; the kernel's veto stage is the `validate(write, events,
+      config) → conflicts` entry point (`availabilityModule`). A test walks those directories and
+      fails if any of them imports the store, the event client, the kernel or `CalendarCore`, or
+      touches the DOM.
 - [x] Migrate boundary types: `currentPeriod` / `activeDate` are ISO `YYYY-MM-DD` strings and
       `Day.date` is gone (`Day.isoDate` was already the documented field), so no Temporal value
       crosses the calendar boundary (ADR 0002). The `{ value, options, asZonedDateTime }` shape

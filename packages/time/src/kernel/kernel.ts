@@ -81,6 +81,13 @@ export class Kernel<E extends KernelEvent> {
     return this;
   }
 
+  load(events: Array<E>, options: { replace?: boolean } = {}): void {
+    if (options.replace) this.events.clear();
+    for (const event of events) {
+      this.events.set(event.id, event);
+    }
+  }
+
   getEvents(): Array<E> {
     return [...this.events.values()];
   }

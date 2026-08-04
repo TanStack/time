@@ -10,16 +10,20 @@ import type { EventLayout, LayoutOptions, LayoutStyle } from "~/projection";
 import {
   durationPreservingEnd,
   expandRecurringEvent,
+  masterIdOf,
+  nextOccurrenceDate,
+  previousOccurrenceDate,
   getRecurringOccurrence,
-  materializeRecurringEdit,
-  materializeRecurringRemove,
   normalizeRecurrenceRule,
   resolveOccurrenceStart,
 } from "~/recurrence";
 import { Kernel } from "~/kernel";
 import {
   dependencyModule,
+  editOccurrenceIntent,
+  recurrenceModule,
   redoIntent,
+  removeOccurrenceIntent,
   undoIntent,
   undoModule,
 } from "~/kernel/modules";
@@ -93,6 +97,23 @@ export type * from "./types";
 export * from "./date-core";
 
 type WritableEvent<TEvent> = TEvent & KernelEvent;
+
+type RecurrenceEmit =
+  | {
+      type: "updated";
+      eventId: string;
+      eventTitle: string;
+      start: string;
+      end: string;
+      updates: Record<string, unknown>;
+    }
+  | {
+      type: "removed";
+      eventId: string;
+      eventTitle: string;
+      start: string;
+      end: string;
+    };
 
 /**
  * Configuration options for initializing a CalendarCore instance, allowing customization
@@ -386,6 +407,7 @@ export class CalendarCore<
   private _dateIndex = new Map<string, Set<string>>();
   private _loadedRanges: Array<{ start: string; end: string }> = [];
   private _kernel!: Kernel<WritableEvent<TEvent>>;
+  private _eventsCache: Array<TEvent> | null = null;
   private _history!: Module<WritableEvent<TEvent>> &
     UndoHistory<WritableEvent<TEvent>>;
 
@@ -430,24 +452,39 @@ export class CalendarCore<
   constructor(options: CalendarCoreOptions<TResource, TEvent>) {
     super(options);
     Object.assign(this.options, {
-      events: options.events?.map((e) => this.normalizeEvent(e)) || null,
       resources: options.resources || null,
       fetchEvents: options.fetchEvents,
     });
-    this.options.events?.forEach((e) => this._indexAddEvent(e));
-    this._seedKernel();
+
+    const seed = options.events?.map((e) => this.normalizeEvent(e)) ?? [];
+    this._seedKernel(seed);
+    Object.defineProperty(this.options, "events", {
+      get: () => this._eventsView(),
+      set: (next: Array<TEvent> | null) => this.setEvents(next),
+      enumerable: true,
+      configurable: true,
+    });
+    seed.forEach((e) => this._indexAddEvent(e));
   }
 
-  private _seedKernel() {
+  private _load(events: Array<TEvent>) {
+    this._kernel.load(events as Array<WritableEvent<TEvent>>);
+    this._eventsCache = null;
+  }
+
+  private _eventsView(): Array<TEvent> {
+    this._eventsCache ??= this._kernel.getEvents() as Array<TEvent>;
+    return this._eventsCache;
+  }
+
+  private _seedKernel(events: Array<TEvent>) {
     this._history = undoModule<WritableEvent<TEvent>>();
-    this._syncKernel();
-  }
-
-  private _syncKernel() {
+    this._eventsCache = null;
     this._kernel = new Kernel<WritableEvent<TEvent>>({
-      events: (this.options.events ?? []) as Array<WritableEvent<TEvent>>,
+      events: events as Array<WritableEvent<TEvent>>,
     })
       .use(this._history)
+      .use(recurrenceModule<WritableEvent<TEvent>>())
       .use(
         dependencyModule<WritableEvent<TEvent>>({
           timeZone: this.options.timeZone,
@@ -653,17 +690,17 @@ export class CalendarCore<
           .fetchEvents({ start: rangeStart, end: rangeEnd })
           .then((fetchedEvents) => {
             if (fetchedEvents.length > 0) {
-              if (!this.options.events) this.options.events = [];
               const newlyFetchedEvents: Array<{
                 eventId: string;
                 eventTitle: string;
                 start: string;
                 end: string;
               }> = [];
+              const loaded: Array<TEvent> = [];
               for (const raw of fetchedEvents) {
                 if (this._eventMap.has(raw.id)) continue;
                 const normalized = this.normalizeEvent(raw);
-                this.options.events.push(normalized);
+                loaded.push(normalized);
                 this._indexAddEvent(normalized);
                 newlyFetchedEvents.push({
                   eventId: normalized.id,
@@ -673,7 +710,7 @@ export class CalendarCore<
                 });
               }
               if (newlyFetchedEvents.length > 0) {
-                this._syncKernel();
+                this._load(loaded);
                 getTimeClient().emit("events:set", {
                   events: newlyFetchedEvents,
                 });
@@ -760,17 +797,17 @@ export class CalendarCore<
     try {
       const fetchedEvents = await this.options.fetchEvents({ start, end });
       if (fetchedEvents.length > 0) {
-        if (!this.options.events) this.options.events = [];
         const newlyFetchedEvents: Array<{
           eventId: string;
           eventTitle: string;
           start: string;
           end: string;
         }> = [];
+        const loaded: Array<TEvent> = [];
         for (const raw of fetchedEvents) {
           if (this._eventMap.has(raw.id)) continue;
           const normalized = this.normalizeEvent(raw);
-          this.options.events.push(normalized);
+          loaded.push(normalized);
           this._indexAddEvent(normalized);
           newlyFetchedEvents.push({
             eventId: normalized.id,
@@ -780,7 +817,7 @@ export class CalendarCore<
           });
         }
         if (newlyFetchedEvents.length > 0) {
-          this._syncKernel();
+          this._load(loaded);
           getTimeClient().emit("events:set", {
             events: newlyFetchedEvents,
           });
@@ -914,30 +951,24 @@ export class CalendarCore<
   }
 
   private _applyOps(ops: Array<InvertibleOp<TEvent>>) {
-    const events = this.options.events;
-    if (!events) return;
+    this._eventsCache = null;
 
     for (const op of ops) {
       if (op.kind === "add") {
-        events.push(op.event);
         this._indexAddEvent(op.event);
         continue;
       }
 
       if (op.kind === "remove") {
         const current = this._eventMap.get(op.id);
-        const index = current ? events.indexOf(current) : -1;
-        if (index === -1) continue;
-        events.splice(index, 1);
-        this._indexRemoveEvent(current!);
+        if (!current) continue;
+        this._indexRemoveEvent(current);
         continue;
       }
 
       const current = this._eventMap.get(op.id);
-      const index = current ? events.indexOf(current) : -1;
-      if (index === -1) continue;
-      events[index] = op.after;
-      this._indexUpdateEvent(current!, op.after);
+      if (!current) continue;
+      this._indexUpdateEvent(current, op.after);
     }
 
     this.store.setState((prev) => ({
@@ -1000,9 +1031,6 @@ export class CalendarCore<
   }
 
   commitAdd(event: TEvent) {
-    if (!this.options.events) {
-      this.options.events = [];
-    }
     const normalized = this.normalizeEvent(event);
     this._write([{ kind: "add", event: normalized }], "add");
 
@@ -1015,13 +1043,8 @@ export class CalendarCore<
   }
 
   commitUpdate(id: Event["id"], updates: Partial<Omit<TEvent, "id">>) {
-    if (!this.options.events) return;
-
     const existingEvent = this._eventMap.get(id);
     if (!existingEvent) return;
-
-    const index = this.options.events.indexOf(existingEvent);
-    if (index === -1) return;
 
     const recurrenceUpdate = (updates as { recurrence?: TEvent["recurrence"] })
       .recurrence;
@@ -1170,15 +1193,13 @@ export class CalendarCore<
   }
 
   getEvents(): Array<TEvent> {
-    return this.options.events ? [...this.options.events] : [];
+    return [...this._eventsView()];
   }
 
   private _resolveMasterEvent(eventId: string): TEvent | undefined {
-    const direct = this._eventMap.get(eventId);
-    if (direct) return direct;
-    const match = eventId.match(/^(.+)_\d+$/);
-    if (match) return this._eventMap.get(match[1]!);
-    return undefined;
+    return (
+      this._eventMap.get(eventId) ?? this._eventMap.get(masterIdOf(eventId))
+    );
   }
 
   private _resolveOccurrenceStart(
@@ -1233,10 +1254,7 @@ export class CalendarCore<
     return direct;
   }
 
-  private _commitRecurringUpdate(
-    master: TEvent,
-    nextMaster: TEvent | null,
-    addedEvents: Array<TEvent> = [],
+  private _emitRecurrenceResult(
     emit:
       | {
           type: "updated";
@@ -1253,33 +1271,14 @@ export class CalendarCore<
           start: string;
           end: string;
         },
+    added: Array<TEvent>,
   ) {
-    if (!this.options.events) return;
-    const index = this.options.events.indexOf(master);
-    if (index === -1) return;
-
-    const ops: Array<InvertibleOp<TEvent>> = [
-      nextMaster
-        ? {
-            kind: "update",
-            id: master.id,
-            before: master,
-            after: nextMaster,
-          }
-        : { kind: "remove", id: master.id, event: master },
-      ...addedEvents.map(
-        (added): InvertibleOp<TEvent> => ({ kind: "add", event: added }),
-      ),
-    ];
-
-    this._write(ops, `recurrence/${emit.type}`);
-
-    for (const added of addedEvents) {
+    for (const event of added) {
       getTimeClient().emit("event:added", {
-        eventId: added.id,
-        eventTitle: added.title,
-        start: added.start as string,
-        end: added.end as string,
+        eventId: event.id,
+        eventTitle: event.title,
+        start: event.start as string,
+        end: event.end as string,
       });
     }
 
@@ -1291,62 +1290,95 @@ export class CalendarCore<
         end: emit.end,
         updates: emit.updates,
       });
-    } else {
-      getTimeClient().emit("event:removed", {
-        eventId: emit.eventId,
-        eventTitle: emit.eventTitle,
-        start: emit.start,
-        end: emit.end,
-      });
+      return;
     }
+
+    getTimeClient().emit("event:removed", {
+      eventId: emit.eventId,
+      eventTitle: emit.eventTitle,
+      start: emit.start,
+      end: emit.end,
+    });
+  }
+
+  private _addedFrom(ops: Array<InvertibleOp<TEvent>>): Array<TEvent> {
+    return ops.flatMap((op) => (op.kind === "add" ? [op.event] : []));
+  }
+
+  private _writeOccurrenceEdit(
+    master: TEvent,
+    scope: RecurrenceEditScope,
+    occurrenceStart: string,
+    updates: Partial<Omit<TEvent, "id">>,
+    emit: RecurrenceEmit | ((splitEvent: TEvent | undefined) => RecurrenceEmit),
+  ) {
+    const committed = this._write(
+      [
+        editOccurrenceIntent({
+          masterId: master.id,
+          scope,
+          occurrenceStart,
+          updates: updates as Record<string, unknown>,
+        }),
+      ],
+      "recurrence/updated",
+    );
+    if (committed.length === 0) return;
+
+    const added = this._addedFrom(committed);
+    this._emitRecurrenceResult(
+      typeof emit === "function" ? emit(added[0]) : emit,
+      added,
+    );
+  }
+
+  private _writeOccurrenceRemove(
+    master: TEvent,
+    scope: RecurrenceEditScope,
+    occurrenceStart: string,
+    emit: RecurrenceEmit,
+  ) {
+    const committed = this._write(
+      [
+        removeOccurrenceIntent({
+          masterId: master.id,
+          scope,
+          occurrenceStart,
+        }),
+      ],
+      "recurrence/removed",
+    );
+    if (committed.length === 0) return;
+
+    this._emitRecurrenceResult(emit, this._addedFrom(committed));
   }
 
   goToNextOccurrence(eventId: string, fromDate?: EventDateTimeInput) {
     const master = this._resolveMasterEvent(eventId);
-    if (!master?.recurrence) return;
+    if (!master) return;
 
-    const baseDate = fromDate
-      ? Temporal.PlainDate.from(toPlainDateTimeString(fromDate).split("T")[0]!)
-      : this.activeDatePlain;
-    const windowStart = baseDate
-      .add({ days: 1 })
-      .toString({ calendarName: "never" });
-    const windowEnd = baseDate
-      .add({ years: 4 })
-      .toString({ calendarName: "never" });
-
-    const occurrences = expandRecurringEvent<TResource, TEvent>(
+    const next = nextOccurrenceDate<TResource, TEvent>(
       master,
-      windowStart,
-      windowEnd,
+      this._occurrenceCursor(fromDate),
     );
-    if (occurrences.length === 0) return;
-
-    this.goToSpecificPeriod((occurrences[0]!.start as string).split("T")[0]!);
+    if (next) this.goToSpecificPeriod(next);
   }
 
   goToPreviousOccurrence(eventId: string, fromDate?: EventDateTimeInput) {
     const master = this._resolveMasterEvent(eventId);
-    if (!master?.recurrence) return;
+    if (!master) return;
 
-    const activeDateStr = fromDate
-      ? toPlainDateTimeString(fromDate).split("T")[0]!
-      : this.store.state.activeDate;
-    const masterStartStr = (master.start as string).split("T")[0]!;
-
-    if (masterStartStr >= activeDateStr) return;
-
-    const occurrences = expandRecurringEvent<TResource, TEvent>(
+    const previous = previousOccurrenceDate<TResource, TEvent>(
       master,
-      masterStartStr,
-      activeDateStr,
+      this._occurrenceCursor(fromDate),
     );
-    const candidates = occurrences
-      .map((occ) => (occ.start as string).split("T")[0]!)
-      .filter((occDateStr) => occDateStr < activeDateStr);
+    if (previous) this.goToSpecificPeriod(previous);
+  }
 
-    if (candidates.length === 0) return;
-    this.goToSpecificPeriod(candidates[candidates.length - 1]!);
+  private _occurrenceCursor(fromDate?: EventDateTimeInput): string {
+    return fromDate
+      ? toPlainDateTimeString(fromDate).slice(0, 10)
+      : this.store.state.activeDate;
   }
 
   createResizeController(
@@ -1855,19 +1887,7 @@ export class CalendarCore<
     } as Partial<Omit<TEvent, "id">>;
 
     if (options.scope === "this") {
-      const { nextMaster } = materializeRecurringEdit<TResource, TEvent>({
-        master,
-        scope: "this",
-        occurrence,
-        occurrenceStart,
-        effectiveStart,
-        effectiveEnd,
-        normalizedUpdates,
-        recurrenceUpdate,
-        isTaken: (id) => this._eventMap.has(id),
-      });
-
-      this._commitRecurringUpdate(master, nextMaster, [], {
+      this._writeOccurrenceEdit(master, "this", occurrenceStart, updates, {
         type: "updated",
         eventId: occurrence.id,
         eventTitle: (updates.title as string | undefined) ?? occurrence.title,
@@ -1885,30 +1905,20 @@ export class CalendarCore<
       });
     }
 
-    const { nextMaster, addedEvents } = materializeRecurringEdit<
-      TResource,
-      TEvent
-    >({
+    this._writeOccurrenceEdit(
       master,
-      scope: "thisAndFollowing",
-      occurrence,
+      "thisAndFollowing",
       occurrenceStart,
-      effectiveStart,
-      effectiveEnd,
-      normalizedUpdates,
-      recurrenceUpdate,
-      isTaken: (id) => this._eventMap.has(id),
-    });
-    const splitEvent = addedEvents[0]!;
-
-    this._commitRecurringUpdate(master, nextMaster, [splitEvent], {
-      type: "updated",
-      eventId: splitEvent.id,
-      eventTitle: splitEvent.title,
-      start: splitEvent.start as string,
-      end: splitEvent.end as string,
-      updates: normalizedUpdates as Record<string, unknown>,
-    });
+      updates,
+      (added) => ({
+        type: "updated",
+        eventId: added!.id,
+        eventTitle: added!.title,
+        start: added!.start as string,
+        end: added!.end as string,
+        updates: normalizedUpdates as Record<string, unknown>,
+      }),
+    );
 
     return { success: true };
   }
@@ -1939,12 +1949,7 @@ export class CalendarCore<
     const occurrenceEndStr = toPlainDateTimeString(occurrence.end);
 
     if (options.scope === "this") {
-      const { nextMaster } = materializeRecurringRemove<TResource, TEvent>({
-        master,
-        scope: "this",
-        occurrenceStart,
-      });
-      this._commitRecurringUpdate(master, nextMaster, [], {
+      this._writeOccurrenceRemove(master, "this", occurrenceStart, {
         type: "removed",
         eventId: occurrence.id,
         eventTitle: occurrence.title,
@@ -1959,13 +1964,7 @@ export class CalendarCore<
       return;
     }
 
-    const { nextMaster } = materializeRecurringRemove<TResource, TEvent>({
-      master,
-      scope: "thisAndFollowing",
-      occurrenceStart,
-    });
-
-    this._commitRecurringUpdate(master, nextMaster, [], {
+    this._writeOccurrenceRemove(master, "thisAndFollowing", occurrenceStart, {
       type: "removed",
       eventId: occurrence.id,
       eventTitle: occurrence.title,
@@ -2063,13 +2062,8 @@ export class CalendarCore<
   }
 
   removeEvent(id: Event["id"]) {
-    if (!this.options.events) return;
-
     const removedEvent = this._eventMap.get(id);
     if (!removedEvent) return;
-
-    const index = this.options.events.indexOf(removedEvent);
-    if (index === -1) return;
 
     this._write([{ kind: "remove", id, event: removedEvent }], "remove");
 
@@ -2591,8 +2585,8 @@ export class CalendarCore<
     const snappedDeltaMs =
       Math.round((totalDeltaMinutes * 60_000) / snapMs) * snapMs;
 
-    if (!shouldBlockResize && effectiveEdge === "top" && this.options.events) {
-      const event = this.options.events.find((ev) => ev.id === eventId);
+    if (!shouldBlockResize && effectiveEdge === "top") {
+      const event = this._eventMap.get(eventId);
       if (event?.dependsOn?.length) {
         const proposedStartMs =
           Temporal.PlainDateTime.from(originalStart).toZonedDateTime(
@@ -2603,7 +2597,7 @@ export class CalendarCore<
         ).toZonedDateTime(this.options.timeZone).epochMilliseconds;
 
         for (const dep of event.dependsOn) {
-          const pred = this.options.events.find((ev) => ev.id === dep.id);
+          const pred = this._eventMap.get(dep.id);
           if (!pred) continue;
 
           const predStartStr = toPlainDateTimeString(pred.start);
@@ -2749,13 +2743,13 @@ export class CalendarCore<
    * Replaces the current event list and invalidates availability caches.
    */
   setEvents(events: Array<TEvent> | null) {
-    this.options.events = events?.map((e) => this.normalizeEvent(e)) || null;
+    const next = events?.map((e) => this.normalizeEvent(e)) ?? [];
     this._eventMap.clear();
     this._dependentsMap.clear();
     this._dateIndex.clear();
     this._mergedUnavailMinuteCache.clear();
     this._bumpMapVersion();
-    this.options.events?.forEach((e) => this._indexAddEvent(e));
-    this._seedKernel();
+    this._seedKernel(next);
+    next.forEach((e) => this._indexAddEvent(e));
   }
 }
