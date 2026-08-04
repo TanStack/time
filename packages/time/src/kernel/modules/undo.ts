@@ -73,7 +73,7 @@ export function undoModule<E extends KernelEvent>(
       ops.push(...(undoing ? invertWriteOps(entry.ops) : entry.ops));
     }
 
-    return { ...batch, ops };
+    return { ...batch, ops, replay: true };
   };
 
   const record = (batch: WriteBatch<E>): WriteBatch<E> => {

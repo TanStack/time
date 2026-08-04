@@ -113,16 +113,29 @@ export class Kernel<E extends KernelEvent> {
     return events;
   }
 
-  write(op: WriteOp<E>): WriteResult<E> {
+  write(
+    input: WriteOp<E> | Array<WriteOp<E>>,
+    reason?: string,
+  ): WriteResult<E> {
+    const ops = Array.isArray(input) ? input : [input];
+    const first = ops[0];
     const ctx = this.writeCtx();
     let batch: WriteBatch<E> = {
-      reason: isIntentOp(op) ? op.intent : op.kind,
-      ops: [op],
+      reason:
+        reason ??
+        (first === undefined
+          ? "empty"
+          : isIntentOp(first)
+            ? first.intent
+            : first.kind),
+      ops,
     };
 
     for (const stageName of WRITE_TRANSFORM_ORDER) {
+      if (batch.replay) break;
       for (const run of this.registry.transformStages(stageName)) {
         batch = run(batch, ctx);
+        if (batch.replay) break;
       }
     }
 
@@ -135,11 +148,13 @@ export class Kernel<E extends KernelEvent> {
       );
     }
 
-    const conflicts = this.registry
-      .validateStages(WRITE_VALIDATE_STAGE)
-      .flatMap((run) => run(batch, ctx));
-    if (conflicts.length > 0) {
-      return { status: "rejected", conflicts };
+    if (!batch.replay) {
+      const conflicts = this.registry
+        .validateStages(WRITE_VALIDATE_STAGE)
+        .flatMap((run) => run(batch, ctx));
+      if (conflicts.length > 0) {
+        return { status: "rejected", conflicts };
+      }
     }
 
     this.commit(batch);

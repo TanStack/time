@@ -303,11 +303,35 @@ re-running the new tests against the snapshot implementation):
   replaying ops against a list that was swapped underneath is meaningless, so the stacks are
   dropped instead.
 
-Remaining slices: mount a `Kernel` inside `CalendarCore` and route the recorded batches through
-it (making the modules from Steps 3–7 the implementation rather than parallel code), move
-`getMasterEvent` / `goTo*Occurrence` onto the recurrence module, route
-`editRecurringEvent` / `removeRecurringEvent` and the resize controller through intents, and
-hand event storage (`_eventMap`, `_dateIndex`, `_loadedRanges`) to the kernel.
+Slice 2 ✅ — **the god class writes through a `Kernel`.** `CalendarCore` mounts one with
+`undoModule` + `dependencyModule`; `commitAdd`, `commitUpdate`, `removeEvent`, the recurrence
+commit and `undo` / `redo` all call `_write(ops, reason)`, which writes to the kernel and mirrors
+the committed batch onto `options.events` and the indexes. The god class is still the read-side
+store, but it no longer *decides* anything about a write.
+
+What that deleted: the private journal (`_writeBatch` / `_record`), both undo stacks,
+`_cascadeAfterUpdate` and `_applyDependencyShifts`. `commitUpdate` no longer calls `propagate*`
+at all — the dependency module's `schedule` stage produces the cascade ops, and `commitUpdate`
+just emits `event:updated` for the extra ops the batch came back with.
+
+Kernel changes this needed:
+
+- `write(ops[], reason?)` — the recurrence commit replaces a master and adds split events in one
+  atomic batch, so `write` had to take more than one op.
+- `WriteBatch.replay` — a batch a module replays from history skips the remaining transform and
+  validate stages. Without it, undoing a cascade re-derived the cascade from the inverse ops and
+  double-applied it (the first symptom was an undo reporting `['b','a','a']`). Replay also has to
+  bypass validation: a state the kernel committed once must be restorable even if a rule that
+  changed since would now veto it.
+
+Fetch paths (`fetchEvents`) push straight into `options.events`, so they re-seed the kernel
+(`_syncKernel`) instead of writing — loading data is not a user write and must not enter history.
+
+Remaining slices: move `getMasterEvent` / `goTo*Occurrence` onto the recurrence module, route
+`editRecurringEvent` / `removeRecurringEvent` and the resize controller through intents (they
+build ops by hand today), mount `availabilityModule` so writes are vetoed by the pipeline rather
+than pre-checked, and hand event storage (`_eventMap`, `_dateIndex`, `_loadedRanges`) to the
+kernel so `_syncKernel` and the mirroring in `_write` can go.
 
 ---
 

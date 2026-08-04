@@ -38,6 +38,12 @@ export function isIntentOp<E extends KernelEvent>(
 export interface WriteBatch<E extends KernelEvent> {
   reason: string;
   ops: Array<WriteOp<E>>;
+  /**
+   * Set by a module replaying recorded ops. The kernel then skips the remaining transform and
+   * validate stages: the ops already describe a state this kernel committed once, so
+   * re-deriving cascades from them would double-apply.
+   */
+  replay?: boolean;
 }
 
 export interface Conflict {

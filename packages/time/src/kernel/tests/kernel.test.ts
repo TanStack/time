@@ -104,6 +104,63 @@ describe("Kernel", () => {
       expect(kernel.getEvents()).toHaveLength(1);
     });
 
+    it("commits several ops as one batch", () => {
+      const kernel = new Kernel<TestEvent>({
+        events: [evt("a", "2026-01-01T09:00:00Z", "2026-01-01T10:00:00Z")],
+      });
+
+      const result = kernel.write(
+        [
+          {
+            kind: "remove",
+            id: "a",
+            event: kernel.getEvent("a")!,
+          },
+          {
+            kind: "add",
+            event: evt("b", "2026-01-01T11:00:00Z", "2026-01-01T12:00:00Z"),
+          },
+        ],
+        "split",
+      );
+
+      expect(result.status).toBe("committed");
+      expect(result.status === "committed" && result.batch.reason).toBe(
+        "split",
+      );
+      expect(kernel.getEvents().map((e) => e.id)).toEqual(["b"]);
+    });
+
+    it("rolls a multi-op batch back in one step", () => {
+      const kernel = new Kernel<TestEvent>({
+        events: [evt("a", "2026-01-01T09:00:00Z", "2026-01-01T10:00:00Z")],
+      });
+
+      kernel.write([
+        { kind: "remove", id: "a", event: kernel.getEvent("a")! },
+        {
+          kind: "add",
+          event: evt("b", "2026-01-01T11:00:00Z", "2026-01-01T12:00:00Z"),
+        },
+      ]);
+      kernel.rollback();
+
+      expect(kernel.getEvents().map((e) => e.id)).toEqual(["a"]);
+    });
+
+    it("names the batch after the first op when no reason is given", () => {
+      const kernel = new Kernel<TestEvent>();
+
+      const result = kernel.write([
+        {
+          kind: "add",
+          event: evt("a", "2026-01-01T09:00:00Z", "2026-01-01T10:00:00Z"),
+        },
+      ]);
+
+      expect(result.status === "committed" && result.batch.reason).toBe("add");
+    });
+
     it("runs transform stages that cascade ops into the batch", () => {
       const kernel = new Kernel<TestEvent>();
       const cascade: Module<TestEvent> = {

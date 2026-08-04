@@ -16,8 +16,21 @@ import {
   normalizeRecurrenceRule,
   resolveOccurrenceStart,
 } from "~/recurrence";
-import { invertWriteOps } from "~/kernel";
-import type { HistoryBatch, InvertibleOp } from "~/kernel";
+import { Kernel } from "~/kernel";
+import {
+  dependencyModule,
+  redoIntent,
+  undoIntent,
+  undoModule,
+} from "~/kernel/modules";
+import type { UndoHistory } from "~/kernel/modules";
+import type {
+  InvertibleOp,
+  IntentOp,
+  KernelEvent,
+  Module,
+  WriteOp,
+} from "~/kernel";
 import { getEventProps } from "./getEventProps";
 import { groupDaysBy } from "./groupDaysBy";
 import { getTimeSlots } from "./getTimeSlots";
@@ -74,13 +87,12 @@ import {
   shiftToSatisfyLink,
   validateDependencies,
 } from "~/validation/dependency";
-import type {
-  CascadeShift,
-  DependencyGraphEvent,
-} from "~/validation/dependency";
+import type { DependencyGraphEvent } from "~/validation/dependency";
 
 export type * from "./types";
 export * from "./date-core";
+
+type WritableEvent<TEvent> = TEvent & KernelEvent;
 
 /**
  * Configuration options for initializing a CalendarCore instance, allowing customization
@@ -373,9 +385,9 @@ export class CalendarCore<
   private _dependentsMap = new Map<string, Set<string>>();
   private _dateIndex = new Map<string, Set<string>>();
   private _loadedRanges: Array<{ start: string; end: string }> = [];
-  private _undoStack: Array<HistoryBatch<TEvent>> = [];
-  private _redoStack: Array<HistoryBatch<TEvent>> = [];
-  private _batch: Array<InvertibleOp<TEvent>> | null = null;
+  private _kernel!: Kernel<WritableEvent<TEvent>>;
+  private _history!: Module<WritableEvent<TEvent>> &
+    UndoHistory<WritableEvent<TEvent>>;
 
   private _mergedUnavailMinuteCache = new Map<string, Array<MinuteRange>>();
 
@@ -423,6 +435,41 @@ export class CalendarCore<
       fetchEvents: options.fetchEvents,
     });
     this.options.events?.forEach((e) => this._indexAddEvent(e));
+    this._seedKernel();
+  }
+
+  private _seedKernel() {
+    this._history = undoModule<WritableEvent<TEvent>>();
+    this._syncKernel();
+  }
+
+  private _syncKernel() {
+    this._kernel = new Kernel<WritableEvent<TEvent>>({
+      events: (this.options.events ?? []) as Array<WritableEvent<TEvent>>,
+    })
+      .use(this._history)
+      .use(
+        dependencyModule<WritableEvent<TEvent>>({
+          timeZone: this.options.timeZone,
+        }),
+      );
+  }
+
+  private _write(
+    ops: Array<InvertibleOp<TEvent> | IntentOp>,
+    reason: string,
+  ): Array<InvertibleOp<TEvent>> {
+    const result = this._kernel.write(
+      ops as Array<WriteOp<WritableEvent<TEvent>>>,
+      reason,
+    );
+    if (result.status !== "committed") return [];
+
+    const committed = result.batch.ops as unknown as Array<
+      InvertibleOp<TEvent>
+    >;
+    this._applyOps(committed);
+    return committed;
   }
 
   private _eventDateKey(event: TEvent): string {
@@ -626,6 +673,7 @@ export class CalendarCore<
                 });
               }
               if (newlyFetchedEvents.length > 0) {
+                this._syncKernel();
                 getTimeClient().emit("events:set", {
                   events: newlyFetchedEvents,
                 });
@@ -732,6 +780,7 @@ export class CalendarCore<
           });
         }
         if (newlyFetchedEvents.length > 0) {
+          this._syncKernel();
           getTimeClient().emit("events:set", {
             events: newlyFetchedEvents,
           });
@@ -864,29 +913,6 @@ export class CalendarCore<
     return all.filter((e) => !!e.allDay);
   }
 
-  private _record(op: InvertibleOp<TEvent>) {
-    this._batch?.push(op);
-  }
-
-  private _writeBatch(reason: string, write: () => void) {
-    if (this._batch) {
-      write();
-      return;
-    }
-
-    const ops: Array<InvertibleOp<TEvent>> = [];
-    this._batch = ops;
-    try {
-      write();
-    } finally {
-      this._batch = null;
-    }
-
-    if (ops.length === 0) return;
-    this._undoStack.push({ reason, ops });
-    this._redoStack = [];
-  }
-
   private _applyOps(ops: Array<InvertibleOp<TEvent>>) {
     const events = this.options.events;
     if (!events) return;
@@ -921,11 +947,11 @@ export class CalendarCore<
   }
 
   canUndo() {
-    return this._undoStack.length > 0;
+    return this._history.canUndo();
   }
 
   canRedo() {
-    return this._redoStack.length > 0;
+    return this._history.canRedo();
   }
 
   private _diffOps(ops: Array<InvertibleOp<TEvent>>) {
@@ -960,24 +986,17 @@ export class CalendarCore<
   }
 
   undo() {
-    const entry = this._undoStack.pop();
-    if (!entry) return;
+    if (!this._history.canUndo()) return;
 
-    const inverse = invertWriteOps(entry.ops);
-    this._applyOps(inverse);
-    this._redoStack.push(entry);
-
-    getTimeClient().emit("event:undo", this._diffOps(inverse));
+    const applied = this._write([undoIntent()], "history/undo");
+    getTimeClient().emit("event:undo", this._diffOps(applied));
   }
 
   redo() {
-    const entry = this._redoStack.pop();
-    if (!entry) return;
+    if (!this._history.canRedo()) return;
 
-    this._applyOps(entry.ops);
-    this._undoStack.push(entry);
-
-    getTimeClient().emit("event:redo", this._diffOps(entry.ops));
+    const applied = this._write([redoIntent()], "history/redo");
+    getTimeClient().emit("event:redo", this._diffOps(applied));
   }
 
   commitAdd(event: TEvent) {
@@ -985,15 +1004,7 @@ export class CalendarCore<
       this.options.events = [];
     }
     const normalized = this.normalizeEvent(event);
-    this._writeBatch("add", () => {
-      this.options.events!.push(normalized);
-      this._indexAddEvent(normalized);
-      this._record({ kind: "add", event: normalized });
-    });
-    this.store.setState((prev) => ({
-      ...prev,
-      eventsVersion: prev.eventsVersion + 1,
-    }));
+    this._write([{ kind: "add", event: normalized }], "add");
 
     getTimeClient().emit("event:added", {
       eventId: normalized.id,
@@ -1011,9 +1022,6 @@ export class CalendarCore<
 
     const index = this.options.events.indexOf(existingEvent);
     if (index === -1) return;
-
-    const oldStartStr = toPlainDateTimeString(existingEvent.start);
-    const oldEndStr = toPlainDateTimeString(existingEvent.end);
 
     const recurrenceUpdate = (updates as { recurrence?: TEvent["recurrence"] })
       .recurrence;
@@ -1038,22 +1046,24 @@ export class CalendarCore<
       ...normalizedUpdates,
     } as TEvent;
 
-    this._writeBatch("update", () => {
-      this.options.events![index] = nextEvent;
-      this._indexUpdateEvent(existingEvent, nextEvent);
-      this._record({
-        kind: "update",
-        id,
-        before: existingEvent,
-        after: nextEvent,
-      });
-      this._cascadeAfterUpdate(id, normalizedUpdates, oldStartStr, oldEndStr);
-    });
+    const committed = this._write(
+      [{ kind: "update", id, before: existingEvent, after: nextEvent }],
+      "update",
+    );
 
-    this.store.setState((prev) => ({
-      ...prev,
-      eventsVersion: prev.eventsVersion + 1,
-    }));
+    for (const op of committed) {
+      if (op.kind !== "update" || op.id === id) continue;
+      getTimeClient().emit("event:updated", {
+        eventId: op.id,
+        eventTitle: op.before.title,
+        start: op.after.start as string,
+        end: op.after.end as string,
+        updates: {
+          start: op.after.start,
+          end: op.after.end,
+        } as Record<string, unknown>,
+      });
+    }
 
     getTimeClient().emit("event:updated", {
       eventId: id,
@@ -1062,79 +1072,6 @@ export class CalendarCore<
       end: toPlainDateTimeString(nextEvent.end),
       updates: normalizedUpdates as Record<string, unknown>,
     });
-  }
-
-  private _cascadeAfterUpdate(
-    id: string,
-    normalizedUpdates: Partial<Omit<TEvent, "id">>,
-    oldStartStr: string,
-    oldEndStr: string,
-  ) {
-    const newStart = normalizedUpdates.start as string | undefined;
-    const newEnd = normalizedUpdates.end as string | undefined;
-    const startChanged = newStart && newStart !== oldStartStr;
-    const endChanged = newEnd && newEnd !== oldEndStr;
-    if (!startChanged && !endChanged) return;
-
-    const visited = new Set([id]);
-
-    if (startChanged) {
-      this._applyDependencyShifts(
-        propagateToPredecessors({
-          sourceId: id,
-          events: this._dependencyGraphEvents(),
-          timeZone: this.options.timeZone,
-          visited,
-        }),
-      );
-    }
-
-    this._applyDependencyShifts(
-      propagateToDependents({
-        sourceId: id,
-        events: this._dependencyGraphEvents(),
-        timeZone: this.options.timeZone,
-        visited,
-      }),
-    );
-  }
-
-  private _applyDependencyShifts(shifts: Array<CascadeShift>) {
-    const events = this.options.events;
-    if (!events) return;
-
-    for (const shift of shifts) {
-      const event = this._eventMap.get(shift.id);
-      if (!event) continue;
-
-      const index = events.indexOf(event);
-      if (index === -1) continue;
-
-      const updated = {
-        ...event,
-        start: shift.newStart,
-        end: shift.newEnd,
-      } as TEvent;
-      events[index] = updated;
-      this._indexUpdateEvent(event, updated);
-      this._record({
-        kind: "update",
-        id: event.id,
-        before: event,
-        after: updated,
-      });
-
-      getTimeClient().emit("event:updated", {
-        eventId: event.id,
-        eventTitle: event.title,
-        start: shift.newStart,
-        end: shift.newEnd,
-        updates: { start: shift.newStart, end: shift.newEnd } as Record<
-          string,
-          unknown
-        >,
-      });
-    }
   }
 
   private _dependencyGraphEvents(override?: {
@@ -1321,33 +1258,21 @@ export class CalendarCore<
     const index = this.options.events.indexOf(master);
     if (index === -1) return;
 
-    this._writeBatch(`recurrence/${emit.type}`, () => {
-      if (nextMaster) {
-        this.options.events![index] = nextMaster;
-        this._indexUpdateEvent(master, nextMaster);
-        this._record({
-          kind: "update",
-          id: master.id,
-          before: master,
-          after: nextMaster,
-        });
-      } else {
-        this.options.events!.splice(index, 1);
-        this._indexRemoveEvent(master);
-        this._record({ kind: "remove", id: master.id, event: master });
-      }
+    const ops: Array<InvertibleOp<TEvent>> = [
+      nextMaster
+        ? {
+            kind: "update",
+            id: master.id,
+            before: master,
+            after: nextMaster,
+          }
+        : { kind: "remove", id: master.id, event: master },
+      ...addedEvents.map(
+        (added): InvertibleOp<TEvent> => ({ kind: "add", event: added }),
+      ),
+    ];
 
-      for (const added of addedEvents) {
-        this.options.events!.push(added);
-        this._indexAddEvent(added);
-        this._record({ kind: "add", event: added });
-      }
-    });
-
-    this.store.setState((prev) => ({
-      ...prev,
-      eventsVersion: prev.eventsVersion + 1,
-    }));
+    this._write(ops, `recurrence/${emit.type}`);
 
     for (const added of addedEvents) {
       getTimeClient().emit("event:added", {
@@ -2146,15 +2071,7 @@ export class CalendarCore<
     const index = this.options.events.indexOf(removedEvent);
     if (index === -1) return;
 
-    this._writeBatch("remove", () => {
-      this.options.events!.splice(index, 1);
-      this._indexRemoveEvent(removedEvent);
-      this._record({ kind: "remove", id, event: removedEvent });
-    });
-    this.store.setState((prev) => ({
-      ...prev,
-      eventsVersion: prev.eventsVersion + 1,
-    }));
+    this._write([{ kind: "remove", id, event: removedEvent }], "remove");
 
     getTimeClient().emit("event:removed", {
       eventId: id,
@@ -2833,13 +2750,12 @@ export class CalendarCore<
    */
   setEvents(events: Array<TEvent> | null) {
     this.options.events = events?.map((e) => this.normalizeEvent(e)) || null;
-    this._undoStack = [];
-    this._redoStack = [];
     this._eventMap.clear();
     this._dependentsMap.clear();
     this._dateIndex.clear();
     this._mergedUnavailMinuteCache.clear();
     this._bumpMapVersion();
     this.options.events?.forEach((e) => this._indexAddEvent(e));
+    this._seedKernel();
   }
 }

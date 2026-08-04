@@ -169,6 +169,63 @@ describe("undoModule", () => {
     expect(history.canUndo()).toBe(false);
   });
 
+  it("replays without re-deriving the cascade", () => {
+    const history = undoModule<CalEvent>();
+    const kernel = new Kernel<CalEvent>({
+      events: [
+        event("e1", "10:00", "11:00"),
+        {
+          ...event("e2", "11:00", "12:00"),
+          dependsOn: [{ id: "e1", type: "FS" }],
+        },
+      ],
+    })
+      .use(history)
+      .use(dependencyModule<CalEvent>({ timeZone: "UTC" }));
+
+    kernel.write({
+      kind: "update",
+      id: "e1",
+      before: kernel.getEvent("e1")!,
+      after: { ...kernel.getEvent("e1")!, end: `${MONDAY}T12:30:00` },
+    });
+
+    const result = kernel.write(undoIntent());
+
+    expect(result.status === "committed" && result.batch.replay).toBe(true);
+    expect(
+      result.status === "committed" &&
+        result.batch.ops.map((op) => (op.kind === "update" ? op.id : op.kind)),
+    ).toEqual(["e2", "e1"]);
+    expect(kernel.getEvent("e1")!.end).toBe(`${MONDAY}T11:00:00`);
+    expect(kernel.getEvent("e2")!.start).toBe(`${MONDAY}T11:00:00`);
+  });
+
+  it("replays past a veto that would block the same write", () => {
+    const history = undoModule<CalEvent>();
+    let vetoing = false;
+    const kernel = new Kernel<CalEvent>().use(history).use({
+      name: "veto",
+      contributions: [
+        {
+          pipeline: "write",
+          kind: "validate",
+          stage: "availability-validate",
+          run: () =>
+            vetoing
+              ? [{ code: "test/veto", message: "no", eventIds: ["e1"] }]
+              : [],
+        },
+      ],
+    });
+
+    kernel.write({ kind: "add", event: event("e1", "10:00", "11:00") });
+    vetoing = true;
+
+    expect(kernel.write(undoIntent()).status).toBe("committed");
+    expect(kernel.getEvents()).toEqual([]);
+  });
+
   it("records the reason each entry came from", () => {
     const history = undoModule<CalEvent>();
     const kernel = new Kernel<CalEvent>().use(history);
