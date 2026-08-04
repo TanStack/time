@@ -1306,6 +1306,60 @@ describe("CalendarCore", () => {
     });
   });
 
+  describe("boundary types (ADR 0002)", () => {
+    test("keeps the store's dates as ISO strings", () => {
+      const cal = createCalendar();
+
+      expect(cal.store.state.activeDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(cal.store.state.currentPeriod).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    });
+
+    test("navigates by ISO string, without a calendar annotation", () => {
+      const cal = createCalendar();
+
+      cal.goToSpecificPeriod("2024-03-18");
+
+      expect(cal.store.state.activeDate).toBe("2024-03-18");
+      expect(cal.store.state.currentPeriod).toBe("2024-03-18");
+    });
+
+    test("moves whole periods while staying an ISO string", () => {
+      const cal = createCalendar({ viewMode: { value: 1, unit: "week" } });
+
+      cal.goToSpecificPeriod("2024-03-18");
+      cal.goToNextPeriod();
+      expect(cal.store.state.activeDate).toBe("2024-03-25");
+
+      cal.goToPreviousPeriod();
+      expect(cal.store.state.activeDate).toBe("2024-03-18");
+    });
+
+    test("exposes days by ISO date only", () => {
+      const cal = createCalendar();
+      cal.goToSpecificPeriod(DATE_MON);
+
+      const [day] = cal.getDaysWithEvents();
+
+      expect(day!.isoDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(day).not.toHaveProperty("date");
+    });
+
+    test("keeps filler days from groupDaysBy on the same shape", () => {
+      const cal = createCalendar({ viewMode: { value: 1, unit: "month" } });
+      cal.goToSpecificPeriod("2024-03-18");
+
+      const weeks = cal.groupDaysBy({
+        days: cal.getDaysWithEvents(),
+        unit: "week",
+      });
+
+      for (const day of weeks.flat()) {
+        expect(day!.isoDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+        expect(day).not.toHaveProperty("date");
+      }
+    });
+  });
+
   describe("navigation", () => {
     test("changeViewMode updates the visible mode", () => {
       const cal = createCalendar();
@@ -1356,54 +1410,42 @@ describe("CalendarCore", () => {
         const cal = createCalendar({ events: [recurringEvent] });
         cal.goToSpecificPeriod("2025-06-02");
         cal.goToNextOccurrence("rec");
-        expect(
-          cal.store.state.activeDate.toString({ calendarName: "never" }),
-        ).toBe("2025-06-09");
+        expect(cal.store.state.activeDate).toBe("2025-06-09");
       });
 
       test("goToNextOccurrence is no-op for non-recurring event", () => {
         const cal = createCalendar({ events: [nonRecurringEvent] });
         cal.goToSpecificPeriod("2025-06-02");
         cal.goToNextOccurrence("plain");
-        expect(
-          cal.store.state.activeDate.toString({ calendarName: "never" }),
-        ).toBe("2025-06-02");
+        expect(cal.store.state.activeDate).toBe("2025-06-02");
       });
 
       test("goToNextOccurrence accepts occurrence id and resolves master", () => {
         const cal = createCalendar({ events: [recurringEvent] });
         cal.goToSpecificPeriod("2025-06-02");
         cal.goToNextOccurrence("rec_1");
-        expect(
-          cal.store.state.activeDate.toString({ calendarName: "never" }),
-        ).toBe("2025-06-09");
+        expect(cal.store.state.activeDate).toBe("2025-06-09");
       });
 
       test("goToPreviousOccurrence navigates to previous weekly occurrence", () => {
         const cal = createCalendar({ events: [recurringEvent] });
         cal.goToSpecificPeriod("2025-06-16");
         cal.goToPreviousOccurrence("rec");
-        expect(
-          cal.store.state.activeDate.toString({ calendarName: "never" }),
-        ).toBe("2025-06-09");
+        expect(cal.store.state.activeDate).toBe("2025-06-09");
       });
 
       test("goToPreviousOccurrence is no-op when already at master start", () => {
         const cal = createCalendar({ events: [recurringEvent] });
         cal.goToSpecificPeriod("2025-06-02");
         cal.goToPreviousOccurrence("rec");
-        expect(
-          cal.store.state.activeDate.toString({ calendarName: "never" }),
-        ).toBe("2025-06-02");
+        expect(cal.store.state.activeDate).toBe("2025-06-02");
       });
 
       test("goToPreviousOccurrence from occurrence id resolves master", () => {
         const cal = createCalendar({ events: [recurringEvent] });
         cal.goToSpecificPeriod("2025-06-09");
         cal.goToPreviousOccurrence("rec_1");
-        expect(
-          cal.store.state.activeDate.toString({ calendarName: "never" }),
-        ).toBe("2025-06-02");
+        expect(cal.store.state.activeDate).toBe("2025-06-02");
       });
     });
   });
@@ -5696,6 +5738,120 @@ describe("CalendarCore", () => {
         } as TestEvent);
         cal.undo();
         cal.redo();
+        expect(cal.canRedo()).toBe(false);
+      });
+    });
+
+    describe("command diffs", () => {
+      const cascadingCalendar = () =>
+        createCalendar({
+          timeZone: "UTC",
+          events: [
+            {
+              id: "a",
+              title: "A",
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+            } as TestEvent,
+            {
+              id: "b",
+              title: "B",
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              dependsOn: [{ id: "a", type: "FS" }],
+            } as TestEvent,
+          ],
+        });
+
+      test("one undo reverses an update and everything it cascaded", () => {
+        const cal = cascadingCalendar();
+
+        cal.commitUpdate("a", { end: `${DATE_MON}T12:30:00` });
+        expect(cal.getEvents().find((e) => e.id === "b")!.start).toBe(
+          `${DATE_MON}T12:30:00`,
+        );
+
+        cal.undo();
+
+        const byId = new Map(cal.getEvents().map((e) => [e.id, e]));
+        expect(byId.get("a")!.end).toBe(`${DATE_MON}T11:00:00`);
+        expect(byId.get("b")!.start).toBe(`${DATE_MON}T11:00:00`);
+        expect(cal.canUndo()).toBe(false);
+      });
+
+      test("redo reapplies the cascade too", () => {
+        const cal = cascadingCalendar();
+
+        cal.commitUpdate("a", { end: `${DATE_MON}T12:30:00` });
+        cal.undo();
+        cal.redo();
+
+        const byId = new Map(cal.getEvents().map((e) => [e.id, e]));
+        expect(byId.get("a")!.end).toBe(`${DATE_MON}T12:30:00`);
+        expect(byId.get("b")!.start).toBe(`${DATE_MON}T12:30:00`);
+      });
+
+      test("keeps createDependency's reschedule in a single entry", () => {
+        const cal = createCalendar({
+          timeZone: "UTC",
+          events: [
+            {
+              id: "a",
+              title: "A",
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T13:00:00`,
+            } as TestEvent,
+            {
+              id: "b",
+              title: "B",
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+            } as TestEvent,
+          ],
+        });
+
+        cal.createDependency("a", "b", "FS");
+        expect(cal.getEvents().find((e) => e.id === "b")!.start).toBe(
+          `${DATE_MON}T13:00:00`,
+        );
+
+        cal.undo();
+
+        const b = cal.getEvents().find((e) => e.id === "b")!;
+        expect(b.start).toBe(`${DATE_MON}T11:00:00`);
+        expect(b.dependsOn ?? []).toEqual([]);
+        expect(cal.canUndo()).toBe(false);
+      });
+
+      test("reports the events an undo touched", () => {
+        const cal = cascadingCalendar();
+        cal.commitUpdate("a", { end: `${DATE_MON}T12:30:00` });
+        emitSpy.mockClear();
+
+        cal.undo();
+
+        const [name, payload] = emitSpy.mock.calls.at(-1)!;
+        expect(name).toBe("event:undo");
+        expect(payload.added).toEqual([]);
+        expect(payload.removed).toEqual([]);
+        expect(
+          payload.updated.map((e: { eventId: string }) => e.eventId),
+        ).toEqual(["b", "a"]);
+      });
+
+      test("drops history when the event list is replaced", () => {
+        const cal = createCalendar();
+        cal.commitAdd({
+          id: "e1",
+          title: "E1",
+          start: `${DATE_MON}T09:00:00`,
+          end: `${DATE_MON}T10:00:00`,
+        } as TestEvent);
+        expect(cal.canUndo()).toBe(true);
+
+        cal.setEvents([]);
+
+        expect(cal.canUndo()).toBe(false);
         expect(cal.canRedo()).toBe(false);
       });
     });

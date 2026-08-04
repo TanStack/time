@@ -1939,15 +1939,11 @@ function TimelineDemo() {
                   >
                     {virtualColumns.map((vc) => {
                       const day = calendar.days[vc.index];
-                      const localDate = new Date(
-                        day.date.year,
-                        day.date.month - 1,
-                        day.date.day,
-                      );
+                      const localDate = new Date(`${day.isoDate}T00:00:00`);
                       const dayName = localDate.toLocaleDateString(undefined, {
                         weekday: "short",
                       });
-                      const dayNum = day.date.day;
+                      const dayNum = localDate.getDate();
                       const monthName = localDate.toLocaleDateString(
                         undefined,
                         { month: "short" },

@@ -46,6 +46,10 @@ function toDate(date: DateInput): Date {
   return new Date(date);
 }
 
+function toIsoDate(date: Temporal.PlainDate): string {
+  return date.toString({ calendarName: "never" });
+}
+
 /**
  * Base options interface for date-related core classes.
  */
@@ -122,12 +126,24 @@ export abstract class DateCore {
     });
 
     this.store = new Store<CalendarStore>({
-      currentPeriod: initialDate,
-      activeDate: initialDate,
+      currentPeriod: toIsoDate(initialDate),
+      activeDate: toIsoDate(initialDate),
       viewMode: options.viewMode,
       eventsVersion: 0,
       isPending: false,
     });
+  }
+
+  protected toPlainDate(isoDate: string): Temporal.PlainDate {
+    return Temporal.PlainDate.from(isoDate).withCalendar(this.options.calendar);
+  }
+
+  protected get activeDatePlain(): Temporal.PlainDate {
+    return this.toPlainDate(this.store.state.activeDate);
+  }
+
+  protected get currentPeriodPlain(): Temporal.PlainDate {
+    return this.toPlainDate(this.store.state.currentPeriod);
   }
 
   formatDate(date: DateInput) {
@@ -144,7 +160,7 @@ export abstract class DateCore {
 
   protected getFirstDayOfMonth() {
     return getFirstDayOfMonth(
-      this.store.state.currentPeriod
+      this.currentPeriodPlain
         .toString({ calendarName: "auto" })
         .substring(0, 7),
     );
@@ -152,7 +168,7 @@ export abstract class DateCore {
 
   protected getFirstDayOfWeek() {
     return getFirstDayOfWeek(
-      this.store.state.currentPeriod.toString(),
+      this.currentPeriodPlain.toString(),
       this.options.locale,
     );
   }
@@ -179,7 +195,7 @@ export abstract class DateCore {
         break;
       case "day":
       default:
-        start = this.store.state.currentPeriod;
+        start = this.currentPeriodPlain;
         break;
     }
 
@@ -204,7 +220,7 @@ export abstract class DateCore {
         break;
       }
       case "day": {
-        end = this.store.state.currentPeriod.add({
+        end = this.currentPeriodPlain.add({
           days: this.store.state.viewMode.value - 1,
         });
         break;
@@ -218,14 +234,14 @@ export abstract class DateCore {
     const allDays = generateDateRange(start.toString(), end.toString());
 
     if (this.store.state.viewMode.unit === "month") {
-      const startMonthDate = this.store.state.currentPeriod.with({ day: 1 });
-      const endMonthDate = this.store.state.currentPeriod
+      const startMonthDate = this.currentPeriodPlain.with({ day: 1 });
+      const endMonthDate = this.currentPeriodPlain
         .add({
           months: this.store.state.viewMode.value - 1,
         })
         .with({
           day: Temporal.PlainDate.from(
-            this.store.state.currentPeriod.toString({ calendarName: "auto" }),
+            this.currentPeriodPlain.toString({ calendarName: "auto" }),
           ).daysInMonth,
         });
 
@@ -283,27 +299,27 @@ export abstract class DateCore {
 
     switch (this.store.state.viewMode.unit) {
       case "month": {
-        newActiveDate = this.store.state.activeDate.subtract({
+        newActiveDate = this.activeDatePlain.subtract({
           months: this.store.state.viewMode.value,
         });
         break;
       }
 
       case "week": {
-        newActiveDate = this.store.state.activeDate.subtract({
+        newActiveDate = this.activeDatePlain.subtract({
           weeks: this.store.state.viewMode.value,
         });
         break;
       }
 
       case "day": {
-        newActiveDate = this.store.state.activeDate.subtract({
+        newActiveDate = this.activeDatePlain.subtract({
           days: this.store.state.viewMode.value,
         });
         break;
       }
       case "workWeek": {
-        newActiveDate = this.store.state.activeDate.subtract({
+        newActiveDate = this.activeDatePlain.subtract({
           days: 5,
         });
         break;
@@ -316,8 +332,8 @@ export abstract class DateCore {
     });
     this.store.setState((prev) => ({
       ...prev,
-      activeDate: constrainedDate,
-      currentPeriod: constrainedDate,
+      activeDate: toIsoDate(constrainedDate),
+      currentPeriod: toIsoDate(constrainedDate),
     }));
 
     getTimeClient().emit("calendar:navigate", {
@@ -331,27 +347,27 @@ export abstract class DateCore {
 
     switch (this.store.state.viewMode.unit) {
       case "month": {
-        newActiveDate = this.store.state.activeDate.add({
+        newActiveDate = this.activeDatePlain.add({
           months: this.store.state.viewMode.value,
         });
         break;
       }
 
       case "week": {
-        newActiveDate = this.store.state.activeDate.add({
+        newActiveDate = this.activeDatePlain.add({
           weeks: this.store.state.viewMode.value,
         });
         break;
       }
 
       case "day": {
-        newActiveDate = this.store.state.activeDate.add({
+        newActiveDate = this.activeDatePlain.add({
           days: this.store.state.viewMode.value,
         });
         break;
       }
       case "workWeek": {
-        newActiveDate = this.store.state.activeDate.add({
+        newActiveDate = this.activeDatePlain.add({
           days: 5,
         });
         break;
@@ -364,8 +380,8 @@ export abstract class DateCore {
     });
     this.store.setState((prev) => ({
       ...prev,
-      activeDate: constrainedDate,
-      currentPeriod: constrainedDate,
+      activeDate: toIsoDate(constrainedDate),
+      currentPeriod: toIsoDate(constrainedDate),
     }));
 
     getTimeClient().emit("calendar:navigate", {
@@ -382,8 +398,8 @@ export abstract class DateCore {
     });
     this.store.setState((prev) => ({
       ...prev,
-      activeDate: constrainedDate,
-      currentPeriod: constrainedDate,
+      activeDate: toIsoDate(constrainedDate),
+      currentPeriod: toIsoDate(constrainedDate),
     }));
 
     getTimeClient().emit("calendar:navigate", {
@@ -403,8 +419,8 @@ export abstract class DateCore {
     });
     this.store.setState((prev) => ({
       ...prev,
-      activeDate: constrainedDate,
-      currentPeriod: constrainedDate,
+      activeDate: toIsoDate(constrainedDate),
+      currentPeriod: toIsoDate(constrainedDate),
     }));
 
     getTimeClient().emit("calendar:navigate", {
@@ -418,25 +434,25 @@ export abstract class DateCore {
 
     switch (this.store.state.viewMode.unit) {
       case "month": {
-        previousDate = this.store.state.activeDate.subtract({
+        previousDate = this.activeDatePlain.subtract({
           months: this.store.state.viewMode.value,
         });
         break;
       }
       case "week": {
-        previousDate = this.store.state.activeDate.subtract({
+        previousDate = this.activeDatePlain.subtract({
           weeks: this.store.state.viewMode.value,
         });
         break;
       }
       case "day": {
-        previousDate = this.store.state.activeDate.subtract({
+        previousDate = this.activeDatePlain.subtract({
           days: this.store.state.viewMode.value,
         });
         break;
       }
       case "workWeek": {
-        previousDate = this.store.state.activeDate.subtract({ days: 5 });
+        previousDate = this.activeDatePlain.subtract({ days: 5 });
         break;
       }
     }
@@ -449,25 +465,25 @@ export abstract class DateCore {
 
     switch (this.store.state.viewMode.unit) {
       case "month": {
-        nextDate = this.store.state.activeDate.add({
+        nextDate = this.activeDatePlain.add({
           months: this.store.state.viewMode.value,
         });
         break;
       }
       case "week": {
-        nextDate = this.store.state.activeDate.add({
+        nextDate = this.activeDatePlain.add({
           weeks: this.store.state.viewMode.value,
         });
         break;
       }
       case "day": {
-        nextDate = this.store.state.activeDate.add({
+        nextDate = this.activeDatePlain.add({
           days: this.store.state.viewMode.value,
         });
         break;
       }
       case "workWeek": {
-        nextDate = this.store.state.activeDate.add({ days: 5 });
+        nextDate = this.activeDatePlain.add({ days: 5 });
         break;
       }
     }

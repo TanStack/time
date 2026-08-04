@@ -16,6 +16,8 @@ import {
   normalizeRecurrenceRule,
   resolveOccurrenceStart,
 } from "~/recurrence";
+import { invertWriteOps } from "~/kernel";
+import type { HistoryBatch, InvertibleOp } from "~/kernel";
 import { getEventProps } from "./getEventProps";
 import { groupDaysBy } from "./groupDaysBy";
 import { getTimeSlots } from "./getTimeSlots";
@@ -46,8 +48,8 @@ import type {
   TimelineLayout,
   TimelineResourceRow,
   UnavailableRange,
-  ViewMode,
 } from "./types";
+import type { CalendarStore } from "./types";
 import { toPlainDateString, toPlainDateTimeString } from "~/date/parse";
 import {
   checkAvailability,
@@ -79,12 +81,6 @@ import type {
 
 export type * from "./types";
 export * from "./date-core";
-
-interface CalendarStore {
-  currentPeriod: Temporal.PlainDate;
-  activeDate: Temporal.PlainDate;
-  viewMode: ViewMode;
-}
 
 /**
  * Configuration options for initializing a CalendarCore instance, allowing customization
@@ -318,15 +314,11 @@ interface CalendarState<
   activeDate: CalendarStore["activeDate"];
 }
 
-type ConvertTemporalToString<T> = {
-  [K in keyof T]: T[K] extends Temporal.PlainDate ? string : T[K];
-};
-
 export interface CalendarApi<
   TResource extends Resource,
   TEvent extends Event<TResource>,
 > extends CalendarActions<TResource, TEvent>,
-    ConvertTemporalToString<CalendarState<TResource, TEvent>> {}
+    CalendarState<TResource, TEvent> {}
 
 export interface ValidateResizeOptions {
   eventId: string;
@@ -381,8 +373,9 @@ export class CalendarCore<
   private _dependentsMap = new Map<string, Set<string>>();
   private _dateIndex = new Map<string, Set<string>>();
   private _loadedRanges: Array<{ start: string; end: string }> = [];
-  private _undoStack: Array<Array<TEvent>> = [];
-  private _redoStack: Array<Array<TEvent>> = [];
+  private _undoStack: Array<HistoryBatch<TEvent>> = [];
+  private _redoStack: Array<HistoryBatch<TEvent>> = [];
+  private _batch: Array<InvertibleOp<TEvent>> | null = null;
 
   private _mergedUnavailMinuteCache = new Map<string, Array<MinuteRange>>();
 
@@ -682,7 +675,7 @@ export class CalendarCore<
     const eventMap = this.getEventMap(window);
     const currentMonthRange = Array.from(
       { length: this.store.state.viewMode.value },
-      (_, i) => this.store.state.currentPeriod.add({ months: i }).month,
+      (_, i) => this.currentPeriodPlain.add({ months: i }).month,
     );
     const today = Temporal.Now.plainDateISO();
     return days.map((day) => {
@@ -696,7 +689,6 @@ export class CalendarCore<
       }
       const isInCurrentPeriod = currentMonthRange.includes(day.month);
       return {
-        date: day,
         isoDate,
         events: timedEvents,
         allDayEvents,
@@ -769,19 +761,19 @@ export class CalendarCore<
     const first = days[0]!;
     const last = days[days.length - 1]!;
 
-    const fmt = (d: Temporal.PlainDate) =>
-      new Date(d.year, d.month - 1, d.day).toLocaleDateString(locale, {
+    const fmt = (isoDate: string) =>
+      new Date(`${isoDate}T00:00:00`).toLocaleDateString(locale, {
         month: "short",
         day: "numeric",
         year: "numeric",
       });
 
-    if (days.length === 1) return fmt(first.date);
-    return `${fmt(first.date)} \u2014 ${fmt(last.date)}`;
+    if (days.length === 1) return fmt(first.isoDate);
+    return `${fmt(first.isoDate)} \u2014 ${fmt(last.isoDate)}`;
   }
 
   formatCurrentPeriod(options?: { locale?: string }): string {
-    const period = this.store.state.currentPeriod;
+    const period = this.currentPeriodPlain;
     const locale = options?.locale ?? this.options.locale;
     return new Date(
       period.year,
@@ -872,16 +864,56 @@ export class CalendarCore<
     return all.filter((e) => !!e.allDay);
   }
 
-  private _snapshotEvents(): Array<TEvent> {
-    return this.options.events ? [...this.options.events] : [];
+  private _record(op: InvertibleOp<TEvent>) {
+    this._batch?.push(op);
   }
 
-  private _restoreSnapshot(snapshot: Array<TEvent>) {
-    this._eventMap.clear();
-    this._dependentsMap.clear();
-    this._dateIndex.clear();
-    this.options.events = snapshot;
-    snapshot.forEach((e) => this._indexAddEvent(e));
+  private _writeBatch(reason: string, write: () => void) {
+    if (this._batch) {
+      write();
+      return;
+    }
+
+    const ops: Array<InvertibleOp<TEvent>> = [];
+    this._batch = ops;
+    try {
+      write();
+    } finally {
+      this._batch = null;
+    }
+
+    if (ops.length === 0) return;
+    this._undoStack.push({ reason, ops });
+    this._redoStack = [];
+  }
+
+  private _applyOps(ops: Array<InvertibleOp<TEvent>>) {
+    const events = this.options.events;
+    if (!events) return;
+
+    for (const op of ops) {
+      if (op.kind === "add") {
+        events.push(op.event);
+        this._indexAddEvent(op.event);
+        continue;
+      }
+
+      if (op.kind === "remove") {
+        const current = this._eventMap.get(op.id);
+        const index = current ? events.indexOf(current) : -1;
+        if (index === -1) continue;
+        events.splice(index, 1);
+        this._indexRemoveEvent(current!);
+        continue;
+      }
+
+      const current = this._eventMap.get(op.id);
+      const index = current ? events.indexOf(current) : -1;
+      if (index === -1) continue;
+      events[index] = op.after;
+      this._indexUpdateEvent(current!, op.after);
+    }
+
     this.store.setState((prev) => ({
       ...prev,
       eventsVersion: prev.eventsVersion + 1,
@@ -896,58 +928,68 @@ export class CalendarCore<
     return this._redoStack.length > 0;
   }
 
-  private _diffEvents(before: Array<TEvent>, after: Array<TEvent>) {
-    const beforeMap = new Map(before.map((e) => [e.id, e]));
-    const afterMap = new Map(after.map((e) => [e.id, e]));
-    const added = after.filter((e) => !beforeMap.has(e.id));
-    const removed = before.filter((e) => !afterMap.has(e.id));
-    const updated = after.filter((e) => {
-      const prev = beforeMap.get(e.id);
-      if (!prev) return false;
-      return (
-        prev.start !== e.start || prev.end !== e.end || prev.title !== e.title
-      );
+  private _diffOps(ops: Array<InvertibleOp<TEvent>>) {
+    const toInfo = (event: TEvent) => ({
+      eventId: event.id,
+      eventTitle: event.title,
+      start: event.start as string,
+      end: event.end as string,
     });
-    const toInfo = (e: TEvent) => ({
-      eventId: e.id,
-      eventTitle: e.title,
-      start: e.start as string,
-      end: e.end as string,
-    });
-    return {
-      added: added.map(toInfo),
-      removed: removed.map(toInfo),
-      updated: updated.map(toInfo),
-    };
+
+    const added: Array<ReturnType<typeof toInfo>> = [];
+    const removed: Array<ReturnType<typeof toInfo>> = [];
+    const updated: Array<ReturnType<typeof toInfo>> = [];
+
+    for (const op of ops) {
+      if (op.kind === "add") {
+        added.push(toInfo(op.event));
+        continue;
+      }
+      if (op.kind === "remove") {
+        removed.push(toInfo(op.event));
+        continue;
+      }
+      const moved =
+        op.before.start !== op.after.start ||
+        op.before.end !== op.after.end ||
+        op.before.title !== op.after.title;
+      if (moved) updated.push(toInfo(op.after));
+    }
+
+    return { added, removed, updated };
   }
 
   undo() {
-    if (this._undoStack.length === 0) return;
-    const before = this._snapshotEvents();
-    this._redoStack.push(before);
-    const restored = this._undoStack.pop()!;
-    this._restoreSnapshot(restored);
-    getTimeClient().emit("event:undo", this._diffEvents(before, restored));
+    const entry = this._undoStack.pop();
+    if (!entry) return;
+
+    const inverse = invertWriteOps(entry.ops);
+    this._applyOps(inverse);
+    this._redoStack.push(entry);
+
+    getTimeClient().emit("event:undo", this._diffOps(inverse));
   }
 
   redo() {
-    if (this._redoStack.length === 0) return;
-    const before = this._snapshotEvents();
-    this._undoStack.push(before);
-    const restored = this._redoStack.pop()!;
-    this._restoreSnapshot(restored);
-    getTimeClient().emit("event:redo", this._diffEvents(before, restored));
+    const entry = this._redoStack.pop();
+    if (!entry) return;
+
+    this._applyOps(entry.ops);
+    this._undoStack.push(entry);
+
+    getTimeClient().emit("event:redo", this._diffOps(entry.ops));
   }
 
   commitAdd(event: TEvent) {
-    this._undoStack.push(this._snapshotEvents());
-    this._redoStack = [];
     if (!this.options.events) {
       this.options.events = [];
     }
     const normalized = this.normalizeEvent(event);
-    this.options.events.push(normalized);
-    this._indexAddEvent(normalized);
+    this._writeBatch("add", () => {
+      this.options.events!.push(normalized);
+      this._indexAddEvent(normalized);
+      this._record({ kind: "add", event: normalized });
+    });
     this.store.setState((prev) => ({
       ...prev,
       eventsVersion: prev.eventsVersion + 1,
@@ -966,9 +1008,6 @@ export class CalendarCore<
 
     const existingEvent = this._eventMap.get(id);
     if (!existingEvent) return;
-
-    this._undoStack.push(this._snapshotEvents());
-    this._redoStack = [];
 
     const index = this.options.events.indexOf(existingEvent);
     if (index === -1) return;
@@ -998,37 +1037,18 @@ export class CalendarCore<
       ...existingEvent,
       ...normalizedUpdates,
     } as TEvent;
-    this.options.events[index] = nextEvent;
-    this._indexUpdateEvent(existingEvent, nextEvent);
 
-    const visited = new Set([id]);
-
-    const newStart = normalizedUpdates.start as string | undefined;
-    const newEnd = normalizedUpdates.end as string | undefined;
-    const startChanged = newStart && newStart !== oldStartStr;
-    const endChanged = newEnd && newEnd !== oldEndStr;
-
-    if (startChanged) {
-      this._applyDependencyShifts(
-        propagateToPredecessors({
-          sourceId: id,
-          events: this._dependencyGraphEvents(),
-          timeZone: this.options.timeZone,
-          visited,
-        }),
-      );
-    }
-
-    if (startChanged || endChanged) {
-      this._applyDependencyShifts(
-        propagateToDependents({
-          sourceId: id,
-          events: this._dependencyGraphEvents(),
-          timeZone: this.options.timeZone,
-          visited,
-        }),
-      );
-    }
+    this._writeBatch("update", () => {
+      this.options.events![index] = nextEvent;
+      this._indexUpdateEvent(existingEvent, nextEvent);
+      this._record({
+        kind: "update",
+        id,
+        before: existingEvent,
+        after: nextEvent,
+      });
+      this._cascadeAfterUpdate(id, normalizedUpdates, oldStartStr, oldEndStr);
+    });
 
     this.store.setState((prev) => ({
       ...prev,
@@ -1042,6 +1062,41 @@ export class CalendarCore<
       end: toPlainDateTimeString(nextEvent.end),
       updates: normalizedUpdates as Record<string, unknown>,
     });
+  }
+
+  private _cascadeAfterUpdate(
+    id: string,
+    normalizedUpdates: Partial<Omit<TEvent, "id">>,
+    oldStartStr: string,
+    oldEndStr: string,
+  ) {
+    const newStart = normalizedUpdates.start as string | undefined;
+    const newEnd = normalizedUpdates.end as string | undefined;
+    const startChanged = newStart && newStart !== oldStartStr;
+    const endChanged = newEnd && newEnd !== oldEndStr;
+    if (!startChanged && !endChanged) return;
+
+    const visited = new Set([id]);
+
+    if (startChanged) {
+      this._applyDependencyShifts(
+        propagateToPredecessors({
+          sourceId: id,
+          events: this._dependencyGraphEvents(),
+          timeZone: this.options.timeZone,
+          visited,
+        }),
+      );
+    }
+
+    this._applyDependencyShifts(
+      propagateToDependents({
+        sourceId: id,
+        events: this._dependencyGraphEvents(),
+        timeZone: this.options.timeZone,
+        visited,
+      }),
+    );
   }
 
   private _applyDependencyShifts(shifts: Array<CascadeShift>) {
@@ -1062,6 +1117,12 @@ export class CalendarCore<
       } as TEvent;
       events[index] = updated;
       this._indexUpdateEvent(event, updated);
+      this._record({
+        kind: "update",
+        id: event.id,
+        before: event,
+        after: updated,
+      });
 
       getTimeClient().emit("event:updated", {
         eventId: event.id,
@@ -1260,21 +1321,28 @@ export class CalendarCore<
     const index = this.options.events.indexOf(master);
     if (index === -1) return;
 
-    this._undoStack.push(this._snapshotEvents());
-    this._redoStack = [];
+    this._writeBatch(`recurrence/${emit.type}`, () => {
+      if (nextMaster) {
+        this.options.events![index] = nextMaster;
+        this._indexUpdateEvent(master, nextMaster);
+        this._record({
+          kind: "update",
+          id: master.id,
+          before: master,
+          after: nextMaster,
+        });
+      } else {
+        this.options.events!.splice(index, 1);
+        this._indexRemoveEvent(master);
+        this._record({ kind: "remove", id: master.id, event: master });
+      }
 
-    if (nextMaster) {
-      this.options.events[index] = nextMaster;
-      this._indexUpdateEvent(master, nextMaster);
-    } else {
-      this.options.events.splice(index, 1);
-      this._indexRemoveEvent(master);
-    }
-
-    for (const added of addedEvents) {
-      this.options.events.push(added);
-      this._indexAddEvent(added);
-    }
+      for (const added of addedEvents) {
+        this.options.events!.push(added);
+        this._indexAddEvent(added);
+        this._record({ kind: "add", event: added });
+      }
+    });
 
     this.store.setState((prev) => ({
       ...prev,
@@ -1314,7 +1382,7 @@ export class CalendarCore<
 
     const baseDate = fromDate
       ? Temporal.PlainDate.from(toPlainDateTimeString(fromDate).split("T")[0]!)
-      : this.store.state.activeDate;
+      : this.activeDatePlain;
     const windowStart = baseDate
       .add({ days: 1 })
       .toString({ calendarName: "never" });
@@ -1338,7 +1406,7 @@ export class CalendarCore<
 
     const activeDateStr = fromDate
       ? toPlainDateTimeString(fromDate).split("T")[0]!
-      : this.store.state.activeDate.toString({ calendarName: "never" });
+      : this.store.state.activeDate;
     const masterStartStr = (master.start as string).split("T")[0]!;
 
     if (masterStartStr >= activeDateStr) return;
@@ -2078,11 +2146,11 @@ export class CalendarCore<
     const index = this.options.events.indexOf(removedEvent);
     if (index === -1) return;
 
-    this._undoStack.push(this._snapshotEvents());
-    this._redoStack = [];
-
-    this.options.events.splice(index, 1);
-    this._indexRemoveEvent(removedEvent);
+    this._writeBatch("remove", () => {
+      this.options.events!.splice(index, 1);
+      this._indexRemoveEvent(removedEvent);
+      this._record({ kind: "remove", id, event: removedEvent });
+    });
     this.store.setState((prev) => ({
       ...prev,
       eventsVersion: prev.eventsVersion + 1,
@@ -2208,9 +2276,7 @@ export class CalendarCore<
       return { rows: [], currentTimePosition: null };
     }
 
-    const isoDates = days.map((d) =>
-      d.date.toString({ calendarName: "never" }),
-    );
+    const isoDates = days.map((d) => d.isoDate);
     const eventsByResource = this.getMergedEventsByResource(days);
 
     const rows: Array<TimelineResourceRow<TResource, TEvent>> = (
@@ -2767,6 +2833,8 @@ export class CalendarCore<
    */
   setEvents(events: Array<TEvent> | null) {
     this.options.events = events?.map((e) => this.normalizeEvent(e)) || null;
+    this._undoStack = [];
+    this._redoStack = [];
     this._eventMap.clear();
     this._dependentsMap.clear();
     this._dateIndex.clear();

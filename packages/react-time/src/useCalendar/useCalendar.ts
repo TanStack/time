@@ -393,8 +393,8 @@ export const useCalendar = <
   );
 
   return {
-    activeDate: state.activeDate.toString(),
-    currentPeriod: state.currentPeriod.toString(),
+    activeDate: state.activeDate,
+    currentPeriod: state.currentPeriod,
     viewMode: state.viewMode,
     days,
     getDaysInRange,

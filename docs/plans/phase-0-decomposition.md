@@ -259,9 +259,55 @@ Set it on `new CalendarCore({ layout })` or override per `getEventProps(event, l
 Consumers that want to do their own thing read `getEventProps(event).layout` (an `OverlapInfo`)
 or call `analyzeOverlaps` directly and ignore the strategy layer.
 
-### Step 9 — Boundary types (ADR 0002) — last
-Swap `Day.date`, `currentPeriod`, `activeDate` from `Temporal.PlainDate` → ISO strings;
-instants → native `Date`. Done last so refactor churn doesn't multiply the type migration.
+### Step 9 — Boundary types (ADR 0002) ✅
+`CalendarStore.currentPeriod` / `activeDate` are ISO `YYYY-MM-DD` strings. `DateCore` keeps the
+Temporal arithmetic internally behind `currentPeriodPlain` / `activeDatePlain`, which re-attach
+`options.calendar` when parsing, so month arithmetic in a non-ISO calendar behaves as before
+while the stored value stays plain ISO.
+
+`Day.date` is **removed** rather than restringified — `Day.isoDate` was already the documented
+"use instead of manually formatting `date`" field, so keeping both would have been a duplicate.
+`groupDaysBy` parses `isoDate` where it needs weekday arithmetic.
+
+`ConvertTemporalToString` is gone: it existed to launder `Temporal.PlainDate` out of
+`CalendarState` for `CalendarApi`, and now `CalendarApi extends CalendarActions, CalendarState`
+directly. `useCalendar` returns the store values as-is instead of calling `.toString()`, so the
+adapter no longer hides a leak — and the examples' `currentPeriod.split("[")[0]` hack for the
+`[u-ca=…]` annotation is deleted.
+
+**Not** in this step, despite ADR 0002 covering it: the Date Primitives still return
+`{ value, options, asDate, asZonedDateTime, … }` — the `{ value, options }` tuple that ADR
+explicitly rejected, plus a Temporal escape hatch. ROADMAP Phase 1 schedules that audit
+("Date Primitives — audit for ADR 0002 return-type contract"); it is a separate breaking change
+across every primitive and its tests, so it does not belong in Phase 0's last step.
+
+### Step 10 — Cutover (in progress)
+
+Slice 1 ✅ — **the god class writes in batches.** `CalendarCore` no longer snapshots the event
+array per write. Every mutating path opens a `_writeBatch(reason, …)`, each mutation site records
+an `InvertibleOp` (`add` / `update` / `remove`), and the batch lands on the undo stack as one
+`{reason, ops}` entry — the same shape `undoModule` records, from the same `kernel/history.ts`
+helpers. `undo` / `redo` replay ops instead of restoring a copy of the whole list.
+
+Batches nest: `createDependency` → `commitUpdate` → `_applyDependencyShifts` is one entry, and
+the dependency cascade is inside it, so one undo reverses the move and everything it pushed.
+This is the batch abstraction the rest of the cutover needs — a `WriteBatch` is now a thing the
+god class produces, not something only the kernel understands.
+
+Two intentional behaviour changes, both pinned by tests (verified as the *only* differences by
+re-running the new tests against the snapshot implementation):
+
+- `event:undo` / `event:redo` list `updated` in application order, so an undo reports the
+  cascaded event before the one that caused it. It used to follow event-array order.
+- `setEvents` clears the history. Snapshot undo could resurrect the pre-`setEvents` list wholesale;
+  replaying ops against a list that was swapped underneath is meaningless, so the stacks are
+  dropped instead.
+
+Remaining slices: mount a `Kernel` inside `CalendarCore` and route the recorded batches through
+it (making the modules from Steps 3–7 the implementation rather than parallel code), move
+`getMasterEvent` / `goTo*Occurrence` onto the recurrence module, route
+`editRecurringEvent` / `removeRecurringEvent` and the resize controller through intents, and
+hand event storage (`_eventMap`, `_dateIndex`, `_loadedRanges`) to the kernel.
 
 ---
 

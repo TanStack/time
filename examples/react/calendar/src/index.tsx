@@ -710,15 +710,13 @@ function ScheduleView({
             <div ref={leftSentinelRef} style={{ width: 1 }} aria-hidden />
             <div className="contents">
               {days.map((day) => {
-                const dayDate = `${day.date.year}-${String(day.date.month).padStart(2, "0")}-${String(day.date.day).padStart(2, "0")}`;
+                const dayDate = day.isoDate;
                 const dayName = new Intl.DateTimeFormat("en-US", {
                   weekday: "short",
-                }).format(
-                  new Date(day.date.year, day.date.month - 1, day.date.day),
-                );
+                }).format(new Date(`${day.isoDate}T00:00:00`));
                 return (
                   <div
-                    key={day.date.toString()}
+                    key={day.isoDate}
                     className="border-r border-neutral-800 last:border-r-0"
                     {...getDayColumnProps(dayDate)}
                   >
@@ -727,7 +725,7 @@ function ScheduleView({
                         {dayName}
                       </div>
                       <div className="text-xs text-neutral-500">
-                        {day.date.day}
+                        {Number(day.isoDate.slice(8, 10))}
                       </div>
                     </div>
                     <div
@@ -1219,10 +1217,8 @@ function CalendarView() {
   const scheduleDays: Array<Day<Resource, Event<Resource>>> = isScheduleView
     ? calendar.viewMode.unit === "day"
       ? calendar.days.filter((day) => {
-          const currentDateStr = calendar.currentPeriod.split("[")[0];
-          return (
-            day.date.toString({ calendarName: "never" }) === currentDateStr
-          );
+          const currentDateStr = calendar.currentPeriod;
+          return day.isoDate === currentDateStr;
         })
       : calendar.days
     : [];
@@ -1406,10 +1402,9 @@ function CalendarView() {
 
     let currentDays: typeof calendar.days;
     if (calendar.viewMode.unit === "day") {
-      const currentDateStr = calendar.currentPeriod.split("[")[0];
+      const currentDateStr = calendar.currentPeriod;
       currentDays = calendar.days.filter(
-        (day) =>
-          day.date.toString({ calendarName: "never" }) === currentDateStr,
+        (day) => day.isoDate === currentDateStr,
       );
     } else {
       currentDays = calendar.days;
@@ -1892,7 +1887,7 @@ function CalendarView() {
                                 : "font-medium text-neutral-500"
                           }`}
                         >
-                          {day.date.day}
+                          {Number(day.isoDate.slice(8, 10))}
                         </div>
                         <div className="flex flex-col gap-1 flex-1 min-h-0">
                           {day.allDayEvents.map((event) => (

@@ -1,4 +1,3 @@
-import type { Temporal } from "@js-temporal/polyfill";
 import type { DateInput } from "~/date";
 
 export type EventDateTimeInput = string | Date | number;
@@ -138,8 +137,7 @@ export type Day<
   TResource extends Resource = Resource,
   TEvent extends Event<TResource> = Event<TResource>,
 > = {
-  date: Temporal.PlainDate;
-  /** Pre-computed ISO date string (YYYY-MM-DD) — use instead of manually formatting `date` */
+  /** ISO date string (YYYY-MM-DD). */
   isoDate: string;
   /** Timed events occurring on this day (sub-day events + segments of timed multi-day events). */
   events: Array<TEvent>;
@@ -163,8 +161,10 @@ export interface TimeSlot {
 export type { UnavailableRange } from "~/projection";
 
 export interface CalendarStore {
-  currentPeriod: Temporal.PlainDate;
-  activeDate: Temporal.PlainDate;
+  /** ISO date (YYYY-MM-DD) the view is anchored to. */
+  currentPeriod: string;
+  /** ISO date (YYYY-MM-DD) currently focused. */
+  activeDate: string;
   viewMode: ViewMode;
   eventsVersion: number;
   /** True while an async fetchEvents call is in-flight for the current viewport. */

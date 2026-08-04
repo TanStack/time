@@ -2,6 +2,19 @@ import { Temporal } from "@js-temporal/polyfill";
 import { getWeekInfo } from "../polyfills/getWeekInfo";
 import type { Day, Event, Resource } from "./types";
 
+const plainDateOf = (isoDate: string): Temporal.PlainDate =>
+  Temporal.PlainDate.from(isoDate);
+
+const filler = <TResource extends Resource, TEvent extends Event<TResource>>(
+  date: Temporal.PlainDate,
+): Day<TResource, TEvent> => ({
+  isoDate: date.toString({ calendarName: "never" }),
+  events: [],
+  allDayEvents: [],
+  isToday: false,
+  isInCurrentPeriod: false,
+});
+
 interface GroupDaysByBaseProps<
   TResource extends Resource,
   TEvent extends Event<TResource> = Event<TResource>,
@@ -55,22 +68,14 @@ export const groupDaysBy = <
       let currentWeek: Array<Day<TResource, TEvent> | null> = [];
 
       days.forEach((day) => {
-        if (currentWeek.length === 0 && day?.date.dayOfWeek !== weekStartsOn) {
-          if (day) {
-            const dayOfWeek = (day.date.dayOfWeek - weekStartsOn + 7) % 7;
+        const dayDate = day ? plainDateOf(day.isoDate) : null;
+        if (currentWeek.length === 0 && dayDate?.dayOfWeek !== weekStartsOn) {
+          if (dayDate) {
+            const dayOfWeek = (dayDate.dayOfWeek - weekStartsOn + 7) % 7;
             for (let i = 0; i < dayOfWeek; i++) {
-              const newDate = day.date.subtract({ days: dayOfWeek - i });
+              const newDate = dayDate.subtract({ days: dayOfWeek - i });
               currentWeek.push(
-                fillMissingDays
-                  ? {
-                      date: newDate,
-                      isoDate: newDate.toString({ calendarName: "never" }),
-                      events: [],
-                      allDayEvents: [],
-                      isToday: false,
-                      isInCurrentPeriod: false,
-                    }
-                  : null,
+                fillMissingDays ? filler<TResource, TEvent>(newDate) : null,
               );
             }
           }
@@ -84,21 +89,13 @@ export const groupDaysBy = <
 
       if (currentWeek.length > 0) {
         while (currentWeek.length < 7) {
-          const lastDate =
-            currentWeek[currentWeek.length - 1]?.date ??
-            Temporal.PlainDate.from("2024-01-01");
+          const lastIsoDate = currentWeek[currentWeek.length - 1]?.isoDate;
+          const lastDate = lastIsoDate
+            ? plainDateOf(lastIsoDate)
+            : Temporal.PlainDate.from("2024-01-01");
           const newDate = lastDate.add({ days: 1 });
           currentWeek.push(
-            fillMissingDays
-              ? {
-                  date: newDate,
-                  isoDate: newDate.toString({ calendarName: "never" }),
-                  events: [],
-                  allDayEvents: [],
-                  isToday: false,
-                  isInCurrentPeriod: false,
-                }
-              : null,
+            fillMissingDays ? filler<TResource, TEvent>(newDate) : null,
           );
         }
         weeks.push(currentWeek);
@@ -112,32 +109,24 @@ export const groupDaysBy = <
       let currentWorkWeek: Array<Day<TResource, TEvent> | null> = [];
 
       days.forEach((day) => {
+        const dayDate = day ? plainDateOf(day.isoDate) : null;
         if (
           currentWorkWeek.length === 0 &&
-          day?.date.dayOfWeek !== weekStartsOn
+          dayDate?.dayOfWeek !== weekStartsOn
         ) {
-          if (day) {
-            const dayOfWeek = (day.date.dayOfWeek - weekStartsOn + 7) % 7;
+          if (dayDate) {
+            const dayOfWeek = (dayDate.dayOfWeek - weekStartsOn + 7) % 7;
             for (let i = 0; i < dayOfWeek; i++) {
-              const newDay = day.date.subtract({ days: dayOfWeek - i });
+              const newDay = dayDate.subtract({ days: dayOfWeek - i });
               if (!weekend.includes(newDay.dayOfWeek)) {
                 currentWorkWeek.push(
-                  fillMissingDays
-                    ? {
-                        date: newDay,
-                        isoDate: newDay.toString({ calendarName: "never" }),
-                        events: [],
-                        allDayEvents: [],
-                        isToday: false,
-                        isInCurrentPeriod: false,
-                      }
-                    : null,
+                  fillMissingDays ? filler<TResource, TEvent>(newDay) : null,
                 );
               }
             }
           }
         }
-        if (day && !weekend.includes(day.date.dayOfWeek)) {
+        if (dayDate && day && !weekend.includes(dayDate.dayOfWeek)) {
           currentWorkWeek.push(day);
         }
         if (currentWorkWeek.length === 5) {
@@ -148,22 +137,15 @@ export const groupDaysBy = <
 
       if (currentWorkWeek.length > 0) {
         while (currentWorkWeek.length < 5) {
-          const lastDate =
-            currentWorkWeek[currentWorkWeek.length - 1]?.date ??
-            Temporal.PlainDate.from("2024-01-01");
+          const lastIsoDate =
+            currentWorkWeek[currentWorkWeek.length - 1]?.isoDate;
+          const lastDate = lastIsoDate
+            ? plainDateOf(lastIsoDate)
+            : Temporal.PlainDate.from("2024-01-01");
           const nextDate = lastDate.add({ days: 1 });
           if (!weekend.includes(nextDate.dayOfWeek)) {
             currentWorkWeek.push(
-              fillMissingDays
-                ? {
-                    date: nextDate,
-                    isoDate: nextDate.toString({ calendarName: "never" }),
-                    events: [],
-                    allDayEvents: [],
-                    isToday: false,
-                    isInCurrentPeriod: false,
-                  }
-                : null,
+              fillMissingDays ? filler<TResource, TEvent>(nextDate) : null,
             );
           }
         }

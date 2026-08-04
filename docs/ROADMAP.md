@@ -24,18 +24,22 @@ Prerequisite for everything. Nothing user-facing.
       stages** (ADR 0001).
 - [ ] Extract **pure, isomorphic validation core** (`validate(write, events, config) →
       conflicts`) — no store/viewport/DOM (ADR 0004).
-- [ ] Migrate boundary types: `Day.date`, `currentPeriod`, `activeDate` from
-      `Temporal.PlainDate` → ISO strings; instants → native `Date` (ADR 0002).
+- [x] Migrate boundary types: `currentPeriod` / `activeDate` are ISO `YYYY-MM-DD` strings and
+      `Day.date` is gone (`Day.isoDate` was already the documented field), so no Temporal value
+      crosses the calendar boundary (ADR 0002). The `{ value, options, asZonedDateTime }` shape
+      the Date Primitives still return contradicts the same ADR — that is the Phase 1 audit
+      below, not this item.
 - [x] Remove pixels from the core: `containerHeight` dropped from `getUnavailableRanges`
       (now `startFraction`/`endFraction` + `%`); logical layout (`startFraction`,
       `endFraction`, `column`, `columnCount`) lives in the `layout` projection stage with
       `toLayoutStyle` for `%` output. `getEventProps` / `getTimelineLayout` delegate to the
       pure cores (`layoutDaySegments`, `layoutTimelineRange`) and expose raw fractions
       (ADR 0003).
-- [ ] Undo/redo → **command diffs**, not full-event snapshots (memory). Kernel side done:
-      `undoModule` records one entry per committed write batch as inverse ops
-      (`invertWriteOps`), and `history/undo` / `history/redo` intents replay them.
-      `CalendarCore` keeps its snapshot stacks until the cutover gives it batches.
+- [x] Undo/redo → **command diffs**, not full-event snapshots (memory). `undoModule` records one
+      entry per committed kernel batch and replays it through `history/undo` / `history/redo`
+      intents; `CalendarCore` journals its own mutations into the same `{reason, ops}` batches and
+      replays them with `invertWriteOps`, so an entry costs the ops touched instead of a copy of
+      every event.
 
 ## Phase 1 — Alpha (Calendar product, React)
 
