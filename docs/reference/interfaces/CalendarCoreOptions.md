@@ -5,7 +5,7 @@ title: CalendarCoreOptions
 
 # Interface: CalendarCoreOptions\<TResource, TEvent\>
 
-Defined in: [calendar/calendar.ts:93](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L93)
+Defined in: [calendar/calendar.ts:94](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L94)
 
 Configuration options for initializing a CalendarCore instance, allowing customization
 of events, locale, time zone, and the calendar system.
@@ -82,7 +82,7 @@ Optional date time formatter.
 optional events: TEvent[] | null;
 ```
 
-Defined in: [calendar/calendar.ts:98](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L98)
+Defined in: [calendar/calendar.ts:99](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L99)
 
 An optional array of events to be handled by the calendar.
 
@@ -94,7 +94,7 @@ An optional array of events to be handled by the calendar.
 optional fetchEvents: (range) => Promise<TEvent[]>;
 ```
 
-Defined in: [calendar/calendar.ts:107](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L107)
+Defined in: [calendar/calendar.ts:108](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L108)
 
 Optional async callback for lazy/on-demand event loading.
 Called whenever the current viewport window is not yet fully loaded.
@@ -125,7 +125,7 @@ When omitted the calendar operates in fully-eager mode (no change in behaviour).
 optional layout: LayoutOptions;
 ```
 
-Defined in: [calendar/calendar.ts:112](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L112)
+Defined in: [calendar/calendar.ts:113](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L113)
 
 How concurrent events share the cross axis. Overridable per `getEventProps` call.
 
@@ -169,7 +169,7 @@ Optional range of dates to be used.
 optional resources: TResource[] | null;
 ```
 
-Defined in: [calendar/calendar.ts:100](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L100)
+Defined in: [calendar/calendar.ts:101](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L101)
 
 Optional resources to be used in the calendar.
 
