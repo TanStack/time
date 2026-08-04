@@ -53,6 +53,10 @@ Prerequisite for everything. Nothing user-facing.
 
 Ships once Phase 0 lands. Scope from ADR 0005 plus the pre-alpha breaking model changes.
 
+- [ ] **Feature composition as the public API** (ADR 0009) — `features` becomes a required option
+      built by `calendarFeatures({ ... })`; modules contribute their own methods and the instance
+      surface is what was composed. **Lands first in this phase**: the hierarchy and solver items
+      below attach as features, so doing it after means writing them twice.
 - [ ] **Date Primitives** (already present — audit for ADR 0002 return-type contract).
 - [ ] **Kernel**: event collection + viewport + projection + plain CRUD + `getRequiredRange`
       / rollback.
@@ -63,10 +67,13 @@ Ships once Phase 0 lands. Scope from ADR 0005 plus the pre-alpha breaking model 
 - [ ] **Event-model additions** for the solver (ADR 0007): dependency **lag/lead**,
       `constraints`, `manuallyScheduled`, `effort`/`duration`. Types only + honoured by
       validation; full solver is Phase 2.
-- [ ] Dependencies FS/SS/FF/SF (present) become a proper **module**.
-- [ ] Undo/redo (present) becomes a **module**.
+- [x] Dependencies FS/SS/FF/SF (present) become a proper **module** — `dependencyModule`, landed in
+      Phase 0.
+- [x] Undo/redo (present) becomes a **module** — `undoModule`, landed in Phase 0.
 - [ ] Timeline/Gantt **view** (present) — ships as a view, not a separate product.
-- [ ] **React** adapter supported; **Solid** kept as framework-agnostic proof.
+- [ ] **React** adapter supported; **Solid** kept as framework-agnostic proof. Both are thin
+      wrappers over composed construction (ADR 0009) — Solid is written against the split rather
+      than porting the monolith.
 - [ ] Update README/package messaging: five-framework claim is aspirational, not alpha.
 
 ## Phase 2 — Scheduling engine
