@@ -8,11 +8,13 @@ import {
   WRITE_VALIDATE_STAGE,
 } from "./types";
 import type {
+  ComposedApi,
   ConcreteWriteOp,
   KernelConfig,
   KernelDateInput,
   KernelEvent,
   Module,
+  ModuleApiCtx,
   Viewport,
   WriteBatch,
   WriteCtx,
@@ -59,12 +61,33 @@ export interface KernelOptions<E extends KernelEvent> {
   config?: KernelConfig;
 }
 
-export class Kernel<E extends KernelEvent> {
+export interface CreateKernelOptions<
+  TEvents extends KernelEvent,
+  TModules extends Record<string, Module<TEvents, unknown>>,
+> {
+  events?: Array<NoInfer<TEvents>> | null;
+  config?: KernelConfig;
+  modules: TModules & Record<string, Module<TEvents, unknown>>;
+}
+
+export function createKernel<
+  TEvents extends KernelEvent,
+  TModules extends Record<string, Module<TEvents, unknown>>,
+>(options: CreateKernelOptions<TEvents, TModules>): Kernel<TEvents, ComposedApi<TModules>> {
+  const kernel = new Kernel<TEvents, ComposedApi<TModules>>({
+    events: options.events,
+    config: options.config,
+  });
+  return kernel.use(...Object.values(options.modules));
+}
+
+export class Kernel<E extends KernelEvent, TApi = Record<string, unknown>> {
   private events = new Map<string, E>();
   private registry = new StageRegistry<E>();
-  private modules: Array<Module<E>> = [];
+  private modules: Array<Module<E, unknown>> = [];
   private history: Array<WriteBatch<E>> = [];
   readonly config: KernelConfig;
+  readonly api = {} as TApi;
 
   constructor(options: KernelOptions<E> = {}) {
     this.config = options.config ?? {};
@@ -73,11 +96,17 @@ export class Kernel<E extends KernelEvent> {
     }
   }
 
-  use(module: Module<E>): this {
-    this.modules.push(module);
-    for (const contribution of module.contributions) {
-      this.registry.add(contribution);
+  use(...modules: Array<Module<E, unknown>>): this {
+    for (const module of modules) {
+      this.modules.push(module);
+      for (const contribution of module.contributions) {
+        this.registry.add(contribution);
+      }
     }
+    for (const module of modules) {
+      this.mergeApi(module);
+    }
+    this.assertRequires();
     return this;
   }
 
@@ -208,5 +237,48 @@ export class Kernel<E extends KernelEvent> {
       getEvent: (id) => this.getEvent(id),
       config: this.config,
     };
+  }
+
+  private apiCtx(): ModuleApiCtx<E> {
+    return {
+      write: (input, reason) => this.write(input, reason),
+      project: (viewport) => this.project(viewport),
+      getEvents: () => this.getEvents(),
+      getEvent: (id) => this.getEvent(id),
+      config: this.config,
+    };
+  }
+
+  private mergeApi(module: Module<E, unknown>) {
+    const contributed = module.api?.(this.apiCtx());
+    if (!contributed) return;
+
+    const api = this.api as Record<string, unknown>;
+    for (const [key, value] of Object.entries(contributed)) {
+      if (key in api) {
+        throw new Error(
+          `Kernel: module "${module.name}" contributes api "${key}", which another mounted module already contributes. Rename one of them.`,
+        );
+      }
+      api[key] = value;
+    }
+  }
+
+  private assertRequires() {
+    const mounted = new Set(this.modules.map((module) => module.name));
+    for (const module of this.modules) {
+      const missing = (module.requires ?? []).filter(
+        (name) => !mounted.has(name),
+      );
+      if (missing.length > 0) {
+        throw new Error(
+          `Kernel: module "${module.name}" requires ${missing
+            .map((name) => `"${name}"`)
+            .join(", ")}, which ${
+            missing.length === 1 ? "is" : "are"
+          } not mounted.`,
+        );
+      }
+    }
   }
 }

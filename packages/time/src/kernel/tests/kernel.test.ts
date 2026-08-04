@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Kernel } from "../index";
+import { createKernel, Kernel } from "../index";
 import type { Conflict, KernelEvent, KernelOptions, Module } from "../index";
 
 interface TestEvent extends KernelEvent {
@@ -309,6 +309,137 @@ describe("Kernel", () => {
       });
       expect(toDay(range!.start)).toBe("2025-12-01");
       expect(toDay(range!.end)).toBe("2026-03-01");
+    });
+  });
+
+  describe("module api (ADR 0009)", () => {
+    const counting = (): Module<TestEvent, { count: () => number }> => {
+      let count = 0;
+      return {
+        name: "counting",
+        api: () => ({ count: () => count }),
+        contributions: [
+          {
+            pipeline: "write",
+            kind: "transform",
+            stage: "emit",
+            run: (batch) => {
+              count += batch.ops.length;
+              return batch;
+            },
+          },
+        ],
+      };
+    };
+
+    it("merges what each module contributes onto the kernel api", () => {
+      const kernel = createKernel({
+        modules: {
+          counting: counting(),
+          naming: {
+            name: "naming",
+            contributions: [],
+            api: () => ({ label: () => "kernel" }),
+          } satisfies Module<TestEvent, { label: () => string }>,
+        },
+      });
+
+      expect(kernel.api.count()).toBe(0);
+      expect(kernel.api.label()).toBe("kernel");
+    });
+
+    it("gives the api access to the kernel it is mounted on", () => {
+      const kernel = createKernel({
+        events: [evt("a", "2026-01-01T09:00:00Z", "2026-01-01T10:00:00Z")],
+        modules: {
+          reader: {
+            name: "reader",
+            contributions: [],
+            api: (ctx) => ({
+              titles: () => ctx.getEvents().map((event) => event.title),
+              rename: (id: string, title: string) => {
+                const before = ctx.getEvent(id)!;
+                ctx.write({
+                  kind: "update",
+                  id,
+                  before,
+                  after: { ...before, title },
+                });
+              },
+            }),
+          } satisfies Module<
+            TestEvent,
+            {
+              titles: () => Array<string>;
+              rename: (id: string, title: string) => void;
+            }
+          >,
+        },
+      });
+
+      kernel.api.rename("a", "renamed");
+      expect(kernel.api.titles()).toEqual(["renamed"]);
+    });
+
+    it("counts writes made through the kernel it was mounted on", () => {
+      const kernel = createKernel({ modules: { counting: counting() } });
+
+      kernel.write({
+        kind: "add",
+        event: evt("a", "2026-01-01T09:00:00Z", "2026-01-01T10:00:00Z"),
+      });
+
+      expect(kernel.api.count()).toBe(1);
+    });
+
+    it("rejects two modules contributing the same api key", () => {
+      expect(() =>
+        createKernel({
+          modules: { first: counting(), second: counting() },
+        }),
+      ).toThrow(/contributes api "count"/);
+    });
+
+    it("has an empty api when no module contributes one", () => {
+      const kernel = createKernel({
+        modules: { plain: { name: "plain", contributions: [] } },
+      });
+      expect(Object.keys(kernel.api)).toEqual([]);
+    });
+  });
+
+  describe("module requirements (ADR 0009)", () => {
+    it("throws naming the missing module", () => {
+      expect(() =>
+        createKernel({
+          modules: {
+            resize: {
+              name: "resize",
+              requires: ["availability"],
+              contributions: [],
+            } satisfies Module<TestEvent>,
+          },
+        }),
+      ).toThrow(/"resize" requires "availability"/);
+    });
+
+    it("is satisfied whichever order the modules are given in", () => {
+      const availability: Module<TestEvent> = {
+        name: "availability",
+        contributions: [],
+      };
+      const resize: Module<TestEvent> = {
+        name: "resize",
+        requires: ["availability"],
+        contributions: [],
+      };
+
+      expect(() =>
+        createKernel({ modules: { resize, availability } }),
+      ).not.toThrow();
+      expect(() =>
+        createKernel({ modules: { availability, resize } }),
+      ).not.toThrow();
     });
   });
 });

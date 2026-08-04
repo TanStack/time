@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Kernel } from "../../index";
+import { createKernel } from "../../index";
 import {
   dependencyModule,
   redoIntent,
@@ -28,31 +28,32 @@ const event = (id: string, start: string, end: string): CalEvent => ({
 describe("undoModule", () => {
   it("starts with nothing to undo or redo", () => {
     const history = undoModule<CalEvent>();
-    new Kernel<CalEvent>().use(history);
+    const kernel = createKernel({ modules: { history } });
 
-    expect(history.canUndo()).toBe(false);
-    expect(history.canRedo()).toBe(false);
+    expect(kernel.api.canUndo()).toBe(false);
+    expect(kernel.api.canRedo()).toBe(false);
   });
 
   it("undoes an add by removing the event", () => {
     const history = undoModule<CalEvent>();
-    const kernel = new Kernel<CalEvent>().use(history);
+    const kernel = createKernel({ modules: { history } });
 
     kernel.write({ kind: "add", event: event("e1", "10:00", "11:00") });
-    expect(history.canUndo()).toBe(true);
+    expect(kernel.api.canUndo()).toBe(true);
 
     kernel.write(undoIntent());
 
     expect(kernel.getEvents()).toEqual([]);
-    expect(history.canUndo()).toBe(false);
-    expect(history.canRedo()).toBe(true);
+    expect(kernel.api.canUndo()).toBe(false);
+    expect(kernel.api.canRedo()).toBe(true);
   });
 
   it("undoes a remove by restoring the event", () => {
     const history = undoModule<CalEvent>();
-    const kernel = new Kernel<CalEvent>({
+    const kernel = createKernel({
       events: [event("e1", "10:00", "11:00")],
-    }).use(history);
+      modules: { history },
+    });
 
     kernel.write({
       kind: "remove",
@@ -69,9 +70,10 @@ describe("undoModule", () => {
 
   it("undoes an update by restoring the previous span", () => {
     const history = undoModule<CalEvent>();
-    const kernel = new Kernel<CalEvent>({
+    const kernel = createKernel({
       events: [event("e1", "10:00", "11:00")],
-    }).use(history);
+      modules: { history },
+    });
 
     kernel.write({
       kind: "update",
@@ -86,20 +88,20 @@ describe("undoModule", () => {
 
   it("redoes what it just undid", () => {
     const history = undoModule<CalEvent>();
-    const kernel = new Kernel<CalEvent>().use(history);
+    const kernel = createKernel({ modules: { history } });
 
     kernel.write({ kind: "add", event: event("e1", "10:00", "11:00") });
     kernel.write(undoIntent());
     kernel.write(redoIntent());
 
     expect(kernel.getEvent("e1")).toBeDefined();
-    expect(history.canUndo()).toBe(true);
-    expect(history.canRedo()).toBe(false);
+    expect(kernel.api.canUndo()).toBe(true);
+    expect(kernel.api.canRedo()).toBe(false);
   });
 
   it("walks back through several writes one at a time", () => {
     const history = undoModule<CalEvent>();
-    const kernel = new Kernel<CalEvent>().use(history);
+    const kernel = createKernel({ modules: { history } });
 
     kernel.write({ kind: "add", event: event("a", "09:00", "10:00") });
     kernel.write({ kind: "add", event: event("b", "10:00", "11:00") });
@@ -117,33 +119,34 @@ describe("undoModule", () => {
 
   it("drops the redo stack once a new write lands", () => {
     const history = undoModule<CalEvent>();
-    const kernel = new Kernel<CalEvent>().use(history);
+    const kernel = createKernel({ modules: { history } });
 
     kernel.write({ kind: "add", event: event("a", "09:00", "10:00") });
     kernel.write(undoIntent());
-    expect(history.canRedo()).toBe(true);
+    expect(kernel.api.canRedo()).toBe(true);
 
     kernel.write({ kind: "add", event: event("b", "10:00", "11:00") });
 
-    expect(history.canRedo()).toBe(false);
+    expect(kernel.api.canRedo()).toBe(false);
   });
 
   it("ignores an undo with an empty stack", () => {
     const history = undoModule<CalEvent>();
-    const kernel = new Kernel<CalEvent>({
+    const kernel = createKernel({
       events: [event("e1", "10:00", "11:00")],
-    }).use(history);
+      modules: { history },
+    });
 
     const result = kernel.write(undoIntent());
 
     expect(result.status).toBe("committed");
     expect(kernel.getEvents()).toHaveLength(1);
-    expect(history.canRedo()).toBe(false);
+    expect(kernel.api.canRedo()).toBe(false);
   });
 
   it("treats a cascaded batch as one entry", () => {
     const history = undoModule<CalEvent>();
-    const kernel = new Kernel<CalEvent>({
+    const kernel = createKernel({
       events: [
         event("e1", "10:00", "11:00"),
         {
@@ -151,27 +154,29 @@ describe("undoModule", () => {
           dependsOn: [{ id: "e1", type: "FS" }],
         },
       ],
-    })
-      .use(history)
-      .use(resizeModule<CalEvent>({ timeZone: "UTC" }))
-      .use(dependencyModule<CalEvent>({ timeZone: "UTC" }));
+      modules: {
+        history,
+        resize: resizeModule<CalEvent>({ timeZone: "UTC" }),
+        dependency: dependencyModule<CalEvent>({ timeZone: "UTC" }),
+      },
+    });
 
     kernel.write(
       resizeIntent({ eventId: "e1", edge: "bottom", deltaMinutes: 60 }),
     );
     expect(kernel.getEvent("e2")!.start).toBe(`${MONDAY}T12:00:00`);
-    expect(history.undoStack()).toHaveLength(1);
+    expect(kernel.api.undoStack()).toHaveLength(1);
 
     kernel.write(undoIntent());
 
     expect(kernel.getEvent("e1")!.end).toBe(`${MONDAY}T11:00:00`);
     expect(kernel.getEvent("e2")!.start).toBe(`${MONDAY}T11:00:00`);
-    expect(history.canUndo()).toBe(false);
+    expect(kernel.api.canUndo()).toBe(false);
   });
 
   it("replays without re-deriving the cascade", () => {
     const history = undoModule<CalEvent>();
-    const kernel = new Kernel<CalEvent>({
+    const kernel = createKernel({
       events: [
         event("e1", "10:00", "11:00"),
         {
@@ -179,9 +184,11 @@ describe("undoModule", () => {
           dependsOn: [{ id: "e1", type: "FS" }],
         },
       ],
-    })
-      .use(history)
-      .use(dependencyModule<CalEvent>({ timeZone: "UTC" }));
+      modules: {
+        history,
+        dependency: dependencyModule<CalEvent>({ timeZone: "UTC" }),
+      },
+    });
 
     kernel.write({
       kind: "update",
@@ -204,19 +211,24 @@ describe("undoModule", () => {
   it("replays past a veto that would block the same write", () => {
     const history = undoModule<CalEvent>();
     let vetoing = false;
-    const kernel = new Kernel<CalEvent>().use(history).use({
-      name: "veto",
-      contributions: [
-        {
-          pipeline: "write",
-          kind: "validate",
-          stage: "availability-validate",
-          run: () =>
-            vetoing
-              ? [{ code: "test/veto", message: "no", eventIds: ["e1"] }]
-              : [],
+    const kernel = createKernel({
+      modules: {
+        history,
+        veto: {
+          name: "veto",
+          contributions: [
+            {
+              pipeline: "write",
+              kind: "validate",
+              stage: "availability-validate",
+              run: () =>
+                vetoing
+                  ? [{ code: "test/veto", message: "no", eventIds: ["e1"] }]
+                  : [],
+            },
+          ],
         },
-      ],
+      },
     });
 
     kernel.write({ kind: "add", event: event("e1", "10:00", "11:00") });
@@ -228,11 +240,11 @@ describe("undoModule", () => {
 
   it("records the reason each entry came from", () => {
     const history = undoModule<CalEvent>();
-    const kernel = new Kernel<CalEvent>().use(history);
+    const kernel = createKernel({ modules: { history } });
 
     kernel.write({ kind: "add", event: event("e1", "10:00", "11:00") });
 
-    expect(history.undoStack()[0]).toMatchObject({
+    expect(kernel.api.undoStack()[0]).toMatchObject({
       reason: "add",
       ops: [{ kind: "add" }],
     });
@@ -240,13 +252,13 @@ describe("undoModule", () => {
 
   it("keeps only the newest entries once the limit is reached", () => {
     const history = undoModule<CalEvent>({ limit: 2 });
-    const kernel = new Kernel<CalEvent>().use(history);
+    const kernel = createKernel({ modules: { history } });
 
     kernel.write({ kind: "add", event: event("a", "09:00", "10:00") });
     kernel.write({ kind: "add", event: event("b", "10:00", "11:00") });
     kernel.write({ kind: "add", event: event("c", "11:00", "12:00") });
 
-    expect(history.undoStack().map((entry) => entry.ops[0])).toMatchObject([
+    expect(kernel.api.undoStack().map((entry) => entry.ops[0])).toMatchObject([
       { kind: "add", event: { id: "b" } },
       { kind: "add", event: { id: "c" } },
     ]);
@@ -254,27 +266,34 @@ describe("undoModule", () => {
 
   it("forgets everything when cleared", () => {
     const history = undoModule<CalEvent>();
-    const kernel = new Kernel<CalEvent>().use(history);
+    const kernel = createKernel({ modules: { history } });
 
     kernel.write({ kind: "add", event: event("e1", "10:00", "11:00") });
-    history.clearHistory();
+    kernel.api.clearHistory();
 
-    expect(history.canUndo()).toBe(false);
-    expect(history.canRedo()).toBe(false);
+    expect(kernel.api.canUndo()).toBe(false);
+    expect(kernel.api.canRedo()).toBe(false);
   });
 
   it("does not record a rejected write", () => {
     const history = undoModule<CalEvent>();
-    const kernel = new Kernel<CalEvent>().use(history).use({
-      name: "veto",
-      contributions: [
-        {
-          pipeline: "write",
-          kind: "validate",
-          stage: "availability-validate",
-          run: () => [{ code: "test/veto", message: "no", eventIds: ["e1"] }],
+    const kernel = createKernel({
+      modules: {
+        history,
+        veto: {
+          name: "veto",
+          contributions: [
+            {
+              pipeline: "write",
+              kind: "validate",
+              stage: "availability-validate",
+              run: () => [
+                { code: "test/veto", message: "no", eventIds: ["e1"] },
+              ],
+            },
+          ],
         },
-      ],
+      },
     });
 
     const result = kernel.write({
@@ -283,6 +302,6 @@ describe("undoModule", () => {
     });
 
     expect(result.status).toBe("rejected");
-    expect(history.canUndo()).toBe(false);
+    expect(kernel.api.canUndo()).toBe(false);
   });
 });

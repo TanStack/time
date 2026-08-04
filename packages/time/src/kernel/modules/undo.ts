@@ -44,7 +44,7 @@ type Pending<E extends KernelEvent> =
 
 export function undoModule<E extends KernelEvent>(
   options: UndoModuleOptions = {},
-): Module<E> & UndoHistory<E> {
+): Module<E, UndoHistory<E>> {
   const undone: Array<HistoryEntry<E>> = [];
   const redone: Array<HistoryEntry<E>> = [];
   let pending: Pending<E> = null;
@@ -100,15 +100,17 @@ export function undoModule<E extends KernelEvent>(
 
   return {
     name: "undo",
-    canUndo: () => undone.length > 0,
-    canRedo: () => redone.length > 0,
-    undoStack: () => [...undone],
-    redoStack: () => [...redone],
-    clearHistory: () => {
-      undone.length = 0;
-      redone.length = 0;
-      pending = null;
-    },
+    api: () => ({
+      canUndo: () => undone.length > 0,
+      canRedo: () => redone.length > 0,
+      undoStack: () => [...undone],
+      redoStack: () => [...redone],
+      clearHistory: () => {
+        undone.length = 0;
+        redone.length = 0;
+        pending = null;
+      },
+    }),
     contributions: [
       {
         pipeline: "write",

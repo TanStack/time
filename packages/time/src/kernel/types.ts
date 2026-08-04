@@ -147,8 +147,39 @@ export type RangeExtender<E extends KernelEvent> = (
   config: KernelConfig,
 ) => Viewport | null;
 
-export interface Module<E extends KernelEvent> {
+export interface ModuleApiCtx<E extends KernelEvent> {
+  write: (
+    input: WriteOp<E> | Array<WriteOp<E>>,
+    reason?: string,
+  ) => WriteResult<E>;
+  project: (viewport: Viewport) => Array<E>;
+  getEvents: () => Array<E>;
+  getEvent: (id: string) => E | undefined;
+  config: KernelConfig;
+}
+
+export interface Module<E extends KernelEvent, TApi = object> {
   name: string;
   contributions: Array<Contribution<E>>;
+  requires?: ReadonlyArray<string>;
   getRequiredRange?: RangeExtender<E>;
+  api?: (ctx: ModuleApiCtx<E>) => TApi;
 }
+
+export type ModuleApi<TModule> = TModule extends {
+  api?: (...args: Array<never>) => infer TApi;
+}
+  ? TApi
+  : object;
+
+type UnionToIntersection<TUnion> = (
+  TUnion extends unknown
+    ? (value: TUnion) => void
+    : never
+) extends (value: infer TIntersection) => void
+  ? TIntersection
+  : never;
+
+export type ComposedApi<TModules> = UnionToIntersection<
+  { [K in keyof TModules]: ModuleApi<TModules[K]> }[keyof TModules]
+>;

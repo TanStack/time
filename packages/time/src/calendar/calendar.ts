@@ -17,7 +17,7 @@ import {
   normalizeRecurrenceRule,
   resolveOccurrenceStart,
 } from "~/recurrence";
-import { Kernel } from "~/kernel";
+import { createKernel } from "~/kernel";
 import {
   dependencyModule,
   editOccurrenceIntent,
@@ -31,8 +31,8 @@ import type { UndoHistory } from "~/kernel/modules";
 import type {
   InvertibleOp,
   IntentOp,
+  Kernel,
   KernelEvent,
-  Module,
   WriteOp,
 } from "~/kernel";
 import { getEventProps } from "./getEventProps";
@@ -406,10 +406,11 @@ export class CalendarCore<
   private _dependentsMap = new Map<string, Set<string>>();
   private _dateIndex = new Map<string, Set<string>>();
   private _loadedRanges: Array<{ start: string; end: string }> = [];
-  private _kernel!: Kernel<WritableEvent<TEvent>>;
+  private _kernel!: Kernel<
+    WritableEvent<TEvent>,
+    UndoHistory<WritableEvent<TEvent>>
+  >;
   private _eventsCache: Array<TEvent> | null = null;
-  private _history!: Module<WritableEvent<TEvent>> &
-    UndoHistory<WritableEvent<TEvent>>;
 
   private _mergedUnavailMinuteCache = new Map<string, Array<MinuteRange>>();
 
@@ -478,18 +479,17 @@ export class CalendarCore<
   }
 
   private _seedKernel(events: Array<TEvent>) {
-    this._history = undoModule<WritableEvent<TEvent>>();
     this._eventsCache = null;
-    this._kernel = new Kernel<WritableEvent<TEvent>>({
+    this._kernel = createKernel({
       events: events as Array<WritableEvent<TEvent>>,
-    })
-      .use(this._history)
-      .use(recurrenceModule<WritableEvent<TEvent>>())
-      .use(
-        dependencyModule<WritableEvent<TEvent>>({
+      modules: {
+        history: undoModule<WritableEvent<TEvent>>(),
+        recurrence: recurrenceModule<WritableEvent<TEvent>>(),
+        dependency: dependencyModule<WritableEvent<TEvent>>({
           timeZone: this.options.timeZone,
         }),
-      );
+      },
+    });
   }
 
   private _write(
@@ -978,11 +978,11 @@ export class CalendarCore<
   }
 
   canUndo() {
-    return this._history.canUndo();
+    return this._kernel.api.canUndo();
   }
 
   canRedo() {
-    return this._history.canRedo();
+    return this._kernel.api.canRedo();
   }
 
   private _diffOps(ops: Array<InvertibleOp<TEvent>>) {
@@ -1017,14 +1017,14 @@ export class CalendarCore<
   }
 
   undo() {
-    if (!this._history.canUndo()) return;
+    if (!this._kernel.api.canUndo()) return;
 
     const applied = this._write([undoIntent()], "history/undo");
     getTimeClient().emit("event:undo", this._diffOps(applied));
   }
 
   redo() {
-    if (!this._history.canRedo()) return;
+    if (!this._kernel.api.canRedo()) return;
 
     const applied = this._write([redoIntent()], "history/redo");
     getTimeClient().emit("event:redo", this._diffOps(applied));
