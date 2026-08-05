@@ -50,25 +50,21 @@ function toIsoDate(date: Temporal.PlainDate): string {
   return date.toString({ calendarName: "never" });
 }
 
-/**
- * Base options interface for date-related core classes.
- */
 export interface DateCoreOptions {
-  /** The initial view mode configuration. */
   viewMode: ViewMode;
-  /** Optional locale for date formatting. Uses a BCP 47 language tag. */
+
   locale?: Intl.UnicodeBCP47LocaleIdentifier;
-  /** Optional time zone specification. */
+
   timeZone?: Temporal.TimeZoneLike;
-  /** Optional calendar system to be used. */
+
   calendar?: Temporal.CalendarLike;
-  /** Optional range of dates to be used. */
+
   range?: DateRange;
-  /** Optional date formatter. */
+
   dateFormatter?: Intl.DateTimeFormat;
-  /** Optional time formatter. */
+
   timeFormatter?: Intl.DateTimeFormat;
-  /** Optional date time formatter. */
+
   dateTimeFormatter?: Intl.DateTimeFormat;
 }
 

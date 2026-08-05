@@ -4,10 +4,6 @@ import { getDateTimeDefaults } from "~/utils";
 
 export interface IsLeapYearOptions extends DateOptions {}
 
-/**
- * isLeapYear
- * Returns true if the year of the given date is a leap year
- */
 export function isLeapYear(
   date: DateInput,
   options?: IsLeapYearOptions,

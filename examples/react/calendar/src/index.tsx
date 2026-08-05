@@ -147,12 +147,6 @@ const sampleResources: Array<Resource> = [
   },
 ];
 
-/*
-  Capacity + consumption demo:
-  - Room A has capacity 4, Room B has capacity 2.
-  - Overlapping events intentionally consume different amounts.
-  - Try resizing one event to overlap others to trigger capacity conflicts.
-*/
 function getSampleEvents(): Array<Event<Resource>> {
   return [
     {
@@ -510,7 +504,6 @@ function EventModal({
             </div>
           )}
 
-          {/* ── Recurrence ───────────────────────────────────────────── */}
           <div className="space-y-2">
             <Label htmlFor="recurrenceFrequency">Repeat</Label>
             <select
@@ -698,7 +691,7 @@ function ScheduleView({
             </div>
           ))}
         </div>
-        {/* Horizontal-scrollable schedule body — sentinels auto-navigate on edge */}
+
         <ScrollArea viewportRef={scrollRef} className="flex-1">
           <div
             className="grid"
@@ -1803,7 +1796,6 @@ function CalendarView() {
         />
       ) : (
         <div className="border border-neutral-800 rounded-lg overflow-hidden bg-black">
-          {/* Sticky day-name header */}
           <div
             className="grid border-b border-neutral-800 bg-neutral-950 sticky top-0 z-10"
             style={{
@@ -1824,12 +1816,10 @@ function CalendarView() {
             ))}
           </div>
 
-          {/* Scrollable month body — sentinels trigger period navigation */}
           <ScrollArea
             viewportRef={monthScrollRef}
             className="h-[calc(100vh-260px)]"
           >
-            {/* Top sentinel: triggers goToPreviousPeriod */}
             <div ref={monthTopRef} style={{ height: 1 }} aria-hidden />
 
             <div
@@ -1998,7 +1988,6 @@ function CalendarView() {
               )}
             </div>
 
-            {/* Bottom sentinel: triggers goToNextPeriod */}
             <div ref={monthBottomRef} style={{ height: 1 }} aria-hidden />
           </ScrollArea>
         </div>

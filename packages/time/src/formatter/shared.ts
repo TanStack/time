@@ -18,7 +18,7 @@ export interface DateFormatterOptions extends LocaleFormatterOptions {
   year?: "2-digit" | "numeric";
   month?: "2-digit" | "numeric" | "narrow" | "short" | "long";
   day?: "2-digit" | "numeric";
-  // style shortcuts
+
   dateStyle?: FormatStyle;
 }
 
@@ -36,7 +36,7 @@ export interface TimeFormatterOptions extends LocaleFormatterOptions {
     | "longOffset"
     | "shortGeneric"
     | "longGeneric";
-  // style shortcuts
+
   timeStyle?: FormatStyle;
 }
 

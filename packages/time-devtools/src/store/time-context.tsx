@@ -53,10 +53,8 @@ export const TimeProvider: ParentComponent = (props) => {
   onMount(() => {
     const client = getTimeClient();
 
-    // Mark as connected
     setState("isConnected", true);
 
-    // Subscribe to all time events using onAllPluginEvents
     const unsubscribe = client.onAllPluginEvents((event) => {
       const entry: ActivityLogEntry = {
         id: generateId(),
@@ -67,7 +65,6 @@ export const TimeProvider: ParentComponent = (props) => {
 
       setState("activityLog", (prev) => [entry, ...prev].slice(0, 100));
 
-      // Track the live map of events
       if (
         event.type === "time:event:added" ||
         event.type === "time:event:updated"

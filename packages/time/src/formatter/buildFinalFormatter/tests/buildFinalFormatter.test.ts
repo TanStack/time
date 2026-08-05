@@ -41,7 +41,7 @@ describe("buildFinalFormatter", () => {
       formatterName: "timeOnlyFormat",
       forRange: true,
     });
-    // output does not show 2-digit hour in range due to a bug in Intl.DateTimeFormat.formatRange
+
     expect(timeFormat("2021-03-12T14:42", "2021-03-12T15:42")).toBe(
       "2:42 – 3:42 PM",
     );

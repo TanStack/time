@@ -53,10 +53,7 @@ export interface ResizeStartArgs {
   recurrenceScope?: RecurrenceEditScope;
   clientX: number;
   clientY: number;
-  /**
-   * Optional element under the pointer (e.g. `e.target as HTMLElement`).
-   * Used to resolve the originating day column without `getBoundingClientRect`.
-   */
+
   target?: HTMLElement | null;
 }
 
@@ -76,22 +73,6 @@ const INITIAL_RESIZE_STATE: ResizeState = {
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
-/**
- * Framework-agnostic controller that owns:
- *  - resize state machine (preview, blocked, lastValid)
- *  - rAF coalescing for `mousemove`
- *  - day-column registry + cached rects
- *  - last-processed dedupe + last-emitted-error dedupe
- *  - delegation to `CalendarCore.validateResize` / `commitUpdate`
- *
- * UI bindings (React, Solid, etc.) only need to:
- *  1. Subscribe to state changes and read `getSnapshot()`.
- *  2. Forward DOM `mousedown` to `start()`, then attach `handleMouseMove` /
- *     `handleMouseUp` to `document` (the controller exposes these as bound
- *     methods so the same reference can be used for `addEventListener` /
- *     `removeEventListener`).
- *  3. Call `registerDayColumn(date, element)` from a ref callback.
- */
 export class ResizeController<
   TResource extends Resource,
   TEvent extends Event<TResource>,
@@ -262,10 +243,6 @@ export class ResizeController<
     });
   }
 
-  /**
-   * Mouse-up handler. Auto-attached by `start()`; commits if the preview
-   * differs from the original event range, then detaches DOM listeners.
-   */
   handleMouseUp() {
     this._cancelPendingFrame();
     this._detachDomListeners();
@@ -375,10 +352,6 @@ export class ResizeController<
     this._notify();
   }
 
-  /**
-   * Run a single resize iteration: derive delta, dedupe, validate, emit
-   * error (rate-limited), and update preview state.
-   */
   private _processMouseMove(e: MouseEvent) {
     const original = this._original;
     if (!original) return;
@@ -475,11 +448,6 @@ export class ResizeController<
     });
   }
 
-  /**
-   * Emit a resize error via TimeClient + onResizeError callback, but rate-limit
-   * to avoid flooding when the user dwells in an invalid area: the same
-   * `(eventId, message)` pair is suppressed for 500ms.
-   */
   private _maybeEmitError(
     eventId: string,
     originalStart: string,

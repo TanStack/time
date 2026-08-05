@@ -5,10 +5,6 @@ import { getDateTimeDefaults } from "~/utils";
 
 export interface IsAfterOptions extends DateOptions {}
 
-/**
- * isAfter
- * Returns true if the first date/time instance is after the second date/time instance
- */
 export function isAfter(
   date1: DateInput,
   date2: DateInput,

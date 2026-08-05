@@ -7,10 +7,6 @@ export interface UntilOptions extends DateOptions {
   unit: Temporal.DateTimeUnit;
 }
 
-/**
- * until
- * Returns the duration from the first date/time instance until the second date/time instance
- */
 export function until(start: DateInput, end: DateInput, options: UntilOptions) {
   const { timeZone: defaultTimeZone, calendar: defaultCalendar } =
     getDateTimeDefaults();

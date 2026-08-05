@@ -7,11 +7,6 @@ export interface SinceOptions extends DateOptions {
   unit: Temporal.DateTimeUnit;
 }
 
-/**
- * since
- * Returns the duration from the first date/time instance since the second date/time instance
- * (equivalent to: how long has it been since the second date, from the first date's perspective)
- */
 export function since(start: DateInput, end: DateInput, options: SinceOptions) {
   const { timeZone: defaultTimeZone, calendar: defaultCalendar } =
     getDateTimeDefaults();

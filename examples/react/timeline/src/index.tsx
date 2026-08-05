@@ -1417,7 +1417,6 @@ function TimelineDemo() {
     resources: sampleResources,
     timeZone: "UTC",
     fetchEvents: async ({ start, end }) => {
-      // Simulate network latency
       await new Promise((resolve) => setTimeout(resolve, 800));
 
       const startDate = new Date(start);

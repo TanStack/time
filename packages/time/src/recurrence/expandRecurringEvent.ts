@@ -2,23 +2,6 @@ import { Temporal } from "@js-temporal/polyfill";
 import type { Event, Resource } from "~/calendar/types";
 import { toPlainDateTimeString } from "~/date/parse";
 
-/**
- * Expand a single recurring master event into individual occurrence instances
- * that fall within the given viewport window [windowStart, windowEnd).
- *
- * Design contract:
- * - The master occurrence (occurrence index 0) is returned when visible so
- *   EXDATE/overrides can affect the first instance too.
- * - Every generated occurrence gets a stable id: master id for index 0,
- *   `"{masterId}_{n}"` for n >= 1, unless an override supplies `id`.
- * - Each occurrence carries `_recurringMasterId`, `_occurrenceIndex`, and
- *   `_occurrenceOriginalStart` so the UI can identify/edit it.
- * - Occurrences are ephemeral: they are never stored in `_eventMap`.
- *
- * @param event       The master recurring event (already normalised, start/end are ISO strings).
- * @param windowStart ISO date string (YYYY-MM-DD) — inclusive lower bound.
- * @param windowEnd   ISO date string (YYYY-MM-DD) — exclusive upper bound.
- */
 export function expandRecurringEvent<
   TResource extends Resource = Resource,
   TEvent extends Event<TResource> = Event<TResource>,
@@ -259,10 +242,6 @@ export function expandRecurringEvent<
   return occurrences;
 }
 
-/**
- * Add N months to a PlainDateTime, clamping the day-of-month to the last valid
- * day of the resulting month (e.g. Jan 31 + 1 month → Feb 28/29).
- */
 function addSafeMonths(
   dt: Temporal.PlainDateTime,
   months: number,
@@ -270,11 +249,9 @@ function addSafeMonths(
   let year = dt.year;
   let month = dt.month + months;
 
-  // Normalise month overflow
   year += Math.floor((month - 1) / 12);
   month = ((month - 1) % 12) + 1;
 
-  // Clamp day to last valid day in target month
   const daysInMonth = Temporal.PlainDate.from({
     year,
     month,

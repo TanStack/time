@@ -8,13 +8,6 @@ import {
 } from "./time";
 import type { AvailabilityResourceInput } from "./checkAvailability";
 
-/**
- * Minutes of `date` that none of the selected resources can serve, as a merged, sorted list.
- * A minute counts as unavailable only when every resource is unavailable for it.
- *
- * Returns `null` when availability is unknowable — no resources at all, or none matching
- * `resourceIds` — which callers render as "no constraint" rather than "blocked all day".
- */
 export function mergeUnavailableMinuteRanges(
   resources: Array<AvailabilityResourceInput> | null | undefined,
   date: string,

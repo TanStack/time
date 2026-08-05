@@ -23,12 +23,6 @@ export interface FormatDateOptions extends DateOptions {
     | DateTimeFormatterBuildParams["options"];
 }
 
-/**
- * format
- * Formats a date/time instance using Intl.DateTimeFormat
- * @param date - The date to format
- * @param formatOptions - Formatting options including type, locale, and Intl.DateTimeFormat options
- */
 export function format(
   date: DateInput,
   formatOptions?: FormatDateOptions,

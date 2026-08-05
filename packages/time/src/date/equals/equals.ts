@@ -15,10 +15,6 @@ export type EqualsUnit =
 
 export interface EqualsOptions extends DateOptions {}
 
-/**
- * equals
- * Returns true if two date/time instances are equal at the specified unit level
- */
 export function equals(
   date1: DateInput,
   date2: DateInput,

@@ -1,21 +1,13 @@
 import type { TimeSlot } from "./types";
 
 interface TimeSlotOptions {
-  /** Start hour (0-23). Default: 0 */
   startHour?: number;
-  /** End hour (0-24). Default: 24 */
+
   endHour?: number;
-  /** Interval in minutes. Default: 60 */
+
   interval?: number;
 }
-/**
- * Generates time slots for calendar day views.
- * Returns an array of time slots with labels formatted according to the locale.
- *
- * @param locale - The locale to use for formatting time labels (BCP 47 format)
- * @param options - Configuration options for time slots
- * @returns Array of time slots with hour, minute, and formatted label
- */
+
 export function getTimeSlots(
   locale: Intl.UnicodeBCP47LocaleIdentifier,
   options?: TimeSlotOptions,

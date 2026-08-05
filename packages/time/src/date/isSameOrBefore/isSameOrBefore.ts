@@ -18,10 +18,6 @@ export interface IsSameOrBeforeOptions extends DateOptions {
   unit: IsSameOrBeforeUnit;
 }
 
-/**
- * isSameOrBefore
- * Returns true if the first date/time instance is the same as or before the second date/time instance at the specified unit level
- */
 export function isSameOrBefore(
   date1: DateInput,
   date2: DateInput,

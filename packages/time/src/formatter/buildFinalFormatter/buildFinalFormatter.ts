@@ -8,11 +8,6 @@ export interface BuildFinalFormatterOptions {
   forRange?: boolean;
 }
 
-/**
- * buildFinalFormatter - takes an Intl.DateTimeFormat object and returns a
- * basic format function. When calling the format function, it will validate
- * the given input date(s) and return the formatted date string.
- */
 export function buildFinalFormatter({
   formatter,
   formatterName,

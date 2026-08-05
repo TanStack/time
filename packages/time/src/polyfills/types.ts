@@ -5,7 +5,6 @@ export interface WeekInfo {
 }
 
 declare global {
-  // oxlint-disable-next-line no-namespace
   namespace Intl {
     interface Locale {
       getWeekInfo: () => WeekInfo;

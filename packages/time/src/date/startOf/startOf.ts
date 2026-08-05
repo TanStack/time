@@ -16,10 +16,6 @@ export interface StartOfOptions extends DateOperationOptions {
   unit: StartOfUnit;
 }
 
-/**
- * startOf
- * Returns the start of a given unit for a date/time instance
- */
 export function startOf(input: DateInput, options: StartOfOptions) {
   return withDateOperation<StartOfOptions>((zdt, { unit }) => {
     switch (unit) {

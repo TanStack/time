@@ -62,10 +62,6 @@ export function createDateOperationResult(
   };
 }
 
-/**
- * Higher-order function that provides common parsing, defaults, and formatting logic
- * for date utility functions like startOf, endOf, etc.
- */
 export function withDateOperation<TArgs>(
   fn: (zdt: Temporal.ZonedDateTime, args: TArgs) => Temporal.ZonedDateTime,
 ) {

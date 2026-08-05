@@ -1,9 +1,6 @@
 import { Temporal } from "@js-temporal/polyfill";
 import { getWeekInfo } from "../polyfills/getWeekInfo";
 
-/**
- * Get the first day of the month for a given year-month string
- */
 export function getFirstDayOfMonth(yearMonth: string): Temporal.PlainDate {
   const [year, month] = yearMonth.split("-").map(Number);
   if (!year || !month) {
@@ -12,9 +9,6 @@ export function getFirstDayOfMonth(yearMonth: string): Temporal.PlainDate {
   return Temporal.PlainDate.from({ year, month, day: 1 });
 }
 
-/**
- * Get the first day of the week for a given date string and locale
- */
 export function getFirstDayOfWeek(
   dateString: string,
   locale: string,

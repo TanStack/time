@@ -1,9 +1,5 @@
 import type { Temporal } from "@js-temporal/polyfill";
 
-/**
- * Normalizes a ZonedDateTime to midnight for week-level comparisons
- * This is needed because startOf('week') only adjusts the day but preserves time components
- */
 export function normalizeWeek(
   zdt: Temporal.ZonedDateTime,
 ): Temporal.ZonedDateTime {

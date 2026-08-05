@@ -8,13 +8,6 @@ export interface IsBetweenOptions extends DateOptions {
   range: Range;
 }
 
-/**
- * isBetween
- * Returns true if the date/time instance is between the start and end of the range
- * @param date - The date to check
- * @param range - The range with start and end dates
- * @param options - Options including timeZone, calendar, and inclusivity
- */
 export function isBetween(date: DateInput, options: IsBetweenOptions): boolean {
   const { timeZone: defaultTimeZone, calendar: defaultCalendar } =
     getDateTimeDefaults();

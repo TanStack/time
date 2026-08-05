@@ -5152,10 +5152,6 @@ describe("CalendarCore", () => {
       });
 
       test("renders an event at its true height (no min-height floor)", () => {
-        // Regression: a min-height floor padded the box downward from the
-        // start, so the rendered bottom (start + floor) did not match the real
-        // end. Resizing one edge then revealed the true size, making the other
-        // (fixed) edge jump. Geometry must be exactly proportional.
         const cal = createCalendar({
           viewMode: { value: 1, unit: "week" },
           events: [
@@ -5163,7 +5159,7 @@ describe("CalendarCore", () => {
               id: "e1",
               title: "Short",
               start: `${DATE_MON}T09:00:00`,
-              end: `${DATE_MON}T09:20:00`, // 20 min
+              end: `${DATE_MON}T09:20:00`,
             },
           ],
         });
@@ -5179,7 +5175,7 @@ describe("CalendarCore", () => {
       test("top-edge resize keeps the bottom (end) fixed at the real end", () => {
         const day = DATE_MON;
         const originalEnd = `${day}T09:20:00`;
-        const realBottom = (560 / 1440) * 100; // 09:20
+        const realBottom = (560 / 1440) * 100;
 
         for (const previewStart of [
           `${day}T08:57:00`,
@@ -5196,7 +5192,7 @@ describe("CalendarCore", () => {
           expect(preview.previewStyle).not.toBeNull();
           const top = parseFloat(preview.previewStyle!.top);
           const height = parseFloat(preview.previewStyle!.height);
-          // bottom = top + height stays exactly at the real end — no drift.
+
           expect(top + height).toBeCloseTo(realBottom, 6);
         }
       });

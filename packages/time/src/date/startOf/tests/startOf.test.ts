@@ -54,24 +54,21 @@ describe("startOf", () => {
 
   describe("week calculation", () => {
     test("should return start of week (Monday)", () => {
-      // 2024-03-15 is a Friday (day 5), so start of week should be Monday (2024-03-11)
       const result = startOf("2024-03-15T14:42:12.789Z", { unit: "week" });
       const resultDate = new Date(result.value as unknown as string);
-      expect(resultDate.getDay()).toBe(1); // Monday
+      expect(resultDate.getDay()).toBe(1);
     });
 
     test("should return start of week for Sunday", () => {
-      // 2024-03-17 is a Sunday (day 7), so start of week should be Monday (2024-03-11)
       const result = startOf("2024-03-17T14:42:12.789Z", { unit: "week" });
       const resultDate = new Date(result.value as unknown as string);
-      expect(resultDate.getDay()).toBe(1); // Monday
+      expect(resultDate.getDay()).toBe(1);
     });
 
     test("should return start of week for Monday", () => {
-      // 2024-03-11 is a Monday (day 1), so start of week should be itself
       const result = startOf("2024-03-11T14:42:12.789Z", { unit: "week" });
       const resultDate = new Date(result.value as unknown as string);
-      expect(resultDate.getDay()).toBe(1); // Monday
+      expect(resultDate.getDay()).toBe(1);
       expect(resultDate.toISOString()).toContain("2024-03-11");
     });
   });

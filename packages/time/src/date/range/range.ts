@@ -13,11 +13,6 @@ export interface RangeOptions extends DateOperationOptions {
   step: DurationLike;
 }
 
-/**
- * range
- * Generates an array of dates from start to end at the specified step interval.
- * The range is inclusive of both start and end (if end falls exactly on a step).
- */
 export function range(options: RangeOptions) {
   const { start, end, step } = options;
   const resolved = resolveOptions(options);

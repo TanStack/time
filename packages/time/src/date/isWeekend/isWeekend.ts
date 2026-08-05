@@ -7,10 +7,6 @@ export interface IsWeekendOptions extends DateOptions {
   locale?: string;
 }
 
-/**
- * isWeekend
- * Returns true if the date falls on a weekend based on locale-specific week info
- */
 export function isWeekend(
   date: DateInput,
   options?: IsWeekendOptions,

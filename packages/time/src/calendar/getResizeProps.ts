@@ -3,16 +3,15 @@ import { Temporal } from "@js-temporal/polyfill";
 export type ResizeEdge = "top" | "bottom" | "left" | "right";
 
 export interface UnavailableTimeRange {
-  /** Start time in minutes from midnight (0-1440) */
   startMinutes: number;
-  /** End time in minutes from midnight (0-1440) */
+
   endMinutes: number;
 }
 
 export interface ResizeConstraints {
   minDurationMinutes?: number;
   snapToMinutes?: number;
-  /** Unavailable time ranges that the event cannot be resized into */
+
   unavailableRanges?: Array<UnavailableTimeRange>;
 }
 
@@ -208,23 +207,19 @@ export function getResizeHandleStyle(edge: ResizeEdge): ResizeHandleStyle {
   return { ...baseStyle, bottom: 0 };
 }
 
-/**
- * Information about a segment's position within a multi-day event
- */
 export interface SegmentInfo {
-  /** Whether this is the first segment of a multi-day event */
   isFirstSegment: boolean;
-  /** Whether this is the last segment of a multi-day event */
+
   isLastSegment: boolean;
-  /** Whether this segment is part of a split multi-day event */
+
   isSplitEvent: boolean;
-  /** The original event start (before splitting) */
+
   originalStart: string;
-  /** The original event end (before splitting) */
+
   originalEnd: string;
-  /** The segment's start time */
+
   segmentStart: string;
-  /** The segment's end time */
+
   segmentEnd: string;
 }
 
@@ -261,42 +256,31 @@ export function getSegmentInfo(event: {
   };
 }
 
-/**
- * Style for positioned elements (events, ghosts)
- */
 export interface PositionStyle {
   top: string;
   height: string;
 }
 
-/**
- * Result of resize preview calculation for a segment
- */
 export interface SegmentResizePreview {
-  /** Whether the segment should be hidden (shrunk away) */
   shouldHide: boolean;
-  /** The preview style to apply, if any */
+
   previewStyle: PositionStyle | null;
-  /** Whether the preview has changed from the original */
+
   hasChanged: boolean;
 }
 
 export interface ResizePreviewOptions {
-  /** The date string of the day being rendered (YYYY-MM-DD) */
   dayDate: string;
-  /** The original start of the event (before resize) */
+
   originalStart: string;
-  /** The original end of the event (before resize) */
+
   originalEnd: string;
-  /** The preview start during resize */
+
   previewStart: string;
-  /** The preview end during resize */
+
   previewEnd: string;
 }
 
-/**
- * Calculates the resize preview state for a segment on a specific day
- */
 export function calculateSegmentResizePreview(
   options: ResizePreviewOptions,
 ): SegmentResizePreview {
@@ -353,10 +337,6 @@ export function calculateSegmentResizePreview(
     return { shouldHide: true, previewStyle: null, hasChanged };
   }
 
-  // Render the real geometry — never a min-height floor. Flooring pads the box
-  // beyond the real edge, so resizing one edge makes the *other* (fixed) edge
-  // appear to jump when the true size is revealed. Keeping geometry real means
-  // the edge you are not dragging never moves.
   return {
     shouldHide: false,
     previewStyle: {
@@ -368,17 +348,13 @@ export function calculateSegmentResizePreview(
 }
 
 export interface GhostPreviewOptions {
-  /** The date string of the day being rendered (YYYY-MM-DD) */
   dayDate: string;
-  /** The preview start during resize */
+
   previewStart: string;
-  /** The preview end during resize */
+
   previewEnd: string;
 }
 
-/**
- * Calculates the ghost preview style for a day that doesn't have an existing segment
- */
 export function calculateGhostPreviewStyle(
   options: GhostPreviewOptions,
 ): PositionStyle | null {
@@ -447,9 +423,6 @@ export interface TimelineResizePreviewStyle {
   width: string;
 }
 
-/**
- * Calculates left/width percentages for timeline resize preview
- */
 export function calculateTimelineResizePreview(
   options: TimelineResizePreviewOptions,
 ): TimelineResizePreviewStyle {
@@ -493,9 +466,6 @@ export function calculateTimelineResizePreview(
   };
 }
 
-/**
- * Checks if an event spans multiple days
- */
 export function isMultiDayEvent(start: string, end: string): boolean {
   const startDate = new Date(start);
   const endDate = new Date(end);
@@ -508,9 +478,6 @@ export interface EventTimeRange {
   isMultiDay: boolean;
 }
 
-/**
- * Gets the time range to display for an event, considering resize state
- */
 export function getEventDisplayTimeRange(options: {
   originalStart: string;
   originalEnd: string;
@@ -538,28 +505,21 @@ export function getEventDisplayTimeRange(options: {
 }
 
 export interface FormatEventTimeOptions {
-  /** Locale for formatting (e.g., 'en-US') */
   locale?: string;
-  /** Whether to include date for single-day events */
+
   alwaysShowDate?: boolean;
 }
 
 export interface FormattedEventTime {
-  /** Formatted start string */
   startFormatted: string;
-  /** Formatted end string */
+
   endFormatted: string;
-  /** Full formatted range string */
+
   rangeFormatted: string;
-  /** Whether this is a multi-day event */
+
   isMultiDay: boolean;
 }
 
-/**
- * Formats an event's time range for display
- * For multi-day events: includes date and time
- * For single-day events: includes only time (unless alwaysShowDate is true)
- */
 export function formatEventTimeRange(
   start: string,
   end: string,

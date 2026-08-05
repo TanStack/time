@@ -2,26 +2,20 @@ import type { DateInput } from "~/date";
 
 export type EventDateTimeInput = string | Date | number;
 
-/** How often a recurring event repeats. */
 export type RecurrenceFrequency = "daily" | "weekly" | "monthly" | "yearly";
 
-/** Supported dependency types for ordering events. */
 export type DependencyType = "FS" | "SS" | "FF" | "SF";
 
-/** A single dependency from one event to another. */
 export interface EventDependency {
   id: string;
   type: DependencyType;
 }
 
-/** Scope used when editing/removing a recurring event series. */
 export type RecurrenceEditScope = "this" | "thisAndFollowing" | "all";
 
-/** Single-occurrence replacement keyed by the original occurrence start. */
 export interface RecurrenceOverride<TResource extends Resource = Resource> {
-  /** Original occurrence start (RECURRENCE-ID equivalent). */
   originalStart: EventDateTimeInput;
-  /** Optional replacement occurrence id. Defaults to the generated occurrence id. */
+
   id?: string;
   start?: EventDateTimeInput;
   end?: EventDateTimeInput;
@@ -33,45 +27,27 @@ export interface RecurrenceOverride<TResource extends Resource = Resource> {
   [key: string]: unknown;
 }
 
-/**
- * Defines the repetition rule for a recurring event.
- * Occurrences are expanded automatically by the calendar within the current viewport.
- */
 export interface RecurrenceRule<TResource extends Resource = Resource> {
-  /** How often the event repeats. */
   frequency: RecurrenceFrequency;
-  /**
-   * Repeat every N frequencies (default 1).
-   * E.g. `{ frequency: 'weekly', interval: 2 }` = every other week.
-   */
+
   interval?: number;
-  /**
-   * ISO date string (YYYY-MM-DD) — no occurrences start on or after this date.
-   * Takes precedence over `count`.
-   */
+
   until?: string;
-  /**
-   * Maximum total occurrences to generate (including the original).
-   * Only used when `until` is not set.
-   */
+
   count?: number;
-  /**
-   * For `weekly` frequency: ISO weekdays (1 = Mon … 7 = Sun) to repeat on.
-   * Defaults to the weekday of the original event start.
-   */
+
   byWeekday?: Array<number>;
-  /** Specific occurrence starts to exclude (EXDATE). Date-only values match by occurrence date. */
+
   exDates?: Array<EventDateTimeInput>;
-  /** Per-occurrence replacements keyed by original occurrence start. */
+
   overrides?: Array<RecurrenceOverride<TResource>>;
 }
 
 export interface Availability {
-  /** Days of the week when available (ISO weekday: 1 = Monday, ..., 7 = Sunday) */
   weekdays: Array<number>;
-  /** Start time in HH:mm format */
+
   startTime: string;
-  /** End time in HH:mm format */
+
   endTime: string;
 }
 
@@ -86,14 +62,9 @@ export interface Resource {
   };
 }
 
-/**
- * Represents the configuration for the current viewing mode of a calendar,
- * specifying the scale and unit of time.
- */
 export interface ViewMode {
-  /** The number of units for the view mode. */
   value: number;
-  /** The unit of time that the calendar view should display (month, week, workWeek or day). */
+
   unit: "month" | "week" | "day" | "workWeek";
 }
 
@@ -104,32 +75,21 @@ export interface Event<TResource extends Resource = Resource> {
   title: string;
   resources?: Array<TResource | string>;
   consumption?: Array<number>;
-  /** Dependency links to other events this event is constrained by.
-   * Each link has an `id` (predecessor event) and a `type` (FS/SS/FF/SF).
-   * When a predecessor's relevant anchor shifts, this event shifts by the same delta. */
+
   dependsOn?: Array<EventDependency>;
-  /** Defines how and when this event repeats. */
+
   recurrence?: RecurrenceRule<TResource>;
-  /**
-   * When true, event spans full day(s) and is rendered in the all-day strip
-   * separately from timed events. `start` and `end` are still ISO datetime strings;
-   * for an all-day event use the day's start (00:00:00) and the inclusive day's
-   * end (23:59:59) — or any time within those days. Multi-day all-day events
-   * are split per-day like regular events.
-   */
+
   allDay?: boolean;
-  /** Original start time before splitting (only set on split segments of multi-day events) */
+
   _originalStart?: string;
-  /** Original end time before splitting (only set on split segments of multi-day events) */
+
   _originalEnd?: string;
-  /**
-   * ID of the master recurring event this occurrence was generated from.
-   * Only present on ephemeral occurrence instances (index > 0).
-   */
+
   _recurringMasterId?: string;
-  /** 0-based index of this occurrence within the recurring series. */
+
   _occurrenceIndex?: number;
-  /** Original occurrence start before EXDATE/override changes. */
+
   _occurrenceOriginalStart?: string;
 }
 
@@ -137,11 +97,10 @@ export type Day<
   TResource extends Resource = Resource,
   TEvent extends Event<TResource> = Event<TResource>,
 > = {
-  /** ISO date string (YYYY-MM-DD). */
   isoDate: string;
-  /** Timed events occurring on this day (sub-day events + segments of timed multi-day events). */
+
   events: Array<TEvent>;
-  /** All-day events occurring on this day (segments of multi-day all-day events included). */
+
   allDayEvents: Array<TEvent>;
   isToday: boolean;
   isInCurrentPeriod: boolean;
@@ -161,29 +120,24 @@ export interface TimeSlot {
 export type { UnavailableRange } from "~/projection";
 
 export interface CalendarStore {
-  /** ISO date (YYYY-MM-DD) the view is anchored to. */
   currentPeriod: string;
-  /** ISO date (YYYY-MM-DD) currently focused. */
+
   activeDate: string;
   viewMode: ViewMode;
   eventsVersion: number;
-  /** True while an async fetchEvents call is in-flight for the current viewport. */
+
   isPending: boolean;
 }
 
-/**
- * Information about why a resource is unavailable
- */
 export interface UnavailabilityReason {
-  /** Resource ID */
   resourceId: string;
-  /** Resource label/name */
+
   resourceLabel: string;
-  /** Why the resource is unavailable */
+
   reason: "outside-hours" | "capacity" | "no-availability";
-  /** Human-readable explanation */
+
   description: string;
-  /** Current capacity usage if applicable */
+
   capacityInfo?: {
     max: number;
     used: number;
@@ -191,28 +145,21 @@ export interface UnavailabilityReason {
   };
 }
 
-/**
- * Information about a specific availability conflict
- */
 export interface AvailabilityConflict {
-  /** The date where the conflict occurred (YYYY-MM-DD) */
   date: string;
-  /** Time range that conflicts with availability */
+
   conflictRange: {
     start: string;
     end: string;
   };
-  /** The resource(s) whose availability is being violated */
+
   resourceIds: Array<string>;
-  /** Detailed reasons for each resource */
+
   resourceDetails: Array<UnavailabilityReason>;
-  /** Human-readable description of the conflict */
+
   description: string;
 }
 
-/**
- * Error information when a resize operation is blocked
- */
 export interface ResizeError {
   eventId: string;
   eventTitle: string;
@@ -222,19 +169,15 @@ export interface ResizeError {
   originalEnd: string;
   attemptedStart?: string;
   attemptedEnd?: string;
-  /** Specific availability conflicts that prevented the resize */
+
   conflicts?: Array<AvailabilityConflict>;
 }
 
-/**
- * Result of checking if a resize is valid
- */
 export interface ResizeValidationResult {
   valid: boolean;
   error?: ResizeError;
 }
 
-/** Result of a {@link CalendarActions.saveEvent} call. */
 export type SaveEventResult =
   | { success: true }
   | { success: false; error: ResizeError };
@@ -244,18 +187,18 @@ export interface TimelineEventLayout<
   TEvent extends Event<TResource> = Event<TResource>,
 > {
   event: TEvent;
-  /** Offset along the time axis as a percentage of the visible range */
+
   left: number;
-  /** Size along the time axis as a percentage of the visible range */
+
   width: number;
   lane: number;
-  /** Start as a fraction of the visible range (0-1) */
+
   startFraction: number;
-  /** End as a fraction of the visible range (0-1) */
+
   endFraction: number;
-  /** True when the event starts before the first visible day (left edge is clipped) */
+
   isStartClipped: boolean;
-  /** True when the event ends after the last visible day (right edge is clipped) */
+
   isEndClipped: boolean;
 }
 

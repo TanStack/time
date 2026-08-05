@@ -127,22 +127,8 @@ describe("parse", () => {
   });
 
   test("should throw an error for an invalid epoch", () => {
-    // oxlint-disable-next-line no-loss-of-precision
     expect(() => parse(9274309587123413)).toThrowError(
       '"9274309587123412" is an invalid epoch date value',
     );
   });
-
-  /* test('should parse a valid time string', () => {
-    const date = parse('00:00:00.000Z');
-    expect(dateTimeFormat.format(date)).toBe('12/31/2020, 7:00:00 PM EST');
-  });
-
-  test('should throw an error for an invalid date string', () => {
-    expect(() => parse('2021-01-01T00:00:00.000')).toThrowError('"2021-01-01T00:00:00.000" is an invalid RFC339 Internet Date Time string');
-  });
-
-  test('should throw an error for an invalid time string', () => {
-    expect(() => parse('00:00:00.000')).toThrowError('"00:00:00.000" is an invalid time string');
-  }); */
 });

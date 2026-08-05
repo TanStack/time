@@ -118,74 +118,49 @@ type RecurrenceEmit =
       end: string;
     };
 
-/**
- * Configuration options for initializing a CalendarCore instance, allowing customization
- * of events, locale, time zone, and the calendar system.
- * @template TEvent - Specifies the event type, extending a base Event type.
- */
 export interface CalendarCoreOptions<
   TResource extends Resource,
   TEvent extends Event<TResource>,
 > extends DateCoreOptions {
-  /** An optional array of events to be handled by the calendar. */
   events?: Array<TEvent> | null;
-  /** Optional resources to be used in the calendar. */
+
   resources?: Array<TResource> | null;
-  /**
-   * Optional async callback for lazy/on-demand event loading.
-   * Called whenever the current viewport window is not yet fully loaded.
-   * The returned events are merged into the internal indices automatically.
-   * When omitted the calendar operates in fully-eager mode (no change in behaviour).
-   */
+
   fetchEvents?: (range: {
     start: string;
     end: string;
   }) => Promise<Array<TEvent>>;
-  /** How concurrent events share the cross axis. Overridable per `getEventProps` call. */
+
   layout?: LayoutOptions;
 }
 
-/**
- * The API surface provided by CalendarCore, allowing interaction with the calendar's state
- * and manipulation of its settings and data.
- * @template TEvent - The type of events handled by the calendar.
- */
 interface CalendarActions<
   TResource extends Resource,
   TEvent extends Event<TResource>,
 > {
-  /** Navigates to the previous period according to the current view mode. */
   goToPreviousPeriod: () => void;
-  /** Navigates to the next period according to the current view mode. */
+
   goToNextPeriod: () => void;
-  /** Resets the view to the current period based on today's date. */
+
   goToCurrentPeriod: () => void;
-  /** Navigates to a specific date. */
+
   goToSpecificPeriod: (date: string) => void;
-  /** Checks if navigation to the previous period is allowed within the range. */
+
   canGoPreviousPeriod: () => boolean;
-  /** Checks if navigation to the next period is allowed within the range. */
+
   canGoNextPeriod: () => boolean;
-  /**
-   * Navigates to the next occurrence of a recurring event after fromDate (defaults to activeDate).
-   * No-op when the event is not recurring or has no future occurrences.
-   */
+
   goToNextOccurrence: (eventId: string, fromDate?: EventDateTimeInput) => void;
-  /**
-   * Navigates to the previous occurrence of a recurring event before fromDate (defaults to activeDate).
-   * No-op when the event is not recurring or is already at the first occurrence.
-   */
+
   goToPreviousOccurrence: (
     eventId: string,
     fromDate?: EventDateTimeInput,
   ) => void;
-  /**
-   * Returns the master event for a given occurrence (or the event itself if it is already the master).
-   */
+
   getMasterEvent: (event: TEvent) => TEvent;
-  /** Changes the current view mode of the calendar. */
+
   changeViewMode: (newViewMode: CalendarStore["viewMode"]) => void;
-  /** Retrieves styling properties for a specific event. */
+
   getEventProps: (
     event: TEvent,
     layoutOptions?: LayoutOptions,
@@ -194,46 +169,38 @@ interface CalendarActions<
     overlappingEvents: Array<TEvent>;
     start: string;
     end: string;
-    /** Logical layout of the event within its day, free of pixels and orientation. */
+
     layout?: EventLayout;
     style?: LayoutStyle;
   };
-  /** Retrieves the names of the days of the week, based on the current locale. */
+
   getDaysNames: (weekday?: "long" | "short") => Array<string>;
-  /** Groups days by a specified unit. */
+
   groupDaysBy: (props: {
     days: Array<Day<TResource, TEvent> | null>;
     unit: "week" | "workWeek";
     fillMissingDays?: boolean;
   }) => Array<Array<Day<TResource, TEvent> | null>>;
-  /** Retrieves time slots for day view with configurable intervals. */
+
   getTimeSlots: (
     options?: Parameters<typeof getTimeSlots>[1],
   ) => Array<TimeSlot>;
-  /** Retrieves all events for a specific date. */
+
   getEventsByDate: (date: string) => Array<TEvent>;
-  /** Retrieves all-day events occurring on a specific date (multi-day all-day segments included). */
+
   getAllDayEventsByDate: (date: string) => Array<TEvent>;
-  /**
-   * Fetches events for the event's date range, validates placement
-   * constraints, and adds the event if valid. Returns a result
-   * indicating success or a validation error.
-   */
+
   addEvent: (
     event: TEvent,
     options?: { dependsOn?: Array<EventDependency> },
   ) => Promise<SaveEventResult>;
-  /**
-   * Fetches events for the event's date range, validates move constraints
-   * (and cascading dependents), and updates the event if valid.
-   * Returns a result indicating success or a validation error.
-   */
+
   editEvent: (
     eventId: string,
     updates: Partial<Omit<TEvent, "id">>,
     options?: { dependsOn?: Array<EventDependency> },
   ) => Promise<SaveEventResult>;
-  /** Edits one occurrence, this-and-following occurrences, or the whole recurring series. */
+
   editRecurringEvent: (
     eventId: string,
     updates: Partial<Omit<TEvent, "id">>,
@@ -243,7 +210,7 @@ interface CalendarActions<
       dependsOn?: Array<EventDependency>;
     },
   ) => Promise<SaveEventResult>;
-  /** Removes one occurrence, this-and-following occurrences, or the whole recurring series. */
+
   removeRecurringEvent: (
     eventId: string,
     options: {
@@ -251,46 +218,38 @@ interface CalendarActions<
       occurrenceStart?: EventDateTimeInput;
     },
   ) => void;
-  /** Removes an event by ID. */
+
   removeEvent: (id: Event["id"]) => void;
-  /** Retrieves unavailable time ranges for a specific date based on resource availability. */
+
   getUnavailableRanges: (
     date: string,
     options?: {
       resourceIds?: Array<TResource["id"]>;
     },
   ) => Array<UnavailableRange>;
-  /** Groups visible events by resource, merging multi-day segments back to full-span events. */
+
   getEventsByResource: () => Map<TResource["id"], Array<TEvent>>;
-  /** Computes horizontal timeline layout with event positions, lane assignments, and current time marker. */
+
   getTimelineLayout: () => TimelineLayout<TResource, TEvent>;
-  /** Returns a human-readable label for the currently visible date range. */
+
   formatPeriodLabel: (options?: { locale?: string }) => string;
-  /** Formats the current period as a human-readable "Month Year" string (e.g. "January 2024"). */
+
   formatCurrentPeriod: (options?: { locale?: string }) => string;
-  /** Returns segment info (split/occurrence metadata) for an event, normalising flexible datetime inputs. */
+
   getEventSegmentInfo: (event: TEvent) => SegmentInfo;
-  /**
-   * Returns Day objects for every date between `start` and `end` (inclusive),
-   * derived freshly from current event state. Useful for buffered/infinite-scroll
-   * UIs that need to render a range wider than the current period without
-   * caching stale Day snapshots.
-   */
+
   getDaysInRange: (start: string, end: string) => Array<Day<TResource, TEvent>>;
-  /** Returns a snapshot of all events currently managed by the calendar (including those outside the visible range). */
+
   getEvents: () => Array<TEvent>;
-  /** Reverts the last mutating action (commitAdd, commitUpdate, removeEvent). */
+
   undo: () => void;
-  /** Re-applies the last undone action. */
+
   redo: () => void;
-  /** Returns true when there is at least one action to undo. */
+
   canUndo: () => boolean;
-  /** Returns true when there is at least one action to redo. */
+
   canRedo: () => boolean;
-  /**
-   * Checks whether moving `eventId` to `[newStart, newEnd]` — and cascading
-   * all finish-to-start dependents — would violate any resource availability.
-   */
+
   validateMove: (
     eventId: string,
     newStart: string,
@@ -298,34 +257,20 @@ interface CalendarActions<
     newResources?: Array<TResource | string>,
     newConsumption?: Array<number>,
   ) => { blocked: boolean; blockedEventTitle?: string; message?: string };
-  /**
-   * Validates if placing an event with a specific start time satisfies all dependency constraints.
-   */
+
   validateEventDependencies: (
     event: { id?: string; title: string; start: string; end: string },
     dependsOn: Array<EventDependency>,
   ) => { valid: boolean; error?: ResizeError };
-  /**
-   * Creates a dependency link from source to target event.
-   * If the target event starts before the source event ends, it will optionally reschedule the target.
-   */
+
   createDependency: (
     sourceId: string,
     targetId: string,
     type?: DependencyType,
   ) => { blocked: boolean; error?: ResizeError };
-  /**
-   * Fetches events for an arbitrary date range from the configured
-   * `fetchEvents` callback and merges them into the calendar.
-   * Resolves immediately if `fetchEvents` is not configured or the range
-   * is already loaded.
-   */
+
   fetchEventsForRange: (start: string, end: string) => Promise<void>;
-  /**
-   * Validates whether a new event (not yet added to the calendar) can be
-   * placed at the given time slot without violating resource availability.
-   * Use this for standalone validation before manually committing events.
-   */
+
   validateEventPlacement: (event: {
     title: string;
     start: string;
@@ -340,13 +285,12 @@ interface CalendarState<
   TResource extends Resource,
   TEvent extends Event<TResource>,
 > {
-  /** The currently focused date period in the calendar. */
   currentPeriod: CalendarStore["currentPeriod"];
-  /** The current view mode of the calendar. */
+
   viewMode: CalendarStore["viewMode"];
-  /** An array of days, each potentially containing events. */
+
   days: Array<Day<TResource, TEvent>>;
-  /** The currently active date in the calendar. */
+
   activeDate: CalendarStore["activeDate"];
 }
 
@@ -420,12 +364,6 @@ export class CalendarCore<
 
   private _mergedUnavailMinuteCache = new Map<string, Array<MinuteRange>>();
 
-  /**
-   * Monotonic counter bumped whenever event state or resource availability
-   * changes in a way that affects {@link getEventMap}. Drives memoization of
-   * the built event map so repeated calls within (and across) renders don't
-   * re-iterate and re-parse every event.
-   */
   private _mapVersion = 0;
   private _eventMapCache = new Map<string, Map<string, Array<TEvent>>>();
   private _eventMapCacheVersion = -1;
@@ -663,11 +601,6 @@ export class CalendarCore<
           : null;
     }
 
-    // Memoize per window range, invalidated by _mapVersion. The window only
-    // controls recurring-event expansion (non-recurring events are placed
-    // regardless of window), so the key is the resolved range. Without this,
-    // a single render calling getEventsByDate per day re-iterates and
-    // re-parses every event D times.
     if (this._eventMapCacheVersion !== this._mapVersion) {
       this._eventMapCache.clear();
       this._eventMapCacheVersion = this._mapVersion;
@@ -765,12 +698,6 @@ export class CalendarCore<
     return this._buildDays(this.getCalendarDays());
   }
 
-  /**
-   * Returns Day objects for every date between `start` and `end` (inclusive),
-   * derived freshly from the current event state. Use this when rendering a
-   * buffered range that spans multiple periods (e.g. infinite scroll) so
-   * mutations (add/edit/remove) are reflected without manual cache invalidation.
-   */
   getDaysInRange(start: string, end: string) {
     const days = generateDateRange(start, end);
     const windowEnd = Temporal.PlainDate.from(end)
@@ -2633,20 +2560,13 @@ export class CalendarCore<
     };
   }
 
-  /**
-   * Replaces the current resource list and invalidates availability caches.
-   */
   setResources(resources: Array<TResource> | null) {
     this.options.resources = resources;
     this._mergedUnavailMinuteCache.clear();
-    // Recurring-event availability conflicts depend on resources, so the
-    // memoized event map must be invalidated.
+
     this._bumpMapVersion();
   }
 
-  /**
-   * Replaces the current event list and invalidates availability caches.
-   */
   setEvents(events: Array<TEvent> | null) {
     const next = events?.map((e) => this.normalizeEvent(e)) ?? [];
     this._eventMap.clear();

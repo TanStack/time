@@ -7,10 +7,7 @@ import type { CalendarStore, Event, EventDateTimeInput } from "./types";
 interface GetEventPropsOptions extends LayoutOptions {
   timeZone: Temporal.TimeZoneLike;
   orientation?: LayoutOrientation;
-  /**
-   * Segments sharing the event's day. Every event of a day must be laid out against the same
-   * list, otherwise their column counts disagree and the boxes do not line up.
-   */
+
   daySegments?: Array<Event>;
 }
 

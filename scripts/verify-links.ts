@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { extname, resolve } from "node:path";
 import { glob } from "tinyglobby";
-// @ts-ignore Could not find a declaration file for module 'markdown-link-extractor'.
+
 import markdownLinkExtractor from "markdown-link-extractor";
 
 const errors: Array<{
@@ -22,26 +22,20 @@ function isRelativeLink(link: string) {
   );
 }
 
-/** Remove any trailing .md */
 function stripExtension(p: string): string {
   return p.replace(`${extname(p)}`, "");
 }
 
 function relativeLinkExists(link: string, file: string): boolean {
-  // Remove hash if present
   const linkWithoutHash = link.split("#")[0];
-  // If the link is empty after removing hash, it's not a file
+
   if (!linkWithoutHash) return false;
 
-  // Strip the file/link extensions
   const filePath = stripExtension(file);
   const linkPath = stripExtension(linkWithoutHash);
 
-  // Resolve the path relative to the markdown file's directory
-  // Nav up a level to simulate how links are resolved on the web
   let absPath = resolve(filePath, "..", linkPath);
 
-  // Ensure the resolved path is within /docs
   const docsRoot = resolve("docs");
   if (!absPath.startsWith(docsRoot)) {
     errors.push({
@@ -53,21 +47,18 @@ function relativeLinkExists(link: string, file: string): boolean {
     return false;
   }
 
-  // Check if this is an example path
   const isExample = absPath.includes("/examples/");
 
   let exists = false;
 
   if (isExample) {
-    // Transform /docs/framework/{framework}/examples/ to /examples/{framework}/
     absPath = absPath.replace(
       /\/docs\/framework\/([^/]+)\/examples\//,
       "/examples/$1/",
     );
-    // For examples, we want to check if the directory exists
+
     exists = existsSync(absPath) && statSync(absPath).isDirectory();
   } else {
-    // For non-examples, we want to check if the .md file exists
     if (!absPath.endsWith(".md")) {
       absPath = `${absPath}.md`;
     }
@@ -86,14 +77,12 @@ function relativeLinkExists(link: string, file: string): boolean {
 }
 
 async function verifyMarkdownLinks() {
-  // Find all markdown files in docs directory
   const markdownFiles = await glob("docs/**/*.md", {
     ignore: ["**/node_modules/**"],
   });
 
   console.log(`Found ${markdownFiles.length} markdown files\n`);
 
-  // Process each file
   for (const file of markdownFiles) {
     const content = readFileSync(file, "utf-8");
     const links: Array<string> = markdownLinkExtractor(content);

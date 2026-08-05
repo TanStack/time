@@ -50,37 +50,34 @@ describe("endOf", () => {
 
   describe("week calculation", () => {
     test("should return end of week (Sunday)", () => {
-      // 2024-03-15 is a Friday (day 5), so end of week should be Sunday (2024-03-17)
       const result = endOf("2024-03-15T14:42:12.789Z", {
         unit: "week",
         timeZone: "UTC",
       });
       const resultDate = new Date(result.value);
-      expect(resultDate.getUTCDay()).toBe(0); // Sunday
+      expect(resultDate.getUTCDay()).toBe(0);
       expect(result.value).toContain("2024-03-17");
       expect(result.value).toContain("23:59:59.999");
     });
 
     test("should return end of week for Sunday", () => {
-      // 2024-03-17 is a Sunday (day 7), so end of week should be itself
       const result = endOf("2024-03-17T14:42:12.789Z", {
         unit: "week",
         timeZone: "UTC",
       });
       const resultDate = new Date(result.value);
-      expect(resultDate.getUTCDay()).toBe(0); // Sunday
+      expect(resultDate.getUTCDay()).toBe(0);
       expect(result.value).toContain("2024-03-17");
       expect(result.value).toContain("23:59:59.999");
     });
 
     test("should return end of week for Monday", () => {
-      // 2024-03-11 is a Monday (day 1), so end of week should be Sunday (2024-03-17)
       const result = endOf("2024-03-11T14:42:12.789Z", {
         unit: "week",
         timeZone: "UTC",
       });
       const resultDate = new Date(result.value);
-      expect(resultDate.getUTCDay()).toBe(0); // Sunday
+      expect(resultDate.getUTCDay()).toBe(0);
       expect(result.value).toContain("2024-03-17");
     });
   });

@@ -325,7 +325,6 @@ function DevtoolsContent() {
           </div>
         </div>
 
-        {/* Details Panel */}
         <div class={styles().details}>
           <Show
             when={selectedEntry()}

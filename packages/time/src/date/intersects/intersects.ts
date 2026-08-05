@@ -7,12 +7,6 @@ export interface IntersectsOptions extends DateOptions {
   range: Range;
 }
 
-/**
- * intersects
- * Returns true if the date/time instance intersects with the range (i.e., is within or equal to the range boundaries)
- * @param date - The date to check
- * @param options - Options including range, timeZone and calendar
- */
 export function intersects(
   date: DateInput,
   options: IntersectsOptions,

@@ -26,10 +26,6 @@ import type {
 
 export type { ResizeState } from "@tanstack/time";
 
-/**
- * Hook-level resize options. Identical to `ResizeControllerOptions` from core
- * but re-exported under a React-friendly name for backwards compatibility.
- */
 export type ResizeOptions = ResizeControllerOptions;
 
 interface ResizeHandleHandlers {

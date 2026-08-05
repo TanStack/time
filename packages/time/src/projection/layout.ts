@@ -11,42 +11,38 @@ export interface LayoutInputEvent {
 
 export interface OverlapInfo {
   id: string;
-  /** Position in the array passed in, so results can be zipped back to inputs. */
+
   index: number;
   startFraction: number;
   endFraction: number;
   durationFraction: number;
-  /** Ids of the events that overlap this one in time. */
+
   overlapping: Array<string>;
-  /** How many events share this event's time, counting itself. */
+
   concurrency: number;
-  /** How many overlapping events start before this one. 0 means nothing is to its left. */
+
   depth: number;
-  /** Index of the connected overlap group this event belongs to. */
+
   cluster: number;
-  /** Number of events in that group. */
+
   clusterSize: number;
-  /** Highest `depth` in that group. */
+
   clusterDepth: number;
-  /** Highest `concurrency` in that group. */
+
   clusterConcurrency: number;
-  /** Slot this event was packed into by greedy interval coloring. */
+
   column: number;
-  /** Slots the group needs — the minimum number of side-by-side tracks. */
+
   columnCount: number;
-  /** Free slots directly after `column`, counting itself. */
+
   columnSpan: number;
 }
 
 export interface CrossPlacement {
-  /** Offset on the cross axis as a fraction of the track (0-1). */
   crossStart: number;
-  /** Size on the cross axis as a fraction of the track (0-1). */
+
   crossSize: number;
-  /**
-   * Paint order; higher sits on top. Omit to leave stacking to CSS — a strategy that overlays
-   * events must return it for every event, including the bottom one, or CSS decides the order.
-   */
+
   zIndex?: number;
 }
 
@@ -57,17 +53,10 @@ export type LayoutStrategyFn = (info: OverlapInfo) => CrossPlacement;
 export type OverlapStrategy = "columns" | "expand" | "cascade";
 
 export interface LayoutOptions {
-  /**
-   * How concurrent events share the cross axis. Pass a name for a built-in, or your own
-   * function of the overlap facts.
-   * - `columns`: equal side-by-side slices (default)
-   * - `expand`: like `columns`, but each event absorbs the free slices next to it
-   * - `cascade`: each concurrent event is inset and narrower, stacked on top
-   */
   strategy?: OverlapStrategy | LayoutStrategyFn;
-  /** `cascade` only: inset per depth level as a fraction of the track. */
+
   cascadeOffset?: number;
-  /** `cascade` only: smallest cross-axis size an event may shrink to. */
+
   minCrossSize?: number;
 }
 
@@ -78,7 +67,7 @@ export interface LayoutStyle {
   height: string;
   left: string;
   width: string;
-  /** Only set when the layout stacks events, so flat layouts leave CSS in charge. */
+
   zIndex?: number;
 }
 

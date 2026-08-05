@@ -16,10 +16,6 @@ export interface EndOfOptions extends DateOperationOptions {
   unit: EndOfUnit;
 }
 
-/**
- * endOf
- * Returns the end of a given unit for a date/time instance
- */
 export function endOf(input: DateInput, options: EndOfOptions) {
   return withDateOperation<EndOfOptions>((zdt, { unit }) => {
     switch (unit) {

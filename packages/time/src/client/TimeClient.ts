@@ -11,9 +11,6 @@ export interface TimeEventInfo {
   end: string;
 }
 
-/**
- * Event map for TimeClient events
- */
 export interface TimeEventMap {
   "time:event:added": TimeEventInfo;
   "time:events:set": {
@@ -57,10 +54,6 @@ export interface TimeEventMap {
   };
 }
 
-/**
- * TimeClient extends EventClient to provide typed events for calendar operations
- * Used by devtools to monitor and display activity
- */
 class TimeClient extends EventClient<TimeEventMap> {
   private static instance: TimeClient | null = null;
 
@@ -70,9 +63,6 @@ class TimeClient extends EventClient<TimeEventMap> {
     });
   }
 
-  /**
-   * Get the singleton instance
-   */
   static getInstance(): TimeClient {
     if (!TimeClient.instance) {
       TimeClient.instance = new TimeClient();
@@ -81,9 +71,6 @@ class TimeClient extends EventClient<TimeEventMap> {
   }
 }
 
-/**
- * Get the global TimeClient instance
- */
 export function getTimeClient(): TimeClient {
   return TimeClient.getInstance();
 }

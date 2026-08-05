@@ -20,10 +20,6 @@ export interface RoundOptions extends DateOperationOptions {
   roundingIncrement?: number;
 }
 
-/**
- * round
- * Returns the date/time instance rounded to the nearest unit
- */
 export function round(input: DateInput, options: RoundOptions) {
   return withDateOperation<RoundOptions>((zdt, options) => {
     const { unit, roundingMode = "halfExpand", roundingIncrement } = options;

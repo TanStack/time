@@ -5,10 +5,6 @@ import { getDateTimeDefaults } from "~/utils";
 
 export interface IsBeforeOptions extends DateOptions {}
 
-/**
- * isBefore
- * Returns true if the first date/time instance is before the second date/time instance
- */
 export function isBefore(
   date1: DateInput,
   date2: DateInput,
