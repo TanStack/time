@@ -5,7 +5,7 @@ title: TimelineResizePreviewOptions
 
 # Interface: TimelineResizePreviewOptions
 
-Defined in: [calendar/getResizeProps.ts:438](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L438)
+Defined in: [calendar/getResizeProps.ts:414](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L414)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/getResizeProps.ts:438](https://github.com/TanStack/time/bl
 firstDayIso: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:441](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L441)
+Defined in: [calendar/getResizeProps.ts:417](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L417)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [calendar/getResizeProps.ts:441](https://github.com/TanStack/time/bl
 previewEnd: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:440](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L440)
+Defined in: [calendar/getResizeProps.ts:416](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L416)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [calendar/getResizeProps.ts:440](https://github.com/TanStack/time/bl
 previewStart: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:439](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L439)
+Defined in: [calendar/getResizeProps.ts:415](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L415)
 
 ***
 
@@ -45,4 +45,4 @@ Defined in: [calendar/getResizeProps.ts:439](https://github.com/TanStack/time/bl
 totalDays: number;
 ```
 
-Defined in: [calendar/getResizeProps.ts:442](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L442)
+Defined in: [calendar/getResizeProps.ts:418](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L418)

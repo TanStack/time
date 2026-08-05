@@ -15,9 +15,7 @@ Defined in: [calendar/getResizeProps.ts:5](https://github.com/TanStack/time/blob
 endMinutes: number;
 ```
 
-Defined in: [calendar/getResizeProps.ts:9](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L9)
-
-End time in minutes from midnight (0-1440)
+Defined in: [calendar/getResizeProps.ts:8](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L8)
 
 ***
 
@@ -27,6 +25,4 @@ End time in minutes from midnight (0-1440)
 startMinutes: number;
 ```
 
-Defined in: [calendar/getResizeProps.ts:7](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L7)
-
-Start time in minutes from midnight (0-1440)
+Defined in: [calendar/getResizeProps.ts:6](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L6)

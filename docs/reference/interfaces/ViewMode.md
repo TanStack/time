@@ -5,10 +5,7 @@ title: ViewMode
 
 # Interface: ViewMode
 
-Defined in: [calendar/types.ts:93](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L93)
-
-Represents the configuration for the current viewing mode of a calendar,
-specifying the scale and unit of time.
+Defined in: [calendar/types.ts:65](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L65)
 
 ## Properties
 
@@ -18,9 +15,7 @@ specifying the scale and unit of time.
 unit: "month" | "day" | "week" | "workWeek";
 ```
 
-Defined in: [calendar/types.ts:97](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L97)
-
-The unit of time that the calendar view should display (month, week, workWeek or day).
+Defined in: [calendar/types.ts:68](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L68)
 
 ***
 
@@ -30,6 +25,4 @@ The unit of time that the calendar view should display (month, week, workWeek or
 value: number;
 ```
 
-Defined in: [calendar/types.ts:95](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L95)
-
-The number of units for the view mode.
+Defined in: [calendar/types.ts:66](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L66)

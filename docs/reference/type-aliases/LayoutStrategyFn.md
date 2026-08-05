@@ -9,7 +9,7 @@ title: LayoutStrategyFn
 type LayoutStrategyFn = (info) => CrossPlacement;
 ```
 
-Defined in: [projection/layout.ts:55](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L55)
+Defined in: [projection/layout.ts:51](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L51)
 
 ## Parameters
 

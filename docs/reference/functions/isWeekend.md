@@ -9,10 +9,7 @@ title: isWeekend
 function isWeekend(date, options?): boolean;
 ```
 
-Defined in: [date/isWeekend/isWeekend.ts:14](https://github.com/TanStack/time/blob/main/packages/time/src/date/isWeekend/isWeekend.ts#L14)
-
-isWeekend
-Returns true if the date falls on a weekend based on locale-specific week info
+Defined in: [date/isWeekend/isWeekend.ts:10](https://github.com/TanStack/time/blob/main/packages/time/src/date/isWeekend/isWeekend.ts#L10)
 
 ## Parameters
 

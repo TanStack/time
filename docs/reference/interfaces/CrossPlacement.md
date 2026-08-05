@@ -15,9 +15,7 @@ Defined in: [projection/layout.ts:41](https://github.com/TanStack/time/blob/main
 crossSize: number;
 ```
 
-Defined in: [projection/layout.ts:45](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L45)
-
-Size on the cross axis as a fraction of the track (0-1).
+Defined in: [projection/layout.ts:44](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L44)
 
 ***
 
@@ -27,9 +25,7 @@ Size on the cross axis as a fraction of the track (0-1).
 crossStart: number;
 ```
 
-Defined in: [projection/layout.ts:43](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L43)
-
-Offset on the cross axis as a fraction of the track (0-1).
+Defined in: [projection/layout.ts:42](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L42)
 
 ***
 
@@ -39,7 +35,4 @@ Offset on the cross axis as a fraction of the track (0-1).
 optional zIndex: number;
 ```
 
-Defined in: [projection/layout.ts:50](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L50)
-
-Paint order; higher sits on top. Omit to leave stacking to CSS — a strategy that overlays
-events must return it for every event, including the bottom one, or CSS decides the order.
+Defined in: [projection/layout.ts:46](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L46)

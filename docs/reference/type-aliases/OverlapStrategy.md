@@ -9,4 +9,4 @@ title: OverlapStrategy
 type OverlapStrategy = "columns" | "expand" | "cascade";
 ```
 
-Defined in: [projection/layout.ts:57](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L57)
+Defined in: [projection/layout.ts:53](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L53)

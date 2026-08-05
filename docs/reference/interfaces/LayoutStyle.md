@@ -5,7 +5,7 @@ title: LayoutStyle
 
 # Interface: LayoutStyle
 
-Defined in: [projection/layout.ts:76](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L76)
+Defined in: [projection/layout.ts:65](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L65)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [projection/layout.ts:76](https://github.com/TanStack/time/blob/main
 height: string;
 ```
 
-Defined in: [projection/layout.ts:78](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L78)
+Defined in: [projection/layout.ts:67](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L67)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [projection/layout.ts:78](https://github.com/TanStack/time/blob/main
 left: string;
 ```
 
-Defined in: [projection/layout.ts:79](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L79)
+Defined in: [projection/layout.ts:68](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L68)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [projection/layout.ts:79](https://github.com/TanStack/time/blob/main
 top: string;
 ```
 
-Defined in: [projection/layout.ts:77](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L77)
+Defined in: [projection/layout.ts:66](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L66)
 
 ***
 
@@ -45,7 +45,7 @@ Defined in: [projection/layout.ts:77](https://github.com/TanStack/time/blob/main
 width: string;
 ```
 
-Defined in: [projection/layout.ts:80](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L80)
+Defined in: [projection/layout.ts:69](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L69)
 
 ***
 
@@ -55,6 +55,4 @@ Defined in: [projection/layout.ts:80](https://github.com/TanStack/time/blob/main
 optional zIndex: number;
 ```
 
-Defined in: [projection/layout.ts:82](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L82)
-
-Only set when the layout stacks events, so flat layouts leave CSS in charge.
+Defined in: [projection/layout.ts:71](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L71)

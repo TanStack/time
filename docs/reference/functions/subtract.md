@@ -9,10 +9,7 @@ title: subtract
 function subtract(input, options): object;
 ```
 
-Defined in: [date/subtract/subtract.ts:13](https://github.com/TanStack/time/blob/main/packages/time/src/date/subtract/subtract.ts#L13)
-
-subtract
-Subtracts a duration from a date/time instance
+Defined in: [date/subtract/subtract.ts:9](https://github.com/TanStack/time/blob/main/packages/time/src/date/subtract/subtract.ts#L9)
 
 ## Parameters
 

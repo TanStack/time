@@ -12,10 +12,7 @@ function isSameOrAfter(
    options): boolean;
 ```
 
-Defined in: [date/isSameOrAfter/isSameOrAfter.ts:25](https://github.com/TanStack/time/blob/main/packages/time/src/date/isSameOrAfter/isSameOrAfter.ts#L25)
-
-isSameOrAfter
-Returns true if the first date/time instance is the same as or after the second date/time instance at the specified unit level
+Defined in: [date/isSameOrAfter/isSameOrAfter.ts:21](https://github.com/TanStack/time/blob/main/packages/time/src/date/isSameOrAfter/isSameOrAfter.ts#L21)
 
 ## Parameters
 

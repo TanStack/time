@@ -13,10 +13,7 @@ function equals(
    options?): boolean;
 ```
 
-Defined in: [date/equals/equals.ts:22](https://github.com/TanStack/time/blob/main/packages/time/src/date/equals/equals.ts#L22)
-
-equals
-Returns true if two date/time instances are equal at the specified unit level
+Defined in: [date/equals/equals.ts:18](https://github.com/TanStack/time/blob/main/packages/time/src/date/equals/equals.ts#L18)
 
 ## Parameters
 

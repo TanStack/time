@@ -12,10 +12,7 @@ function isBefore(
    options?): boolean;
 ```
 
-Defined in: [date/isBefore/isBefore.ts:12](https://github.com/TanStack/time/blob/main/packages/time/src/date/isBefore/isBefore.ts#L12)
-
-isBefore
-Returns true if the first date/time instance is before the second date/time instance
+Defined in: [date/isBefore/isBefore.ts:8](https://github.com/TanStack/time/blob/main/packages/time/src/date/isBefore/isBefore.ts#L8)
 
 ## Parameters
 

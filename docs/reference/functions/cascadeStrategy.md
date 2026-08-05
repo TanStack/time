@@ -9,7 +9,7 @@ title: cascadeStrategy
 function cascadeStrategy(options): LayoutStrategyFn;
 ```
 
-Defined in: [projection/layout.ts:243](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L243)
+Defined in: [projection/layout.ts:232](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L232)
 
 ## Parameters
 

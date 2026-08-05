@@ -5,10 +5,7 @@ title: CalendarCoreOptions
 
 # Interface: CalendarCoreOptions\<TResource, TEvent\>
 
-Defined in: [calendar/calendar.ts:126](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L126)
-
-Configuration options for initializing a CalendarCore instance, allowing customization
-of events, locale, time zone, and the calendar system.
+Defined in: [calendar/calendar.ts:121](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L121)
 
 ## Extends
 
@@ -24,8 +21,6 @@ of events, locale, time zone, and the calendar system.
 
 `TEvent` *extends* [`Event`](Event.md)\<`TResource`\>
 
-Specifies the event type, extending a base Event type.
-
 ## Properties
 
 ### calendar?
@@ -34,9 +29,7 @@ Specifies the event type, extending a base Event type.
 optional calendar: CalendarLike;
 ```
 
-Defined in: [calendar/date-core.ts:64](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L64)
-
-Optional calendar system to be used.
+Defined in: [calendar/date-core.ts:60](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L60)
 
 #### Inherited from
 
@@ -50,9 +43,7 @@ Optional calendar system to be used.
 optional dateFormatter: DateTimeFormat;
 ```
 
-Defined in: [calendar/date-core.ts:68](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L68)
-
-Optional date formatter.
+Defined in: [calendar/date-core.ts:64](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L64)
 
 #### Inherited from
 
@@ -66,9 +57,7 @@ Optional date formatter.
 optional dateTimeFormatter: DateTimeFormat;
 ```
 
-Defined in: [calendar/date-core.ts:72](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L72)
-
-Optional date time formatter.
+Defined in: [calendar/date-core.ts:68](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L68)
 
 #### Inherited from
 
@@ -82,9 +71,7 @@ Optional date time formatter.
 optional events: TEvent[] | null;
 ```
 
-Defined in: [calendar/calendar.ts:131](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L131)
-
-An optional array of events to be handled by the calendar.
+Defined in: [calendar/calendar.ts:125](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L125)
 
 ***
 
@@ -94,12 +81,7 @@ An optional array of events to be handled by the calendar.
 optional fetchEvents: (range) => Promise<TEvent[]>;
 ```
 
-Defined in: [calendar/calendar.ts:140](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L140)
-
-Optional async callback for lazy/on-demand event loading.
-Called whenever the current viewport window is not yet fully loaded.
-The returned events are merged into the internal indices automatically.
-When omitted the calendar operates in fully-eager mode (no change in behaviour).
+Defined in: [calendar/calendar.ts:129](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L129)
 
 #### Parameters
 
@@ -125,9 +107,7 @@ When omitted the calendar operates in fully-eager mode (no change in behaviour).
 optional layout: LayoutOptions;
 ```
 
-Defined in: [calendar/calendar.ts:145](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L145)
-
-How concurrent events share the cross axis. Overridable per `getEventProps` call.
+Defined in: [calendar/calendar.ts:134](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L134)
 
 ***
 
@@ -137,9 +117,7 @@ How concurrent events share the cross axis. Overridable per `getEventProps` call
 optional locale: string;
 ```
 
-Defined in: [calendar/date-core.ts:60](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L60)
-
-Optional locale for date formatting. Uses a BCP 47 language tag.
+Defined in: [calendar/date-core.ts:56](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L56)
 
 #### Inherited from
 
@@ -153,9 +131,7 @@ Optional locale for date formatting. Uses a BCP 47 language tag.
 optional range: DateRange;
 ```
 
-Defined in: [calendar/date-core.ts:66](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L66)
-
-Optional range of dates to be used.
+Defined in: [calendar/date-core.ts:62](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L62)
 
 #### Inherited from
 
@@ -169,9 +145,7 @@ Optional range of dates to be used.
 optional resources: TResource[] | null;
 ```
 
-Defined in: [calendar/calendar.ts:133](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L133)
-
-Optional resources to be used in the calendar.
+Defined in: [calendar/calendar.ts:127](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L127)
 
 ***
 
@@ -181,9 +155,7 @@ Optional resources to be used in the calendar.
 optional timeFormatter: DateTimeFormat;
 ```
 
-Defined in: [calendar/date-core.ts:70](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L70)
-
-Optional time formatter.
+Defined in: [calendar/date-core.ts:66](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L66)
 
 #### Inherited from
 
@@ -197,9 +169,7 @@ Optional time formatter.
 optional timeZone: TimeZoneLike;
 ```
 
-Defined in: [calendar/date-core.ts:62](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L62)
-
-Optional time zone specification.
+Defined in: [calendar/date-core.ts:58](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L58)
 
 #### Inherited from
 
@@ -213,9 +183,7 @@ Optional time zone specification.
 viewMode: ViewMode;
 ```
 
-Defined in: [calendar/date-core.ts:58](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L58)
-
-The initial view mode configuration.
+Defined in: [calendar/date-core.ts:54](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L54)
 
 #### Inherited from
 

@@ -9,11 +9,7 @@ title: toPlainDateString
 function toPlainDateString(value): string;
 ```
 
-Defined in: [date/parse/parse.ts:201](https://github.com/TanStack/time/blob/main/packages/time/src/date/parse/parse.ts#L201)
-
-toPlainDateString
-Converts a flexible date/time input (string, Date, or epoch number)
-into a Temporal.PlainDate-compatible ISO string (YYYY-MM-DD).
+Defined in: [date/parse/parse.ts:142](https://github.com/TanStack/time/blob/main/packages/time/src/date/parse/parse.ts#L142)
 
 ## Parameters
 

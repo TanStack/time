@@ -9,10 +9,7 @@ title: add
 function add(input, options): object;
 ```
 
-Defined in: [date/add/add.ts:13](https://github.com/TanStack/time/blob/main/packages/time/src/date/add/add.ts#L13)
-
-add
-Adds a duration to a date/time instance
+Defined in: [date/add/add.ts:9](https://github.com/TanStack/time/blob/main/packages/time/src/date/add/add.ts#L9)
 
 ## Parameters
 

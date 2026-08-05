@@ -5,7 +5,7 @@ title: FormatEventTimeOptions
 
 # Interface: FormatEventTimeOptions
 
-Defined in: [calendar/getResizeProps.ts:540](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L540)
+Defined in: [calendar/getResizeProps.ts:507](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L507)
 
 ## Properties
 
@@ -15,9 +15,7 @@ Defined in: [calendar/getResizeProps.ts:540](https://github.com/TanStack/time/bl
 optional alwaysShowDate: boolean;
 ```
 
-Defined in: [calendar/getResizeProps.ts:544](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L544)
-
-Whether to include date for single-day events
+Defined in: [calendar/getResizeProps.ts:510](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L510)
 
 ***
 
@@ -27,6 +25,4 @@ Whether to include date for single-day events
 optional locale: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:542](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L542)
-
-Locale for formatting (e.g., 'en-US')
+Defined in: [calendar/getResizeProps.ts:508](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L508)

@@ -12,10 +12,7 @@ function isSameOrBefore(
    options): boolean;
 ```
 
-Defined in: [date/isSameOrBefore/isSameOrBefore.ts:25](https://github.com/TanStack/time/blob/main/packages/time/src/date/isSameOrBefore/isSameOrBefore.ts#L25)
-
-isSameOrBefore
-Returns true if the first date/time instance is the same as or before the second date/time instance at the specified unit level
+Defined in: [date/isSameOrBefore/isSameOrBefore.ts:21](https://github.com/TanStack/time/blob/main/packages/time/src/date/isSameOrBefore/isSameOrBefore.ts#L21)
 
 ## Parameters
 

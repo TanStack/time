@@ -95,7 +95,4 @@ Defined in: [calendar/resizeController.ts:53](https://github.com/TanStack/time/b
 optional target: HTMLElement | null;
 ```
 
-Defined in: [calendar/resizeController.ts:60](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L60)
-
-Optional element under the pointer (e.g. `e.target as HTMLElement`).
-Used to resolve the originating day column without `getBoundingClientRect`.
+Defined in: [calendar/resizeController.ts:57](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L57)

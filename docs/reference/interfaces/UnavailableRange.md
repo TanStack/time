@@ -15,9 +15,7 @@ Defined in: [projection/unavailability.ts:7](https://github.com/TanStack/time/bl
 endFraction: number;
 ```
 
-Defined in: [projection/unavailability.ts:11](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L11)
-
-End of the range as a fraction of the day (0-1)
+Defined in: [projection/unavailability.ts:10](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L10)
 
 ***
 
@@ -27,9 +25,7 @@ End of the range as a fraction of the day (0-1)
 endTime: string;
 ```
 
-Defined in: [projection/unavailability.ts:19](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L19)
-
-End time as HH:mm string
+Defined in: [projection/unavailability.ts:18](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L18)
 
 ***
 
@@ -39,9 +35,7 @@ End time as HH:mm string
 height: string;
 ```
 
-Defined in: [projection/unavailability.ts:15](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L15)
-
-Style-ready size along the time axis, e.g. "20.833%"
+Defined in: [projection/unavailability.ts:14](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L14)
 
 ***
 
@@ -51,9 +45,7 @@ Style-ready size along the time axis, e.g. "20.833%"
 startFraction: number;
 ```
 
-Defined in: [projection/unavailability.ts:9](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L9)
-
-Start of the range as a fraction of the day (0-1)
+Defined in: [projection/unavailability.ts:8](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L8)
 
 ***
 
@@ -63,9 +55,7 @@ Start of the range as a fraction of the day (0-1)
 startTime: string;
 ```
 
-Defined in: [projection/unavailability.ts:17](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L17)
-
-Start time as HH:mm string
+Defined in: [projection/unavailability.ts:16](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L16)
 
 ***
 
@@ -75,6 +65,4 @@ Start time as HH:mm string
 top: string;
 ```
 
-Defined in: [projection/unavailability.ts:13](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L13)
-
-Style-ready offset along the time axis, e.g. "33.333%"
+Defined in: [projection/unavailability.ts:12](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L12)

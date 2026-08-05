@@ -5,9 +5,7 @@ title: TimeEventMap
 
 # Interface: TimeEventMap
 
-Defined in: [client/TimeClient.ts:17](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L17)
-
-Event map for TimeClient events
+Defined in: [client/TimeClient.ts:14](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L14)
 
 ## Properties
 
@@ -17,7 +15,7 @@ Event map for TimeClient events
 time:calendar:navigate: object;
 ```
 
-Defined in: [client/TimeClient.ts:48](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L48)
+Defined in: [client/TimeClient.ts:45](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L45)
 
 #### direction
 
@@ -39,7 +37,7 @@ targetDate: string;
 time:calendar:viewMode:changed: object;
 ```
 
-Defined in: [client/TimeClient.ts:52](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L52)
+Defined in: [client/TimeClient.ts:49](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L49)
 
 #### viewMode
 
@@ -67,7 +65,7 @@ value: number;
 time:event:added: TimeEventInfo;
 ```
 
-Defined in: [client/TimeClient.ts:18](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L18)
+Defined in: [client/TimeClient.ts:15](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L15)
 
 ***
 
@@ -77,7 +75,7 @@ Defined in: [client/TimeClient.ts:18](https://github.com/TanStack/time/blob/main
 time:event:redo: object;
 ```
 
-Defined in: [client/TimeClient.ts:31](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L31)
+Defined in: [client/TimeClient.ts:28](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L28)
 
 #### added
 
@@ -105,7 +103,7 @@ updated: TimeEventInfo[];
 time:event:removed: TimeEventInfo;
 ```
 
-Defined in: [client/TimeClient.ts:25](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L25)
+Defined in: [client/TimeClient.ts:22](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L22)
 
 ***
 
@@ -115,7 +113,7 @@ Defined in: [client/TimeClient.ts:25](https://github.com/TanStack/time/blob/main
 time:event:resized: TimeEventInfo;
 ```
 
-Defined in: [client/TimeClient.ts:36](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L36)
+Defined in: [client/TimeClient.ts:33](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L33)
 
 ***
 
@@ -125,7 +123,7 @@ Defined in: [client/TimeClient.ts:36](https://github.com/TanStack/time/blob/main
 time:event:undo: object;
 ```
 
-Defined in: [client/TimeClient.ts:26](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L26)
+Defined in: [client/TimeClient.ts:23](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L23)
 
 #### added
 
@@ -153,7 +151,7 @@ updated: TimeEventInfo[];
 time:event:update:error: object;
 ```
 
-Defined in: [client/TimeClient.ts:37](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L37)
+Defined in: [client/TimeClient.ts:34](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L34)
 
 #### attemptedEnd?
 
@@ -217,7 +215,7 @@ reason: "unavailable-time" | "invalid-time" | "min-duration" | "blocked";
 time:event:updated: TimeEventInfo & object;
 ```
 
-Defined in: [client/TimeClient.ts:22](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L22)
+Defined in: [client/TimeClient.ts:19](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L19)
 
 #### Type Declaration
 
@@ -235,7 +233,7 @@ updates: Record<string, unknown>;
 time:events:set: object;
 ```
 
-Defined in: [client/TimeClient.ts:19](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L19)
+Defined in: [client/TimeClient.ts:16](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L16)
 
 #### events
 

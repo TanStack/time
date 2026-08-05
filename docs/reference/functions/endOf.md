@@ -9,10 +9,7 @@ title: endOf
 function endOf(input, options): object;
 ```
 
-Defined in: [date/endOf/endOf.ts:23](https://github.com/TanStack/time/blob/main/packages/time/src/date/endOf/endOf.ts#L23)
-
-endOf
-Returns the end of a given unit for a date/time instance
+Defined in: [date/endOf/endOf.ts:19](https://github.com/TanStack/time/blob/main/packages/time/src/date/endOf/endOf.ts#L19)
 
 ## Parameters
 

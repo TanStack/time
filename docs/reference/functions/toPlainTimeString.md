@@ -9,11 +9,7 @@ title: toPlainTimeString
 function toPlainTimeString(value): string;
 ```
 
-Defined in: [date/parse/parse.ts:211](https://github.com/TanStack/time/blob/main/packages/time/src/date/parse/parse.ts#L211)
-
-toPlainTimeString
-Converts a flexible date/time input (string, Date, or epoch number)
-into a time-only string (HH:mm).
+Defined in: [date/parse/parse.ts:147](https://github.com/TanStack/time/blob/main/packages/time/src/date/parse/parse.ts#L147)
 
 ## Parameters
 

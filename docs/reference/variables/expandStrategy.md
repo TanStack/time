@@ -9,4 +9,4 @@ title: expandStrategy
 const expandStrategy: LayoutStrategyFn;
 ```
 
-Defined in: [projection/layout.ts:238](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L238)
+Defined in: [projection/layout.ts:227](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L227)

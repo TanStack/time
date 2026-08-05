@@ -12,10 +12,7 @@ function isAfter(
    options?): boolean;
 ```
 
-Defined in: [date/isAfter/isAfter.ts:12](https://github.com/TanStack/time/blob/main/packages/time/src/date/isAfter/isAfter.ts#L12)
-
-isAfter
-Returns true if the first date/time instance is after the second date/time instance
+Defined in: [date/isAfter/isAfter.ts:8](https://github.com/TanStack/time/blob/main/packages/time/src/date/isAfter/isAfter.ts#L8)
 
 ## Parameters
 

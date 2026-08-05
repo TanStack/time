@@ -17,8 +17,6 @@ cluster: number;
 
 Defined in: [projection/layout.ts:26](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L26)
 
-Index of the connected overlap group this event belongs to.
-
 ***
 
 ### clusterConcurrency
@@ -28,8 +26,6 @@ clusterConcurrency: number;
 ```
 
 Defined in: [projection/layout.ts:32](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L32)
-
-Highest `concurrency` in that group.
 
 ***
 
@@ -41,8 +37,6 @@ clusterDepth: number;
 
 Defined in: [projection/layout.ts:30](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L30)
 
-Highest `depth` in that group.
-
 ***
 
 ### clusterSize
@@ -52,8 +46,6 @@ clusterSize: number;
 ```
 
 Defined in: [projection/layout.ts:28](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L28)
-
-Number of events in that group.
 
 ***
 
@@ -65,8 +57,6 @@ column: number;
 
 Defined in: [projection/layout.ts:34](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L34)
 
-Slot this event was packed into by greedy interval coloring.
-
 ***
 
 ### columnCount
@@ -76,8 +66,6 @@ columnCount: number;
 ```
 
 Defined in: [projection/layout.ts:36](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L36)
-
-Slots the group needs — the minimum number of side-by-side tracks.
 
 ***
 
@@ -89,8 +77,6 @@ columnSpan: number;
 
 Defined in: [projection/layout.ts:38](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L38)
 
-Free slots directly after `column`, counting itself.
-
 ***
 
 ### concurrency
@@ -101,8 +87,6 @@ concurrency: number;
 
 Defined in: [projection/layout.ts:22](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L22)
 
-How many events share this event's time, counting itself.
-
 ***
 
 ### depth
@@ -112,8 +96,6 @@ depth: number;
 ```
 
 Defined in: [projection/layout.ts:24](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L24)
-
-How many overlapping events start before this one. 0 means nothing is to its left.
 
 ***
 
@@ -155,8 +137,6 @@ index: number;
 
 Defined in: [projection/layout.ts:15](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L15)
 
-Position in the array passed in, so results can be zipped back to inputs.
-
 ***
 
 ### overlapping
@@ -166,8 +146,6 @@ overlapping: string[];
 ```
 
 Defined in: [projection/layout.ts:20](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L20)
-
-Ids of the events that overlap this one in time.
 
 ***
 

@@ -12,10 +12,7 @@ function until(
    options): number;
 ```
 
-Defined in: [date/until/until.ts:14](https://github.com/TanStack/time/blob/main/packages/time/src/date/until/until.ts#L14)
-
-until
-Returns the duration from the first date/time instance until the second date/time instance
+Defined in: [date/until/until.ts:10](https://github.com/TanStack/time/blob/main/packages/time/src/date/until/until.ts#L10)
 
 ## Parameters
 

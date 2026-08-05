@@ -5,7 +5,7 @@ title: FormattedEventTime
 
 # Interface: FormattedEventTime
 
-Defined in: [calendar/getResizeProps.ts:547](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L547)
+Defined in: [calendar/getResizeProps.ts:513](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L513)
 
 ## Properties
 
@@ -15,9 +15,7 @@ Defined in: [calendar/getResizeProps.ts:547](https://github.com/TanStack/time/bl
 endFormatted: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:551](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L551)
-
-Formatted end string
+Defined in: [calendar/getResizeProps.ts:516](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L516)
 
 ***
 
@@ -27,9 +25,7 @@ Formatted end string
 isMultiDay: boolean;
 ```
 
-Defined in: [calendar/getResizeProps.ts:555](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L555)
-
-Whether this is a multi-day event
+Defined in: [calendar/getResizeProps.ts:520](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L520)
 
 ***
 
@@ -39,9 +35,7 @@ Whether this is a multi-day event
 rangeFormatted: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:553](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L553)
-
-Full formatted range string
+Defined in: [calendar/getResizeProps.ts:518](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L518)
 
 ***
 
@@ -51,6 +45,4 @@ Full formatted range string
 startFormatted: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:549](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L549)
-
-Formatted start string
+Defined in: [calendar/getResizeProps.ts:514](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L514)

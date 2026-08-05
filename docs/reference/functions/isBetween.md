@@ -9,10 +9,7 @@ title: isBetween
 function isBetween(date, options): boolean;
 ```
 
-Defined in: [date/isBetween/isBetween.ts:18](https://github.com/TanStack/time/blob/main/packages/time/src/date/isBetween/isBetween.ts#L18)
-
-isBetween
-Returns true if the date/time instance is between the start and end of the range
+Defined in: [date/isBetween/isBetween.ts:11](https://github.com/TanStack/time/blob/main/packages/time/src/date/isBetween/isBetween.ts#L11)
 
 ## Parameters
 
@@ -20,13 +17,9 @@ Returns true if the date/time instance is between the start and end of the range
 
 [`DateInput`](../type-aliases/DateInput.md)
 
-The date to check
-
 ### options
 
 [`IsBetweenOptions`](../interfaces/IsBetweenOptions.md)
-
-Options including timeZone, calendar, and inclusivity
 
 ## Returns
 

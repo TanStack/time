@@ -5,7 +5,7 @@ title: LayoutOptions
 
 # Interface: LayoutOptions
 
-Defined in: [projection/layout.ts:59](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L59)
+Defined in: [projection/layout.ts:55](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L55)
 
 ## Properties
 
@@ -15,9 +15,7 @@ Defined in: [projection/layout.ts:59](https://github.com/TanStack/time/blob/main
 optional cascadeOffset: number;
 ```
 
-Defined in: [projection/layout.ts:69](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L69)
-
-`cascade` only: inset per depth level as a fraction of the track.
+Defined in: [projection/layout.ts:58](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L58)
 
 ***
 
@@ -27,9 +25,7 @@ Defined in: [projection/layout.ts:69](https://github.com/TanStack/time/blob/main
 optional minCrossSize: number;
 ```
 
-Defined in: [projection/layout.ts:71](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L71)
-
-`cascade` only: smallest cross-axis size an event may shrink to.
+Defined in: [projection/layout.ts:60](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L60)
 
 ***
 
@@ -41,10 +37,4 @@ optional strategy:
   | LayoutStrategyFn;
 ```
 
-Defined in: [projection/layout.ts:67](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L67)
-
-How concurrent events share the cross axis. Pass a name for a built-in, or your own
-function of the overlap facts.
-- `columns`: equal side-by-side slices (default)
-- `expand`: like `columns`, but each event absorbs the free slices next to it
-- `cascade`: each concurrent event is inset and narrower, stacked on top
+Defined in: [projection/layout.ts:56](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L56)

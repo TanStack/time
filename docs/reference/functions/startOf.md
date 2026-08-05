@@ -9,10 +9,7 @@ title: startOf
 function startOf(input, options): object;
 ```
 
-Defined in: [date/startOf/startOf.ts:23](https://github.com/TanStack/time/blob/main/packages/time/src/date/startOf/startOf.ts#L23)
-
-startOf
-Returns the start of a given unit for a date/time instance
+Defined in: [date/startOf/startOf.ts:19](https://github.com/TanStack/time/blob/main/packages/time/src/date/startOf/startOf.ts#L19)
 
 ## Parameters
 

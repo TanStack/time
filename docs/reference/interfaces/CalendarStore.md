@@ -5,7 +5,7 @@ title: CalendarStore
 
 # Interface: CalendarStore
 
-Defined in: [calendar/types.ts:163](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L163)
+Defined in: [calendar/types.ts:122](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L122)
 
 ## Properties
 
@@ -15,9 +15,7 @@ Defined in: [calendar/types.ts:163](https://github.com/TanStack/time/blob/main/p
 activeDate: string;
 ```
 
-Defined in: [calendar/types.ts:167](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L167)
-
-ISO date (YYYY-MM-DD) currently focused.
+Defined in: [calendar/types.ts:125](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L125)
 
 ***
 
@@ -27,9 +25,7 @@ ISO date (YYYY-MM-DD) currently focused.
 currentPeriod: string;
 ```
 
-Defined in: [calendar/types.ts:165](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L165)
-
-ISO date (YYYY-MM-DD) the view is anchored to.
+Defined in: [calendar/types.ts:123](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L123)
 
 ***
 
@@ -39,7 +35,7 @@ ISO date (YYYY-MM-DD) the view is anchored to.
 eventsVersion: number;
 ```
 
-Defined in: [calendar/types.ts:169](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L169)
+Defined in: [calendar/types.ts:127](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L127)
 
 ***
 
@@ -49,9 +45,7 @@ Defined in: [calendar/types.ts:169](https://github.com/TanStack/time/blob/main/p
 isPending: boolean;
 ```
 
-Defined in: [calendar/types.ts:171](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L171)
-
-True while an async fetchEvents call is in-flight for the current viewport.
+Defined in: [calendar/types.ts:129](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L129)
 
 ***
 
@@ -61,4 +55,4 @@ True while an async fetchEvents call is in-flight for the current viewport.
 viewMode: ViewMode;
 ```
 
-Defined in: [calendar/types.ts:168](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L168)
+Defined in: [calendar/types.ts:126](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L126)

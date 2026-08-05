@@ -9,7 +9,7 @@ title: Day
 type Day<TResource, TEvent> = object;
 ```
 
-Defined in: [calendar/types.ts:136](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L136)
+Defined in: [calendar/types.ts:96](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L96)
 
 ## Type Parameters
 
@@ -29,9 +29,7 @@ Defined in: [calendar/types.ts:136](https://github.com/TanStack/time/blob/main/p
 allDayEvents: TEvent[];
 ```
 
-Defined in: [calendar/types.ts:145](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L145)
-
-All-day events occurring on this day (segments of multi-day all-day events included).
+Defined in: [calendar/types.ts:104](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L104)
 
 ***
 
@@ -41,9 +39,7 @@ All-day events occurring on this day (segments of multi-day all-day events inclu
 events: TEvent[];
 ```
 
-Defined in: [calendar/types.ts:143](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L143)
-
-Timed events occurring on this day (sub-day events + segments of timed multi-day events).
+Defined in: [calendar/types.ts:102](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L102)
 
 ***
 
@@ -53,7 +49,7 @@ Timed events occurring on this day (sub-day events + segments of timed multi-day
 isInCurrentPeriod: boolean;
 ```
 
-Defined in: [calendar/types.ts:147](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L147)
+Defined in: [calendar/types.ts:106](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L106)
 
 ***
 
@@ -63,9 +59,7 @@ Defined in: [calendar/types.ts:147](https://github.com/TanStack/time/blob/main/p
 isoDate: string;
 ```
 
-Defined in: [calendar/types.ts:141](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L141)
-
-ISO date string (YYYY-MM-DD).
+Defined in: [calendar/types.ts:100](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L100)
 
 ***
 
@@ -75,4 +69,4 @@ ISO date string (YYYY-MM-DD).
 isToday: boolean;
 ```
 
-Defined in: [calendar/types.ts:146](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L146)
+Defined in: [calendar/types.ts:105](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L105)

@@ -9,7 +9,7 @@ title: toLayoutStyle
 function toLayoutStyle(layout, orientation): LayoutStyle;
 ```
 
-Defined in: [projection/layout.ts:283](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L283)
+Defined in: [projection/layout.ts:272](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L272)
 
 ## Parameters
 

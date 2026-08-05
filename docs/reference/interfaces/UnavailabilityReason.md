@@ -5,9 +5,7 @@ title: UnavailabilityReason
 
 # Interface: UnavailabilityReason
 
-Defined in: [calendar/types.ts:177](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L177)
-
-Information about why a resource is unavailable
+Defined in: [calendar/types.ts:132](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L132)
 
 ## Properties
 
@@ -17,9 +15,7 @@ Information about why a resource is unavailable
 optional capacityInfo: object;
 ```
 
-Defined in: [calendar/types.ts:187](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L187)
-
-Current capacity usage if applicable
+Defined in: [calendar/types.ts:141](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L141)
 
 #### max
 
@@ -47,9 +43,7 @@ used: number;
 description: string;
 ```
 
-Defined in: [calendar/types.ts:185](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L185)
-
-Human-readable explanation
+Defined in: [calendar/types.ts:139](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L139)
 
 ***
 
@@ -59,9 +53,7 @@ Human-readable explanation
 reason: "outside-hours" | "capacity" | "no-availability";
 ```
 
-Defined in: [calendar/types.ts:183](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L183)
-
-Why the resource is unavailable
+Defined in: [calendar/types.ts:137](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L137)
 
 ***
 
@@ -71,9 +63,7 @@ Why the resource is unavailable
 resourceId: string;
 ```
 
-Defined in: [calendar/types.ts:179](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L179)
-
-Resource ID
+Defined in: [calendar/types.ts:133](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L133)
 
 ***
 
@@ -83,6 +73,4 @@ Resource ID
 resourceLabel: string;
 ```
 
-Defined in: [calendar/types.ts:181](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L181)
-
-Resource label/name
+Defined in: [calendar/types.ts:135](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L135)

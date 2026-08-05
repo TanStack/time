@@ -12,7 +12,7 @@ function calculateDeltaMinutesFromPixels(
    minutesInDay): number;
 ```
 
-Defined in: [calendar/getResizeProps.ts:168](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L168)
+Defined in: [calendar/getResizeProps.ts:167](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L167)
 
 ## Parameters
 

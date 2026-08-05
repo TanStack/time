@@ -5,7 +5,7 @@ title: ParsedDateCoreOptions
 
 # Interface: ParsedDateCoreOptions
 
-Defined in: [calendar/date-core.ts:75](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L75)
+Defined in: [calendar/date-core.ts:71](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L71)
 
 ## Extends
 
@@ -19,9 +19,7 @@ Defined in: [calendar/date-core.ts:75](https://github.com/TanStack/time/blob/mai
 calendar: CalendarLike;
 ```
 
-Defined in: [calendar/date-core.ts:64](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L64)
-
-Optional calendar system to be used.
+Defined in: [calendar/date-core.ts:60](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L60)
 
 #### Inherited from
 
@@ -35,9 +33,7 @@ Optional calendar system to be used.
 locale: string;
 ```
 
-Defined in: [calendar/date-core.ts:60](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L60)
-
-Optional locale for date formatting. Uses a BCP 47 language tag.
+Defined in: [calendar/date-core.ts:56](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L56)
 
 #### Inherited from
 
@@ -51,7 +47,7 @@ Optional locale for date formatting. Uses a BCP 47 language tag.
 range: ParsedDateRange;
 ```
 
-Defined in: [calendar/date-core.ts:80](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L80)
+Defined in: [calendar/date-core.ts:76](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L76)
 
 ***
 
@@ -61,9 +57,7 @@ Defined in: [calendar/date-core.ts:80](https://github.com/TanStack/time/blob/mai
 timeZone: TimeZoneLike;
 ```
 
-Defined in: [calendar/date-core.ts:62](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L62)
-
-Optional time zone specification.
+Defined in: [calendar/date-core.ts:58](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L58)
 
 #### Inherited from
 
@@ -77,9 +71,7 @@ Optional time zone specification.
 viewMode: ViewMode;
 ```
 
-Defined in: [calendar/date-core.ts:58](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L58)
-
-The initial view mode configuration.
+Defined in: [calendar/date-core.ts:54](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L54)
 
 #### Inherited from
 

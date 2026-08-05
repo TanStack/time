@@ -9,7 +9,7 @@ title: ResizeListener
 type ResizeListener = () => void;
 ```
 
-Defined in: [calendar/resizeController.ts:63](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L63)
+Defined in: [calendar/resizeController.ts:60](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L60)
 
 ## Returns
 

@@ -5,7 +5,7 @@ title: ResizeConstraints
 
 # Interface: ResizeConstraints
 
-Defined in: [calendar/getResizeProps.ts:12](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L12)
+Defined in: [calendar/getResizeProps.ts:11](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L11)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/getResizeProps.ts:12](https://github.com/TanStack/time/blo
 optional minDurationMinutes: number;
 ```
 
-Defined in: [calendar/getResizeProps.ts:13](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L13)
+Defined in: [calendar/getResizeProps.ts:12](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L12)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [calendar/getResizeProps.ts:13](https://github.com/TanStack/time/blo
 optional snapToMinutes: number;
 ```
 
-Defined in: [calendar/getResizeProps.ts:14](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L14)
+Defined in: [calendar/getResizeProps.ts:13](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L13)
 
 ***
 
@@ -35,6 +35,4 @@ Defined in: [calendar/getResizeProps.ts:14](https://github.com/TanStack/time/blo
 optional unavailableRanges: UnavailableTimeRange[];
 ```
 
-Defined in: [calendar/getResizeProps.ts:16](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L16)
-
-Unavailable time ranges that the event cannot be resized into
+Defined in: [calendar/getResizeProps.ts:15](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L15)
