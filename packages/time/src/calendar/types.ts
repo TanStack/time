@@ -1,4 +1,5 @@
 import type { DateInput } from "~/date";
+import type { EventLayout, LayoutOptions, LayoutStyle } from "~/projection";
 import type { ResizeConstraints, ResizeEdge } from "./getResizeProps";
 
 export type EventDateTimeInput = string | Date | number;
@@ -106,6 +107,27 @@ export type Day<
   isToday: boolean;
   isInCurrentPeriod: boolean;
 };
+
+export interface EventProps<
+  TResource extends Resource = Resource,
+  TEvent extends Event<TResource> = Event<TResource>,
+> {
+  isSplitEvent: boolean;
+  overlappingEvents: Array<TEvent>;
+  start: string;
+  end: string;
+
+  layout?: EventLayout;
+  style?: LayoutStyle;
+}
+
+export type GetEventProps<
+  TResource extends Resource,
+  TEvent extends Event<TResource>,
+> = (
+  event: TEvent,
+  layoutOptions?: LayoutOptions,
+) => EventProps<TResource, TEvent>;
 
 export interface DateRange {
   start: DateInput | null;

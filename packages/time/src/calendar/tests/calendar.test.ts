@@ -1,3 +1,4 @@
+import { Temporal } from "@js-temporal/polyfill";
 import { assert, beforeEach, describe, expect, test, vi } from "vitest";
 import { CalendarCore } from "../calendar";
 import { calculateSegmentResizePreview } from "../getResizeProps";
@@ -53,6 +54,12 @@ const noAvailabilityResource: TestResource = {
   id: "r4",
   label: "No Availability Room",
 };
+
+function layoutPosition(
+  cal: CalendarCore<TestResource, TestEvent>,
+): number | null {
+  return cal.getTimelineLayout().currentTimePosition;
+}
 
 const DATE_MON = "2024-03-18";
 const DATE_TUE = "2024-03-19";
@@ -4677,9 +4684,43 @@ describe("CalendarCore", () => {
         const layout = cal.getTimelineLayout();
         expect(layout.rows[0]!.events).toHaveLength(0);
       });
+
+      test("currentTimePosition is a percentage of the visible range", () => {
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: "day" },
+          resources: [allDayResource],
+        });
+        cal.goToCurrentPeriod();
+
+        const now = Temporal.Now.plainDateTimeISO("UTC");
+        const expected = ((now.hour * 60 + now.minute) / (24 * 60)) * 100;
+
+        expect(layoutPosition(cal)).toBeCloseTo(expected, 3);
+      });
     });
 
     describe("getEventsByResource", () => {
+      test("buckets an event that references a resource by id", () => {
+        const cal = createCalendar({
+          viewMode: { value: 1, unit: "week" },
+          resources: [allDayResource, afternoonResource],
+          events: [
+            {
+              id: "by-id",
+              title: "By Id",
+              start: `${DATE_MON}T13:00:00`,
+              end: `${DATE_MON}T14:00:00`,
+              resources: ["r3"],
+            },
+          ],
+        });
+        cal.goToSpecificPeriod(DATE_MON);
+
+        const byResource = cal.getEventsByResource();
+        expect(byResource.get("r3")!.map((e) => e.id)).toEqual(["by-id"]);
+        expect(byResource.get("r2")).toEqual([]);
+      });
+
       test("returns one entry per configured resource", () => {
         const cal = createCalendar({
           resources: [weekdayResource, afternoonResource],

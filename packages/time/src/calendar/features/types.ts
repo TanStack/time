@@ -1,3 +1,5 @@
+import type { Temporal } from "@js-temporal/polyfill";
+import type { LayoutOptions } from "~/projection";
 import type {
   IntentOp,
   InvertibleOp,
@@ -6,6 +8,7 @@ import type {
   ModuleApi,
 } from "~/kernel";
 import type {
+  CalendarStore,
   Day,
   Event,
   EventDateTimeInput,
@@ -24,7 +27,16 @@ export interface CalendarHost<
 > {
   getEvent: (id: string) => TEvent | undefined;
   getEvents: () => Array<TEvent>;
-  getActiveDate: () => string;
+  getState: () => CalendarStore;
+  getOptions: () => {
+    timeZone: Temporal.TimeZoneLike;
+    resources: Array<TResource> | null;
+    layout?: LayoutOptions;
+  };
+  getEventMap: (window?: {
+    start: string;
+    end: string;
+  }) => Map<string, Array<TEvent>>;
   getDaysWithEvents: () => Array<Day<TResource, TEvent>>;
   goToSpecificPeriod: (isoDate: string) => void;
   write: (

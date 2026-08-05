@@ -95,7 +95,7 @@ export function eventRecurrenceFeature<
   ): string =>
     fromDate
       ? toPlainDateTimeString(fromDate).slice(0, 10)
-      : host.getActiveDate();
+      : host.getState().activeDate;
 
   const addedFrom = (ops: Array<InvertibleOp<TEvent>>): Array<TEvent> =>
     ops.flatMap((op) => (op.kind === "add" ? [op.event] : []));

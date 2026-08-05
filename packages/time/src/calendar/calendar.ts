@@ -1,11 +1,6 @@
 import { Temporal } from "@js-temporal/polyfill";
 import { getTimeClient } from "../client";
-import {
-  bucketByDay,
-  currentTimeFraction,
-  layoutTimelineRange,
-  toUnavailableRanges,
-} from "~/projection";
+import { bucketByDay, toUnavailableRanges } from "~/projection";
 import type { EventLayout, LayoutOptions, LayoutStyle } from "~/projection";
 import {
   expandRecurringEvent,
@@ -15,16 +10,20 @@ import {
 } from "~/recurrence";
 import { createKernel } from "~/kernel";
 import {
+  dayEventLayoutFeature,
   eventDependencyFeature,
   eventRecurrenceFeature,
   eventResizeFeature,
+  timelineFeature,
 } from "./features";
 import type {
   CalendarHost,
+  DayLayoutApi,
   DependencyCreationApi,
   RecurrenceEditApi,
   RecurrenceNavigationApi,
   ResizeFeatureApi,
+  TimelineApi,
 } from "./features";
 import { redoIntent, undoIntent, undoModule } from "~/kernel/modules";
 import type {
@@ -39,7 +38,6 @@ import type {
   KernelEvent,
   WriteOp,
 } from "~/kernel";
-import { getEventProps } from "./getEventProps";
 import { groupDaysBy } from "./groupDaysBy";
 import { getTimeSlots } from "./getTimeSlots";
 import { calculateResizedEvent } from "./getResizeProps";
@@ -62,7 +60,6 @@ import type {
   SaveEventResult,
   TimeSlot,
   TimelineLayout,
-  TimelineResourceRow,
   UnavailableRange,
   ValidateResizeOptions,
   ValidateResizeResult,
@@ -313,7 +310,9 @@ export class CalendarCore<
   private _features!: RecurrenceNavigationApi &
     RecurrenceEditApi<TResource, TEvent> &
     DependencyCreationApi &
-    ResizeFeatureApi<TResource, TEvent>;
+    ResizeFeatureApi<TResource, TEvent> &
+    DayLayoutApi<TResource, TEvent> &
+    TimelineApi<TResource, TEvent>;
   private _eventsCache: Array<TEvent> | null = null;
 
   private _mergedUnavailMinuteCache = new Map<string, Array<MinuteRange>>();
@@ -383,6 +382,8 @@ export class CalendarCore<
       timeZone: this.options.timeZone,
     });
     const resize = eventResizeFeature<TResource, TEvent>();
+    const dayLayout = dayEventLayoutFeature<TResource, TEvent>();
+    const timeline = timelineFeature<TResource, TEvent>();
     this._kernel = createKernel({
       events: events as Array<WritableEvent<TEvent>>,
       modules: {
@@ -397,6 +398,8 @@ export class CalendarCore<
       ...recurrence.api!(host),
       ...dependency.api!(host),
       ...resize.api!(host),
+      ...dayLayout.api!(host),
+      ...timeline.api!(host),
     };
   }
 
@@ -404,7 +407,13 @@ export class CalendarCore<
     return {
       getEvent: (id) => this._eventMap.get(id),
       getEvents: () => this.getEvents(),
-      getActiveDate: () => this.store.state.activeDate,
+      getState: () => this.store.state,
+      getOptions: () => ({
+        timeZone: this.options.timeZone,
+        resources: this.options.resources,
+        layout: this.options.layout,
+      }),
+      getEventMap: (window) => this.getEventMap(window),
       getDaysWithEvents: () => this.getDaysWithEvents(),
       goToSpecificPeriod: (isoDate) => this.goToSpecificPeriod(isoDate),
       write: (ops, reason) => this._write(ops, reason),
@@ -797,23 +806,7 @@ export class CalendarCore<
   }
 
   getEventProps(event: TEvent, layoutOptions?: LayoutOptions) {
-    return getEventProps(this.getEventMap(), event, this.store.state, {
-      timeZone: this.options.timeZone,
-      ...this.options.layout,
-      ...layoutOptions,
-      daySegments: this._getDaySegments(event),
-    }) as ReturnType<CalendarActions<TResource, TEvent>["getEventProps"]>;
-  }
-
-  private _getDaySegments(event: TEvent): Array<TEvent> {
-    const isoDate = toPlainDateTimeString(event.start).slice(0, 10);
-    const nextDay = Temporal.PlainDate.from(isoDate)
-      .add({ days: 1 })
-      .toString({ calendarName: "never" });
-
-    return (
-      this.getEventMap({ start: isoDate, end: nextDay }).get(isoDate) ?? []
-    );
+    return this._features.getEventProps(event, layoutOptions);
   }
 
   groupDaysBy({
@@ -1611,88 +1604,12 @@ export class CalendarCore<
     );
   }
 
-  private getMergedEventsByResource(
-    days: Array<Day<TResource, TEvent>>,
-  ): Map<TResource["id"], Array<TEvent>> {
-    const map = new Map<TResource["id"], Array<TEvent>>();
-    this.options.resources?.forEach((r) => map.set(r.id, []));
-
-    const allSegments = days.flatMap((d) => d.events);
-    const merged = new Map<string, TEvent>();
-    for (const segment of allSegments) {
-      if (!merged.has(segment.id)) {
-        merged.set(segment.id, {
-          ...segment,
-          start: segment._originalStart ?? segment.start,
-          end: segment._originalEnd ?? segment.end,
-        } as TEvent);
-      }
-    }
-
-    for (const event of merged.values()) {
-      const resourceIds = this._getEventResourceIds(event);
-      for (const rid of resourceIds) {
-        map.get(rid)?.push(event);
-      }
-    }
-
-    return map;
-  }
-
   getEventsByResource(): Map<TResource["id"], Array<TEvent>> {
-    return this.getMergedEventsByResource(this.getDaysWithEvents());
+    return this._features.getEventsByResource();
   }
 
   getTimelineLayout(): TimelineLayout<TResource, TEvent> {
-    const days = this.getDaysWithEvents();
-
-    if (days.length === 0) {
-      return { rows: [], currentTimePosition: null };
-    }
-
-    const isoDates = days.map((d) => d.isoDate);
-    const eventsByResource = this.getMergedEventsByResource(days);
-
-    const rows: Array<TimelineResourceRow<TResource, TEvent>> = (
-      this.options.resources ?? []
-    ).map((resource) => {
-      const resourceEvents = eventsByResource.get(resource.id) ?? [];
-      const { items, laneCount } = layoutTimelineRange({
-        events: resourceEvents,
-        firstDay: isoDates[0]!,
-        totalDays: isoDates.length,
-      });
-
-      return {
-        resource,
-        events: items.map((item) => ({
-          event: resourceEvents[item.index]!,
-          left: item.startFraction * 100,
-          width: item.durationFraction * 100,
-          lane: item.lane,
-          startFraction: item.startFraction,
-          endFraction: item.endFraction,
-          isStartClipped: item.isStartClipped,
-          isEndClipped: item.isEndClipped,
-        })),
-        laneCount,
-      };
-    });
-
-    const now = Temporal.Now.zonedDateTimeISO(this.options.timeZone);
-    const fraction = currentTimeFraction({
-      isoDates,
-      now: {
-        isoDate: now.toPlainDate().toString({ calendarName: "never" }),
-        hour: now.hour,
-        minute: now.minute,
-      },
-    });
-
-    return {
-      rows,
-      currentTimePosition: fraction === null ? null : fraction * 100,
-    };
+    return this._features.getTimelineLayout();
   }
 
   private getUnavailableMinuteRanges(

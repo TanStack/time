@@ -5,7 +5,7 @@ title: CalendarCoreOptions
 
 # Interface: CalendarCoreOptions\<TResource, TEvent\>
 
-Defined in: [calendar/calendar.ts:121](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L121)
+Defined in: [calendar/calendar.ts:97](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L97)
 
 ## Extends
 
@@ -71,7 +71,7 @@ Defined in: [calendar/date-core.ts:68](https://github.com/TanStack/time/blob/mai
 optional events: TEvent[] | null;
 ```
 
-Defined in: [calendar/calendar.ts:125](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L125)
+Defined in: [calendar/calendar.ts:101](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L101)
 
 ***
 
@@ -81,7 +81,7 @@ Defined in: [calendar/calendar.ts:125](https://github.com/TanStack/time/blob/mai
 optional fetchEvents: (range) => Promise<TEvent[]>;
 ```
 
-Defined in: [calendar/calendar.ts:129](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L129)
+Defined in: [calendar/calendar.ts:105](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L105)
 
 #### Parameters
 
@@ -107,7 +107,7 @@ Defined in: [calendar/calendar.ts:129](https://github.com/TanStack/time/blob/mai
 optional layout: LayoutOptions;
 ```
 
-Defined in: [calendar/calendar.ts:134](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L134)
+Defined in: [calendar/calendar.ts:110](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L110)
 
 ***
 
@@ -145,7 +145,7 @@ Defined in: [calendar/date-core.ts:62](https://github.com/TanStack/time/blob/mai
 optional resources: TResource[] | null;
 ```
 
-Defined in: [calendar/calendar.ts:127](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L127)
+Defined in: [calendar/calendar.ts:103](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L103)
 
 ***
 

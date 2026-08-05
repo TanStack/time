@@ -33,7 +33,15 @@ function createHost(
   const host = {
     getEvent: () => undefined,
     getEvents: () => [],
-    getActiveDate: () => DAY,
+    getState: () => ({
+      currentPeriod: DAY,
+      activeDate: DAY,
+      viewMode: { value: 1, unit: "week" as const },
+      eventsVersion: 0,
+      isPending: false,
+    }),
+    getOptions: () => ({ timeZone: "UTC", resources: null }),
+    getEventMap: () => new Map(),
     getDaysWithEvents: () =>
       Array.from({ length: daysInView }, (_, index) => ({
         isoDate: `2025-06-0${index + 2}`,

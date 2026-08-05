@@ -28,8 +28,8 @@ moves logic and changes the public shape.
 | `eventDependencyFeature` | `createDependency` · `validateEventDependencies` |
 | `resourceAvailabilityFeature` | `getUnavailableRanges` · `getUnavailabilityDetails` · `validateEventPlacement` |
 | `eventResizeFeature` | `createResizeController` · `getEventSegmentInfo` · `validateResize` |
-| `createDayEventModel()` | `getEventProps` |
-| `createTimelineModel()` | `getTimelineLayout` · `getEventsByResource` |
+| `dayEventLayoutFeature` | `getEventProps` |
+| `timelineFeature` | `getTimelineLayout` · `getEventsByResource` |
 
 `validateMove` is deliberately absent: it consults dependency *and* availability rules, so it
 stays on core and asks the kernel's validate pipeline what is mounted. That is what the veto
@@ -55,7 +55,7 @@ contributing the same api key.
 the module object — and now returns `Module<E, UndoHistory<E>>` with `api`. `CalendarCore`
 reads `this._kernel.api.canUndo()`.
 
-### Slice 2 — move the methods onto module apis
+### Slice 2 — move the methods onto module apis ✅
 
 Per feature: recurrence → dependency → availability → resize → models. Each step moves the
 method bodies from `CalendarCore` into the module's `api` and leaves a one-line delegate behind.
@@ -65,17 +65,17 @@ Public surface unchanged, so `calendar.test.ts` is the characterization net.
 cover it), `getMasterEvent` → `recurrenceModule.api`, `goToNextOccurrence` /
 `goToPreviousOccurrence` / `editRecurringEvent` / `removeRecurringEvent` →
 `eventRecurrenceFeature`, `createDependency` → `eventDependencyFeature`,
-`createResizeController` / `getEventSegmentInfo` → `eventResizeFeature`. `CalendarCore` is down
-to 2,211 lines from 2,755.
+`createResizeController` / `getEventSegmentInfo` → `eventResizeFeature`, `getEventProps` →
+`dayEventLayoutFeature`, `getTimelineLayout` / `getEventsByResource` → `timelineFeature`.
+`CalendarCore` is down to 2,128 lines from 2,755; every gatable method is a delegate.
 
 **What the first two moves revealed.** `ModuleApiCtx` is enough for reads and validators, and
 not enough for anything else. Sorting the remaining methods by what they actually touch:
 
 | Needs | Methods |
 |-------|---------|
-| kernel ctx + module options — movable now | `getEventProps` · `getTimelineLayout` · `getEventsByResource` |
 | availability internals — blocked | `validateEventPlacement` · `getUnavailableRanges` · `getUnavailabilityDetails` · `validateResize` |
-| the host instance | done: the recurrence writes, `createDependency`, the navigation pair, `createResizeController` |
+| moved | the recurrence writes · `createDependency` · the navigation pair · `createResizeController` · `getEventSegmentInfo` · `getEventProps` · `getTimelineLayout` · `getEventsByResource` |
 
 The host-dependent group was the orchestrating writes and the navigation pair.
 `editRecurringEvent` calls `editEvent`, the two validators, `fetchEventsForRange` and the kernel
@@ -128,6 +128,18 @@ host — validate-per-move, blocked-preview retention, the day-count scaling of 
 the plain commit path, the scoped-occurrence commit path — plus the feature api against a real
 calendar. Total is 1,019.
 
+The two projection readers need no writes at all, so they take `getState`, `getOptions` and
+`getEventMap` and contribute no kernel module. `getActiveDate` left the host in the same step —
+`getState()` already carries `activeDate`, so the narrower member was redundant. `getEventProps`
+kept its private `_getDaySegments` helper as a local, and `getTimelineLayout` /
+`getEventsByResource` took `getMergedEventsByResource` with them, which is why the merge-by-id
+logic now lives once in `timelineFeature` instead of behind a private method two public readers
+shared.
+
+Two timeline branches were unpinned despite 13 existing timeline tests — the `* 100` that turns
+`currentTimeFraction` into a percentage, and resources referenced by id string rather than
+object. Two more characterization tests, 1,021 total.
+
 The recurrence writes brought their private helpers along: `_resolveOccurrenceStart`,
 `_durationPreservingEnd`, `_writeOccurrenceEdit`, `_writeOccurrenceRemove`,
 `_emitRecurrenceResult` and `_addedFrom` are gone from `CalendarCore`, which now holds no
@@ -175,14 +187,17 @@ One release later: delete `allCalendarFeatures` and the delegating shims left by
   peer through `CalendarHost` (`editRecurringEvent` is a host member), which is not the seam
   ADR 0009 describes. Decide in slice 3 whether `api` receives resolved peer apis alongside the
   host.
-- **Projection models vs. modules.** `layoutModule` is already a projection stage, so
-  `createDayEventModel()` may be a rename rather than a new construct. Decide in slice 2 once
-  `getEventProps` has moved.
+- ~~**Projection models vs. modules.**~~ Settled: not a rename, and not a separate construct.
+  `layoutModule` is a kernel projection stage that writes a `layout` field onto projected events;
+  `getEventProps` is a view-model read over the event map, store state and calendar options. They
+  share nothing. Both projection readers ship as ordinary features (`dayEventLayoutFeature`,
+  `timelineFeature`) rather than a second `createXModel()` construct, so `calendarFeatures()` has
+  one kind of thing to compose.
 
 ## Definition of done
 
 - `features` is required; no implicit module set anywhere in the packages or examples.
 - Every method in the table above is reachable only when its feature is composed, and fails to
   typecheck otherwise.
-- A read-only day view composes `createDayEventModel()` alone and pulls in no recurrence,
+- A read-only day view composes `dayEventLayoutFeature` alone and pulls in no recurrence,
   dependency, resize or timeline code — verified against the built bundle, not by inspection.
