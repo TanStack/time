@@ -33,7 +33,7 @@ Defined in: [calendar/calendar.ts:396](https://github.com/TanStack/time/blob/mai
 new CalendarCore<TResource, TEvent>(options): CalendarCore<TResource, TEvent>;
 ```
 
-Defined in: [calendar/calendar.ts:452](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L452)
+Defined in: [calendar/calendar.ts:453](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L453)
 
 #### Parameters
 
