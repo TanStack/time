@@ -14,12 +14,17 @@ import {
   normalizeRecurrenceRule,
 } from "~/recurrence";
 import { createKernel } from "~/kernel";
-import { eventDependencyFeature, eventRecurrenceFeature } from "./features";
+import {
+  eventDependencyFeature,
+  eventRecurrenceFeature,
+  eventResizeFeature,
+} from "./features";
 import type {
   CalendarHost,
   DependencyCreationApi,
   RecurrenceEditApi,
   RecurrenceNavigationApi,
+  ResizeFeatureApi,
 } from "./features";
 import { redoIntent, undoIntent, undoModule } from "~/kernel/modules";
 import type {
@@ -37,18 +42,13 @@ import type {
 import { getEventProps } from "./getEventProps";
 import { groupDaysBy } from "./groupDaysBy";
 import { getTimeSlots } from "./getTimeSlots";
-import { calculateResizedEvent, getSegmentInfo } from "./getResizeProps";
+import { calculateResizedEvent } from "./getResizeProps";
 import { DateCore } from "./date-core";
 import { generateDateRange } from "./generateDateRange";
 import { ResizeController } from "./resizeController";
 import type { DateCoreOptions, ParsedDateCoreOptions } from "./date-core";
 import type { ResizeControllerOptions } from "./resizeController";
-import type {
-  ResizeConstraints,
-  ResizeEdge,
-  SegmentInfo,
-  UnavailableTimeRange,
-} from "./getResizeProps";
+import type { SegmentInfo, UnavailableTimeRange } from "./getResizeProps";
 import type {
   AvailabilityConflict,
   Day,
@@ -64,6 +64,8 @@ import type {
   TimelineLayout,
   TimelineResourceRow,
   UnavailableRange,
+  ValidateResizeOptions,
+  ValidateResizeResult,
 } from "./types";
 import type { CalendarStore } from "./types";
 import { toPlainDateString, toPlainDateTimeString } from "~/date/parse";
@@ -276,33 +278,6 @@ export interface CalendarApi<
 > extends CalendarActions<TResource, TEvent>,
     CalendarState<TResource, TEvent> {}
 
-export interface ValidateResizeOptions {
-  eventId: string;
-  originalStart: string;
-  originalEnd: string;
-  edge: ResizeEdge;
-  totalDeltaMinutes: number;
-  targetDayDate: string;
-  originalDayDate: string;
-  occurrenceStart?: EventDateTimeInput;
-  constraints?: ResizeConstraints;
-}
-
-export interface ValidateResizeResult {
-  blocked: boolean;
-  error?: {
-    reason: ResizeError["reason"];
-    message: string;
-    conflicts: Array<AvailabilityConflict>;
-  };
-  result: {
-    start: string;
-    end: string;
-    durationMinutes: number;
-  };
-  targetDayDate: string;
-}
-
 type ParsedCalendarCoreOptions<
   TResource extends Resource,
   TEvent extends Event<TResource>,
@@ -337,7 +312,8 @@ export class CalendarCore<
   >;
   private _features!: RecurrenceNavigationApi &
     RecurrenceEditApi<TResource, TEvent> &
-    DependencyCreationApi;
+    DependencyCreationApi &
+    ResizeFeatureApi<TResource, TEvent>;
   private _eventsCache: Array<TEvent> | null = null;
 
   private _mergedUnavailMinuteCache = new Map<string, Array<MinuteRange>>();
@@ -406,6 +382,7 @@ export class CalendarCore<
     const dependency = eventDependencyFeature<TResource, TEvent>({
       timeZone: this.options.timeZone,
     });
+    const resize = eventResizeFeature<TResource, TEvent>();
     this._kernel = createKernel({
       events: events as Array<WritableEvent<TEvent>>,
       modules: {
@@ -419,6 +396,7 @@ export class CalendarCore<
     this._features = {
       ...recurrence.api!(host),
       ...dependency.api!(host),
+      ...resize.api!(host),
     };
   }
 
@@ -427,17 +405,21 @@ export class CalendarCore<
       getEvent: (id) => this._eventMap.get(id),
       getEvents: () => this.getEvents(),
       getActiveDate: () => this.store.state.activeDate,
+      getDaysWithEvents: () => this.getDaysWithEvents(),
       goToSpecificPeriod: (isoDate) => this.goToSpecificPeriod(isoDate),
       write: (ops, reason) => this._write(ops, reason),
       fetchEventsForRange: (start, end) => this.fetchEventsForRange(start, end),
       editEvent: (eventId, updates, options) =>
         this.editEvent(eventId, updates, options),
       removeEvent: (id) => this.removeEvent(id),
+      editRecurringEvent: (eventId, updates, options) =>
+        this.editRecurringEvent(eventId, updates, options),
       commitUpdate: (id, updates) => this.commitUpdate(id, updates),
       validateMove: (eventId, newStart, newEnd, resources, consumption) =>
         this.validateMove(eventId, newStart, newEnd, resources, consumption),
       validateEventDependencies: (event, dependsOn) =>
         this.validateEventDependencies(event, dependsOn),
+      validateResize: (options) => this.validateResize(options),
       validateEventPlacement: (event) => this.validateEventPlacement(event),
     };
   }
@@ -811,16 +793,7 @@ export class CalendarCore<
   }
 
   getEventSegmentInfo(event: TEvent): SegmentInfo {
-    return getSegmentInfo({
-      start: toPlainDateTimeString(event.start),
-      end: toPlainDateTimeString(event.end),
-      ...(event._originalStart != null
-        ? { _originalStart: event._originalStart }
-        : {}),
-      ...(event._originalEnd != null
-        ? { _originalEnd: event._originalEnd }
-        : {}),
-    });
+    return this._features.getEventSegmentInfo(event);
   }
 
   getEventProps(event: TEvent, layoutOptions?: LayoutOptions) {
@@ -1190,7 +1163,7 @@ export class CalendarCore<
   createResizeController(
     options: ResizeControllerOptions = {},
   ): ResizeController<TResource, TEvent> {
-    return new ResizeController<TResource, TEvent>(this, options);
+    return this._features.createResizeController(options);
   }
 
   validateMove(

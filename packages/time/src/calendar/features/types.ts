@@ -6,11 +6,16 @@ import type {
   ModuleApi,
 } from "~/kernel";
 import type {
+  Day,
   Event,
+  EventDateTimeInput,
   EventDependency,
+  RecurrenceEditScope,
   Resource,
   ResizeError,
   SaveEventResult,
+  ValidateResizeOptions,
+  ValidateResizeResult,
 } from "../types";
 
 export interface CalendarHost<
@@ -20,6 +25,7 @@ export interface CalendarHost<
   getEvent: (id: string) => TEvent | undefined;
   getEvents: () => Array<TEvent>;
   getActiveDate: () => string;
+  getDaysWithEvents: () => Array<Day<TResource, TEvent>>;
   goToSpecificPeriod: (isoDate: string) => void;
   write: (
     ops: Array<InvertibleOp<TEvent> | IntentOp>,
@@ -32,6 +38,15 @@ export interface CalendarHost<
     options?: { dependsOn?: Array<EventDependency> },
   ) => Promise<SaveEventResult>;
   removeEvent: (id: string) => void;
+  editRecurringEvent: (
+    eventId: string,
+    updates: Partial<Omit<TEvent, "id">>,
+    options: {
+      scope: RecurrenceEditScope;
+      occurrenceStart?: EventDateTimeInput;
+      dependsOn?: Array<EventDependency>;
+    },
+  ) => Promise<SaveEventResult>;
   commitUpdate: (id: string, updates: Partial<Omit<TEvent, "id">>) => void;
   validateMove: (
     eventId: string,
@@ -44,6 +59,7 @@ export interface CalendarHost<
     event: { id?: string; title: string; start: string; end: string },
     dependsOn: Array<EventDependency>,
   ) => { valid: boolean; error?: ResizeError };
+  validateResize: (options: ValidateResizeOptions) => ValidateResizeResult;
   validateEventPlacement: (event: {
     id?: string;
     title: string;

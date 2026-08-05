@@ -64,22 +64,28 @@ Public surface unchanged, so `calendar.test.ts` is the characterization net.
 **Landed:** `validateEventDependencies` → `dependencyModule.api` (18 characterization tests
 cover it), `getMasterEvent` → `recurrenceModule.api`, `goToNextOccurrence` /
 `goToPreviousOccurrence` / `editRecurringEvent` / `removeRecurringEvent` →
-`eventRecurrenceFeature`, `createDependency` → `eventDependencyFeature`. `CalendarCore` is down
-to 2,238 lines from 2,755.
+`eventRecurrenceFeature`, `createDependency` → `eventDependencyFeature`,
+`createResizeController` / `getEventSegmentInfo` → `eventResizeFeature`. `CalendarCore` is down
+to 2,211 lines from 2,755.
 
 **What the first two moves revealed.** `ModuleApiCtx` is enough for reads and validators, and
 not enough for anything else. Sorting the remaining methods by what they actually touch:
 
 | Needs | Methods |
 |-------|---------|
-| kernel ctx + module options — movable now | `validateEventPlacement` · `getUnavailableRanges` · `getUnavailabilityDetails` · `getEventSegmentInfo` · `validateResize` · `getEventProps` · `getTimelineLayout` · `getEventsByResource` |
-| the host instance | `createResizeController` (the recurrence writes, `createDependency` and the navigation pair are done) |
+| kernel ctx + module options — movable now | `getEventProps` · `getTimelineLayout` · `getEventsByResource` |
+| availability internals — blocked | `validateEventPlacement` · `getUnavailableRanges` · `getUnavailabilityDetails` · `validateResize` |
+| the host instance | done: the recurrence writes, `createDependency`, the navigation pair, `createResizeController` |
 
-The host-dependent group is the orchestrating writes and the navigation pair. `editRecurringEvent`
-calls `editEvent`, the two validators, `fetchEventsForRange` and the kernel write path;
-`createDependency` calls `validateMove` and `commitUpdate`; `goToNextOccurrence` needs
-`goToSpecificPeriod` and `store.state.activeDate`; `createResizeController` passes `this` to the
+The host-dependent group was the orchestrating writes and the navigation pair.
+`editRecurringEvent` calls `editEvent`, the two validators, `fetchEventsForRange` and the kernel
+write path; `createDependency` calls `validateMove` and `commitUpdate`; `goToNextOccurrence` needs
+`goToSpecificPeriod` and `store.state.activeDate`; `createResizeController` passed `this` to the
 controller. None of that is reachable from a kernel ctx, and none of it belongs *in* the kernel.
+
+`validateResize` moved from "movable now" to "blocked": it reads `getUnavailableMinuteRanges`,
+`getUnavailabilityDetails` and `_getEventResourceIds`, so it lands wherever availability lands.
+`getEventSegmentInfo` went to `eventResizeFeature` because it needs neither.
 
 **Resolved: a feature is a kernel module plus a host-aware api.** `CalendarFeature` in
 `calendar/features/types.ts` carries an optional `module` (kernel stages, kernel ctx — unchanged)
@@ -91,9 +97,12 @@ see the host, not each other; a feature that needs a peer declares `requires`.
 features may touch, not a projection of the core surface. The navigation pair took `getEvent`,
 `getEvents`, `getActiveDate` and `goToSpecificPeriod`; `createDependency` added `commitUpdate`
 and `validateMove`; the recurrence writes added `write`, `fetchEventsForRange`, `editEvent`,
-`removeEvent`, `validateEventDependencies` and `validateEventPlacement`. Twelve members for six
+`removeEvent`, `validateEventDependencies` and `validateEventPlacement`; `createResizeController`
+added `getDaysWithEvents`, `validateResize` and `editRecurringEvent`. Fifteen members for eight
 methods, and `validateMove` staying on the host is the concrete case for keeping composite
-validators out of features.
+validators out of features. Two of those members are temporary: `validateResize` leaves the host
+when availability unblocks and it becomes a resize method, and `editRecurringEvent` leaves when
+features can reach a declared peer directly.
 
 `eventRecurrenceFeature` wraps `recurrenceModule` and owns the navigation pair plus
 `editRecurringEvent` / `removeRecurringEvent`; `eventDependencyFeature` wraps `dependencyModule`
@@ -101,6 +110,23 @@ and owns `createDependency`, which is the case the seam was chosen for — it ca
 *and* `validateMove`, and its cycle guard and commit path are pinned by 1 and 10 tests
 respectively. `CalendarCore` builds the features, mounts `feature.module`, merges the apis, and
 delegates.
+
+`eventResizeFeature` owns `createResizeController` and `getEventSegmentInfo`, and contributes no
+kernel module — `resizeModule` exists but `CalendarCore` has never mounted it, and mounting it
+now would change write behaviour. `ResizeController` no longer takes a `CalendarCore`: it takes a
+`CalendarHost`, which is what let the constructor call move into the feature at all.
+
+**`requires` has a real user.** `ResizeController` calls `editRecurringEvent` when a scoped
+occurrence resize commits, so `eventResizeFeature` declares `requires: ["recurrence"]` — the
+first non-speculative peer requirement, which settles the open question below. Nothing enforces
+`CalendarFeature.requires` yet; the check lands in slice 3 alongside `calendarFeatures()`.
+
+The resize move exposed the worst coverage hole in the package: `ResizeController` had **no
+tests at all**, so every host call could be broken without failing the suite. Slice 2 added
+`src/calendar/tests/resizeController.test.ts` (7 tests) driving the controller against a fake
+host — validate-per-move, blocked-preview retention, the day-count scaling of a horizontal drag,
+the plain commit path, the scoped-occurrence commit path — plus the feature api against a real
+calendar. Total is 1,019.
 
 The recurrence writes brought their private helpers along: `_resolveOccurrenceStart`,
 `_durationPreservingEnd`, `_writeOccurrenceEdit`, `_writeOccurrenceRemove`,
@@ -144,11 +170,11 @@ One release later: delete `allCalendarFeatures` and the delegating shims left by
 
 ## Open questions
 
-- **Peer requirements.** ADR 0009 says a feature declares required peers and construction
-  throws. Slice 1 implements the mechanism but no real module declares `requires` yet — resize
-  clamps from its own `resources` option, so it does not actually need
-  `resourceAvailabilityFeature`. If a real peer requirement never appears by slice 3, the
-  mechanism should be deleted rather than kept speculatively.
+- ~~**Peer requirements.**~~ Settled: `eventResizeFeature` requires `recurrence` for scoped
+  occurrence commits, so the mechanism stays. Open sub-question: a feature currently reaches its
+  peer through `CalendarHost` (`editRecurringEvent` is a host member), which is not the seam
+  ADR 0009 describes. Decide in slice 3 whether `api` receives resolved peer apis alongside the
+  host.
 - **Projection models vs. modules.** `layoutModule` is already a projection stage, so
   `createDayEventModel()` may be a rename rather than a new construct. Decide in slice 2 once
   `getEventProps` has moved.

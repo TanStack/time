@@ -1,4 +1,5 @@
 import type { DateInput } from "~/date";
+import type { ResizeConstraints, ResizeEdge } from "./getResizeProps";
 
 export type EventDateTimeInput = string | Date | number;
 
@@ -217,4 +218,31 @@ export interface TimelineLayout<
 > {
   rows: Array<TimelineResourceRow<TResource, TEvent>>;
   currentTimePosition: number | null;
+}
+
+export interface ValidateResizeOptions {
+  eventId: string;
+  originalStart: string;
+  originalEnd: string;
+  edge: ResizeEdge;
+  totalDeltaMinutes: number;
+  targetDayDate: string;
+  originalDayDate: string;
+  occurrenceStart?: EventDateTimeInput;
+  constraints?: ResizeConstraints;
+}
+
+export interface ValidateResizeResult {
+  blocked: boolean;
+  error?: {
+    reason: ResizeError["reason"];
+    message: string;
+    conflicts: Array<AvailabilityConflict>;
+  };
+  result: {
+    start: string;
+    end: string;
+    durationMinutes: number;
+  };
+  targetDayDate: string;
 }
