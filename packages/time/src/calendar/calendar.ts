@@ -16,10 +16,13 @@ import {
   resolveOccurrenceStart,
 } from "~/recurrence";
 import { createKernel } from "~/kernel";
-import { eventRecurrenceFeature } from "./features";
-import type { CalendarHost, RecurrenceNavigationApi } from "./features";
+import { eventDependencyFeature, eventRecurrenceFeature } from "./features";
+import type {
+  CalendarHost,
+  DependencyCreationApi,
+  RecurrenceNavigationApi,
+} from "./features";
 import {
-  dependencyModule,
   editOccurrenceIntent,
   redoIntent,
   removeOccurrenceIntent,
@@ -87,11 +90,9 @@ import type {
 } from "~/validation/availability";
 import {
   computeCascade,
-  hasDependencyPath,
   propagateToDependents,
   propagateToPredecessors,
   requiredForwardShiftMs,
-  shiftToSatisfyLink,
 } from "~/validation/dependency";
 import type { DependencyGraphEvent } from "~/validation/dependency";
 
@@ -414,7 +415,7 @@ export class CalendarCore<
       DependencyApi &
       RecurrenceApi<WritableEvent<TEvent>>
   >;
-  private _features!: RecurrenceNavigationApi;
+  private _features!: RecurrenceNavigationApi & DependencyCreationApi;
   private _eventsCache: Array<TEvent> | null = null;
 
   private _mergedUnavailMinuteCache = new Map<string, Array<MinuteRange>>();
@@ -486,17 +487,23 @@ export class CalendarCore<
   private _seedKernel(events: Array<TEvent>) {
     this._eventsCache = null;
     const recurrence = eventRecurrenceFeature<TResource, TEvent>();
+    const dependency = eventDependencyFeature<TResource, TEvent>({
+      timeZone: this.options.timeZone,
+    });
     this._kernel = createKernel({
       events: events as Array<WritableEvent<TEvent>>,
       modules: {
         history: undoModule<WritableEvent<TEvent>>(),
         recurrence: recurrence.module!,
-        dependency: dependencyModule<WritableEvent<TEvent>>({
-          timeZone: this.options.timeZone,
-        }),
+        dependency: dependency.module!,
       },
     });
-    this._features = recurrence.api!(this._host());
+
+    const host = this._host();
+    this._features = {
+      ...recurrence.api!(host),
+      ...dependency.api!(host),
+    };
   }
 
   private _host(): CalendarHost<TResource, TEvent> {
@@ -505,6 +512,9 @@ export class CalendarCore<
       getEvents: () => this.getEvents(),
       getActiveDate: () => this.store.state.activeDate,
       goToSpecificPeriod: (isoDate) => this.goToSpecificPeriod(isoDate),
+      commitUpdate: (id, updates) => this.commitUpdate(id, updates),
+      validateMove: (eventId, newStart, newEnd, resources, consumption) =>
+        this.validateMove(eventId, newStart, newEnd, resources, consumption),
     };
   }
 
@@ -1953,87 +1963,7 @@ export class CalendarCore<
     targetId: string,
     type: DependencyType = "FS",
   ): { blocked: boolean; error?: ResizeError } {
-    const sourceEvent = this._eventMap.get(sourceId);
-    const targetEvent = this._eventMap.get(targetId);
-    if (!sourceEvent || !targetEvent) return { blocked: false };
-
-    const currentDeps = targetEvent.dependsOn ?? [];
-    if (currentDeps.some((d) => d.id === sourceId && d.type === type)) {
-      return { blocked: false };
-    }
-
-    if (sourceId === targetId) {
-      return {
-        blocked: true,
-        error: {
-          eventId: targetId,
-          eventTitle: targetEvent.title,
-          reason: "blocked",
-          message: "circular dependency: an event cannot depend on itself",
-          originalStart: toPlainDateTimeString(targetEvent.start),
-          originalEnd: toPlainDateTimeString(targetEvent.end),
-        },
-      };
-    }
-
-    if (hasDependencyPath(this._dependencyGraphEvents(), sourceId, targetId)) {
-      return {
-        blocked: true,
-        error: {
-          eventId: targetId,
-          eventTitle: targetEvent.title,
-          reason: "blocked",
-          message: `circular dependency: ${sourceId} already depends on ${targetId} (directly or indirectly)`,
-          originalStart: toPlainDateTimeString(targetEvent.start),
-          originalEnd: toPlainDateTimeString(targetEvent.end),
-        },
-      };
-    }
-
-    const targetStartStr = toPlainDateTimeString(targetEvent.start);
-    const targetEndStr = toPlainDateTimeString(targetEvent.end);
-
-    const rescheduled = shiftToSatisfyLink({
-      type,
-      predecessor: {
-        start: toPlainDateTimeString(sourceEvent.start),
-        end: toPlainDateTimeString(sourceEvent.end),
-      },
-      successor: { start: targetStartStr, end: targetEndStr },
-      timeZone: this.options.timeZone,
-    });
-
-    if (rescheduled) {
-      const validation = this.validateMove(
-        targetId,
-        rescheduled.start,
-        rescheduled.end,
-      );
-      if (validation.blocked) {
-        return {
-          blocked: true,
-          error: {
-            eventId: targetId,
-            eventTitle: validation.blockedEventTitle ?? targetEvent.title,
-            reason: "unavailable-time",
-            message:
-              validation.message ??
-              `Cannot connect (${type}): the resulting schedule would fall in unavailable time.`,
-            originalStart: targetStartStr,
-            originalEnd: targetEndStr,
-            attemptedStart: rescheduled.start,
-            attemptedEnd: rescheduled.end,
-          },
-        };
-      }
-    }
-
-    this.commitUpdate(targetId, {
-      dependsOn: [...currentDeps, { id: sourceId, type }],
-      ...(rescheduled && { start: rescheduled.start, end: rescheduled.end }),
-    } as Partial<Omit<TEvent, "id">>);
-
-    return { blocked: false };
+    return this._features.createDependency(sourceId, targetId, type);
   }
 
   removeEvent(id: Event["id"]) {

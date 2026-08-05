@@ -9,6 +9,14 @@ export interface CalendarHost<
   getEvents: () => Array<TEvent>;
   getActiveDate: () => string;
   goToSpecificPeriod: (isoDate: string) => void;
+  commitUpdate: (id: string, updates: Partial<Omit<TEvent, "id">>) => void;
+  validateMove: (
+    eventId: string,
+    newStart: string,
+    newEnd: string,
+    newResources?: Array<TResource | string>,
+    newConsumption?: Array<number>,
+  ) => { blocked: boolean; blockedEventTitle?: string; message?: string };
 }
 
 export interface CalendarFeature<
