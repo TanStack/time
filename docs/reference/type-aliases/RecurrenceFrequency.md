@@ -9,4 +9,4 @@ title: RecurrenceFrequency
 type RecurrenceFrequency = "daily" | "weekly" | "monthly" | "yearly";
 ```
 
-Defined in: [calendar/types.ts:5](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L5)
+Defined in: [calendar/types.ts:7](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L7)

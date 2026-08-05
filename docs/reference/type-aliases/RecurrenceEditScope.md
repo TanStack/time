@@ -9,4 +9,4 @@ title: RecurrenceEditScope
 type RecurrenceEditScope = "this" | "thisAndFollowing" | "all";
 ```
 
-Defined in: [calendar/types.ts:14](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L14)
+Defined in: [calendar/types.ts:16](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L16)

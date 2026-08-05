@@ -5,7 +5,7 @@ title: EventDependency
 
 # Interface: EventDependency
 
-Defined in: [calendar/types.ts:9](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L9)
+Defined in: [calendar/types.ts:11](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L11)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/types.ts:9](https://github.com/TanStack/time/blob/main/pac
 id: string;
 ```
 
-Defined in: [calendar/types.ts:10](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L10)
+Defined in: [calendar/types.ts:12](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L12)
 
 ***
 
@@ -25,4 +25,4 @@ Defined in: [calendar/types.ts:10](https://github.com/TanStack/time/blob/main/pa
 type: DependencyType;
 ```
 
-Defined in: [calendar/types.ts:11](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L11)
+Defined in: [calendar/types.ts:13](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L13)

@@ -22,16 +22,16 @@ Defined in: [calendar/resizeController.ts:76](https://github.com/TanStack/time/b
 ### Constructor
 
 ```ts
-new ResizeController<TResource, TEvent>(calendarCore, options): ResizeController<TResource, TEvent>;
+new ResizeController<TResource, TEvent>(host, options): ResizeController<TResource, TEvent>;
 ```
 
 Defined in: [calendar/resizeController.ts:115](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L115)
 
 #### Parameters
 
-##### calendarCore
+##### host
 
-[`CalendarCore`](CalendarCore.md)\<`TResource`, `TEvent`\>
+`CalendarHost`\<`TResource`, `TEvent`\>
 
 ##### options
 
