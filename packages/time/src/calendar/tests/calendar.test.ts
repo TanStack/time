@@ -6256,6 +6256,122 @@ describe("CalendarCore", () => {
       removeCal.removeRecurringEvent("rec-ex_1", { scope: "all" });
       expect(removeCal.getEvents()).toHaveLength(0);
     });
+
+    test("editRecurringEvent rejects an occurrenceStart outside the series", async () => {
+      const cal = createCalendar({ events: [recurringEvent] });
+
+      const result = await cal.editRecurringEvent(
+        "rec-ex_1",
+        { title: "Nope" },
+        { scope: "this", occurrenceStart: "2025-06-10T09:00:00" },
+      );
+
+      assert(!result.success);
+      expect(result.error.message).toBe(
+        'Occurrence "2025-06-10T09:00:00" not found.',
+      );
+      expect(cal.getEvents()[0]!.recurrence?.overrides).toBeUndefined();
+    });
+
+    test("editRecurringEvent with scope thisAndFollowing at the master start edits in place", async () => {
+      const cal = createCalendar({ events: [recurringEvent] });
+
+      const result = await cal.editRecurringEvent(
+        "rec-ex",
+        { title: "From The Top" },
+        {
+          scope: "thisAndFollowing",
+          occurrenceStart: "2025-06-02T09:00:00",
+        },
+      );
+
+      expect(result.success).toBe(true);
+      expect(cal.getEvents()).toHaveLength(1);
+      expect(cal.getEvents()[0]!.title).toBe("From The Top");
+      expect(cal.getEvents()[0]!.recurrence?.until).toBeUndefined();
+    });
+
+    test("editRecurringEvent blocks an occurrence moved into unavailable time", async () => {
+      const dayShiftRoom: TestResource = {
+        id: "rec-shift",
+        label: "Day Shift Room",
+        availability: [
+          {
+            weekdays: [1, 2, 3, 4, 5, 6, 7],
+            startTime: "09:00",
+            endTime: "17:00",
+          },
+        ],
+      };
+      const cal = createCalendar({
+        resources: [dayShiftRoom],
+        events: [{ ...recurringEvent, resources: [dayShiftRoom] }],
+      });
+
+      const result = await cal.editRecurringEvent(
+        "rec-ex_1",
+        { start: "2025-06-09T20:00:00", end: "2025-06-09T21:00:00" },
+        { scope: "this", occurrenceStart: "2025-06-09T09:00:00" },
+      );
+
+      assert(!result.success);
+      expect(result.error.reason).toBe("blocked");
+      expect(result.error.attemptedStart).toBe("2025-06-09T20:00:00");
+      expect(cal.getEventsByDate("2025-06-09")[0]!.start).toBe(
+        "2025-06-09T09:00:00",
+      );
+    });
+
+    test("editRecurringEvent rejects an occurrence that violates a dependency", async () => {
+      const cal = createCalendar({
+        events: [
+          {
+            id: "rec-pred",
+            title: "Predecessor",
+            start: "2025-06-09T10:00:00",
+            end: "2025-06-09T12:00:00",
+          },
+          recurringEvent,
+        ],
+      });
+
+      const result = await cal.editRecurringEvent(
+        "rec-ex_1",
+        {},
+        {
+          scope: "this",
+          occurrenceStart: "2025-06-09T09:00:00",
+          dependsOn: [{ id: "rec-pred", type: "FS" }],
+        },
+      );
+
+      assert(!result.success);
+      expect(result.error.eventId).toBe("rec-ex_1");
+      expect(result.error.reason).toBe("blocked");
+      expect(cal.getEvents()[1]!.recurrence?.overrides).toBeUndefined();
+    });
+
+    test("editRecurringEvent loads the range spanning both positions", async () => {
+      const requested: Array<{ start: string; end: string }> = [];
+      const cal = createCalendar({
+        events: [recurringEvent],
+        fetchEvents: async (range) => {
+          requested.push(range);
+          return [];
+        },
+      });
+
+      await cal.editRecurringEvent(
+        "rec-ex_1",
+        { start: "2025-06-11T09:00:00", end: "2025-06-11T10:00:00" },
+        { scope: "this", occurrenceStart: "2025-06-09T09:00:00" },
+      );
+
+      expect(requested).toContainEqual({
+        start: "2025-06-09",
+        end: "2025-06-12",
+      });
+    });
   });
 
   describe("read path does not filter by availability", () => {
