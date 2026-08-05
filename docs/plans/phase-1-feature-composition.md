@@ -57,15 +57,46 @@ reads `this._kernel.api.canUndo()`.
 
 ### Slice 2 — move the methods onto module apis
 
-Per feature, in this order (cheapest coupling first): recurrence → dependency → availability →
-resize → models. Each step moves the method bodies from `CalendarCore` into the module's `api`
-and leaves a one-line delegate behind. Public surface unchanged, so `calendar.test.ts` is the
-characterization net.
+Per feature: recurrence → dependency → availability → resize → models. Each step moves the
+method bodies from `CalendarCore` into the module's `api` and leaves a one-line delegate behind.
+Public surface unchanged, so `calendar.test.ts` is the characterization net.
 
-The resize and availability features are where this gets real: `validateResize` and
-`getUnavailableRanges` currently read `this.options.resources` and the resource-availability
-cache off the class. They need those passed as module options (as `resizeModule` already takes
-`resources`), which is what makes them omittable.
+**Landed:** `validateEventDependencies` → `dependencyModule.api` (18 characterization tests
+cover it), `getMasterEvent` → `recurrenceModule.api`.
+
+**What the first two moves revealed.** `ModuleApiCtx` is enough for reads and validators, and
+not enough for anything else. Sorting the remaining methods by what they actually touch:
+
+| Needs | Methods |
+|-------|---------|
+| kernel ctx + module options — movable now | `validateEventPlacement` · `getUnavailableRanges` · `getUnavailabilityDetails` · `getEventSegmentInfo` · `validateResize` · `getEventProps` · `getTimelineLayout` · `getEventsByResource` |
+| the host instance — blocked | `editRecurringEvent` · `removeRecurringEvent` · `createDependency` · `goToNextOccurrence` · `goToPreviousOccurrence` · `createResizeController` |
+
+The blocked six are the orchestrating writes and the navigation pair. `editRecurringEvent` calls
+`editEvent`, `validateMove` and `commitUpdate`; `createDependency` calls `validateMove` and
+`commitUpdate`; `goToNextOccurrence` needs `goToSpecificPeriod` and `store.state.activeDate`;
+`createResizeController` passes `this` to the controller. None of that is reachable from a
+kernel ctx, and none of it belongs *in* the kernel.
+
+**Resolved: a feature is a kernel module plus a host-aware api.** `CalendarFeature` in
+`calendar/features/types.ts` carries an optional `module` (kernel stages, kernel ctx — unchanged)
+and an optional `api` that receives a narrow `CalendarHost`. `ComposedFeatureApi` intersects both
+per feature, so the composed instance type covers module apis and feature apis alike. Features
+see the host, not each other; a feature that needs a peer declares `requires`.
+
+`CalendarHost` starts at the four members the first conversion needs — `getEvent`, `getEvents`,
+`getActiveDate`, `goToSpecificPeriod` — and grows as features move. It is deliberately not the
+whole core surface up front: what it lists is what features are permitted to touch.
+
+`eventRecurrenceFeature` is the first one: it wraps `recurrenceModule` and owns
+`goToNextOccurrence` / `goToPreviousOccurrence` (both branches of master resolution covered by
+existing tests). `CalendarCore` builds the feature, mounts `feature.module`, and delegates.
+
+**Availability is blocked for a second, unrelated reason.** Its read methods are movable, but
+`availabilityModule` bundles a veto contribution on `availability-validate`, and mounting it on
+`CalendarCore` would make the `commit*` methods — documented as post-validation APIs — silently
+no-op on conflict. Taking the api requires either splitting the veto out of the module or
+accepting a behaviour change. Not a slice-2 decision.
 
 ### Slice 3 — `calendarFeatures()` and the `features` option
 

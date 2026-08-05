@@ -36,6 +36,10 @@ export interface RecurrenceModuleOptions {
   priority?: number;
 }
 
+export interface RecurrenceApi<E extends KernelEvent> {
+  getMasterEvent: (event: E) => E;
+}
+
 export function editOccurrenceIntent(payload: EditOccurrencePayload): IntentOp {
   return { kind: "intent", intent: EDIT_OCCURRENCE_INTENT, payload };
 }
@@ -201,9 +205,16 @@ function resolveRemove<E extends KernelEvent>(
 
 export function recurrenceModule<E extends KernelEvent>(
   options: RecurrenceModuleOptions = {},
-): Module<E> {
+): Module<E, RecurrenceApi<E>> {
   return {
     name: "recurrence",
+    api: (ctx) => ({
+      getMasterEvent: (event) => {
+        const masterId = event._recurringMasterId;
+        if (typeof masterId !== "string") return event;
+        return ctx.getEvent(masterId) ?? event;
+      },
+    }),
     getRequiredRange: (op) => {
       if (op.kind !== "intent") return null;
       if (

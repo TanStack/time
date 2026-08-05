@@ -73,7 +73,9 @@ export interface CreateKernelOptions<
 export function createKernel<
   TEvents extends KernelEvent,
   TModules extends Record<string, Module<TEvents, unknown>>,
->(options: CreateKernelOptions<TEvents, TModules>): Kernel<TEvents, ComposedApi<TModules>> {
+>(
+  options: CreateKernelOptions<TEvents, TModules>,
+): Kernel<TEvents, ComposedApi<TModules>> {
   const kernel = new Kernel<TEvents, ComposedApi<TModules>>({
     events: options.events,
     config: options.config,

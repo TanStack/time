@@ -3,6 +3,7 @@ import { toPlainDateTimeString } from "~/date/parse";
 import {
   propagateToDependents,
   propagateToPredecessors,
+  validateDependencies,
   type CascadeShift,
   type DependencyGraphEvent,
   type DependencyLink,
@@ -17,6 +18,22 @@ interface DependencyEvent extends KernelEvent {
 export interface DependencyModuleOptions {
   timeZone?: Temporal.TimeZoneLike;
   priority?: number;
+}
+
+export interface DependencyValidationError {
+  eventId: string;
+  eventTitle: string;
+  reason: "blocked";
+  message: string;
+  originalStart: string;
+  originalEnd: string;
+}
+
+export interface DependencyApi {
+  validateEventDependencies: (
+    event: { id?: string; title: string; start: string; end: string },
+    dependsOn: Array<DependencyLink>,
+  ) => { valid: boolean; error?: DependencyValidationError };
 }
 
 function epochMs(value: unknown, timeZone: Temporal.TimeZoneLike): number {
@@ -67,11 +84,34 @@ function applyShifts(
 
 export function dependencyModule<E extends KernelEvent>(
   options: DependencyModuleOptions = {},
-): Module<E> {
+): Module<E, DependencyApi> {
   const timeZone = options.timeZone ?? "UTC";
 
   return {
     name: "dependency",
+    api: (ctx) => ({
+      validateEventDependencies: (event, dependsOn) => {
+        const [conflict] = validateDependencies({
+          event,
+          dependsOn,
+          events: toGraph(ctx.getEvents() as Array<DependencyEvent>),
+          timeZone,
+        });
+        if (!conflict) return { valid: true };
+
+        return {
+          valid: false,
+          error: {
+            eventId: conflict.eventId,
+            eventTitle: conflict.eventTitle,
+            reason: "blocked",
+            message: conflict.message,
+            originalStart: conflict.originalStart,
+            originalEnd: conflict.originalEnd,
+          },
+        };
+      },
+    }),
     contributions: [
       {
         pipeline: "write",

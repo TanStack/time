@@ -32,6 +32,14 @@ deferred it: a read seam invented then would have been replaced at cutover. The 
     plain functions per ADR 0003), conflict-message fns.
 - **`Module` gains an `api` contribution.** A feature returns the methods it owns; the kernel merges
   them onto the instance. This is the read/query seam Step 4 deferred.
+- **There are two api seams, because there are two hosts.** A kernel module's `api` receives
+  `ModuleApiCtx` (write / project / getEvents / config) and owns whatever the module's own state
+  can answer. A *feature's* `api` receives the composed calendar instance and owns the public
+  methods that compose core mutations or navigation — `editRecurringEvent` calls `commitUpdate`
+  and `validateMove`, `goToNextOccurrence` calls `goToSpecificPeriod`. Widening `ModuleApiCtx` to
+  cover those would put calendar-shaped concerns into the feature-agnostic kernel, which is what
+  ADR 0001 exists to prevent, so a feature is a kernel module *plus* a host-aware api rather than
+  only the former. Features see a narrow `CalendarHost` interface, not each other.
 - **The instance type is the intersection of the composed features' apis.** `calendar.undo()` does
   not typecheck without `historyFeature`. Shared domain types (`Event`, `Day`, `Resource`) stay
   non-generic — feature gating applies to the instance surface, not to every type in the library.

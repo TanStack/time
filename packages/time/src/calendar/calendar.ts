@@ -11,23 +11,26 @@ import {
   durationPreservingEnd,
   expandRecurringEvent,
   masterIdOf,
-  nextOccurrenceDate,
-  previousOccurrenceDate,
   getRecurringOccurrence,
   normalizeRecurrenceRule,
   resolveOccurrenceStart,
 } from "~/recurrence";
 import { createKernel } from "~/kernel";
+import { eventRecurrenceFeature } from "./features";
+import type { CalendarHost, RecurrenceNavigationApi } from "./features";
 import {
   dependencyModule,
   editOccurrenceIntent,
-  recurrenceModule,
   redoIntent,
   removeOccurrenceIntent,
   undoIntent,
   undoModule,
 } from "~/kernel/modules";
-import type { UndoHistory } from "~/kernel/modules";
+import type {
+  DependencyApi,
+  RecurrenceApi,
+  UndoHistory,
+} from "~/kernel/modules";
 import type {
   InvertibleOp,
   IntentOp,
@@ -89,7 +92,6 @@ import {
   propagateToPredecessors,
   requiredForwardShiftMs,
   shiftToSatisfyLink,
-  validateDependencies,
 } from "~/validation/dependency";
 import type { DependencyGraphEvent } from "~/validation/dependency";
 
@@ -408,8 +410,11 @@ export class CalendarCore<
   private _loadedRanges: Array<{ start: string; end: string }> = [];
   private _kernel!: Kernel<
     WritableEvent<TEvent>,
-    UndoHistory<WritableEvent<TEvent>>
+    UndoHistory<WritableEvent<TEvent>> &
+      DependencyApi &
+      RecurrenceApi<WritableEvent<TEvent>>
   >;
+  private _features!: RecurrenceNavigationApi;
   private _eventsCache: Array<TEvent> | null = null;
 
   private _mergedUnavailMinuteCache = new Map<string, Array<MinuteRange>>();
@@ -480,16 +485,27 @@ export class CalendarCore<
 
   private _seedKernel(events: Array<TEvent>) {
     this._eventsCache = null;
+    const recurrence = eventRecurrenceFeature<TResource, TEvent>();
     this._kernel = createKernel({
       events: events as Array<WritableEvent<TEvent>>,
       modules: {
         history: undoModule<WritableEvent<TEvent>>(),
-        recurrence: recurrenceModule<WritableEvent<TEvent>>(),
+        recurrence: recurrence.module!,
         dependency: dependencyModule<WritableEvent<TEvent>>({
           timeZone: this.options.timeZone,
         }),
       },
     });
+    this._features = recurrence.api!(this._host());
+  }
+
+  private _host(): CalendarHost<TResource, TEvent> {
+    return {
+      getEvent: (id) => this._eventMap.get(id),
+      getEvents: () => this.getEvents(),
+      getActiveDate: () => this.store.state.activeDate,
+      goToSpecificPeriod: (isoDate) => this.goToSpecificPeriod(isoDate),
+    };
   }
 
   private _write(
@@ -1188,8 +1204,9 @@ export class CalendarCore<
   }
 
   getMasterEvent(event: TEvent): TEvent {
-    if (!event._recurringMasterId) return event;
-    return this._eventMap.get(event._recurringMasterId) ?? event;
+    return this._kernel.api.getMasterEvent(
+      event as WritableEvent<TEvent>,
+    ) as TEvent;
   }
 
   getEvents(): Array<TEvent> {
@@ -1354,31 +1371,11 @@ export class CalendarCore<
   }
 
   goToNextOccurrence(eventId: string, fromDate?: EventDateTimeInput) {
-    const master = this._resolveMasterEvent(eventId);
-    if (!master) return;
-
-    const next = nextOccurrenceDate<TResource, TEvent>(
-      master,
-      this._occurrenceCursor(fromDate),
-    );
-    if (next) this.goToSpecificPeriod(next);
+    this._features.goToNextOccurrence(eventId, fromDate);
   }
 
   goToPreviousOccurrence(eventId: string, fromDate?: EventDateTimeInput) {
-    const master = this._resolveMasterEvent(eventId);
-    if (!master) return;
-
-    const previous = previousOccurrenceDate<TResource, TEvent>(
-      master,
-      this._occurrenceCursor(fromDate),
-    );
-    if (previous) this.goToSpecificPeriod(previous);
-  }
-
-  private _occurrenceCursor(fromDate?: EventDateTimeInput): string {
-    return fromDate
-      ? toPlainDateTimeString(fromDate).slice(0, 10)
-      : this.store.state.activeDate;
+    this._features.goToPreviousOccurrence(eventId, fromDate);
   }
 
   createResizeController(
@@ -1519,29 +1516,7 @@ export class CalendarCore<
     event: { id?: string; title: string; start: string; end: string },
     dependsOn: Array<EventDependency>,
   ): { valid: boolean; error?: ResizeError } {
-    if (this._eventMap.size === 0) return { valid: true };
-
-    const [conflict] = validateDependencies({
-      event,
-      dependsOn,
-      events: this._dependencyGraphEvents(),
-      timeZone: this.options.timeZone,
-    });
-
-    if (conflict) {
-      return {
-        valid: false,
-        error: {
-          eventId: conflict.eventId,
-          eventTitle: conflict.eventTitle,
-          reason: "blocked",
-          message: conflict.message,
-          originalStart: conflict.originalStart,
-          originalEnd: conflict.originalEnd,
-        },
-      };
-    }
-    return { valid: true };
+    return this._kernel.api.validateEventDependencies(event, dependsOn);
   }
 
   validateEventPlacement(event: {
