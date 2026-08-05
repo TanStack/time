@@ -5,7 +5,7 @@ title: ValidateResizeOptions
 
 # Interface: ValidateResizeOptions
 
-Defined in: [calendar/calendar.ts:358](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L358)
+Defined in: [calendar/calendar.ts:359](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L359)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/calendar.ts:358](https://github.com/TanStack/time/blob/mai
 optional constraints: ResizeConstraints;
 ```
 
-Defined in: [calendar/calendar.ts:367](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L367)
+Defined in: [calendar/calendar.ts:368](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L368)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [calendar/calendar.ts:367](https://github.com/TanStack/time/blob/mai
 edge: ResizeEdge;
 ```
 
-Defined in: [calendar/calendar.ts:362](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L362)
+Defined in: [calendar/calendar.ts:363](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L363)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [calendar/calendar.ts:362](https://github.com/TanStack/time/blob/mai
 eventId: string;
 ```
 
-Defined in: [calendar/calendar.ts:359](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L359)
+Defined in: [calendar/calendar.ts:360](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L360)
 
 ***
 
@@ -45,7 +45,7 @@ Defined in: [calendar/calendar.ts:359](https://github.com/TanStack/time/blob/mai
 optional occurrenceStart: EventDateTimeInput;
 ```
 
-Defined in: [calendar/calendar.ts:366](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L366)
+Defined in: [calendar/calendar.ts:367](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L367)
 
 ***
 
@@ -55,7 +55,7 @@ Defined in: [calendar/calendar.ts:366](https://github.com/TanStack/time/blob/mai
 originalDayDate: string;
 ```
 
-Defined in: [calendar/calendar.ts:365](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L365)
+Defined in: [calendar/calendar.ts:366](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L366)
 
 ***
 
@@ -65,7 +65,7 @@ Defined in: [calendar/calendar.ts:365](https://github.com/TanStack/time/blob/mai
 originalEnd: string;
 ```
 
-Defined in: [calendar/calendar.ts:361](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L361)
+Defined in: [calendar/calendar.ts:362](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L362)
 
 ***
 
@@ -75,7 +75,7 @@ Defined in: [calendar/calendar.ts:361](https://github.com/TanStack/time/blob/mai
 originalStart: string;
 ```
 
-Defined in: [calendar/calendar.ts:360](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L360)
+Defined in: [calendar/calendar.ts:361](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L361)
 
 ***
 
@@ -85,7 +85,7 @@ Defined in: [calendar/calendar.ts:360](https://github.com/TanStack/time/blob/mai
 targetDayDate: string;
 ```
 
-Defined in: [calendar/calendar.ts:364](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L364)
+Defined in: [calendar/calendar.ts:365](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L365)
 
 ***
 
@@ -95,4 +95,4 @@ Defined in: [calendar/calendar.ts:364](https://github.com/TanStack/time/blob/mai
 totalDeltaMinutes: number;
 ```
 
-Defined in: [calendar/calendar.ts:363](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L363)
+Defined in: [calendar/calendar.ts:364](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L364)
