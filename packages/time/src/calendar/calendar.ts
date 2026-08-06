@@ -1,7 +1,7 @@
 import { Temporal } from "@js-temporal/polyfill";
 import { getTimeClient } from "../client";
 import { bucketByDay, toUnavailableRanges } from "~/projection";
-import type { EventLayout, LayoutOptions, LayoutStyle } from "~/projection";
+import type { LayoutOptions } from "~/projection";
 import {
   expandRecurringEvent,
   masterIdOf,
@@ -117,29 +117,7 @@ interface CalendarActions<
 
   canGoNextPeriod: () => boolean;
 
-  goToNextOccurrence: (eventId: string, fromDate?: EventDateTimeInput) => void;
-
-  goToPreviousOccurrence: (
-    eventId: string,
-    fromDate?: EventDateTimeInput,
-  ) => void;
-
-  getMasterEvent: (event: TEvent) => TEvent;
-
   changeViewMode: (newViewMode: CalendarStore["viewMode"]) => void;
-
-  getEventProps: (
-    event: TEvent,
-    layoutOptions?: LayoutOptions,
-  ) => {
-    isSplitEvent: boolean;
-    overlappingEvents: Array<TEvent>;
-    start: string;
-    end: string;
-
-    layout?: EventLayout;
-    style?: LayoutStyle;
-  };
 
   getDaysNames: (weekday?: "long" | "short") => Array<string>;
 
@@ -168,24 +146,6 @@ interface CalendarActions<
     options?: { dependsOn?: Array<EventDependency> },
   ) => Promise<SaveEventResult>;
 
-  editRecurringEvent: (
-    eventId: string,
-    updates: Partial<Omit<TEvent, "id">>,
-    options: {
-      scope: RecurrenceEditScope;
-      occurrenceStart?: EventDateTimeInput;
-      dependsOn?: Array<EventDependency>;
-    },
-  ) => Promise<SaveEventResult>;
-
-  removeRecurringEvent: (
-    eventId: string,
-    options: {
-      scope: RecurrenceEditScope;
-      occurrenceStart?: EventDateTimeInput;
-    },
-  ) => void;
-
   removeEvent: (id: Event["id"]) => void;
 
   getUnavailableRanges: (
@@ -195,27 +155,13 @@ interface CalendarActions<
     },
   ) => Array<UnavailableRange>;
 
-  getEventsByResource: () => Map<TResource["id"], Array<TEvent>>;
-
-  getTimelineLayout: () => TimelineLayout<TResource, TEvent>;
-
   formatPeriodLabel: (options?: { locale?: string }) => string;
 
   formatCurrentPeriod: (options?: { locale?: string }) => string;
 
-  getEventSegmentInfo: (event: TEvent) => SegmentInfo;
-
   getDaysInRange: (start: string, end: string) => Array<Day<TResource, TEvent>>;
 
   getEvents: () => Array<TEvent>;
-
-  undo: () => void;
-
-  redo: () => void;
-
-  canUndo: () => boolean;
-
-  canRedo: () => boolean;
 
   validateMove: (
     eventId: string,
@@ -224,17 +170,6 @@ interface CalendarActions<
     newResources?: Array<TResource | string>,
     newConsumption?: Array<number>,
   ) => { blocked: boolean; blockedEventTitle?: string; message?: string };
-
-  validateEventDependencies: (
-    event: { id?: string; title: string; start: string; end: string },
-    dependsOn: Array<EventDependency>,
-  ) => { valid: boolean; error?: ResizeError };
-
-  createDependency: (
-    sourceId: string,
-    targetId: string,
-    type?: DependencyType,
-  ) => { blocked: boolean; error?: ResizeError };
 
   fetchEventsForRange: (start: string, end: string) => Promise<void>;
 
@@ -289,11 +224,13 @@ interface CalendarState<
   activeDate: CalendarStore["activeDate"];
 }
 
-export interface CalendarApi<
-  TResource extends Resource,
-  TEvent extends Event<TResource>,
-> extends CalendarActions<TResource, TEvent>,
-    CalendarState<TResource, TEvent> {}
+export type CalendarApi<
+  TFeatures extends CalendarFeatureList,
+  TResource extends Resource = Resource,
+  TEvent extends Event<TResource> = Event<TResource>,
+> = CalendarActions<TResource, TEvent> &
+  CalendarState<TResource, TEvent> &
+  ComposedApi<TFeatures, TResource, TEvent>;
 
 type ParsedCalendarCoreOptions<
   TFeatures extends CalendarFeatureList,
@@ -345,6 +282,12 @@ export class CalendarCore<
       (key) => this._describeMissingFeatureApi(key),
     ) as never;
   }
+
+  hasFeature(name: string): boolean {
+    return this._featureNames.has(name);
+  }
+
+  private _featureNames = new Set<string>();
 
   private _describeMissingFeatureApi(key: string): string {
     const featureName = FEATURE_API_OWNERS.get(key) ?? "a feature";
@@ -418,6 +361,7 @@ export class CalendarCore<
   private _seedKernel(events: Array<TEvent>) {
     this._eventsCache = null;
     const features = this.options.features.map((factory) => factory());
+    this._featureNames = new Set(features.map((feature) => feature.name));
     const ctx: FeatureModuleCtx = { timeZone: this.options.timeZone };
 
     const modules: Record<string, Module<WritableEvent<TEvent>, unknown>> = {};

@@ -7,7 +7,6 @@ import { timeDevtoolsPlugin } from "@tanstack/react-time-devtools";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   calendarFeatures,
-  dayEventLayoutFeature,
   eventDependencyFeature,
   eventRecurrenceFeature,
   eventResizeFeature,
@@ -86,7 +85,6 @@ const features = calendarFeatures([
   eventRecurrenceFeature,
   eventDependencyFeature,
   eventResizeFeature,
-  dayEventLayoutFeature,
   timelineFeature,
 ]);
 

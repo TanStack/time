@@ -212,25 +212,50 @@ recurring events itself, independent of `recurrenceModule`'s projection stage, s
 without `eventRecurrenceFeature` still returns occurrences on read — only the occurrence *writes*
 are gated. That duplication has to go before the definition-of-done bundle claim can hold.
 
-### Slice 4 — gate the type, thread it through the adapters
+### Slice 4 — gate the type, thread it through the adapters ✅
 
-`Calendar<TFeatures>` intersects the composed apis; `calendar.undo()` stops typechecking
-without `historyFeature`. Runtime gating already works — calling an uncomposed method throws a
-`TypeError` — so this slice is about turning that into a compile error.
+`CalendarApi<TFeatures, TResource, TEvent>` is now
+`CalendarActions & CalendarState & ComposedApi<...>`, and the fifteen feature-owned signatures
+left `CalendarActions`. `useCalendar` returns `UseCalendarResult<TFeatures, TResource, TEvent>`
+instead of a fixed 49-key object, so `calendar.undo()` fails to typecheck without
+`historyFeature`. Runtime gating (a `guardApi` proxy naming the feature to compose) was already
+there; this makes it a compile error.
 
-Ergonomics are the open problem: type args are positional, so `useCalendar<R, E>` pins `TFeatures`
-to its default. Either `features` becomes required and `TResource`/`TEvent` are inferred from
-`events`/`resources`, or the record itself carries them. Decide here. Shared domain types (`Event`, `Day`, `Resource`) stay non-generic per
-ADR 0009.
+Shared domain types (`Event`, `Day`, `Resource`) stay non-generic per ADR 0009.
 
-`useCalendar` returns the composed type rather than a fixed 49-key object. Both examples already
-pass explicit feature records (slice 3), so what remains here is narrowing them to the features
-they actually use. The Solid adapter is written against this shape rather than porting the
-monolith.
+The hook's own resize surface is gated the same way: `resizeState` / `getResizeHandleProps` /
+`getDayColumnProps` appear only when `"resize" extends FeatureName<TFeatures[number]>`. The hook
+cannot call hooks conditionally, so when resize is absent it wires an inert controller
+(`inertResizeController`) rather than skipping `useSyncExternalStore` — the methods exist at
+runtime and do nothing, and the type hides them.
+
+**The registry was leaking kernel types into the public surface.** `history` and `recurrence`
+pulled in `UndoHistory<TEvent & KernelEvent>` and `RecurrenceApi<TEvent & KernelEvent>` straight
+from their modules, so `getMasterEvent` demanded a `TEvent & KernelEvent` and rejected the
+consumer's own event type. Registry entries now declare the public shape
+(`getMasterEvent: (event: TEvent) => TEvent`), and `undoStack` / `redoStack` / `clearHistory` are
+not exposed at all — they are kernel history introspection, not part of `historyFeature`'s
+documented surface.
+
+Both examples narrowed to the features they use: the calendar example composes four (history,
+recurrence, resize, dayLayout — no dependency, no timeline), the timeline example five (no
+dayLayout). Narrowing is what caught the leak.
+
+`src/calendar/tests/composedApi.test-d.ts` pins the guarantee with `expectTypeOf` — composed
+features contribute, uncomposed ones do not, core methods survive an empty list, and a custom
+event type flows into `getMasterEvent`. `vitest.config.ts` enables `typecheck` for `*.test-d.ts`,
+so the gate is enforced by `vitest run` (1,035 tests) rather than only by a manual `tsc`.
+
+Not done here: `requires` is still runtime-only. The timeline example composes
+`eventRecurrenceFeature` solely because `eventResizeFeature` requires it — nothing in the type
+system says so, and the constructor throw is what would tell you.
 
 ### Slice 5 — remove the preset
 
-One release later: delete `allCalendarFeatures` and the delegating shims left by slice 2.
+One release later: delete `allCalendarFeatures` and the delegating shims left by slice 2. Removing
+the shims is what finally gates a directly constructed `CalendarCore` — until then the class keeps
+every delegate method, so only the adapter surface is gated. The core-shadow collision check lands
+with them.
 
 ## Open questions
 

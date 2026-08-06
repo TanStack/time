@@ -8,11 +8,13 @@ import {
 } from "react";
 import { useStore } from "@tanstack/react-store";
 import { CalendarCore } from "@tanstack/time";
+import { inertResizeController } from "./inertResizeController";
 import type {
   AllCalendarFeatures,
   CalendarApi,
   CalendarCoreOptions,
   CalendarFeatureList,
+  FeatureName,
   DependencyType,
   RecurrenceEditScope,
   Event,
@@ -50,14 +52,7 @@ export interface UseCalendarOptions<
   resize?: ResizeOptions;
 }
 
-export const useCalendar = <
-  const TFeatures extends CalendarFeatureList,
-  TResource extends Resource = Resource,
-  TEvent extends Event<TResource> = Event<TResource>,
->(
-  options: UseCalendarOptions<TFeatures, TResource, TEvent>,
-): CalendarApi<TResource, TEvent> & {
-  isPending: boolean;
+export interface ResizeHookApi {
   resizeState: ResizeState;
   getResizeHandleProps: (
     eventId: string,
@@ -67,7 +62,26 @@ export const useCalendar = <
     options?: ResizeHandleOptions,
   ) => ResizeHandleHandlers;
   getDayColumnProps: (dayDate: string) => DayColumnProps;
-} => {
+}
+
+type ComposedResizeHookApi<TFeatures extends CalendarFeatureList> =
+  "resize" extends FeatureName<TFeatures[number]> ? ResizeHookApi : object;
+
+export type UseCalendarResult<
+  TFeatures extends CalendarFeatureList,
+  TResource extends Resource,
+  TEvent extends Event<TResource>,
+> = CalendarApi<TFeatures, TResource, TEvent> & {
+  isPending: boolean;
+} & ComposedResizeHookApi<TFeatures>;
+
+export const useCalendar = <
+  const TFeatures extends CalendarFeatureList,
+  TResource extends Resource = Resource,
+  TEvent extends Event<TResource> = Event<TResource>,
+>(
+  options: UseCalendarOptions<TFeatures, TResource, TEvent>,
+): UseCalendarResult<TFeatures, TResource, TEvent> => {
   const { resize, ...calendarOptions } = options;
 
   const [calendarCore] = useState(
@@ -81,7 +95,9 @@ export const useCalendar = <
   }, [calendarCore, state.currentPeriod, state.viewMode, state.activeDate]);
 
   const [resizeController] = useState<ResizeController<TResource, TEvent>>(() =>
-    calendarCore.createResizeController(resize),
+    calendarCore.hasFeature("resize")
+      ? calendarCore.createResizeController(resize)
+      : inertResizeController<TResource, TEvent>(),
   );
 
   useEffect(() => {
@@ -427,5 +443,5 @@ export const useCalendar = <
     getMasterEvent,
     setResources,
     setEvents,
-  };
+  } as unknown as UseCalendarResult<TFeatures, TResource, TEvent>;
 };

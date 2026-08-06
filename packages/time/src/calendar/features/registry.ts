@@ -1,9 +1,4 @@
-import type { KernelEvent } from "~/kernel";
-import type {
-  DependencyApi,
-  RecurrenceApi,
-  UndoHistory,
-} from "~/kernel/modules";
+import type { DependencyApi } from "~/kernel/modules";
 import type { Event, Resource } from "../types";
 import type { DayLayoutApi } from "./dayLayout";
 import type { DependencyCreationApi } from "./dependency";
@@ -17,10 +12,14 @@ export interface FeatureApiRegistry<
   TResource extends Resource,
   TEvent extends Event<TResource>,
 > {
-  history: HistoryApi & UndoHistory<TEvent & KernelEvent>;
+  history: HistoryApi & {
+    canUndo: () => boolean;
+    canRedo: () => boolean;
+  };
   recurrence: RecurrenceNavigationApi &
-    RecurrenceEditApi<TResource, TEvent> &
-    RecurrenceApi<TEvent & KernelEvent>;
+    RecurrenceEditApi<TResource, TEvent> & {
+      getMasterEvent: (event: TEvent) => TEvent;
+    };
   dependency: DependencyCreationApi & DependencyApi;
   resize: ResizeFeatureApi<TResource, TEvent>;
   dayLayout: DayLayoutApi<TResource, TEvent>;

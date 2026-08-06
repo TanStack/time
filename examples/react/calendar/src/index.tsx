@@ -7,11 +7,9 @@ import {
 import {
   calendarFeatures,
   dayEventLayoutFeature,
-  eventDependencyFeature,
   eventRecurrenceFeature,
   eventResizeFeature,
   historyFeature,
-  timelineFeature,
 } from "@tanstack/time";
 import ReactDOM from "react-dom/client";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -54,10 +52,8 @@ import "./index.css";
 const features = calendarFeatures([
   historyFeature,
   eventRecurrenceFeature,
-  eventDependencyFeature,
   eventResizeFeature,
   dayEventLayoutFeature,
-  timelineFeature,
 ]);
 
 function formatDateToISO(date: Date): string {

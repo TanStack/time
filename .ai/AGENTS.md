@@ -61,5 +61,4 @@ TanStack Time is a headless time/calendar utility library for TS/JS, React, Soli
 - Follow existing code style. Use explicit types.
 - When changing core, check react-time and devtools for breakage.
 - Run `pnpm test:lib` and `pnpm test:types` before declaring done.
-- Prefer small focused functions over classes.
 - All new date logic must handle timezone and calendar correctly.

@@ -10,6 +10,10 @@ export default defineConfig({
   test: {
     name: packageJson.name,
     include: ["src/**/*.test.ts", "src/**/*.spec.ts"],
+    typecheck: {
+      enabled: true,
+      include: ["src/**/*.test-d.ts"],
+    },
     dir: "./",
     watch: false,
     environment: "happy-dom",
