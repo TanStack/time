@@ -23,7 +23,8 @@ export function eventResizeFeature<
   TResource,
   TEvent,
   object,
-  ResizeFeatureApi<TResource, TEvent>
+  ResizeFeatureApi<TResource, TEvent>,
+  "resize"
 > {
   return {
     name: "resize",

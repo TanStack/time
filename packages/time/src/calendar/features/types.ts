@@ -91,8 +91,9 @@ export interface CalendarFeature<
   TEvent extends Event<TResource>,
   TModuleApi = object,
   TApi = object,
+  TName extends string = string,
 > {
-  name: string;
+  name: TName;
   requires?: ReadonlyArray<string>;
   module?: (ctx: FeatureModuleCtx) => Module<TEvent & KernelEvent, TModuleApi>;
   api?: (host: CalendarHost<TResource, TEvent>, module: TModuleApi) => TApi;
@@ -110,6 +111,17 @@ export interface AnyCalendarFeature<
     module: never,
   ) => object | undefined;
 }
+
+export type CalendarFeatureFactory = () => AnyCalendarFeature<
+  Resource,
+  Event<Resource>
+>;
+
+export type FeatureName<TFactory> = TFactory extends (
+  ...args: Array<never>
+) => { name: infer TName }
+  ? TName
+  : never;
 
 export type FeatureApi<TFeature> = TFeature extends {
   api?: (...args: Array<never>) => infer TApi;

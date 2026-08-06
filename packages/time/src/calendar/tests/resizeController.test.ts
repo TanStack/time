@@ -1,5 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
 import { CalendarCore } from "../calendar";
+import { allCalendarFeatures } from "../features";
+import type { AllCalendarFeatures } from "../features";
 import { ResizeController } from "../resizeController";
 import type { CalendarHost } from "../features";
 import type { Event, Resource, ValidateResizeOptions } from "../types";
@@ -215,9 +217,10 @@ describe("ResizeController against the calendar host", () => {
 
 describe("eventResizeFeature api", () => {
   function createCalendar(events: Array<TestEvent>) {
-    return new CalendarCore<TestResource, TestEvent>({
+    return new CalendarCore<AllCalendarFeatures, TestResource, TestEvent>({
       viewMode: { value: 1, unit: "week" },
       timeZone: "UTC",
+      features: allCalendarFeatures,
       events,
     });
   }

@@ -19,7 +19,8 @@ export function dayEventLayoutFeature<
   TResource,
   TEvent,
   object,
-  DayLayoutApi<TResource, TEvent>
+  DayLayoutApi<TResource, TEvent>,
+  "dayLayout"
 > {
   const daySegments = (
     host: CalendarHost<TResource, TEvent>,

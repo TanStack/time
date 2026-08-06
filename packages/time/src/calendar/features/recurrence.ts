@@ -81,7 +81,8 @@ export function eventRecurrenceFeature<
   TResource,
   TEvent,
   RecurrenceApi<TEvent & KernelEvent>,
-  RecurrenceNavigationApi & RecurrenceEditApi<TResource, TEvent>
+  RecurrenceNavigationApi & RecurrenceEditApi<TResource, TEvent>,
+  "recurrence"
 > {
   const resolveMaster = (
     host: CalendarHost<TResource, TEvent>,

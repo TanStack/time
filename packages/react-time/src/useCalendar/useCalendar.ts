@@ -43,21 +43,19 @@ interface DayColumnProps {
 }
 
 export interface UseCalendarOptions<
-  TResource extends Resource,
-  TEvent extends Event<TResource>,
-  TFeatures extends CalendarFeatureRecord<TResource, TEvent> =
-    AllCalendarFeatures<TResource, TEvent>,
-> extends CalendarCoreOptions<TResource, TEvent, TFeatures> {
+  TFeatures extends CalendarFeatureRecord = AllCalendarFeatures,
+  TResource extends Resource = Resource,
+  TEvent extends Event<TResource> = Event<TResource>,
+> extends CalendarCoreOptions<TFeatures, TResource, TEvent> {
   resize?: ResizeOptions;
 }
 
 export const useCalendar = <
-  TResource extends Resource,
+  const TFeatures extends CalendarFeatureRecord,
+  TResource extends Resource = Resource,
   TEvent extends Event<TResource> = Event<TResource>,
-  TFeatures extends CalendarFeatureRecord<TResource, TEvent> =
-    AllCalendarFeatures<TResource, TEvent>,
 >(
-  options: UseCalendarOptions<TResource, TEvent, TFeatures>,
+  options: UseCalendarOptions<TFeatures, TResource, TEvent>,
 ): CalendarApi<TResource, TEvent> & {
   isPending: boolean;
   resizeState: ResizeState;
@@ -73,7 +71,7 @@ export const useCalendar = <
   const { resize, ...calendarOptions } = options;
 
   const [calendarCore] = useState(
-    () => new CalendarCore<TResource, TEvent, TFeatures>(calendarOptions),
+    () => new CalendarCore<TFeatures, TResource, TEvent>(calendarOptions),
   );
   const state = useStore(calendarCore.store);
   const isPending = state.isPending;

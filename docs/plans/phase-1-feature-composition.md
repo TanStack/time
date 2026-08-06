@@ -160,11 +160,25 @@ accepting a behaviour change. Not a slice-2 decision.
 
 ### Slice 3 — `calendarFeatures()` and the `features` option ✅
 
-`calendarFeatures({ ... })` returns its argument with a `const` type parameter (the v9
-`tableFeatures` shape). `CalendarCore` gained a third type parameter, `TFeatures`, and composes
-`createKernel` from `options.features` instead of the hardcoded `{ history, recurrence,
-dependency }` record. `features` is optional this slice and defaults to `allCalendarFeatures()`,
-so the 1,029 tests and both examples keep working untouched; slice 4 makes it required.
+`calendarFeatures({ historyFeature, eventRecurrenceFeature })` — bare factory values, the v9
+`tableFeatures` shape. `CalendarCore` composes `createKernel` from `options.features` instead of
+the hardcoded `{ history, recurrence, dependency }` record, and `features` is **required**.
+
+Because features are passed uninstantiated, `ReturnType` would resolve their generics at the
+constraint (`Resource`, `Event<Resource>`) and silently drop the consumer's `TEvent` from every
+api signature. So api types come from `FeatureApiRegistry`, keyed by feature name:
+`CalendarFeature` gained a `TName` parameter, each factory declares its name as a literal, and
+`ComposedApi<TFeatures, TResource, TEvent>` intersects registry entries using the calendar's own
+`TResource`/`TEvent`. A name does not depend on R/E, so reading it under default instantiation is
+safe. The registry is closed — a third-party feature composes and runs but contributes no types
+until the interface is augmented, the same trade as v9's declaration merging.
+
+Type parameters are ordered `<TFeatures, TResource, TEvent>` on both `CalendarCore` and
+`useCalendar`, with `TResource` inferred from `resources` and `TEvent` defaulting to
+`Event<TResource>` (`events` and `fetchEvents` are `NoInfer`, so a mapped `fetchEvents` return or
+an empty `events: []` cannot collapse `TEvent` to a literal or `never`). Both examples now call
+`useCalendar({ features, ... })` with no type arguments at all; a custom event type still needs
+all three.
 
 **Two seam changes were needed to make a feature record composable.**
 
@@ -187,9 +201,9 @@ not composed, and two features contributing the same api key. **The core-shadow 
 land yet** — every feature api key is currently also a `CalendarCore` delegate method, so the
 check would reject every composition. It arrives with slice 5, which deletes the delegates.
 
-`useCalendar` threads `TFeatures` through so a feature record can be passed today. Type args are
-positional, so a consumer naming `TResource`/`TEvent` explicitly must also name the record:
-`useCalendar<R, E, typeof features>({ features, ... })`. Slice 4 owns making that ergonomic.
+Both examples compose explicitly — they list the full preset, so the composition path is exercised
+by real app code and not only by tests. `allCalendarFeatures` is a plain record of factories,
+deprecated on arrival, for consumers who want today's behaviour in one identifier.
 
 **Newly surfaced: recurrence read expansion is not gated.** `CalendarCore.getEventMap` expands
 recurring events itself, independent of `recurrenceModule`'s projection stage, so composing
@@ -207,9 +221,10 @@ to its default. Either `features` becomes required and `TResource`/`TEvent` are 
 `events`/`resources`, or the record itself carries them. Decide here. Shared domain types (`Event`, `Day`, `Resource`) stay non-generic per
 ADR 0009.
 
-`useCalendar` returns the composed type rather than a fixed 49-key object, and both examples
-migrate to explicit feature lists. The Solid adapter is written against this shape rather than
-porting the monolith.
+`useCalendar` returns the composed type rather than a fixed 49-key object. Both examples already
+pass explicit feature records (slice 3), so what remains here is narrowing them to the features
+they actually use. The Solid adapter is written against this shape rather than porting the
+monolith.
 
 ### Slice 5 — remove the preset
 

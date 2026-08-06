@@ -6,7 +6,14 @@ import { TanStackDevtools } from "@tanstack/react-devtools";
 import { timeDevtoolsPlugin } from "@tanstack/react-time-devtools";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  calendarFeatures,
+  dayEventLayoutFeature,
+  eventDependencyFeature,
+  eventRecurrenceFeature,
+  eventResizeFeature,
   getTimeClient,
+  historyFeature,
+  timelineFeature,
   toPlainDateString,
   toPlainDateTimeString,
   toPlainTimeString,
@@ -73,6 +80,15 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 
 import "./index.css";
+
+const features = calendarFeatures({
+  historyFeature,
+  eventRecurrenceFeature,
+  eventDependencyFeature,
+  eventResizeFeature,
+  dayEventLayoutFeature,
+  timelineFeature,
+});
 
 const DEP_TYPE_STYLES: Record<
   DependencyType,
@@ -1264,13 +1280,13 @@ const HorizontalTimelineRow = React.memo(function HorizontalTimelineRow({
   resourceColorIndex: number;
   onEventClick: (event: Event<Resource>) => void;
   getResizeHandleProps: ReturnType<
-    typeof useCalendar<Resource, Event<Resource>>
+    typeof useCalendar<typeof features, Resource, Event<Resource>>
   >["getResizeHandleProps"];
   getDayColumnProps: ReturnType<
-    typeof useCalendar<Resource, Event<Resource>>
+    typeof useCalendar<typeof features, Resource, Event<Resource>>
   >["getDayColumnProps"];
   getUnavailableRanges: ReturnType<
-    typeof useCalendar<Resource, Event<Resource>>
+    typeof useCalendar<typeof features, Resource, Event<Resource>>
   >["getUnavailableRanges"];
   eventBarRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
   rowWidthPx: number;
@@ -1411,7 +1427,8 @@ function TimelineDemo() {
     return () => observer.disconnect();
   }, []);
 
-  const calendar = useCalendar<Resource, Event<Resource>>({
+  const calendar = useCalendar({
+    features,
     viewMode: { value: 1, unit: "week" },
     events: [],
     resources: sampleResources,

@@ -1,5 +1,6 @@
 export * from "./types";
 export * from "./calendarFeatures";
+export * from "./registry";
 export * from "./history";
 export * from "./dependency";
 export * from "./recurrence";

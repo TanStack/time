@@ -4,6 +4,15 @@ import {
   formatEventTimeRange,
   useCalendar,
 } from "@tanstack/react-time";
+import {
+  calendarFeatures,
+  dayEventLayoutFeature,
+  eventDependencyFeature,
+  eventRecurrenceFeature,
+  eventResizeFeature,
+  historyFeature,
+  timelineFeature,
+} from "@tanstack/time";
 import ReactDOM from "react-dom/client";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { TanStackDevtools } from "@tanstack/react-devtools";
@@ -41,6 +50,15 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import "./index.css";
+
+const features = calendarFeatures({
+  historyFeature,
+  eventRecurrenceFeature,
+  eventDependencyFeature,
+  eventResizeFeature,
+  dayEventLayoutFeature,
+  timelineFeature,
+});
 
 function formatDateToISO(date: Date): string {
   const year = date.getFullYear();
@@ -620,7 +638,7 @@ function ScheduleView({
   periodDayCount,
   overlapMode,
 }: {
-  calendar: ReturnType<typeof useCalendar<Resource, Event<Resource>>>;
+  calendar: ReturnType<typeof useCalendar<typeof features, Resource, Event<Resource>>>;
   days: Array<Day<Resource, Event<Resource>>>;
   resources: Array<Resource>;
   onEventClick: (event: Event<Resource>, scope?: RecurrenceEditScope) => void;
@@ -1155,7 +1173,8 @@ function CalendarView() {
   const [resizeError, setResizeError] = useState<ResizeError | null>(null);
   const [overlapMode, setOverlapMode] = useState<OverlapMode>("columns");
 
-  const calendar = useCalendar<Resource, Event<Resource>>({
+  const calendar = useCalendar({
+    features,
     viewMode: { value: 1, unit: "month" },
     events: [],
     resources,

@@ -13,9 +13,9 @@ import { allCalendarFeatures } from "./features";
 import type {
   AllCalendarFeatures,
   AnyCalendarFeature,
+  CalendarFeatureRecord,
   CalendarHost,
-  ComposedFeatureApi,
-  ComposedModuleApi,
+  ComposedApi,
   FeatureModuleCtx,
 } from "./features";
 import type {
@@ -82,23 +82,20 @@ export * from "./date-core";
 type WritableEvent<TEvent> = TEvent & KernelEvent;
 
 export interface CalendarCoreOptions<
-  TResource extends Resource,
-  TEvent extends Event<TResource>,
-  TFeatures extends Record<
-    string,
-    AnyCalendarFeature<TResource, TEvent>
-  > = AllCalendarFeatures<TResource, TEvent>,
+  TFeatures extends CalendarFeatureRecord = AllCalendarFeatures,
+  TResource extends Resource = Resource,
+  TEvent extends Event<TResource> = Event<TResource>,
 > extends DateCoreOptions {
-  features?: TFeatures;
+  features: TFeatures;
 
-  events?: Array<TEvent> | null;
+  events?: Array<NoInfer<TEvent>> | null;
 
   resources?: Array<TResource> | null;
 
   fetchEvents?: (range: {
     start: string;
     end: string;
-  }) => Promise<Array<TEvent>>;
+  }) => Promise<Array<NoInfer<TEvent>>>;
 
   layout?: LayoutOptions;
 }
@@ -270,12 +267,9 @@ export interface CalendarApi<
     CalendarState<TResource, TEvent> {}
 
 type ParsedCalendarCoreOptions<
+  TFeatures extends CalendarFeatureRecord,
   TResource extends Resource,
   TEvent extends Event<TResource>,
-  TFeatures extends Record<
-    string,
-    AnyCalendarFeature<TResource, TEvent>
-  > = AllCalendarFeatures<TResource, TEvent>,
 > = ParsedDateCoreOptions & {
   features: TFeatures;
   events: Array<TEvent> | null;
@@ -288,34 +282,31 @@ type ParsedCalendarCoreOptions<
 };
 
 export class CalendarCore<
-    TResource extends Resource,
-    TEvent extends Event<TResource>,
-    TFeatures extends Record<
-      string,
-      AnyCalendarFeature<TResource, TEvent>
-    > = AllCalendarFeatures<TResource, TEvent>,
+    TFeatures extends CalendarFeatureRecord = AllCalendarFeatures,
+    TResource extends Resource = Resource,
+    TEvent extends Event<TResource> = Event<TResource>,
   >
   extends DateCore
   implements CalendarActions<TResource, TEvent>
 {
-  declare options: ParsedCalendarCoreOptions<TResource, TEvent, TFeatures>;
+  declare options: ParsedCalendarCoreOptions<TFeatures, TResource, TEvent>;
 
   private _eventMap = new Map<string, TEvent>();
   private _dependentsMap = new Map<string, Set<string>>();
   private _dateIndex = new Map<string, Set<string>>();
   private _loadedRanges: Array<{ start: string; end: string }> = [];
   private _inFlightFetches = 0;
-  private _kernel!: Kernel<WritableEvent<TEvent>, ComposedModuleApi<TFeatures>>;
-  private _features!: ComposedFeatureApi<TFeatures>;
+  private _kernel!: Kernel<WritableEvent<TEvent>, unknown>;
+  private _features!: ComposedApi<TFeatures, TResource, TEvent>;
 
-  private get _api(): ComposedFeatureApi<
-    AllCalendarFeatures<TResource, TEvent>
-  > {
+  private get _api(): ComposedApi<AllCalendarFeatures, TResource, TEvent> {
     return this._features as never;
   }
 
-  private get _moduleApi(): ComposedModuleApi<
-    AllCalendarFeatures<TResource, TEvent>
+  private get _moduleApi(): ComposedApi<
+    AllCalendarFeatures,
+    TResource,
+    TEvent
   > {
     return this._kernel.api as never;
   }
@@ -354,14 +345,13 @@ export class CalendarCore<
     );
   }
 
-  constructor(options: CalendarCoreOptions<TResource, TEvent, TFeatures>) {
+  constructor(options: CalendarCoreOptions<TFeatures, TResource, TEvent>) {
     super(options);
     Object.assign(this.options, {
       resources: options.resources || null,
       fetchEvents: options.fetchEvents,
       features:
-        options.features ??
-        (allCalendarFeatures<TResource, TEvent>() as unknown as TFeatures),
+        options.features ?? (allCalendarFeatures as unknown as TFeatures),
     });
 
     const seed = options.events?.map((e) => this.normalizeEvent(e)) ?? [];
@@ -387,14 +377,16 @@ export class CalendarCore<
 
   private _seedKernel(events: Array<TEvent>) {
     this._eventsCache = null;
-    const features = Object.values(this.options.features);
+    const features = Object.values(this.options.features).map((factory) =>
+      factory(),
+    );
     const ctx: FeatureModuleCtx = { timeZone: this.options.timeZone };
 
     const modules: Record<string, Module<WritableEvent<TEvent>, unknown>> = {};
-    for (const [key, feature] of Object.entries(this.options.features)) {
+    for (const feature of features) {
       const module = feature.module?.(ctx);
       if (module) {
-        modules[key] = (module) as unknown as Module<
+        modules[feature.name] = (module) as unknown as Module<
           WritableEvent<TEvent>,
           unknown
         >;
@@ -405,15 +397,15 @@ export class CalendarCore<
     this._kernel = createKernel({
       events: events as Array<WritableEvent<TEvent>>,
       modules,
-    }) as unknown as Kernel<
-      WritableEvent<TEvent>,
-      ComposedModuleApi<TFeatures>
-    >;
+    }) as unknown as Kernel<WritableEvent<TEvent>, unknown>;
 
     const host = this._host();
     const api: Record<string, unknown> = {};
     for (const feature of features) {
-      const contributed = feature.api?.(host, this._kernel.api as never);
+      const contributed = feature.api?.(
+        host as unknown as CalendarHost<Resource, Event<Resource>>,
+        this._kernel.api as never,
+      );
       if (!contributed) continue;
       for (const [key, value] of Object.entries(contributed)) {
         if (key in api) {
@@ -424,11 +416,11 @@ export class CalendarCore<
         api[key] = value;
       }
     }
-    this._features = api as ComposedFeatureApi<TFeatures>;
+    this._features = api as ComposedApi<TFeatures, TResource, TEvent>;
   }
 
   private _assertFeatureRequires(
-    features: Array<AnyCalendarFeature<TResource, TEvent>>,
+    features: Array<AnyCalendarFeature<Resource, Event<Resource>>>,
   ) {
     const mounted = new Set(features.map((feature) => feature.name));
     for (const feature of features) {
@@ -658,7 +650,9 @@ export class CalendarCore<
     this.store.setState((prev) => ({
       ...prev,
       isPending,
-      eventsVersion: eventsChanged ? prev.eventsVersion + 1 : prev.eventsVersion,
+      eventsVersion: eventsChanged
+        ? prev.eventsVersion + 1
+        : prev.eventsVersion,
     }));
   }
 

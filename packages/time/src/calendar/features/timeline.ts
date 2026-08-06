@@ -24,7 +24,8 @@ export function timelineFeature<
   TResource,
   TEvent,
   object,
-  TimelineApi<TResource, TEvent>
+  TimelineApi<TResource, TEvent>,
+  "timeline"
 > {
   const mergedByResource = (
     host: CalendarHost<TResource, TEvent>,

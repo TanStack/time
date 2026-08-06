@@ -1,6 +1,8 @@
 import { Temporal } from "@js-temporal/polyfill";
 import { assert, beforeEach, describe, expect, test, vi } from "vitest";
 import { CalendarCore } from "../calendar";
+import { allCalendarFeatures } from "../features";
+import type { AllCalendarFeatures } from "../features";
 import { calculateSegmentResizePreview } from "../getResizeProps";
 import type { Event, Resource } from "../types";
 
@@ -14,12 +16,15 @@ type TestEvent = Event<TestResource>;
 
 function createCalendar(
   overrides: Partial<
-    ConstructorParameters<typeof CalendarCore<TestResource, TestEvent>>[0]
+    ConstructorParameters<
+      typeof CalendarCore<AllCalendarFeatures, TestResource, TestEvent>
+    >[0]
   > = {},
 ) {
-  return new CalendarCore<TestResource, TestEvent>({
+  return new CalendarCore<AllCalendarFeatures, TestResource, TestEvent>({
     viewMode: { value: 1, unit: "week" },
     timeZone: "UTC",
+    features: allCalendarFeatures,
     ...overrides,
   });
 }
@@ -56,7 +61,7 @@ const noAvailabilityResource: TestResource = {
 };
 
 function layoutPosition(
-  cal: CalendarCore<TestResource, TestEvent>,
+  cal: CalendarCore<AllCalendarFeatures, TestResource, TestEvent>,
 ): number | null {
   return cal.getTimelineLayout().currentTimePosition;
 }
@@ -6561,9 +6566,9 @@ describe("CalendarCore", () => {
       settlers[1]!.resolve();
       await second;
       expect(cal.store.state.isPending).toBe(false);
-      expect(
-        cal.getLoadedRanges().some((r) => r.start === "2024-03-18"),
-      ).toBe(false);
+      expect(cal.getLoadedRanges().some((r) => r.start === "2024-03-18")).toBe(
+        false,
+      );
     });
   });
 });

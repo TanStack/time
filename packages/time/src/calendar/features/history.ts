@@ -17,7 +17,8 @@ export function historyFeature<
   TResource,
   TEvent,
   UndoHistory<TEvent & KernelEvent>,
-  HistoryApi
+  HistoryApi,
+  "history"
 > {
   const diff = (ops: Array<InvertibleOp<TEvent>>) => {
     const toInfo = (event: TEvent) => ({

@@ -18,7 +18,13 @@ export interface DependencyCreationApi {
 export function eventDependencyFeature<
   TResource extends Resource,
   TEvent extends Event<TResource>,
->(): CalendarFeature<TResource, TEvent, DependencyApi, DependencyCreationApi> {
+>(): CalendarFeature<
+  TResource,
+  TEvent,
+  DependencyApi,
+  DependencyCreationApi,
+  "dependency"
+> {
   const graphOf = (
     host: CalendarHost<TResource, TEvent>,
   ): Array<DependencyGraphEvent> => host.getEvents().map((event) => ({
