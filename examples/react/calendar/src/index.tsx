@@ -52,7 +52,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import "./index.css";
 
 const features = calendarFeatures([
-  historyFeature,
+  // historyFeature,
   eventRecurrenceFeature,
   eventDependencyFeature,
   eventResizeFeature,

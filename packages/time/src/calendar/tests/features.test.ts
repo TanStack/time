@@ -54,8 +54,12 @@ describe("calendarFeatures composition", () => {
   test("a method whose feature is absent is not callable", () => {
     const cal = createCalendar(calendarFeatures([dayEventLayoutFeature]));
 
-    expect(() => cal.undo()).toThrow(TypeError);
-    expect(() => cal.canUndo()).toThrow(TypeError);
+    expect(() => cal.undo()).toThrow(
+      'CalendarCore: "undo" requires historyFeature. Compose it via calendarFeatures([historyFeature, ...]).',
+    );
+    expect(() => cal.canUndo()).toThrow(
+      'CalendarCore: "canUndo" requires historyFeature. Compose it via calendarFeatures([historyFeature, ...]).',
+    );
   });
 
   test("history alone still undoes a write", () => {
@@ -96,9 +100,11 @@ describe("calendarFeatures composition", () => {
 
     await expect(
       cal.editRecurringEvent("rec_1", {}, { scope: "this" }),
-    ).rejects.toThrow(TypeError);
+    ).rejects.toThrow(
+      'CalendarCore: "editRecurringEvent" requires eventRecurrenceFeature. Compose it via calendarFeatures([eventRecurrenceFeature, ...]).',
+    );
     expect(() => cal.removeRecurringEvent("rec_1", { scope: "all" })).toThrow(
-      TypeError,
+      'CalendarCore: "removeRecurringEvent" requires eventRecurrenceFeature. Compose it via calendarFeatures([eventRecurrenceFeature, ...]).',
     );
   });
 

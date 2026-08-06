@@ -9,6 +9,7 @@ import {
   normalizeRecurrenceRule,
 } from "~/recurrence";
 import { createKernel } from "~/kernel";
+import { guardApi } from "~/kernel/apiGuard";
 import { allCalendarFeatures } from "./features";
 import type {
   AllCalendarFeatures,
@@ -247,6 +248,34 @@ interface CalendarActions<
   setEvents: (events: Array<TEvent> | null) => void;
 }
 
+function buildFeatureApiOwners(): Map<string, string> {
+  const owners = new Map<string, string>();
+  for (const factory of allCalendarFeatures) {
+    const feature = factory();
+    const label = factory.name || feature.name;
+
+    if (feature.module) {
+      const module = feature.module({ timeZone: "UTC" });
+      const api = module.api?.({} as never);
+      if (api) {
+        for (const key of Object.keys(api)) {
+          owners.set(key, label);
+        }
+      }
+    }
+
+    const hostApi = feature.api?.({} as never, {} as never);
+    if (hostApi) {
+      for (const key of Object.keys(hostApi)) {
+        owners.set(key, label);
+      }
+    }
+  }
+  return owners;
+}
+
+const FEATURE_API_OWNERS = buildFeatureApiOwners();
+
 interface CalendarState<
   TResource extends Resource,
   TEvent extends Event<TResource>,
@@ -300,7 +329,10 @@ export class CalendarCore<
   private _features!: ComposedApi<TFeatures, TResource, TEvent>;
 
   private get _api(): ComposedApi<AllCalendarFeatures, TResource, TEvent> {
-    return this._features as never;
+    return guardApi(
+      this._features as unknown as Record<string, unknown>,
+      (key) => this._describeMissingFeatureApi(key),
+    ) as never;
   }
 
   private get _moduleApi(): ComposedApi<
@@ -308,7 +340,15 @@ export class CalendarCore<
     TResource,
     TEvent
   > {
-    return this._kernel.api as never;
+    return guardApi(
+      this._kernel.api as unknown as Record<string, unknown>,
+      (key) => this._describeMissingFeatureApi(key),
+    ) as never;
+  }
+
+  private _describeMissingFeatureApi(key: string): string {
+    const featureName = FEATURE_API_OWNERS.get(key) ?? "a feature";
+    return `CalendarCore: "${key}" requires ${featureName}. Compose it via calendarFeatures([${featureName}, ...]).`;
   }
 
   private _eventsCache: Array<TEvent> | null = null;
