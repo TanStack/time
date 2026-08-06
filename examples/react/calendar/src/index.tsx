@@ -1229,7 +1229,20 @@ function CalendarView() {
   const prevPeriodRef = useRef(calendar.currentPeriod);
   const prevScrollHeightRef = useRef(0);
   const needsScrollAdjRef = useRef(false);
+  const needsScrollResetRef = useRef(false);
   const [bufferVersion, setBufferVersion] = useState(0);
+
+  const scheduleScrollRef = useRef<HTMLDivElement>(null);
+  const scheduleBufferRef = useRef<{ start: string; end: string } | null>(null);
+  const scheduleNavDirectionRef = useRef<"none" | "forward" | "backward">(
+    "none",
+  );
+  const prevSchedulePeriodRef = useRef(calendar.currentPeriod);
+  const prevScheduleScrollWidthRef = useRef(0);
+  const needsScheduleScrollAdjRef = useRef(false);
+  const needsScheduleScrollResetRef = useRef(false);
+  const [scheduleBufferVersion, setScheduleBufferVersion] = useState(0);
+  const prevViewModeUnitRef = useRef(calendar.viewMode.unit);
 
   const [visibleMonth, setVisibleMonth] = useState(() =>
     calendar.formatCurrentPeriod(),
@@ -1275,43 +1288,69 @@ function CalendarView() {
   }, [bufferVersion]);
 
   useEffect(() => {
-    if (navDirectionRef.current === "none") return;
+    if (isScheduleView) return;
     if (calendar.currentPeriod === prevPeriodRef.current) return;
     prevPeriodRef.current = calendar.currentPeriod;
 
     const direction = navDirectionRef.current;
     navDirectionRef.current = "none";
 
-    if (calendar.days.length === 0 || !monthBufferRef.current) return;
+    if (calendar.days.length === 0) return;
     const newStart = calendar.days[0].isoDate;
     const newEnd = calendar.days[calendar.days.length - 1].isoDate;
-    monthBufferRef.current = {
-      start:
-        newStart < monthBufferRef.current.start
-          ? newStart
-          : monthBufferRef.current.start,
-      end:
-        newEnd > monthBufferRef.current.end
-          ? newEnd
-          : monthBufferRef.current.end,
-    };
 
-    if (direction === "backward") {
-      prevScrollHeightRef.current = monthScrollRef.current?.scrollHeight ?? 0;
-      needsScrollAdjRef.current = true;
+    if (direction === "none" || !monthBufferRef.current) {
+      monthBufferRef.current = { start: newStart, end: newEnd };
+      needsScrollResetRef.current = true;
+    } else {
+      monthBufferRef.current = {
+        start:
+          newStart < monthBufferRef.current.start
+            ? newStart
+            : monthBufferRef.current.start,
+        end:
+          newEnd > monthBufferRef.current.end
+            ? newEnd
+            : monthBufferRef.current.end,
+      };
+
+      if (direction === "backward") {
+        prevScrollHeightRef.current = monthScrollRef.current?.scrollHeight ?? 0;
+        needsScrollAdjRef.current = true;
+      }
     }
 
     setBufferVersion((v) => v + 1);
-  }, [calendar.currentPeriod, calendar.days]);
+  }, [calendar.currentPeriod, calendar.days, isScheduleView]);
 
   useLayoutEffect(() => {
+    const el = monthScrollRef.current;
+    if (!el) return;
+
+    if (needsScrollResetRef.current) {
+      needsScrollResetRef.current = false;
+      el.scrollTop = 0;
+      return;
+    }
+
     if (!needsScrollAdjRef.current) return;
     needsScrollAdjRef.current = false;
-    const el = monthScrollRef.current;
-    if (el) {
-      el.scrollTop += el.scrollHeight - prevScrollHeightRef.current;
-    }
+    el.scrollTop += el.scrollHeight - prevScrollHeightRef.current;
   });
+
+  if (prevViewModeUnitRef.current !== calendar.viewMode.unit) {
+    prevViewModeUnitRef.current = calendar.viewMode.unit;
+    prevPeriodRef.current = calendar.currentPeriod;
+    prevSchedulePeriodRef.current = calendar.currentPeriod;
+    scheduleBufferRef.current = null;
+    monthBufferRef.current =
+      calendar.days.length > 0
+        ? {
+            start: calendar.days[0].isoDate,
+            end: calendar.days[calendar.days.length - 1].isoDate,
+          }
+        : null;
+  }
 
   const bufferedWeekGroups = useMemo(() => {
     void bufferVersion;
@@ -1346,36 +1385,14 @@ function CalendarView() {
         calendar.goToPreviousPeriod();
       },
       onReachEnd: () => {
+        const el = monthScrollRef.current;
+        if (!el || el.clientHeight === 0) return;
         if (!calendar.canGoNextPeriod() || calendar.isPending) return;
         navDirectionRef.current = "forward";
         calendar.goToNextPeriod();
       },
       disabled: isScheduleView,
     });
-
-  const scheduleScrollRef = useRef<HTMLDivElement>(null);
-  const scheduleBufferRef = useRef<{ start: string; end: string } | null>(null);
-  const scheduleNavDirectionRef = useRef<"none" | "forward" | "backward">(
-    "none",
-  );
-  const prevSchedulePeriodRef = useRef(calendar.currentPeriod);
-  const prevScheduleScrollWidthRef = useRef(0);
-  const needsScheduleScrollAdjRef = useRef(false);
-  const [scheduleBufferVersion, setScheduleBufferVersion] = useState(0);
-  const prevViewModeUnitRef = useRef(calendar.viewMode.unit);
-
-  if (prevViewModeUnitRef.current !== calendar.viewMode.unit) {
-    prevViewModeUnitRef.current = calendar.viewMode.unit;
-    scheduleBufferRef.current = null;
-    prevSchedulePeriodRef.current = calendar.currentPeriod;
-    monthBufferRef.current =
-      calendar.days.length > 0
-        ? {
-            start: calendar.days[0].isoDate,
-            end: calendar.days[calendar.days.length - 1].isoDate,
-          }
-        : null;
-  }
 
   if (
     isScheduleView &&
@@ -1409,6 +1426,7 @@ function CalendarView() {
 
     if (scheduleNavDirectionRef.current === "none") {
       scheduleBufferRef.current = { start: newStart, end: newEnd };
+      needsScheduleScrollResetRef.current = true;
     } else {
       const direction = scheduleNavDirectionRef.current;
       scheduleNavDirectionRef.current = "none";
@@ -1436,12 +1454,18 @@ function CalendarView() {
   ]);
 
   useLayoutEffect(() => {
+    const el = scheduleScrollRef.current;
+    if (!el) return;
+
+    if (needsScheduleScrollResetRef.current) {
+      needsScheduleScrollResetRef.current = false;
+      el.scrollLeft = 0;
+      return;
+    }
+
     if (!needsScheduleScrollAdjRef.current) return;
     needsScheduleScrollAdjRef.current = false;
-    const el = scheduleScrollRef.current;
-    if (el) {
-      el.scrollLeft += el.scrollWidth - prevScheduleScrollWidthRef.current;
-    }
+    el.scrollLeft += el.scrollWidth - prevScheduleScrollWidthRef.current;
   });
 
   const bufferedScheduleDays = useMemo(() => {
@@ -1477,12 +1501,27 @@ function CalendarView() {
       calendar.goToPreviousPeriod();
     },
     onReachEnd: () => {
+      const el = scheduleScrollRef.current;
+      if (!el || el.clientWidth === 0) return;
       if (!calendar.canGoNextPeriod() || calendar.isPending) return;
       scheduleNavDirectionRef.current = "forward";
       calendar.goToNextPeriod();
     },
     disabled: !isScheduleView,
   });
+
+  const goToToday = () => {
+    navDirectionRef.current = "none";
+    scheduleNavDirectionRef.current = "none";
+    calendar.goToCurrentPeriod();
+
+    monthBufferRef.current = null;
+    scheduleBufferRef.current = null;
+    needsScrollResetRef.current = true;
+    needsScheduleScrollResetRef.current = true;
+    setBufferVersion((v) => v + 1);
+    setScheduleBufferVersion((v) => v + 1);
+  };
 
   const openAddModal = () => {
     setModalState({
@@ -1642,7 +1681,7 @@ function CalendarView() {
           </Button>
 
           <Button
-            onClick={calendar.goToCurrentPeriod}
+            onClick={goToToday}
             disabled={calendar.isPending}
             variant="outline"
           >

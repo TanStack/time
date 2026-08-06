@@ -8,11 +8,17 @@ interface TimeSlotOptions {
   interval?: number;
 }
 
+const slotCache = new Map<string, Array<TimeSlot>>();
+
 export function getTimeSlots(
   locale: Intl.UnicodeBCP47LocaleIdentifier,
   options?: TimeSlotOptions,
 ): Array<TimeSlot> {
   const { startHour = 0, endHour = 24, interval = 60 } = options ?? {};
+
+  const cacheKey = `${locale}|${startHour}|${endHour}|${interval}`;
+  const cached = slotCache.get(cacheKey);
+  if (cached) return cached;
 
   const slots: Array<TimeSlot> = [];
   const totalMinutes = (endHour - startHour) * 60;
@@ -40,5 +46,6 @@ export function getTimeSlots(
     });
   }
 
+  slotCache.set(cacheKey, slots);
   return slots;
 }

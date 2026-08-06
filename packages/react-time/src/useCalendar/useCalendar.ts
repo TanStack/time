@@ -5,13 +5,14 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
-  useTransition,
 } from "react";
 import { useStore } from "@tanstack/react-store";
 import { CalendarCore } from "@tanstack/time";
 import type {
+  AllCalendarFeatures,
   CalendarApi,
   CalendarCoreOptions,
+  CalendarFeatureRecord,
   DependencyType,
   RecurrenceEditScope,
   Event,
@@ -44,15 +45,19 @@ interface DayColumnProps {
 export interface UseCalendarOptions<
   TResource extends Resource,
   TEvent extends Event<TResource>,
-> extends CalendarCoreOptions<TResource, TEvent> {
+  TFeatures extends CalendarFeatureRecord<TResource, TEvent> =
+    AllCalendarFeatures<TResource, TEvent>,
+> extends CalendarCoreOptions<TResource, TEvent, TFeatures> {
   resize?: ResizeOptions;
 }
 
 export const useCalendar = <
   TResource extends Resource,
   TEvent extends Event<TResource> = Event<TResource>,
+  TFeatures extends CalendarFeatureRecord<TResource, TEvent> =
+    AllCalendarFeatures<TResource, TEvent>,
 >(
-  options: UseCalendarOptions<TResource, TEvent>,
+  options: UseCalendarOptions<TResource, TEvent, TFeatures>,
 ): CalendarApi<TResource, TEvent> & {
   isPending: boolean;
   resizeState: ResizeState;
@@ -68,11 +73,10 @@ export const useCalendar = <
   const { resize, ...calendarOptions } = options;
 
   const [calendarCore] = useState(
-    () => new CalendarCore<TResource, TEvent>(calendarOptions),
+    () => new CalendarCore<TResource, TEvent, TFeatures>(calendarOptions),
   );
   const state = useStore(calendarCore.store);
-  const [isTransitionPending, startTransition] = useTransition();
-  const isPending = isTransitionPending || state.isPending;
+  const isPending = state.isPending;
 
   useEffect(() => {
     calendarCore.ensureRangeLoaded();
@@ -161,43 +165,33 @@ export const useCalendar = <
   const goToPreviousPeriod = useCallback<
     typeof calendarCore.goToPreviousPeriod
   >(() => {
-    startTransition(() => {
-      calendarCore.goToPreviousPeriod();
-    });
-  }, [calendarCore, startTransition]);
+    calendarCore.goToPreviousPeriod();
+  }, [calendarCore]);
 
   const goToNextPeriod = useCallback<typeof calendarCore.goToNextPeriod>(() => {
-    startTransition(() => {
-      calendarCore.goToNextPeriod();
-    });
-  }, [calendarCore, startTransition]);
+    calendarCore.goToNextPeriod();
+  }, [calendarCore]);
 
   const goToCurrentPeriod = useCallback<
     typeof calendarCore.goToCurrentPeriod
   >(() => {
-    startTransition(() => {
-      calendarCore.goToCurrentPeriod();
-    });
-  }, [calendarCore, startTransition]);
+    calendarCore.goToCurrentPeriod();
+  }, [calendarCore]);
 
   const goToSpecificPeriod = useCallback<
     typeof calendarCore.goToSpecificPeriod
   >(
     (date) => {
-      startTransition(() => {
-        calendarCore.goToSpecificPeriod(date);
-      });
+      calendarCore.goToSpecificPeriod(date);
     },
-    [calendarCore, startTransition],
+    [calendarCore],
   );
 
   const changeViewMode = useCallback<typeof calendarCore.changeViewMode>(
     (newViewMode) => {
-      startTransition(() => {
-        calendarCore.changeViewMode(newViewMode);
-      });
+      calendarCore.changeViewMode(newViewMode);
     },
-    [calendarCore, startTransition],
+    [calendarCore],
   );
 
   const getEventProps = useCallback<typeof calendarCore.getEventProps>(
@@ -315,20 +309,16 @@ export const useCalendar = <
 
   const goToNextOccurrence = useCallback(
     (eventId: string, fromDate?: EventDateTimeInput) => {
-      startTransition(() => {
-        calendarCore.goToNextOccurrence(eventId, fromDate);
-      });
+      calendarCore.goToNextOccurrence(eventId, fromDate);
     },
-    [calendarCore, startTransition],
+    [calendarCore],
   );
 
   const goToPreviousOccurrence = useCallback(
     (eventId: string, fromDate?: EventDateTimeInput) => {
-      startTransition(() => {
-        calendarCore.goToPreviousOccurrence(eventId, fromDate);
-      });
+      calendarCore.goToPreviousOccurrence(eventId, fromDate);
     },
-    [calendarCore, startTransition],
+    [calendarCore],
   );
 
   const getMasterEvent = useCallback<typeof calendarCore.getMasterEvent>(
@@ -368,10 +358,12 @@ export const useCalendar = <
     typeof calendarCore.getEventSegmentInfo
   >((event) => calendarCore.getEventSegmentInfo(event), [calendarCore]);
 
+  const daysKey = `${state.currentPeriod}|${state.activeDate}|${state.viewMode.value}|${state.viewMode.unit}|${state.eventsVersion}`;
+
   const days = useMemo(() => {
-    void state;
+    void daysKey;
     return calendarCore.getDaysWithEvents();
-  }, [calendarCore, state]);
+  }, [calendarCore, daysKey]);
 
   const getDaysInRange = useCallback<typeof calendarCore.getDaysInRange>(
     (start, end) => calendarCore.getDaysInRange(start, end),

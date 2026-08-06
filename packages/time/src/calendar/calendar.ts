@@ -9,29 +9,17 @@ import {
   normalizeRecurrenceRule,
 } from "~/recurrence";
 import { createKernel } from "~/kernel";
-import {
-  dayEventLayoutFeature,
-  eventDependencyFeature,
-  eventRecurrenceFeature,
-  eventResizeFeature,
-  timelineFeature,
-} from "./features";
+import { allCalendarFeatures } from "./features";
 import type {
+  AllCalendarFeatures,
+  AnyCalendarFeature,
   CalendarHost,
-  DayLayoutApi,
-  DependencyCreationApi,
-  RecurrenceEditApi,
-  RecurrenceNavigationApi,
-  ResizeFeatureApi,
-  TimelineApi,
+  ComposedFeatureApi,
+  ComposedModuleApi,
+  FeatureModuleCtx,
 } from "./features";
-import { redoIntent, undoIntent, undoModule } from "~/kernel/modules";
 import type {
-  DependencyApi,
-  RecurrenceApi,
-  UndoHistory,
-} from "~/kernel/modules";
-import type {
+  Module,
   InvertibleOp,
   IntentOp,
   Kernel,
@@ -96,7 +84,13 @@ type WritableEvent<TEvent> = TEvent & KernelEvent;
 export interface CalendarCoreOptions<
   TResource extends Resource,
   TEvent extends Event<TResource>,
+  TFeatures extends Record<
+    string,
+    AnyCalendarFeature<TResource, TEvent>
+  > = AllCalendarFeatures<TResource, TEvent>,
 > extends DateCoreOptions {
+  features?: TFeatures;
+
   events?: Array<TEvent> | null;
 
   resources?: Array<TResource> | null;
@@ -278,7 +272,12 @@ export interface CalendarApi<
 type ParsedCalendarCoreOptions<
   TResource extends Resource,
   TEvent extends Event<TResource>,
+  TFeatures extends Record<
+    string,
+    AnyCalendarFeature<TResource, TEvent>
+  > = AllCalendarFeatures<TResource, TEvent>,
 > = ParsedDateCoreOptions & {
+  features: TFeatures;
   events: Array<TEvent> | null;
   resources: Array<TResource> | null;
   fetchEvents?: (range: {
@@ -291,28 +290,36 @@ type ParsedCalendarCoreOptions<
 export class CalendarCore<
     TResource extends Resource,
     TEvent extends Event<TResource>,
+    TFeatures extends Record<
+      string,
+      AnyCalendarFeature<TResource, TEvent>
+    > = AllCalendarFeatures<TResource, TEvent>,
   >
   extends DateCore
   implements CalendarActions<TResource, TEvent>
 {
-  declare options: ParsedCalendarCoreOptions<TResource, TEvent>;
+  declare options: ParsedCalendarCoreOptions<TResource, TEvent, TFeatures>;
 
   private _eventMap = new Map<string, TEvent>();
   private _dependentsMap = new Map<string, Set<string>>();
   private _dateIndex = new Map<string, Set<string>>();
   private _loadedRanges: Array<{ start: string; end: string }> = [];
-  private _kernel!: Kernel<
-    WritableEvent<TEvent>,
-    UndoHistory<WritableEvent<TEvent>> &
-      DependencyApi &
-      RecurrenceApi<WritableEvent<TEvent>>
-  >;
-  private _features!: RecurrenceNavigationApi &
-    RecurrenceEditApi<TResource, TEvent> &
-    DependencyCreationApi &
-    ResizeFeatureApi<TResource, TEvent> &
-    DayLayoutApi<TResource, TEvent> &
-    TimelineApi<TResource, TEvent>;
+  private _inFlightFetches = 0;
+  private _kernel!: Kernel<WritableEvent<TEvent>, ComposedModuleApi<TFeatures>>;
+  private _features!: ComposedFeatureApi<TFeatures>;
+
+  private get _api(): ComposedFeatureApi<
+    AllCalendarFeatures<TResource, TEvent>
+  > {
+    return this._features as never;
+  }
+
+  private get _moduleApi(): ComposedModuleApi<
+    AllCalendarFeatures<TResource, TEvent>
+  > {
+    return this._kernel.api as never;
+  }
+
   private _eventsCache: Array<TEvent> | null = null;
 
   private _mergedUnavailMinuteCache = new Map<string, Array<MinuteRange>>();
@@ -347,11 +354,14 @@ export class CalendarCore<
     );
   }
 
-  constructor(options: CalendarCoreOptions<TResource, TEvent>) {
+  constructor(options: CalendarCoreOptions<TResource, TEvent, TFeatures>) {
     super(options);
     Object.assign(this.options, {
       resources: options.resources || null,
       fetchEvents: options.fetchEvents,
+      features:
+        options.features ??
+        (allCalendarFeatures<TResource, TEvent>() as unknown as TFeatures),
     });
 
     const seed = options.events?.map((e) => this.normalizeEvent(e)) ?? [];
@@ -377,30 +387,58 @@ export class CalendarCore<
 
   private _seedKernel(events: Array<TEvent>) {
     this._eventsCache = null;
-    const recurrence = eventRecurrenceFeature<TResource, TEvent>();
-    const dependency = eventDependencyFeature<TResource, TEvent>({
-      timeZone: this.options.timeZone,
-    });
-    const resize = eventResizeFeature<TResource, TEvent>();
-    const dayLayout = dayEventLayoutFeature<TResource, TEvent>();
-    const timeline = timelineFeature<TResource, TEvent>();
+    const features = Object.values(this.options.features);
+    const ctx: FeatureModuleCtx = { timeZone: this.options.timeZone };
+
+    const modules: Record<string, Module<WritableEvent<TEvent>, unknown>> = {};
+    for (const [key, feature] of Object.entries(this.options.features)) {
+      const module = feature.module?.(ctx);
+      if (module) {
+        modules[key] = (module) as unknown as Module<
+          WritableEvent<TEvent>,
+          unknown
+        >;
+      }
+    }
+
+    this._assertFeatureRequires(features);
     this._kernel = createKernel({
       events: events as Array<WritableEvent<TEvent>>,
-      modules: {
-        history: undoModule<WritableEvent<TEvent>>(),
-        recurrence: recurrence.module!,
-        dependency: dependency.module!,
-      },
-    });
+      modules,
+    }) as unknown as Kernel<
+      WritableEvent<TEvent>,
+      ComposedModuleApi<TFeatures>
+    >;
 
     const host = this._host();
-    this._features = {
-      ...recurrence.api!(host),
-      ...dependency.api!(host),
-      ...resize.api!(host),
-      ...dayLayout.api!(host),
-      ...timeline.api!(host),
-    };
+    const api: Record<string, unknown> = {};
+    for (const feature of features) {
+      const contributed = feature.api?.(host, this._kernel.api as never);
+      if (!contributed) continue;
+      for (const [key, value] of Object.entries(contributed)) {
+        if (key in api) {
+          throw new Error(
+            `CalendarCore: feature "${feature.name}" contributes api "${key}", which another composed feature already contributes. Compose only one of them.`,
+          );
+        }
+        api[key] = value;
+      }
+    }
+    this._features = api as ComposedFeatureApi<TFeatures>;
+  }
+
+  private _assertFeatureRequires(
+    features: Array<AnyCalendarFeature<TResource, TEvent>>,
+  ) {
+    const mounted = new Set(features.map((feature) => feature.name));
+    for (const feature of features) {
+      for (const required of feature.requires ?? []) {
+        if (mounted.has(required)) continue;
+        throw new Error(
+          `CalendarCore: feature "${feature.name}" requires "${required}", which is not composed. Add it to the features option.`,
+        );
+      }
+    }
   }
 
   private _host(): CalendarHost<TResource, TEvent> {
@@ -607,68 +645,81 @@ export class CalendarCore<
     return map;
   }
 
+  private _beginFetch() {
+    this._inFlightFetches++;
+    if (this._inFlightFetches === 1) {
+      this.store.setState((prev) => ({ ...prev, isPending: true }));
+    }
+  }
+
+  private _endFetch(eventsChanged: boolean) {
+    this._inFlightFetches = Math.max(0, this._inFlightFetches - 1);
+    const isPending = this._inFlightFetches > 0;
+    this.store.setState((prev) => ({
+      ...prev,
+      isPending,
+      eventsVersion: eventsChanged ? prev.eventsVersion + 1 : prev.eventsVersion,
+    }));
+  }
+
+  private _indexFetchedEvents(fetchedEvents: Array<TEvent>) {
+    const newlyFetchedEvents: Array<{
+      eventId: string;
+      eventTitle: string;
+      start: string;
+      end: string;
+    }> = [];
+    const loaded: Array<TEvent> = [];
+    for (const raw of fetchedEvents) {
+      if (this._eventMap.has(raw.id)) continue;
+      const normalized = this.normalizeEvent(raw);
+      loaded.push(normalized);
+      this._indexAddEvent(normalized);
+      newlyFetchedEvents.push({
+        eventId: normalized.id,
+        eventTitle: normalized.title,
+        start: normalized.start as string,
+        end: normalized.end as string,
+      });
+    }
+    if (newlyFetchedEvents.length > 0) {
+      this._load(loaded);
+      getTimeClient().emit("events:set", { events: newlyFetchedEvents });
+    }
+  }
+
+  private async _loadRange(start: string, end: string): Promise<void> {
+    const fetchEvents = this.options.fetchEvents;
+    if (!fetchEvents) return;
+    if (this._isRangeLoaded(start, end)) return;
+
+    this._markRangeLoaded(start, end);
+    this._beginFetch();
+
+    try {
+      const fetchedEvents = await fetchEvents({ start, end });
+      if (fetchedEvents.length > 0) {
+        this._indexFetchedEvents(fetchedEvents);
+      }
+      this._endFetch(fetchedEvents.length > 0);
+    } catch {
+      this._loadedRanges = this._loadedRanges.filter(
+        (r) => !(r.start === start && r.end === end),
+      );
+      this._endFetch(false);
+    }
+  }
+
   ensureRangeLoaded() {
     const calendarDays = this.getCalendarDays();
+    if (!this.options.fetchEvents || calendarDays.length === 0) return;
 
-    if (this.options.fetchEvents && calendarDays.length > 0) {
-      const first = calendarDays[0]!;
-      const last = calendarDays[calendarDays.length - 1]!;
-      const rangeStart = first.toString({ calendarName: "never" });
+    const first = calendarDays[0]!;
+    const last = calendarDays[calendarDays.length - 1]!;
+    const rangeStart = first.toString({ calendarName: "never" });
+    const rangeEnd = last.add({ days: 1 }).toString({ calendarName: "never" });
 
-      const rangeEnd = last
-        .add({ days: 1 })
-        .toString({ calendarName: "never" });
-
-      if (!this._isRangeLoaded(rangeStart, rangeEnd)) {
-        this._markRangeLoaded(rangeStart, rangeEnd);
-        this.store.setState((prev) => ({ ...prev, isPending: true }));
-        this.options
-          .fetchEvents({ start: rangeStart, end: rangeEnd })
-          .then((fetchedEvents) => {
-            if (fetchedEvents.length > 0) {
-              const newlyFetchedEvents: Array<{
-                eventId: string;
-                eventTitle: string;
-                start: string;
-                end: string;
-              }> = [];
-              const loaded: Array<TEvent> = [];
-              for (const raw of fetchedEvents) {
-                if (this._eventMap.has(raw.id)) continue;
-                const normalized = this.normalizeEvent(raw);
-                loaded.push(normalized);
-                this._indexAddEvent(normalized);
-                newlyFetchedEvents.push({
-                  eventId: normalized.id,
-                  eventTitle: normalized.title,
-                  start: normalized.start as string,
-                  end: normalized.end as string,
-                });
-              }
-              if (newlyFetchedEvents.length > 0) {
-                this._load(loaded);
-                getTimeClient().emit("events:set", {
-                  events: newlyFetchedEvents,
-                });
-              }
-            }
-            this.store.setState((prev) => ({
-              ...prev,
-              isPending: false,
-              eventsVersion:
-                fetchedEvents.length > 0
-                  ? prev.eventsVersion + 1
-                  : prev.eventsVersion,
-            }));
-          })
-          .catch(() => {
-            this._loadedRanges = this._loadedRanges.filter(
-              (r) => !(r.start === rangeStart && r.end === rangeEnd),
-            );
-            this.store.setState((prev) => ({ ...prev, isPending: false }));
-          });
-      }
-    }
+    void this._loadRange(rangeStart, rangeEnd);
   }
 
   getDaysWithEvents() {
@@ -718,55 +769,7 @@ export class CalendarCore<
   }
 
   async fetchEventsForRange(start: string, end: string): Promise<void> {
-    if (!this.options.fetchEvents) return;
-    if (this._isRangeLoaded(start, end)) return;
-
-    this._markRangeLoaded(start, end);
-    this.store.setState((prev) => ({ ...prev, isPending: true }));
-
-    try {
-      const fetchedEvents = await this.options.fetchEvents({ start, end });
-      if (fetchedEvents.length > 0) {
-        const newlyFetchedEvents: Array<{
-          eventId: string;
-          eventTitle: string;
-          start: string;
-          end: string;
-        }> = [];
-        const loaded: Array<TEvent> = [];
-        for (const raw of fetchedEvents) {
-          if (this._eventMap.has(raw.id)) continue;
-          const normalized = this.normalizeEvent(raw);
-          loaded.push(normalized);
-          this._indexAddEvent(normalized);
-          newlyFetchedEvents.push({
-            eventId: normalized.id,
-            eventTitle: normalized.title,
-            start: normalized.start as string,
-            end: normalized.end as string,
-          });
-        }
-        if (newlyFetchedEvents.length > 0) {
-          this._load(loaded);
-          getTimeClient().emit("events:set", {
-            events: newlyFetchedEvents,
-          });
-        }
-      }
-      this.store.setState((prev) => ({
-        ...prev,
-        isPending: false,
-        eventsVersion:
-          fetchedEvents.length > 0
-            ? prev.eventsVersion + 1
-            : prev.eventsVersion,
-      }));
-    } catch {
-      this._loadedRanges = this._loadedRanges.filter(
-        (r) => !(r.start === start && r.end === end),
-      );
-      this.store.setState((prev) => ({ ...prev, isPending: false }));
-    }
+    await this._loadRange(start, end);
   }
 
   formatPeriodLabel(options?: { locale?: string }): string {
@@ -802,11 +805,11 @@ export class CalendarCore<
   }
 
   getEventSegmentInfo(event: TEvent): SegmentInfo {
-    return this._features.getEventSegmentInfo(event);
+    return this._api.getEventSegmentInfo(event);
   }
 
   getEventProps(event: TEvent, layoutOptions?: LayoutOptions) {
-    return this._features.getEventProps(event, layoutOptions);
+    return this._api.getEventProps(event, layoutOptions);
   }
 
   groupDaysBy({
@@ -883,56 +886,19 @@ export class CalendarCore<
   }
 
   canUndo() {
-    return this._kernel.api.canUndo();
+    return this._moduleApi.canUndo();
   }
 
   canRedo() {
-    return this._kernel.api.canRedo();
-  }
-
-  private _diffOps(ops: Array<InvertibleOp<TEvent>>) {
-    const toInfo = (event: TEvent) => ({
-      eventId: event.id,
-      eventTitle: event.title,
-      start: event.start as string,
-      end: event.end as string,
-    });
-
-    const added: Array<ReturnType<typeof toInfo>> = [];
-    const removed: Array<ReturnType<typeof toInfo>> = [];
-    const updated: Array<ReturnType<typeof toInfo>> = [];
-
-    for (const op of ops) {
-      if (op.kind === "add") {
-        added.push(toInfo(op.event));
-        continue;
-      }
-      if (op.kind === "remove") {
-        removed.push(toInfo(op.event));
-        continue;
-      }
-      const moved =
-        op.before.start !== op.after.start ||
-        op.before.end !== op.after.end ||
-        op.before.title !== op.after.title;
-      if (moved) updated.push(toInfo(op.after));
-    }
-
-    return { added, removed, updated };
+    return this._moduleApi.canRedo();
   }
 
   undo() {
-    if (!this._kernel.api.canUndo()) return;
-
-    const applied = this._write([undoIntent()], "history/undo");
-    getTimeClient().emit("event:undo", this._diffOps(applied));
+    this._api.undo();
   }
 
   redo() {
-    if (!this._kernel.api.canRedo()) return;
-
-    const applied = this._write([redoIntent()], "history/redo");
-    getTimeClient().emit("event:redo", this._diffOps(applied));
+    this._api.redo();
   }
 
   commitAdd(event: TEvent) {
@@ -1093,7 +1059,7 @@ export class CalendarCore<
   }
 
   getMasterEvent(event: TEvent): TEvent {
-    return this._kernel.api.getMasterEvent(
+    return this._moduleApi.getMasterEvent(
       event as WritableEvent<TEvent>,
     ) as TEvent;
   }
@@ -1146,17 +1112,17 @@ export class CalendarCore<
   }
 
   goToNextOccurrence(eventId: string, fromDate?: EventDateTimeInput) {
-    this._features.goToNextOccurrence(eventId, fromDate);
+    this._api.goToNextOccurrence(eventId, fromDate);
   }
 
   goToPreviousOccurrence(eventId: string, fromDate?: EventDateTimeInput) {
-    this._features.goToPreviousOccurrence(eventId, fromDate);
+    this._api.goToPreviousOccurrence(eventId, fromDate);
   }
 
   createResizeController(
     options: ResizeControllerOptions = {},
   ): ResizeController<TResource, TEvent> {
-    return this._features.createResizeController(options);
+    return this._api.createResizeController(options);
   }
 
   validateMove(
@@ -1291,7 +1257,7 @@ export class CalendarCore<
     event: { id?: string; title: string; start: string; end: string },
     dependsOn: Array<EventDependency>,
   ): { valid: boolean; error?: ResizeError } {
-    return this._kernel.api.validateEventDependencies(event, dependsOn);
+    return this._moduleApi.validateEventDependencies(event, dependsOn);
   }
 
   validateEventPlacement(event: {
@@ -1496,7 +1462,7 @@ export class CalendarCore<
       dependsOn?: Array<EventDependency>;
     },
   ): Promise<SaveEventResult> {
-    return this._features.editRecurringEvent(eventId, updates, options);
+    return this._api.editRecurringEvent(eventId, updates, options);
   }
 
   removeRecurringEvent(
@@ -1506,7 +1472,7 @@ export class CalendarCore<
       occurrenceStart?: EventDateTimeInput;
     },
   ) {
-    this._features.removeRecurringEvent(eventId, options);
+    this._api.removeRecurringEvent(eventId, options);
   }
 
   createDependency(
@@ -1514,7 +1480,7 @@ export class CalendarCore<
     targetId: string,
     type: DependencyType = "FS",
   ): { blocked: boolean; error?: ResizeError } {
-    return this._features.createDependency(sourceId, targetId, type);
+    return this._api.createDependency(sourceId, targetId, type);
   }
 
   removeEvent(id: Event["id"]) {
@@ -1605,11 +1571,11 @@ export class CalendarCore<
   }
 
   getEventsByResource(): Map<TResource["id"], Array<TEvent>> {
-    return this._features.getEventsByResource();
+    return this._api.getEventsByResource();
   }
 
   getTimelineLayout(): TimelineLayout<TResource, TEvent> {
-    return this._features.getTimelineLayout();
+    return this._api.getTimelineLayout();
   }
 
   private getUnavailableMinuteRanges(

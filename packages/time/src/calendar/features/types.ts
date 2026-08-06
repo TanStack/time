@@ -82,6 +82,10 @@ export interface CalendarHost<
   }) => { blocked: boolean; message?: string };
 }
 
+export interface FeatureModuleCtx {
+  timeZone: Temporal.TimeZoneLike;
+}
+
 export interface CalendarFeature<
   TResource extends Resource,
   TEvent extends Event<TResource>,
@@ -90,8 +94,21 @@ export interface CalendarFeature<
 > {
   name: string;
   requires?: ReadonlyArray<string>;
-  module?: Module<TEvent & KernelEvent, TModuleApi>;
-  api?: (host: CalendarHost<TResource, TEvent>) => TApi;
+  module?: (ctx: FeatureModuleCtx) => Module<TEvent & KernelEvent, TModuleApi>;
+  api?: (host: CalendarHost<TResource, TEvent>, module: TModuleApi) => TApi;
+}
+
+export interface AnyCalendarFeature<
+  TResource extends Resource,
+  TEvent extends Event<TResource>,
+> {
+  name: string;
+  requires?: ReadonlyArray<string>;
+  module?: (ctx: FeatureModuleCtx) => Module<TEvent & KernelEvent, unknown>;
+  api?: (
+    host: CalendarHost<TResource, TEvent>,
+    module: never,
+  ) => object | undefined;
 }
 
 export type FeatureApi<TFeature> = TFeature extends {
@@ -101,7 +118,7 @@ export type FeatureApi<TFeature> = TFeature extends {
   : object;
 
 export type FeatureModuleApi<TFeature> = TFeature extends {
-  module?: infer TModule;
+  module?: (...args: Array<never>) => infer TModule;
 }
   ? ModuleApi<TModule>
   : object;
@@ -113,6 +130,10 @@ type UnionToIntersection<TUnion> = (
 ) extends (value: infer TIntersection) => void
   ? TIntersection
   : never;
+
+export type ComposedModuleApi<TFeatures> = UnionToIntersection<
+  { [K in keyof TFeatures]: FeatureModuleApi<TFeatures[K]> }[keyof TFeatures]
+>;
 
 export type ComposedFeatureApi<TFeatures> = UnionToIntersection<
   {

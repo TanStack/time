@@ -172,7 +172,7 @@ export function eventRecurrenceFeature<
 
   return {
     name: "recurrence",
-    module: recurrenceModule<TEvent & KernelEvent>(),
+    module: () => recurrenceModule<TEvent & KernelEvent>(),
     api: (host) => ({
       goToNextOccurrence: (eventId, fromDate) => {
         const master = resolveMaster(host, eventId);

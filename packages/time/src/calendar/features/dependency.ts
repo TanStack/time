@@ -1,4 +1,3 @@
-import { Temporal } from "@js-temporal/polyfill";
 import { toPlainDateTimeString } from "~/date/parse";
 import { dependencyModule } from "~/kernel/modules";
 import { hasDependencyPath, shiftToSatisfyLink } from "~/validation/dependency";
@@ -7,10 +6,6 @@ import type { DependencyApi } from "~/kernel/modules";
 import type { DependencyGraphEvent } from "~/validation/dependency";
 import type { DependencyType, Event, Resource, ResizeError } from "../types";
 import type { CalendarFeature, CalendarHost } from "./types";
-
-export interface DependencyFeatureOptions {
-  timeZone: Temporal.TimeZoneLike;
-}
 
 export interface DependencyCreationApi {
   createDependency: (
@@ -23,9 +18,7 @@ export interface DependencyCreationApi {
 export function eventDependencyFeature<
   TResource extends Resource,
   TEvent extends Event<TResource>,
->(
-  options: DependencyFeatureOptions,
-): CalendarFeature<TResource, TEvent, DependencyApi, DependencyCreationApi> {
+>(): CalendarFeature<TResource, TEvent, DependencyApi, DependencyCreationApi> {
   const graphOf = (
     host: CalendarHost<TResource, TEvent>,
   ): Array<DependencyGraphEvent> => host.getEvents().map((event) => ({
@@ -38,9 +31,8 @@ export function eventDependencyFeature<
 
   return {
     name: "dependency",
-    module: dependencyModule<TEvent & KernelEvent>({
-      timeZone: options.timeZone,
-    }),
+    module: (ctx) =>
+      dependencyModule<TEvent & KernelEvent>({ timeZone: ctx.timeZone }),
     api: (host) => ({
       createDependency: (sourceId, targetId, type = "FS") => {
         const sourceEvent = host.getEvent(sourceId);
@@ -84,7 +76,7 @@ export function eventDependencyFeature<
             end: toPlainDateTimeString(sourceEvent.end),
           },
           successor: { start: targetStartStr, end: targetEndStr },
-          timeZone: options.timeZone,
+          timeZone: host.getOptions().timeZone,
         });
 
         if (rescheduled) {

@@ -79,6 +79,7 @@ export interface ParsedDateCoreOptions
 export abstract class DateCore {
   store: Store<CalendarStore>;
   options: ParsedDateCoreOptions;
+  private _dayNamesCache = new Map<string, Array<string>>();
   formatters: {
     date: Intl.DateTimeFormat;
     time: Intl.DateTimeFormat;
@@ -266,14 +267,20 @@ export abstract class DateCore {
   }
 
   getDaysNames(weekday: "long" | "short" = "short") {
-    const baseDate = Temporal.PlainDate.from("2024-01-01");
     const firstDayOfWeek = this.getFirstDayOfWeek().dayOfWeek;
+    const cacheKey = `${weekday}|${firstDayOfWeek}`;
+    const cached = this._dayNamesCache.get(cacheKey);
+    if (cached) return cached;
 
-    return Array.from({ length: 7 }).map((_, i) =>
+    const baseDate = Temporal.PlainDate.from("2024-01-01");
+    const names = Array.from({ length: 7 }).map((_, i) =>
       baseDate
         .add({ days: (i + (firstDayOfWeek - 1)) % 7 })
         .toLocaleString(this.options.locale, { weekday: weekday }),
     );
+
+    this._dayNamesCache.set(cacheKey, names);
+    return names;
   }
 
   changeViewMode(newViewMode: ViewMode) {

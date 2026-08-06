@@ -7,3 +7,4 @@ export * from "./getTimeSlots";
 export * from "./getResizeProps";
 export * from "./resizeController";
 export * from "./calendar";
+export * from "./features";

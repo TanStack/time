@@ -5876,6 +5876,18 @@ describe("CalendarCore", () => {
         ).toEqual(["b", "a"]);
       });
 
+      test("stays silent when there is nothing to undo or redo", () => {
+        const cal = createCalendar();
+        emitSpy.mockClear();
+
+        cal.undo();
+        cal.redo();
+
+        const names = emitSpy.mock.calls.map(([name]) => name);
+        expect(names).not.toContain("event:undo");
+        expect(names).not.toContain("event:redo");
+      });
+
       test("drops history when the event list is replaced", () => {
         const cal = createCalendar();
         cal.commitAdd({
@@ -6501,6 +6513,57 @@ describe("CalendarCore", () => {
       });
 
       expect(placement.blocked).toBe(true);
+    });
+  });
+
+  describe("isPending", () => {
+    test("stays true until every in-flight fetch settles", async () => {
+      const resolvers: Array<() => void> = [];
+      const cal = createCalendar({
+        fetchEvents: () =>
+          new Promise<Array<TestEvent>>((resolve) => {
+            resolvers.push(() => resolve([]));
+          }),
+      });
+
+      const first = cal.fetchEventsForRange("2024-03-18", "2024-03-25");
+      const second = cal.fetchEventsForRange("2024-04-01", "2024-04-08");
+      expect(cal.store.state.isPending).toBe(true);
+
+      resolvers[1]!();
+      await second;
+      expect(cal.store.state.isPending).toBe(true);
+
+      resolvers[0]!();
+      await first;
+      expect(cal.store.state.isPending).toBe(false);
+    });
+
+    test("clears when a fetch rejects while another is in flight", async () => {
+      const settlers: Array<{ resolve: () => void; reject: () => void }> = [];
+      const cal = createCalendar({
+        fetchEvents: () =>
+          new Promise<Array<TestEvent>>((resolve, reject) => {
+            settlers.push({
+              resolve: () => resolve([]),
+              reject: () => reject(new Error("boom")),
+            });
+          }),
+      });
+
+      const first = cal.fetchEventsForRange("2024-03-18", "2024-03-25");
+      const second = cal.fetchEventsForRange("2024-04-01", "2024-04-08");
+
+      settlers[0]!.reject();
+      await first;
+      expect(cal.store.state.isPending).toBe(true);
+
+      settlers[1]!.resolve();
+      await second;
+      expect(cal.store.state.isPending).toBe(false);
+      expect(
+        cal.getLoadedRanges().some((r) => r.start === "2024-03-18"),
+      ).toBe(false);
     });
   });
 });

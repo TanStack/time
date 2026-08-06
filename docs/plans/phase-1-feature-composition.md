@@ -5,11 +5,15 @@ Implements ADR 0009. Turns the fixed module set and the flat 49-key `useCalendar
 `calendarFeatures({ ... })`, modules contribute their own methods, and the instance surface is
 the intersection of what was composed.
 
+Slices 1-3 are done: the seam exists, every gatable method lives in a feature, and `features` is
+accepted (defaulting to the full preset). Slices 4-5 gate the *type* and delete the delegates.
+
 Lands **first** in Phase 1. ADR 0008 (working-time hierarchy) and ADR 0007 (solver fields)
 attach as features (`workingTimeFeature`, `schedulingFeature`), so doing this after them means
 writing them twice.
 
-**Method:** same strangler-fig as Phase 0. The 1,007 tests stay green after every slice.
+**Method:** same strangler-fig as Phase 0. The test suite stays green after every slice (1,007 at
+the start of Phase 1, 1,029 now).
 `CalendarCore`'s surface keeps working until slice 5 deliberately removes it — the methods
 become thin delegates to module apis before the composition seam is exposed, so no slice both
 moves logic and changes the public shape.
@@ -154,22 +158,53 @@ the range fetch, and the unknown-occurrence guard — so slice 2 added five char
 no-op on conflict. Taking the api requires either splitting the veto out of the module or
 accepting a behaviour change. Not a slice-2 decision.
 
-### Slice 3 — `calendarFeatures()` and the `features` option
+### Slice 3 — `calendarFeatures()` and the `features` option ✅
 
 `calendarFeatures({ ... })` returns its argument with a `const` type parameter (the v9
-`tableFeatures` shape). `CalendarCore` composes `createKernel` from it instead of the hardcoded
-`{ history, recurrence, dependency }` record, and spreads `kernel.api` onto itself so the
-surface stays flat.
+`tableFeatures` shape). `CalendarCore` gained a third type parameter, `TFeatures`, and composes
+`createKernel` from `options.features` instead of the hardcoded `{ history, recurrence,
+dependency }` record. `features` is optional this slice and defaults to `allCalendarFeatures()`,
+so the 1,029 tests and both examples keep working untouched; slice 4 makes it required.
 
-`allCalendarFeatures` ships here, deprecated on arrival: it is exactly today's set, so
-`useCalendar({ features: allCalendarFeatures, ... })` reproduces the current instance.
+**Two seam changes were needed to make a feature record composable.**
 
-Collision check moves up a level too — an api key may not shadow a core method.
+`module` became a factory — `module?: (ctx: FeatureModuleCtx) => Module<...>`. A kernel module
+needs construction-time options (`dependencyModule` needs `timeZone`), and a composed feature
+record is written before any calendar exists. The ctx carries what modules need from calendar
+options, so `eventDependencyFeature()` no longer takes options at all and the consumer never
+restates `timeZone`.
+
+`api` gained a second parameter — its own module's api: `api?: (host, module: TModuleApi) => TApi`.
+`historyFeature` is why: `undo()` guards on `canUndo()`, which lives on `undoModule`'s api, and
+reading it off the host would have meant putting a history method on the host. A feature now owns
+both halves of itself.
+
+`historyFeature` is new, and takes `undo` / `redo` (with `_diffOps`) off `CalendarCore`;
+`canUndo` / `canRedo` come from its module api as before.
+
+Composition throws on two wiring errors, mirroring the kernel: a feature whose `requires` peer is
+not composed, and two features contributing the same api key. **The core-shadow check does not
+land yet** — every feature api key is currently also a `CalendarCore` delegate method, so the
+check would reject every composition. It arrives with slice 5, which deletes the delegates.
+
+`useCalendar` threads `TFeatures` through so a feature record can be passed today. Type args are
+positional, so a consumer naming `TResource`/`TEvent` explicitly must also name the record:
+`useCalendar<R, E, typeof features>({ features, ... })`. Slice 4 owns making that ergonomic.
+
+**Newly surfaced: recurrence read expansion is not gated.** `CalendarCore.getEventMap` expands
+recurring events itself, independent of `recurrenceModule`'s projection stage, so composing
+without `eventRecurrenceFeature` still returns occurrences on read — only the occurrence *writes*
+are gated. That duplication has to go before the definition-of-done bundle claim can hold.
 
 ### Slice 4 — gate the type, thread it through the adapters
 
 `Calendar<TFeatures>` intersects the composed apis; `calendar.undo()` stops typechecking
-without `historyFeature`. Shared domain types (`Event`, `Day`, `Resource`) stay non-generic per
+without `historyFeature`. Runtime gating already works — calling an uncomposed method throws a
+`TypeError` — so this slice is about turning that into a compile error.
+
+Ergonomics are the open problem: type args are positional, so `useCalendar<R, E>` pins `TFeatures`
+to its default. Either `features` becomes required and `TResource`/`TEvent` are inferred from
+`events`/`resources`, or the record itself carries them. Decide here. Shared domain types (`Event`, `Day`, `Resource`) stay non-generic per
 ADR 0009.
 
 `useCalendar` returns the composed type rather than a fixed 49-key object, and both examples
