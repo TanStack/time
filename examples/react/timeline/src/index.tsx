@@ -81,14 +81,14 @@ import { Card, CardContent } from "@/components/ui/card";
 
 import "./index.css";
 
-const features = calendarFeatures({
+const features = calendarFeatures([
   historyFeature,
   eventRecurrenceFeature,
   eventDependencyFeature,
   eventResizeFeature,
   dayEventLayoutFeature,
   timelineFeature,
-});
+]);
 
 const DEP_TYPE_STYLES: Record<
   DependencyType,

@@ -160,15 +160,17 @@ accepting a behaviour change. Not a slice-2 decision.
 
 ### Slice 3 — `calendarFeatures()` and the `features` option ✅
 
-`calendarFeatures({ historyFeature, eventRecurrenceFeature })` — bare factory values, the v9
-`tableFeatures` shape. `CalendarCore` composes `createKernel` from `options.features` instead of
+`calendarFeatures([historyFeature, eventRecurrenceFeature])` — a list of bare factory values. A
+record would force a key per feature that nothing reads: the feature already carries its own
+`name`, which is what the kernel mounts it under and what the registry keys api types by. `CalendarCore` composes `createKernel` from `options.features` instead of
 the hardcoded `{ history, recurrence, dependency }` record, and `features` is **required**.
 
 Because features are passed uninstantiated, `ReturnType` would resolve their generics at the
 constraint (`Resource`, `Event<Resource>`) and silently drop the consumer's `TEvent` from every
 api signature. So api types come from `FeatureApiRegistry`, keyed by feature name:
 `CalendarFeature` gained a `TName` parameter, each factory declares its name as a literal, and
-`ComposedApi<TFeatures, TResource, TEvent>` intersects registry entries using the calendar's own
+`ComposedApi<TFeatures, TResource, TEvent>` intersects registry entries over `TFeatures[number]`,
+using the calendar's own
 `TResource`/`TEvent`. A name does not depend on R/E, so reading it under default instantiation is
 safe. The registry is closed — a third-party feature composes and runs but contributes no types
 until the interface is augmented, the same trade as v9's declaration merging.
@@ -202,8 +204,8 @@ land yet** — every feature api key is currently also a `CalendarCore` delegate
 check would reject every composition. It arrives with slice 5, which deletes the delegates.
 
 Both examples compose explicitly — they list the full preset, so the composition path is exercised
-by real app code and not only by tests. `allCalendarFeatures` is a plain record of factories,
-deprecated on arrival, for consumers who want today's behaviour in one identifier.
+by real app code and not only by tests. `allCalendarFeatures` is a plain `as const` array of
+factories, deprecated on arrival, for consumers who want today's behaviour in one identifier.
 
 **Newly surfaced: recurrence read expansion is not gated.** `CalendarCore.getEventMap` expands
 recurring events itself, independent of `recurrenceModule`'s projection stage, so composing

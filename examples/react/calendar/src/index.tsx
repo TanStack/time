@@ -51,14 +51,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 import "./index.css";
 
-const features = calendarFeatures({
+const features = calendarFeatures([
   historyFeature,
   eventRecurrenceFeature,
   eventDependencyFeature,
   eventResizeFeature,
   dayEventLayoutFeature,
   timelineFeature,
-});
+]);
 
 function formatDateToISO(date: Date): string {
   const year = date.getFullYear();

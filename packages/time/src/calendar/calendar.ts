@@ -13,7 +13,7 @@ import { allCalendarFeatures } from "./features";
 import type {
   AllCalendarFeatures,
   AnyCalendarFeature,
-  CalendarFeatureRecord,
+  CalendarFeatureList,
   CalendarHost,
   ComposedApi,
   FeatureModuleCtx,
@@ -82,7 +82,7 @@ export * from "./date-core";
 type WritableEvent<TEvent> = TEvent & KernelEvent;
 
 export interface CalendarCoreOptions<
-  TFeatures extends CalendarFeatureRecord = AllCalendarFeatures,
+  TFeatures extends CalendarFeatureList = AllCalendarFeatures,
   TResource extends Resource = Resource,
   TEvent extends Event<TResource> = Event<TResource>,
 > extends DateCoreOptions {
@@ -267,7 +267,7 @@ export interface CalendarApi<
     CalendarState<TResource, TEvent> {}
 
 type ParsedCalendarCoreOptions<
-  TFeatures extends CalendarFeatureRecord,
+  TFeatures extends CalendarFeatureList,
   TResource extends Resource,
   TEvent extends Event<TResource>,
 > = ParsedDateCoreOptions & {
@@ -282,7 +282,7 @@ type ParsedCalendarCoreOptions<
 };
 
 export class CalendarCore<
-    TFeatures extends CalendarFeatureRecord = AllCalendarFeatures,
+    TFeatures extends CalendarFeatureList = AllCalendarFeatures,
     TResource extends Resource = Resource,
     TEvent extends Event<TResource> = Event<TResource>,
   >
@@ -377,9 +377,7 @@ export class CalendarCore<
 
   private _seedKernel(events: Array<TEvent>) {
     this._eventsCache = null;
-    const features = Object.values(this.options.features).map((factory) =>
-      factory(),
-    );
+    const features = this.options.features.map((factory) => factory());
     const ctx: FeatureModuleCtx = { timeZone: this.options.timeZone };
 
     const modules: Record<string, Module<WritableEvent<TEvent>, unknown>> = {};

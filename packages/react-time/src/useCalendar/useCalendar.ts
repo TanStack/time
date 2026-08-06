@@ -12,7 +12,7 @@ import type {
   AllCalendarFeatures,
   CalendarApi,
   CalendarCoreOptions,
-  CalendarFeatureRecord,
+  CalendarFeatureList,
   DependencyType,
   RecurrenceEditScope,
   Event,
@@ -43,7 +43,7 @@ interface DayColumnProps {
 }
 
 export interface UseCalendarOptions<
-  TFeatures extends CalendarFeatureRecord = AllCalendarFeatures,
+  TFeatures extends CalendarFeatureList = AllCalendarFeatures,
   TResource extends Resource = Resource,
   TEvent extends Event<TResource> = Event<TResource>,
 > extends CalendarCoreOptions<TFeatures, TResource, TEvent> {
@@ -51,7 +51,7 @@ export interface UseCalendarOptions<
 }
 
 export const useCalendar = <
-  const TFeatures extends CalendarFeatureRecord,
+  const TFeatures extends CalendarFeatureList,
   TResource extends Resource = Resource,
   TEvent extends Event<TResource> = Event<TResource>,
 >(

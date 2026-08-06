@@ -36,12 +36,10 @@ type UnionToIntersection<TUnion> = (
   : never;
 
 export type ComposedApi<
-  TFeatures extends Record<string, CalendarFeatureFactory>,
+  TFeatures extends ReadonlyArray<CalendarFeatureFactory>,
   TResource extends Resource,
   TEvent extends Event<TResource>,
 > = UnionToIntersection<
-  FeatureApiRegistry<TResource, TEvent>[FeatureName<
-    TFeatures[keyof TFeatures]
-  > &
+  FeatureApiRegistry<TResource, TEvent>[FeatureName<TFeatures[number]> &
     keyof FeatureApiRegistry<TResource, TEvent>]
 >;
