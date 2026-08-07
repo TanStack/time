@@ -5,7 +5,7 @@ title: UnavailabilityReason
 
 # Interface: UnavailabilityReason
 
-Defined in: [calendar/types.ts:155](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L155)
+Defined in: [calendar/types.ts:147](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L147)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/types.ts:155](https://github.com/TanStack/time/blob/main/p
 optional capacityInfo: object;
 ```
 
-Defined in: [calendar/types.ts:164](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L164)
+Defined in: [calendar/types.ts:156](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L156)
 
 #### max
 
@@ -43,17 +43,17 @@ used: number;
 description: string;
 ```
 
-Defined in: [calendar/types.ts:162](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L162)
+Defined in: [calendar/types.ts:154](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L154)
 
 ***
 
 ### reason
 
 ```ts
-reason: "outside-hours" | "capacity" | "no-availability";
+reason: "outside-hours" | "capacity" | "no-calendar";
 ```
 
-Defined in: [calendar/types.ts:160](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L160)
+Defined in: [calendar/types.ts:152](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L152)
 
 ***
 
@@ -63,7 +63,7 @@ Defined in: [calendar/types.ts:160](https://github.com/TanStack/time/blob/main/p
 resourceId: string;
 ```
 
-Defined in: [calendar/types.ts:156](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L156)
+Defined in: [calendar/types.ts:148](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L148)
 
 ***
 
@@ -73,4 +73,4 @@ Defined in: [calendar/types.ts:156](https://github.com/TanStack/time/blob/main/p
 resourceLabel: string;
 ```
 
-Defined in: [calendar/types.ts:158](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L158)
+Defined in: [calendar/types.ts:150](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L150)
