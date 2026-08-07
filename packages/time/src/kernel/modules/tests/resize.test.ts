@@ -18,7 +18,25 @@ const UTC = "UTC";
 const office: AvailabilityResourceInput = {
   id: "office",
   label: "Office",
-  availability: [{ weekdays: [1], startTime: "09:00", endTime: "17:00" }],
+  calendarId: "office",
+};
+
+const workingTime = {
+  calendars: [
+    {
+      id: "office",
+      intervals: [
+        {
+          isWorking: true,
+          recurrent: {
+            weekdays: [1],
+            startTime: "09:00",
+            endTime: "17:00",
+          },
+        },
+      ],
+    },
+  ],
 };
 
 const options: ResizeModuleOptions = { timeZone: UTC };
@@ -85,7 +103,7 @@ describe("resizeModule", () => {
   });
 
   it("stops at the resource's availability edge", () => {
-    const kernel = seed({ timeZone: UTC, resources: [office] }, [
+    const kernel = seed({ timeZone: UTC, resources: [office], workingTime }, [
       {
         id: "e1",
         title: "E1",
@@ -103,7 +121,7 @@ describe("resizeModule", () => {
   });
 
   it("takes explicit unavailable ranges over the resource lookup", () => {
-    const kernel = seed({ timeZone: UTC, resources: [office] });
+    const kernel = seed({ timeZone: UTC, resources: [office], workingTime });
 
     kernel.write(
       resizeIntent({

@@ -3,13 +3,13 @@ import {
   formatMinutesToTime,
   MINUTES_IN_DAY,
   resourceDayWorkingTime,
-  type AvailabilitySlotInput,
+  type WorkingTimeConfig,
 } from "./time";
 
 export interface AvailabilityResourceInput {
   id: string;
   label: string;
-  availability?: Array<AvailabilitySlotInput>;
+  calendarId?: string;
   capacity?: Array<number>;
 }
 
@@ -32,6 +32,7 @@ export interface AvailabilityOtherEvent {
 export interface CheckAvailabilityInput {
   event: AvailabilityTargetEvent;
   resources: Array<AvailabilityResourceInput>;
+  workingTime: WorkingTimeConfig;
   consumption?: Array<number>;
   otherEvents?: Array<AvailabilityOtherEvent>;
 }
@@ -39,7 +40,7 @@ export interface CheckAvailabilityInput {
 export interface AvailabilityUnavailabilityReason {
   resourceId: string;
   resourceLabel: string;
-  reason: "outside-hours" | "capacity" | "no-availability";
+  reason: "outside-hours" | "capacity" | "no-calendar";
   description: string;
   capacityInfo?: {
     max: number;
@@ -64,26 +65,28 @@ export function getUnavailabilityDetails(
   date: string,
   startMinutes: number,
   endMinutes: number,
+  workingTime: WorkingTimeConfig,
 ): Array<AvailabilityUnavailabilityReason> {
   if (resources.length === 0) return [];
 
   const details: Array<AvailabilityUnavailabilityReason> = [];
 
   for (const resource of resources) {
-    if (!resource.availability || resource.availability.length === 0) {
+    const { working: availableSlots, configured } = resourceDayWorkingTime(
+      resource,
+      date,
+      workingTime,
+    );
+
+    if (!configured) {
       details.push({
         resourceId: resource.id,
         resourceLabel: resource.label,
-        reason: "no-availability",
-        description: `${resource.label}: No availability configured`,
+        reason: "no-calendar",
+        description: `${resource.label}: No working calendar configured`,
       });
       continue;
     }
-
-    const availableSlots = resourceDayWorkingTime(
-      resource.availability,
-      date,
-    ).working;
 
     if (availableSlots.length === 0) {
       details.push({
@@ -163,6 +166,7 @@ export function checkAvailability(
         dayStr,
         overlapStartMins,
         overlapEndMins,
+        input.workingTime,
       );
 
       if (details.length > 0) {

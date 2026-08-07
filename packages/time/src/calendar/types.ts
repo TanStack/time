@@ -45,18 +45,10 @@ export interface RecurrenceRule<TResource extends Resource = Resource> {
   overrides?: Array<RecurrenceOverride<TResource>>;
 }
 
-export interface Availability {
-  weekdays: Array<number>;
-
-  startTime: string;
-
-  endTime: string;
-}
-
 export interface Resource {
   id: string;
   label: string;
-  availability?: Array<Availability>;
+  calendarId?: string;
   capacity?: Array<number>;
   buffer?: {
     before?: number;
@@ -157,7 +149,7 @@ export interface UnavailabilityReason {
 
   resourceLabel: string;
 
-  reason: "outside-hours" | "capacity" | "no-availability";
+  reason: "outside-hours" | "capacity" | "no-calendar";
 
   description: string;
 

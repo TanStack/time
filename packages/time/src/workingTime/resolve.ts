@@ -89,25 +89,22 @@ export function resolveDayMinutes(
   const day = date.slice(0, 10);
   const canvas = new Uint8Array(MINUTES_IN_DAY);
 
-  for (const calendar of chain) {
-    const ordered = calendar.intervals
-      .map((interval, index) => ({ interval, index }))
-      .sort(
-        (a, b) =>
-          specificity(a.interval) - specificity(b.interval) ||
-          a.index - b.index,
-      );
+  const ordered = chain
+    .flatMap((calendar, level) =>
+      calendar.intervals.map((interval, index) => ({ interval, level, index })),
+    )
+    .sort(
+      (a, b) =>
+        specificity(a.interval) - specificity(b.interval) ||
+        a.level - b.level ||
+        a.index - b.index,
+    );
 
-    for (const { interval } of ordered) {
-      const span = spanOn(interval, day);
-      if (!span) continue;
+  for (const { interval } of ordered) {
+    const span = spanOn(interval, day);
+    if (!span) continue;
 
-      canvas.fill(
-        interval.isWorking ? 1 : 0,
-        span.startMinutes,
-        span.endMinutes,
-      );
-    }
+    canvas.fill(interval.isWorking ? 1 : 0, span.startMinutes, span.endMinutes);
   }
 
   const ranges: Array<MinuteRange> = [];

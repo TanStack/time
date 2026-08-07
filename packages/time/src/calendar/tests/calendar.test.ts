@@ -6,6 +6,7 @@ import type { Calendar } from "../calendar";
 import type { StockFeatures } from "../features";
 import { calculateSegmentResizePreview } from "../getResizeProps";
 import type { Event, Resource } from "../types";
+import type { RecurrentWorkingInterval, WorkingCalendar } from "~/workingTime";
 
 const { emitSpy } = vi.hoisted(() => ({ emitSpy: vi.fn() }));
 vi.mock("../../client", () => ({
@@ -17,6 +18,18 @@ type TestEvent = Event<TestResource>;
 
 type TestCalendar = Calendar<StockFeatures, TestResource, TestEvent>;
 
+const testCalendars: Array<WorkingCalendar> = [];
+let calendarSeq = 0;
+
+function workingHours(...slots: Array<RecurrentWorkingInterval>): string {
+  const id = `wc-${++calendarSeq}`;
+  testCalendars.push({
+    id,
+    intervals: slots.map((recurrent) => ({ isWorking: true, recurrent })),
+  });
+  return id;
+}
+
 function createTestCalendar(
   overrides: Partial<
     Parameters<typeof createCalendar<StockFeatures, TestResource, TestEvent>>[0]
@@ -26,6 +39,7 @@ function createTestCalendar(
     viewMode: { value: 1, unit: "week" },
     timeZone: "UTC",
     features: stockFeatures,
+    calendars: testCalendars,
     ...overrides,
   });
 }
@@ -34,26 +48,32 @@ const weekdayResource: TestResource = {
   id: "r1",
   label: "Weekday Room",
   capacity: [2],
-  availability: [
-    { weekdays: [1, 2, 3, 4, 5], startTime: "08:00", endTime: "17:00" },
-  ],
+  calendarId: workingHours({
+    weekdays: [1, 2, 3, 4, 5],
+    startTime: "08:00",
+    endTime: "17:00",
+  }),
 };
 
 const afternoonResource: TestResource = {
   id: "r2",
   label: "Afternoon Room",
   capacity: [1],
-  availability: [
-    { weekdays: [1, 2, 3, 4, 5], startTime: "12:00", endTime: "18:00" },
-  ],
+  calendarId: workingHours({
+    weekdays: [1, 2, 3, 4, 5],
+    startTime: "12:00",
+    endTime: "18:00",
+  }),
 };
 
 const allDayResource: TestResource = {
   id: "r3",
   label: "All Day Room",
-  availability: [
-    { weekdays: [1, 2, 3, 4, 5, 6, 7], startTime: "00:00", endTime: "24:00" },
-  ],
+  calendarId: workingHours({
+    weekdays: [1, 2, 3, 4, 5, 6, 7],
+    startTime: "00:00",
+    endTime: "24:00",
+  }),
 };
 
 const noAvailabilityResource: TestResource = {
@@ -439,9 +459,11 @@ describe("CalendarCore", () => {
       const weekendOnlyResource: TestResource = {
         id: "r-wknd",
         label: "Weekend Only",
-        availability: [
-          { weekdays: [6, 7], startTime: "09:00", endTime: "17:00" },
-        ],
+        calendarId: workingHours({
+          weekdays: [6, 7],
+          startTime: "09:00",
+          endTime: "17:00",
+        }),
       };
 
       const cal = createTestCalendar({
@@ -555,7 +577,7 @@ describe("CalendarCore", () => {
       expect(cal.getUnavailabilityDetails(DATE_MON, 0, 1440)).toHaveLength(0);
     });
 
-    test("returns no-availability for resource without availability config", () => {
+    test("returns no-calendar for a resource that references none", () => {
       const cal = createTestCalendar({
         resources: [noAvailabilityResource],
       });
@@ -565,17 +587,32 @@ describe("CalendarCore", () => {
       });
 
       expect(details).toHaveLength(1);
-      expect(details[0]!.reason).toBe("no-availability");
+      expect(details[0]!.reason).toBe("no-calendar");
       expect(details[0]!.resourceId).toBe("r4");
+    });
+
+    test("falls back to the project calendar when a resource names none", () => {
+      const cal = createTestCalendar({
+        resources: [noAvailabilityResource],
+        defaultCalendarId: weekdayResource.calendarId,
+      });
+
+      expect(
+        cal.getUnavailabilityDetails(DATE_MON, 9 * 60, 10 * 60, {
+          resourceIds: ["r4"],
+        }),
+      ).toEqual([]);
     });
 
     test("returns outside-hours when resource not available on that weekday", () => {
       const weekendResource: TestResource = {
         id: "r-wknd",
         label: "Weekend Only",
-        availability: [
-          { weekdays: [6, 7], startTime: "09:00", endTime: "17:00" },
-        ],
+        calendarId: workingHours({
+          weekdays: [6, 7],
+          startTime: "09:00",
+          endTime: "17:00",
+        }),
       };
 
       const cal = createTestCalendar({
@@ -768,9 +805,11 @@ describe("CalendarCore", () => {
           id: "r-cap",
           label: "Capacity 1",
           capacity: [1],
-          availability: [
-            { weekdays: [1, 2, 3, 4, 5], startTime: "09:00", endTime: "17:00" },
-          ],
+          calendarId: workingHours({
+            weekdays: [1, 2, 3, 4, 5],
+            startTime: "09:00",
+            endTime: "17:00",
+          }),
         };
 
         const cal = createTestCalendar({
@@ -812,9 +851,11 @@ describe("CalendarCore", () => {
           id: "r-cap",
           label: "Capacity 1",
           capacity: [1],
-          availability: [
-            { weekdays: [1, 2, 3, 4, 5], startTime: "09:00", endTime: "17:00" },
-          ],
+          calendarId: workingHours({
+            weekdays: [1, 2, 3, 4, 5],
+            startTime: "09:00",
+            endTime: "17:00",
+          }),
         };
 
         const cal = createTestCalendar({
@@ -864,9 +905,11 @@ describe("CalendarCore", () => {
           id: "r-cap",
           label: "Capacity 1",
           capacity: [1],
-          availability: [
-            { weekdays: [1, 2, 3, 4, 5], startTime: "09:00", endTime: "17:00" },
-          ],
+          calendarId: workingHours({
+            weekdays: [1, 2, 3, 4, 5],
+            startTime: "09:00",
+            endTime: "17:00",
+          }),
         };
 
         const cal = createTestCalendar({
@@ -912,9 +955,11 @@ describe("CalendarCore", () => {
           id: "r-cap",
           label: "Capacity 3",
           capacity: [3],
-          availability: [
-            { weekdays: [1, 2, 3, 4, 5], startTime: "09:00", endTime: "17:00" },
-          ],
+          calendarId: workingHours({
+            weekdays: [1, 2, 3, 4, 5],
+            startTime: "09:00",
+            endTime: "17:00",
+          }),
         };
 
         const cal = createTestCalendar({
@@ -2403,9 +2448,11 @@ describe("CalendarCore", () => {
       id: "r-cap",
       label: "Capacity Room",
       capacity: [1],
-      availability: [
-        { weekdays: [1, 2, 3, 4, 5], startTime: "09:00", endTime: "17:00" },
-      ],
+      calendarId: workingHours({
+        weekdays: [1, 2, 3, 4, 5],
+        startTime: "09:00",
+        endTime: "17:00",
+      }),
     };
 
     describe("validateEventPlacement", () => {
@@ -2560,9 +2607,11 @@ describe("CalendarCore", () => {
           id: "r-multi",
           label: "Multi",
           capacity: [1, 2],
-          availability: [
-            { weekdays: [1, 2, 3, 4, 5], startTime: "09:00", endTime: "17:00" },
-          ],
+          calendarId: workingHours({
+            weekdays: [1, 2, 3, 4, 5],
+            startTime: "09:00",
+            endTime: "17:00",
+          }),
         };
 
         const cal = createTestCalendar({
@@ -5441,9 +5490,11 @@ describe("CalendarCore", () => {
           id: "r-zero",
           label: "Zero",
           capacity: [0],
-          availability: [
-            { weekdays: [1, 2, 3, 4, 5], startTime: "09:00", endTime: "17:00" },
-          ],
+          calendarId: workingHours({
+            weekdays: [1, 2, 3, 4, 5],
+            startTime: "09:00",
+            endTime: "17:00",
+          }),
         };
 
         const cal = createTestCalendar({ resources: [zeroCapResource] });
@@ -5463,9 +5514,11 @@ describe("CalendarCore", () => {
           id: "r-cap",
           label: "Cap1",
           capacity: [1],
-          availability: [
-            { weekdays: [1, 2, 3, 4, 5], startTime: "09:00", endTime: "17:00" },
-          ],
+          calendarId: workingHours({
+            weekdays: [1, 2, 3, 4, 5],
+            startTime: "09:00",
+            endTime: "17:00",
+          }),
         };
 
         const cal = createTestCalendar({
@@ -6002,9 +6055,11 @@ describe("CalendarCore", () => {
         id: "r-cap",
         label: "Cap",
         capacity: [1],
-        availability: [
-          { weekdays: [1, 2, 3, 4, 5], startTime: "09:00", endTime: "17:00" },
-        ],
+        calendarId: workingHours({
+          weekdays: [1, 2, 3, 4, 5],
+          startTime: "09:00",
+          endTime: "17:00",
+        }),
       };
       const cal = createTestCalendar({
         resources: [res],
@@ -6224,13 +6279,11 @@ describe("CalendarCore", () => {
         id: "rec-room",
         label: "Recurring Room",
         capacity: [1],
-        availability: [
-          {
-            weekdays: [1, 2, 3, 4, 5, 6, 7],
-            startTime: "00:00",
-            endTime: "24:00",
-          },
-        ],
+        calendarId: workingHours({
+          weekdays: [1, 2, 3, 4, 5, 6, 7],
+          startTime: "00:00",
+          endTime: "24:00",
+        }),
       };
       const cal = createTestCalendar({
         resources: [room],
@@ -6352,13 +6405,11 @@ describe("CalendarCore", () => {
       const dayShiftRoom: TestResource = {
         id: "rec-shift",
         label: "Day Shift Room",
-        availability: [
-          {
-            weekdays: [1, 2, 3, 4, 5, 6, 7],
-            startTime: "09:00",
-            endTime: "17:00",
-          },
-        ],
+        calendarId: workingHours({
+          weekdays: [1, 2, 3, 4, 5, 6, 7],
+          startTime: "09:00",
+          endTime: "17:00",
+        }),
       };
       const cal = createTestCalendar({
         resources: [dayShiftRoom],
@@ -6435,7 +6486,11 @@ describe("CalendarCore", () => {
     const mondayOnlyResource: TestResource = {
       id: "r-mon",
       label: "Monday Room",
-      availability: [{ weekdays: [1], startTime: "09:00", endTime: "17:00" }],
+      calendarId: workingHours({
+        weekdays: [1],
+        startTime: "09:00",
+        endTime: "17:00",
+      }),
     };
 
     test("renders a recurring occurrence that violates resource availability", () => {

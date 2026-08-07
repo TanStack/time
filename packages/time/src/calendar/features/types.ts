@@ -1,5 +1,6 @@
 import type { Temporal } from "@js-temporal/polyfill";
 import type { LayoutOptions } from "~/projection";
+import type { WorkingTimeConfig } from "~/validation/availability";
 import type {
   IntentOp,
   InvertibleOp,
@@ -27,6 +28,7 @@ export interface CalendarHost<
   getOptions: () => {
     timeZone: Temporal.TimeZoneLike;
     resources: Array<TResource> | null;
+    workingTime: WorkingTimeConfig;
     layout?: LayoutOptions;
   };
   getEventMap: (window?: {
@@ -72,6 +74,7 @@ export interface CalendarHost<
 export interface FeatureModuleCtx<TResource extends Resource = Resource> {
   timeZone: Temporal.TimeZoneLike;
   getResources: () => Array<TResource>;
+  getWorkingTime: () => WorkingTimeConfig;
 }
 
 export interface CalendarFeature<

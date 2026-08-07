@@ -191,6 +191,60 @@ describe("resolveDayMinutes", () => {
     ]);
   });
 
+  it("lets a project shutdown override a child's recurring shift", () => {
+    const calendars: Array<WorkingCalendar> = [
+      {
+        id: "project",
+        intervals: [{ isWorking: false, startDate: MONDAY, endDate: TUESDAY }],
+      },
+      {
+        id: "ana",
+        parentId: "project",
+        intervals: [
+          {
+            isWorking: true,
+            recurrent: {
+              weekdays: [1, 2, 3, 4, 5],
+              startTime: "09:00",
+              endTime: "17:00",
+            },
+          },
+        ],
+      },
+    ];
+
+    expect(resolveDayMinutes("ana", MONDAY, calendars)).toEqual([]);
+    expect(resolveDayMinutes("ana", "2026-01-07", calendars)).toEqual([
+      { startMinutes: 540, endMinutes: 1020 },
+    ]);
+  });
+
+  it("lets a child's dated exception win over a parent's dated shutdown", () => {
+    const calendars: Array<WorkingCalendar> = [
+      {
+        id: "project",
+        intervals: [{ isWorking: false, startDate: MONDAY, endDate: MONDAY }],
+      },
+      {
+        id: "ana",
+        parentId: "project",
+        intervals: [
+          {
+            isWorking: true,
+            startDate: MONDAY,
+            endDate: MONDAY,
+            startTime: "10:00",
+            endTime: "12:00",
+          },
+        ],
+      },
+    ];
+
+    expect(resolveDayMinutes("ana", MONDAY, calendars)).toEqual([
+      { startMinutes: 600, endMinutes: 720 },
+    ]);
+  });
+
   it("resolves a three-level chain most-specific-wins", () => {
     const calendars: Array<WorkingCalendar> = [
       officeWeek,

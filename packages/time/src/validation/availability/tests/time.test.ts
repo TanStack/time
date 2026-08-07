@@ -1,13 +1,50 @@
 import { describe, expect, it } from "vitest";
 import {
+  effectiveCalendarId,
   getUnavailabilityDetails,
   parseHmToMinutes,
   resourceDayWorkingTime,
   type MinuteRange,
   type ResourceDayWorkingTime,
+  type WorkingTimeConfig,
 } from "../index";
 
 const MONDAY = "2026-01-05";
+
+const workingTime: WorkingTimeConfig = {
+  calendars: [
+    {
+      id: "office",
+      intervals: [
+        {
+          isWorking: true,
+          recurrent: {
+            weekdays: [1],
+            startTime: "09:00",
+            endTime: "12:00",
+          },
+        },
+        {
+          isWorking: true,
+          recurrent: {
+            weekdays: [1],
+            startTime: "11:00",
+            endTime: "17:00",
+          },
+        },
+        {
+          isWorking: true,
+          recurrent: {
+            weekdays: [2],
+            startTime: "09:00",
+            endTime: "10:00",
+          },
+        },
+      ],
+    },
+    { id: "closed", intervals: [] },
+  ],
+};
 
 describe("time helpers", () => {
   it("parseHmToMinutes converts HH:mm to minutes", () => {
@@ -16,14 +53,11 @@ describe("time helpers", () => {
     expect(parseHmToMinutes("23:59")).toBe(1439);
   });
 
-  it("resourceDayWorkingTime merges overlapping slots and derives gaps", () => {
+  it("resourceDayWorkingTime merges overlapping intervals and derives gaps", () => {
     const info: ResourceDayWorkingTime = resourceDayWorkingTime(
-      [
-        { weekdays: [1], startTime: "09:00", endTime: "12:00" },
-        { weekdays: [1], startTime: "11:00", endTime: "17:00" },
-        { weekdays: [2], startTime: "09:00", endTime: "10:00" },
-      ],
+      { calendarId: "office" },
       MONDAY,
+      workingTime,
     );
 
     expect(info.working).toEqual<Array<MinuteRange>>([
@@ -36,37 +70,40 @@ describe("time helpers", () => {
     expect(info.configured).toBe(true);
   });
 
-  it("resourceDayWorkingTime joins adjacent slots into one working range", () => {
-    const info = resourceDayWorkingTime(
-      [
-        { weekdays: [1], startTime: "09:00", endTime: "12:00" },
-        { weekdays: [1], startTime: "12:00", endTime: "17:00" },
-      ],
-      MONDAY,
-    );
-
-    expect(info.working).toEqual<Array<MinuteRange>>([
-      { startMinutes: 540, endMinutes: 1020 },
-    ]);
-  });
-
-  it("resourceDayWorkingTime separates configured-but-closed from unconfigured", () => {
-    expect(resourceDayWorkingTime(undefined, MONDAY)).toEqual({
+  it("resourceDayWorkingTime separates a closed calendar from a missing one", () => {
+    expect(resourceDayWorkingTime({}, MONDAY, workingTime)).toEqual({
       working: [],
       nonWorking: [{ startMinutes: 0, endMinutes: 1440 }],
       configured: false,
     });
-    expect(resourceDayWorkingTime([], MONDAY).configured).toBe(true);
+    expect(
+      resourceDayWorkingTime({ calendarId: "closed" }, MONDAY, workingTime)
+        .configured,
+    ).toBe(true);
   });
 
-  it("getUnavailabilityDetails reports no-availability for unconfigured resources", () => {
+  it("effectiveCalendarId prefers the resource's own calendar", () => {
+    expect(
+      effectiveCalendarId(
+        { calendarId: "office" },
+        { ...workingTime, defaultCalendarId: "closed" },
+      ),
+    ).toBe("office");
+    expect(
+      effectiveCalendarId({}, { ...workingTime, defaultCalendarId: "closed" }),
+    ).toBe("closed");
+    expect(effectiveCalendarId({}, workingTime)).toBeUndefined();
+  });
+
+  it("getUnavailabilityDetails reports no-calendar for unreferenced resources", () => {
     const details = getUnavailabilityDetails(
       [{ id: "r1", label: "Room 1" }],
-      "2026-01-05",
+      MONDAY,
       600,
       660,
+      workingTime,
     );
     expect(details).toHaveLength(1);
-    expect(details[0]!.reason).toBe("no-availability");
+    expect(details[0]!.reason).toBe("no-calendar");
   });
 });

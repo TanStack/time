@@ -11,6 +11,7 @@ import type {
   AvailabilityConflict,
   MinuteRange,
 } from "~/validation/availability";
+import type { WorkingCalendar } from "~/workingTime";
 import type { UnavailableRange } from "~/projection";
 import type { UnavailableTimeRange } from "../getResizeProps";
 import type { Event, Resource } from "../types";
@@ -19,7 +20,7 @@ import type { CalendarFeature, CalendarHost } from "./types";
 export interface UnavailabilityDetail {
   resourceId: string;
   resourceLabel: string;
-  reason: "outside-hours" | "capacity" | "no-availability";
+  reason: "outside-hours" | "capacity" | "no-calendar";
   description: string;
 }
 
@@ -78,14 +79,19 @@ export function resourceAvailabilityFeature<
 > {
   const minuteCache = new Map<string, Array<MinuteRange>>();
   let cachedFor: Array<TResource> | null = null;
+  let cachedForCalendars: Array<WorkingCalendar> | null | undefined = undefined;
 
   const resourcesOf = (
     host: CalendarHost<TResource, TEvent>,
   ): Array<TResource> | null => {
-    const resources = host.getOptions().resources;
-    if (resources !== cachedFor) {
+    const { resources, workingTime } = host.getOptions();
+    if (
+      resources !== cachedFor ||
+      workingTime.calendars !== cachedForCalendars
+    ) {
       minuteCache.clear();
       cachedFor = resources;
+      cachedForCalendars = workingTime.calendars;
     }
     return resources;
   };
@@ -116,7 +122,12 @@ export function resourceAvailabilityFeature<
     const cached = minuteCache.get(cacheKey);
     if (cached) return cached;
 
-    const merged = mergeUnavailableMinuteRanges(allResources, date, ids);
+    const merged = mergeUnavailableMinuteRanges(
+      allResources,
+      date,
+      host.getOptions().workingTime,
+      ids,
+    );
     if (merged === null) return null;
 
     minuteCache.set(cacheKey, merged);
@@ -141,6 +152,7 @@ export function resourceAvailabilityFeature<
       date,
       startMinutes,
       endMinutes,
+      host.getOptions().workingTime,
     );
   };
 
@@ -169,6 +181,7 @@ export function resourceAvailabilityFeature<
     module: (ctx) =>
       availabilityModule<TEvent & KernelEvent>({
         resources: () => ctx.getResources(),
+        workingTime: () => ctx.getWorkingTime(),
       }),
     api: (host, module) => ({
       getUnavailableRanges: (date, options) => {
@@ -199,6 +212,7 @@ export function resourceAvailabilityFeature<
           startMinutes: options.startMinutes,
           endMinutes: options.endMinutes,
           resources,
+          workingTime: host.getOptions().workingTime,
           consumption: selfEvent?.consumption,
           otherEvents: host
             .getEventsByDate(options.date)

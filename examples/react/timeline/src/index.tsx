@@ -54,6 +54,7 @@ import type {
   Resource,
   TimelineLayout,
   TimelineResourceRow,
+  WorkingCalendar,
 } from "@tanstack/time";
 import type { Connection, Edge, Node, NodeProps } from "@xyflow/react";
 
@@ -166,46 +167,79 @@ const RESOURCE_ZONE_COLORS = [
   "#06b6d455",
 ];
 
+const shift = (
+  id: string,
+  ...slots: Array<{
+    weekdays: Array<number>;
+    startTime: string;
+    endTime: string;
+  }>
+): WorkingCalendar => ({
+  id,
+  parentId: "company",
+  intervals: slots.map((recurrent) => ({ isWorking: true, recurrent })),
+});
+
+const workingCalendars: Array<WorkingCalendar> = [
+  {
+    id: "company",
+    label: "Company",
+    intervals: [
+      { isWorking: false, startDate: "2026-12-24", endDate: "2026-12-31" },
+    ],
+  },
+  shift(
+    "shift-design",
+    { weekdays: [1, 2, 3, 4], startTime: "09:00", endTime: "17:00" },
+    { weekdays: [5], startTime: "09:00", endTime: "13:00" },
+  ),
+  shift("shift-frontend", {
+    weekdays: [1, 2, 3, 4, 5],
+    startTime: "08:00",
+    endTime: "24:00",
+  }),
+  shift(
+    "shift-backend",
+    { weekdays: [1, 2, 3], startTime: "10:00", endTime: "19:00" },
+    { weekdays: [4, 5], startTime: "00:00", endTime: "24:00" },
+  ),
+  shift(
+    "shift-qa",
+    { weekdays: [1, 2, 3], startTime: "09:00", endTime: "17:00" },
+    { weekdays: [4, 5], startTime: "10:00", endTime: "15:00" },
+  ),
+  shift(
+    "shift-devops",
+    { weekdays: [1, 2, 3, 4, 5], startTime: "07:00", endTime: "16:00" },
+    { weekdays: [6, 7], startTime: "10:00", endTime: "14:00" },
+  ),
+];
+
 const resourceDesign: Resource = {
   id: "design",
   label: "Design",
-  availability: [
-    { weekdays: [1, 2, 3, 4], startTime: "09:00", endTime: "17:00" },
-    { weekdays: [5], startTime: "09:00", endTime: "13:00" },
-  ],
+  calendarId: "shift-design",
 };
 const resourceFrontend: Resource = {
   id: "frontend",
   label: "Frontend",
-  availability: [
-    { weekdays: [1, 2, 3, 4], startTime: "08:00", endTime: "24:00" },
-    { weekdays: [5], startTime: "08:00", endTime: "24:00" },
-  ],
+  calendarId: "shift-frontend",
 };
 const resourceBackend: Resource = {
   id: "backend",
   label: "Backend",
   capacity: [2, 3, 5],
-  availability: [
-    { weekdays: [1, 2, 3], startTime: "10:00", endTime: "19:00" },
-    { weekdays: [4, 5], startTime: "00:00", endTime: "24:00" },
-  ],
+  calendarId: "shift-backend",
 };
 const resourceQA: Resource = {
   id: "qa",
   label: "QA",
-  availability: [
-    { weekdays: [1, 2, 3], startTime: "09:00", endTime: "17:00" },
-    { weekdays: [4, 5], startTime: "10:00", endTime: "15:00" },
-  ],
+  calendarId: "shift-qa",
 };
 const resourceDevOps: Resource = {
   id: "devops",
   label: "DevOps",
-  availability: [
-    { weekdays: [1, 2, 3, 4, 5], startTime: "07:00", endTime: "16:00" },
-    { weekdays: [6, 7], startTime: "10:00", endTime: "14:00" },
-  ],
+  calendarId: "shift-devops",
 };
 
 const sampleResources: Array<Resource> = [
@@ -1432,6 +1466,7 @@ function TimelineDemo() {
     viewMode: { value: 1, unit: "week" },
     events: [],
     resources: sampleResources,
+    calendars: workingCalendars,
     timeZone: "UTC",
     fetchEvents: async ({ start, end }) => {
       await new Promise((resolve) => setTimeout(resolve, 800));

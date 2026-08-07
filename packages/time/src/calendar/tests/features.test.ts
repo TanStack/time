@@ -16,6 +16,7 @@ import type {
   RecurrenceReadApi,
 } from "../features";
 import type { Event, Resource } from "../types";
+import type { RecurrentWorkingInterval, WorkingCalendar } from "~/workingTime";
 
 type TestResource = Resource;
 type TestEvent = Event<TestResource>;
@@ -59,16 +60,31 @@ function createTestCalendar<TFeatures extends CalendarFeatureList>(
     timeZone: "UTC",
     events,
     resources,
+    calendars: testCalendars,
     features,
   });
+}
+
+const testCalendars: Array<WorkingCalendar> = [];
+let calendarSeq = 0;
+
+function workingHours(...slots: Array<RecurrentWorkingInterval>): string {
+  const id = `wc-${++calendarSeq}`;
+  testCalendars.push({
+    id,
+    intervals: slots.map((recurrent) => ({ isWorking: true, recurrent })),
+  });
+  return id;
 }
 
 const morningRoom: TestResource = {
   id: "r1",
   label: "Morning Room",
-  availability: [
-    { weekdays: [1, 2, 3, 4, 5], startTime: "08:00", endTime: "12:00" },
-  ],
+  calendarId: workingHours({
+    weekdays: [1, 2, 3, 4, 5],
+    startTime: "08:00",
+    endTime: "12:00",
+  }),
 };
 
 const eveningEvent: TestEvent = {

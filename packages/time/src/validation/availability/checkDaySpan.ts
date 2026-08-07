@@ -6,7 +6,7 @@ import type {
   AvailabilityConflict,
   AvailabilityResourceInput,
 } from "./checkAvailability";
-import type { MinuteRange } from "./time";
+import type { MinuteRange, WorkingTimeConfig } from "./time";
 
 export interface DaySpanEvent {
   id: string;
@@ -21,6 +21,7 @@ export interface CheckDaySpanInput {
   startMinutes: number;
   endMinutes: number;
   resources: Array<AvailabilityResourceInput>;
+  workingTime: WorkingTimeConfig;
   otherEvents?: Array<DaySpanEvent>;
   consumption?: Array<number>;
 }
@@ -34,7 +35,7 @@ const sum = (values: Array<number>): number =>
 export function checkDaySpan(
   input: CheckDaySpanInput,
 ): Array<AvailabilityConflict> {
-  const { date, startMinutes, endMinutes, resources } = input;
+  const { date, startMinutes, endMinutes, resources, workingTime } = input;
   if (resources.length === 0) return [];
 
   const span = { startMinutes, endMinutes };
@@ -45,15 +46,19 @@ export function checkDaySpan(
     date,
     startMinutes,
     endMinutes,
+    workingTime,
   );
-  for (const range of mergeUnavailableMinuteRanges(resources, date) ?? []) {
+  const unavailable =
+    mergeUnavailableMinuteRanges(resources, date, workingTime) ?? [];
+
+  for (const range of unavailable) {
     if (!overlaps(range, span)) continue;
 
     const blocking = details.filter((detail) => {
       const resource = resources.find((r) => r.id === detail.resourceId);
       if (!resource) return false;
 
-      const slots = resourceDayWorkingTime(resource.availability, date).working;
+      const slots = resourceDayWorkingTime(resource, date, workingTime).working;
       if (slots.length === 0) return true;
 
       return !slots.some((slot) => overlaps(slot, range));

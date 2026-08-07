@@ -4,13 +4,36 @@ import {
   type AvailabilityResourceInput,
   type AvailabilityTargetEvent,
   type CheckAvailabilityInput,
+  type WorkingTimeConfig,
 } from "../index";
+import type { RecurrentWorkingInterval, WorkingCalendar } from "~/workingTime";
+
+const hours = (
+  id: string,
+  ...slots: Array<RecurrentWorkingInterval>
+): WorkingCalendar => ({
+  id,
+  intervals: slots.map((recurrent) => ({ isWorking: true, recurrent })),
+});
 
 const nineToFive: AvailabilityResourceInput = {
   id: "r1",
   label: "Room 1",
-  availability: [
-    { weekdays: [1, 2, 3, 4, 5], startTime: "09:00", endTime: "17:00" },
+  calendarId: "office",
+};
+
+const workingTime: WorkingTimeConfig = {
+  calendars: [
+    hours("office", {
+      weekdays: [1, 2, 3, 4, 5],
+      startTime: "09:00",
+      endTime: "17:00",
+    }),
+    hours("open", {
+      weekdays: [1, 2, 3, 4, 5],
+      startTime: "00:00",
+      endTime: "23:59",
+    }),
   ],
 };
 
@@ -22,7 +45,11 @@ describe("checkAvailability", () => {
       start: "2026-01-05T10:00:00",
       end: "2026-01-05T11:00:00",
     };
-    const input: CheckAvailabilityInput = { event, resources: [nineToFive] };
+    const input: CheckAvailabilityInput = {
+      event,
+      resources: [nineToFive],
+      workingTime,
+    };
     const conflicts = checkAvailability(input);
     expect(conflicts).toHaveLength(0);
   });
@@ -36,12 +63,13 @@ describe("checkAvailability", () => {
         end: "2026-01-05T18:00:00",
       },
       resources: [nineToFive],
+      workingTime,
     });
     expect(conflicts).toHaveLength(1);
     expect(conflicts[0]!.resourceDetails[0]!.reason).toBe("outside-hours");
   });
 
-  it("flags no-availability when a resource has none configured", () => {
+  it("flags no-calendar when a resource references none", () => {
     const conflicts = checkAvailability({
       event: {
         id: "e1",
@@ -50,9 +78,39 @@ describe("checkAvailability", () => {
         end: "2026-01-05T11:00:00",
       },
       resources: [{ id: "r2", label: "Unconfigured" }],
+      workingTime,
     });
     expect(conflicts).toHaveLength(1);
-    expect(conflicts[0]!.resourceDetails[0]!.reason).toBe("no-availability");
+    expect(conflicts[0]!.resourceDetails[0]!.reason).toBe("no-calendar");
+  });
+
+  it("flags no-calendar when the referenced calendar does not exist", () => {
+    const conflicts = checkAvailability({
+      event: {
+        id: "e1",
+        title: "Any",
+        start: "2026-01-05T10:00:00",
+        end: "2026-01-05T11:00:00",
+      },
+      resources: [{ id: "r2", label: "Dangling", calendarId: "gone" }],
+      workingTime,
+    });
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0]!.resourceDetails[0]!.reason).toBe("no-calendar");
+  });
+
+  it("falls back to the default calendar when a resource names none", () => {
+    const conflicts = checkAvailability({
+      event: {
+        id: "e1",
+        title: "Standup",
+        start: "2026-01-05T10:00:00",
+        end: "2026-01-05T11:00:00",
+      },
+      resources: [{ id: "r2", label: "Inherits" }],
+      workingTime: { ...workingTime, defaultCalendarId: "office" },
+    });
+    expect(conflicts).toHaveLength(0);
   });
 
   it("returns no conflict when there are no resources", () => {
@@ -64,6 +122,7 @@ describe("checkAvailability", () => {
         end: "2026-01-05T11:00:00",
       },
       resources: [],
+      workingTime,
     });
     expect(conflicts).toHaveLength(0);
   });
@@ -72,9 +131,7 @@ describe("checkAvailability", () => {
     const capped: AvailabilityResourceInput = {
       id: "r1",
       label: "Room 1",
-      availability: [
-        { weekdays: [1, 2, 3, 4, 5], startTime: "00:00", endTime: "23:59" },
-      ],
+      calendarId: "open",
       capacity: [2],
     };
 
@@ -86,6 +143,7 @@ describe("checkAvailability", () => {
         end: "2026-01-05T11:00:00",
       },
       resources: [capped],
+      workingTime,
       consumption: [2],
       otherEvents: [
         {
@@ -111,9 +169,7 @@ describe("checkAvailability", () => {
     const capped: AvailabilityResourceInput = {
       id: "r1",
       label: "Room 1",
-      availability: [
-        { weekdays: [1, 2, 3, 4, 5], startTime: "00:00", endTime: "23:59" },
-      ],
+      calendarId: "open",
       capacity: [2],
     };
 
@@ -125,6 +181,7 @@ describe("checkAvailability", () => {
         end: "2026-01-05T11:00:00",
       },
       resources: [capped],
+      workingTime,
       consumption: [2],
       otherEvents: [
         {

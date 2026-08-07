@@ -16,12 +16,29 @@ interface CalEvent extends KernelEvent {
 const room: AvailabilityModuleResource = {
   id: "r1",
   label: "Room 1",
-  availability: [
-    { weekdays: [1, 2, 3, 4, 5], startTime: "09:00", endTime: "17:00" },
-  ],
+  calendarId: "office",
 };
 
-const options: AvailabilityModuleOptions = { resources: [room] };
+const options: AvailabilityModuleOptions = {
+  resources: [room],
+  workingTime: {
+    calendars: [
+      {
+        id: "office",
+        intervals: [
+          {
+            isWorking: true,
+            recurrent: {
+              weekdays: [1, 2, 3, 4, 5],
+              startTime: "09:00",
+              endTime: "17:00",
+            },
+          },
+        ],
+      },
+    ],
+  },
+};
 
 const makeKernel = () =>
   new Kernel<CalEvent>().use(availabilityModule<CalEvent>(options));

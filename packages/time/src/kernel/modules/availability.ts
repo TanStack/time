@@ -4,6 +4,7 @@ import {
   type AvailabilityConflict,
   type AvailabilityOtherEvent,
   type AvailabilityResourceInput,
+  type WorkingTimeConfig,
 } from "~/validation/availability";
 import type { Conflict, KernelEvent, Module } from "../types";
 
@@ -23,6 +24,7 @@ export interface AvailabilityModuleOptions {
   resources:
     | Array<AvailabilityModuleResource>
     | (() => Array<AvailabilityModuleResource>);
+  workingTime: WorkingTimeConfig | (() => WorkingTimeConfig);
   priority?: number;
 }
 
@@ -77,6 +79,11 @@ export function availabilityModule<E extends KernelEvent>(
       ? options.resources()
       : options.resources;
 
+  const workingTime = (): WorkingTimeConfig =>
+    typeof options.workingTime === "function"
+      ? options.workingTime()
+      : options.workingTime;
+
   const evaluate = (
     event: CalendarLikeEvent,
     others: Array<CalendarLikeEvent>,
@@ -107,6 +114,7 @@ export function availabilityModule<E extends KernelEvent>(
         end: toPlainDateTimeString(event.end),
       },
       resources: resolved,
+      workingTime: workingTime(),
       consumption: event.consumption,
       otherEvents,
     });

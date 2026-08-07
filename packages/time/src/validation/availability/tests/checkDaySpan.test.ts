@@ -1,22 +1,42 @@
 import { describe, expect, it } from "vitest";
 import { checkDaySpan } from "../checkDaySpan";
 import type { AvailabilityResourceInput } from "../checkAvailability";
+import type { WorkingTimeConfig } from "../time";
+import type { RecurrentWorkingInterval, WorkingCalendar } from "~/workingTime";
 
 const MONDAY = "2026-01-05";
 const SATURDAY = "2026-01-10";
 
+const hours = (
+  id: string,
+  ...slots: Array<RecurrentWorkingInterval>
+): WorkingCalendar => ({
+  id,
+  intervals: slots.map((recurrent) => ({ isWorking: true, recurrent })),
+});
+
+const workingTime: WorkingTimeConfig = {
+  calendars: [
+    hours("office", {
+      weekdays: [1, 2, 3, 4, 5],
+      startTime: "09:00",
+      endTime: "17:00",
+    }),
+    hours("desk", { weekdays: [1], startTime: "09:00", endTime: "17:00" }),
+    hours("evening", { weekdays: [1], startTime: "17:00", endTime: "22:00" }),
+  ],
+};
+
 const office: AvailabilityResourceInput = {
   id: "office",
   label: "Office",
-  availability: [
-    { weekdays: [1, 2, 3, 4, 5], startTime: "09:00", endTime: "17:00" },
-  ],
+  calendarId: "office",
 };
 
 const desk: AvailabilityResourceInput = {
   id: "desk",
   label: "Desk",
-  availability: [{ weekdays: [1], startTime: "09:00", endTime: "17:00" }],
+  calendarId: "desk",
   capacity: [2],
 };
 
@@ -28,6 +48,7 @@ describe("checkDaySpan", () => {
         startMinutes: 600,
         endMinutes: 660,
         resources: [office],
+        workingTime,
       }),
     ).toEqual([]);
   });
@@ -38,6 +59,7 @@ describe("checkDaySpan", () => {
       startMinutes: 960,
       endMinutes: 1140,
       resources: [office],
+      workingTime,
     });
 
     expect(conflict).toMatchObject({
@@ -54,6 +76,7 @@ describe("checkDaySpan", () => {
       startMinutes: 0,
       endMinutes: 1440,
       resources: [office],
+      workingTime,
     });
 
     expect(conflicts.map((c) => c.conflictRange)).toEqual([
@@ -68,6 +91,7 @@ describe("checkDaySpan", () => {
       startMinutes: 600,
       endMinutes: 660,
       resources: [office],
+      workingTime,
     });
 
     expect(conflict).toMatchObject({
@@ -82,7 +106,7 @@ describe("checkDaySpan", () => {
     const evening: AvailabilityResourceInput = {
       id: "evening",
       label: "Evening",
-      availability: [{ weekdays: [1], startTime: "17:00", endTime: "22:00" }],
+      calendarId: "evening",
     };
 
     expect(
@@ -91,6 +115,7 @@ describe("checkDaySpan", () => {
         startMinutes: 960,
         endMinutes: 1140,
         resources: [office, evening],
+        workingTime,
       }),
     ).toEqual([]);
   });
@@ -102,6 +127,7 @@ describe("checkDaySpan", () => {
         startMinutes: 0,
         endMinutes: 1440,
         resources: [],
+        workingTime,
       }),
     ).toEqual([]);
   });
@@ -112,6 +138,7 @@ describe("checkDaySpan", () => {
       startMinutes: 600,
       endMinutes: 660,
       resources: [desk],
+      workingTime,
       consumption: [1],
       otherEvents: [
         {
@@ -143,6 +170,7 @@ describe("checkDaySpan", () => {
         startMinutes: 600,
         endMinutes: 660,
         resources: [desk],
+        workingTime,
         consumption: [2],
         otherEvents: [
           {
@@ -170,6 +198,7 @@ describe("checkDaySpan", () => {
       startMinutes: 600,
       endMinutes: 660,
       resources: [desk],
+      workingTime,
       otherEvents: [
         {
           id: "a",
@@ -199,6 +228,7 @@ describe("checkDaySpan", () => {
         startMinutes: 600,
         endMinutes: 660,
         resources: [office],
+        workingTime,
         consumption: [99],
         otherEvents: [
           {

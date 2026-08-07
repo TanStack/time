@@ -5,6 +5,7 @@ import { mergeUnavailableMinuteRanges } from "~/validation/availability";
 import type {
   AvailabilityResourceInput,
   MinuteRange,
+  WorkingTimeConfig,
 } from "~/validation/availability";
 import type { ResizeEdge } from "~/calendar/getResizeProps";
 import type { IntentOp, KernelEvent, Module, WriteOp } from "../types";
@@ -23,6 +24,7 @@ export interface ResizePayload {
 export interface ResizeModuleOptions {
   timeZone: Temporal.TimeZoneLike;
   resources?: Array<AvailabilityResourceInput>;
+  workingTime?: WorkingTimeConfig;
   snapToMinutes?: number;
   minDurationMinutes?: number;
   priority?: number;
@@ -59,6 +61,7 @@ export function resizeModule<E extends KernelEvent>(
       mergeUnavailableMinuteRanges(
         options.resources,
         toPlainDateTimeString(event.start).slice(0, 10),
+        options.workingTime ?? {},
         ids,
       ) ?? []
     );

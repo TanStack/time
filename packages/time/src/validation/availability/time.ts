@@ -1,9 +1,10 @@
 import {
+  hasWorkingCalendar,
   invertMinuteRanges,
   resolveDayMinutes,
   type MinuteRange,
+  type WorkingCalendar,
 } from "~/workingTime";
-import type { WorkingCalendar } from "~/workingTime";
 
 export {
   formatMinutesToTime,
@@ -15,10 +16,13 @@ export {
   type MinuteRange,
 } from "~/workingTime";
 
-export interface AvailabilitySlotInput {
-  weekdays: Array<number>;
-  startTime: string;
-  endTime: string;
+export interface WorkingTimeConfig {
+  calendars?: Array<WorkingCalendar> | null;
+  defaultCalendarId?: string;
+}
+
+export interface CalendarReference {
+  calendarId?: string;
 }
 
 export interface ResourceDayWorkingTime {
@@ -27,37 +31,24 @@ export interface ResourceDayWorkingTime {
   configured: boolean;
 }
 
-const RESOURCE_CALENDAR_ID = "__resource__";
-
-function calendarFromAvailability(
-  availability: Array<AvailabilitySlotInput>,
-): WorkingCalendar {
-  return {
-    id: RESOURCE_CALENDAR_ID,
-    intervals: availability.map((slot) => ({
-      isWorking: true,
-      recurrent: {
-        weekdays: slot.weekdays,
-        startTime: slot.startTime,
-        endTime: slot.endTime,
-      },
-    })),
-  };
+export function effectiveCalendarId(
+  target: CalendarReference,
+  config: WorkingTimeConfig,
+): string | undefined {
+  return target.calendarId ?? config.defaultCalendarId;
 }
 
 export function resourceDayWorkingTime(
-  availability: Array<AvailabilitySlotInput> | undefined,
+  resource: CalendarReference,
   date: string,
+  config: WorkingTimeConfig,
 ): ResourceDayWorkingTime {
-  const working = availability
-    ? resolveDayMinutes(RESOURCE_CALENDAR_ID, date, [
-        calendarFromAvailability(availability),
-      ])
-    : [];
+  const calendarId = effectiveCalendarId(resource, config);
+  const working = resolveDayMinutes(calendarId, date, config.calendars);
 
   return {
     working,
     nonWorking: invertMinuteRanges(working),
-    configured: availability !== undefined,
+    configured: hasWorkingCalendar(calendarId, config.calendars),
   };
 }

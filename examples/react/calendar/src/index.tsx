@@ -28,6 +28,7 @@ import type {
   RecurrenceRule,
   ResizeError,
   Resource,
+  WorkingCalendar,
 } from "@tanstack/time";
 import { Button } from "@/components/ui/button";
 import {
@@ -136,31 +137,26 @@ const overlapModeLabels: Record<OverlapMode, string> = {
   focus: "Focus first",
 };
 
+const workingCalendars: Array<WorkingCalendar> = [
+  {
+    id: "office",
+    label: "Office week",
+    intervals: [
+      {
+        isWorking: true,
+        recurrent: {
+          weekdays: [1, 2, 3, 4, 5],
+          startTime: "00:00",
+          endTime: "24:00",
+        },
+      },
+    ],
+  },
+];
+
 const sampleResources: Array<Resource> = [
-  {
-    id: "room-a",
-    label: "Room A",
-    capacity: [4],
-    availability: [
-      {
-        weekdays: [1, 2, 3, 4, 5],
-        startTime: "00:00",
-        endTime: "24:00",
-      },
-    ],
-  },
-  {
-    id: "room-b",
-    label: "Room B",
-    capacity: [2],
-    availability: [
-      {
-        weekdays: [1, 2, 3, 4, 5],
-        startTime: "00:00",
-        endTime: "24:00",
-      },
-    ],
-  },
+  { id: "room-a", label: "Room A", capacity: [4] },
+  { id: "room-b", label: "Room B", capacity: [2] },
 ];
 
 function getSampleEvents(): Array<Event<Resource>> {
@@ -1178,6 +1174,8 @@ function CalendarView() {
     viewMode: { value: 1, unit: "month" },
     events: [],
     resources,
+    calendars: workingCalendars,
+    defaultCalendarId: "office",
     timeZone: "UTC",
     fetchEvents: async ({ start, end }) => {
       await new Promise((resolve) => setTimeout(resolve, 300));

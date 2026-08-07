@@ -2,6 +2,8 @@ import { Temporal } from "@js-temporal/polyfill";
 import { getTimeClient } from "../client";
 import { bucketByDay } from "~/projection";
 import type { LayoutOptions } from "~/projection";
+import type { WorkingTimeConfig } from "~/validation/availability";
+import type { WorkingCalendar } from "~/workingTime";
 import { normalizeRecurrenceRule } from "~/recurrence";
 import { createKernel } from "~/kernel";
 import { FEATURE_API_OWNERS } from "./features";
@@ -57,6 +59,10 @@ export interface CalendarCoreOptions<
   events?: Array<NoInfer<TEvent>> | null;
 
   resources?: Array<TResource> | null;
+
+  calendars?: Array<WorkingCalendar> | null;
+
+  defaultCalendarId?: string;
 
   fetchEvents?: (range: {
     start: string;
@@ -171,6 +177,8 @@ type ParsedCalendarCoreOptions<
   features: TFeatures;
   events: Array<TEvent> | null;
   resources: Array<TResource> | null;
+  calendars: Array<WorkingCalendar> | null;
+  defaultCalendarId?: string;
   fetchEvents?: (range: {
     start: string;
     end: string;
@@ -230,6 +238,8 @@ export class CalendarCore<
     super(options);
     Object.assign(this.options, {
       resources: options.resources || null,
+      calendars: options.calendars || null,
+      defaultCalendarId: options.defaultCalendarId,
       fetchEvents: options.fetchEvents,
       features: options.features,
     });
@@ -262,6 +272,7 @@ export class CalendarCore<
     const ctx: FeatureModuleCtx<TResource> = {
       timeZone: this.options.timeZone,
       getResources: () => this.options.resources ?? [],
+      getWorkingTime: () => this._workingTime(),
     };
 
     const modules: Record<string, Module<WritableEvent<TEvent>, unknown>> = {};
@@ -371,6 +382,13 @@ export class CalendarCore<
     );
   }
 
+  private _workingTime(): WorkingTimeConfig {
+    return {
+      calendars: this.options.calendars,
+      defaultCalendarId: this.options.defaultCalendarId,
+    };
+  }
+
   private _host(): CalendarHost<TResource, TEvent> {
     return {
       getEvent: (id) => this._eventMap.get(id),
@@ -379,6 +397,7 @@ export class CalendarCore<
       getOptions: () => ({
         timeZone: this.options.timeZone,
         resources: this.options.resources,
+        workingTime: this._workingTime(),
         layout: this.options.layout,
       }),
       getEventMap: (window) => this.getEventMap(window),

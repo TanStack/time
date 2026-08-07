@@ -4,12 +4,14 @@ import {
   MINUTES_IN_DAY,
   resourceDayWorkingTime,
   type MinuteRange,
+  type WorkingTimeConfig,
 } from "./time";
 import type { AvailabilityResourceInput } from "./checkAvailability";
 
 export function mergeUnavailableMinuteRanges(
   resources: Array<AvailabilityResourceInput> | null | undefined,
   date: string,
+  workingTime: WorkingTimeConfig,
   resourceIds?: Array<string>,
 ): Array<MinuteRange> | null {
   if (!resources || resources.length === 0) return null;
@@ -21,9 +23,8 @@ export function mergeUnavailableMinuteRanges(
 
   const available: Array<MinuteRange> = [];
   for (const resource of selected) {
-    if (!resource.availability) continue;
     available.push(
-      ...resourceDayWorkingTime(resource.availability, date).working,
+      ...resourceDayWorkingTime(resource, date, workingTime).working,
     );
   }
 

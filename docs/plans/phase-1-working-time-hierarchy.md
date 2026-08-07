@@ -106,7 +106,7 @@ Two things the write-up above did not pin down and the code had to:
 recurrent → date-bounded recurrent → one-off dated, ties broken by declaration order. So a
 December shutdown listed *before* the working week in the same `intervals` array still wins, which
 is the order data actually arrives in. Without it the model would have made authors sort their own
-config.
+config. (Slice 3 widened this from per-calendar to the whole chain — see below.)
 
 **`getWorkingTime`'s range end is exclusive.** Half-open is the honest convention for a range of
 instants, and it makes the day loop's clipping fall out (`upperBound > lowerBound` skips the end
@@ -153,24 +153,67 @@ means when there is no array to look at: a resource whose `calendarId` resolves 
 no intervals is *configured* and never works, which today's data shape cannot express and today's
 message vocabulary calls `"no-availability"`.
 
-### Slice 3 — the model swap
+### Slice 3 — the model swap ✅
 
 `Resource.calendarId?: string` replaces `Resource.availability`; `CalendarCoreOptions` gains
-`calendars?: Array<WorkingCalendar>` and `defaultCalendarId?: string` (the project calendar —
-referenced when a resource sets none). `Availability` stays exported as the shape of a recurring
-working interval, nested one level down, as the ADR says.
+`calendars?: Array<WorkingCalendar>` and `defaultCalendarId?: string` — the project calendar, used
+whenever a resource names none. Suite green at 1,070.
 
-Calendars reach features the way resources already do — `FeatureModuleCtx.getCalendars()` and
-`CalendarHost.getOptions().calendars` — **not** as a kernel collection. ADR 0008 says "a
+The pure validation core takes a `WorkingTimeConfig` (`{ calendars, defaultCalendarId }`) instead
+of reading slots off each resource: `checkAvailability` and `checkDaySpan` take it in their input
+object, `getUnavailabilityDetails` and `mergeUnavailableMinuteRanges` as a parameter. Bundling the
+two fields is what kept this from being four extra positional arguments, and it is the same object
+`getWorkingTime` will need server-side.
+
+**Writing the examples forced a correction to slice 1's ordering rule.** Specificity was a
+per-calendar sort; the timeline example wanted a company shutdown that applies to five resources
+with different recurring shifts, and under level-dominance every child shift painted straight over
+the parent's holiday. So intervals now sort by specificity **across the whole chain**, level only
+breaking ties: a dated shutdown anywhere in the chain beats a recurring pattern anywhere in it, and
+between two intervals of equal specificity the deeper calendar wins. That is what "a holiday
+overrides your normal week, and your PTO overrides the holiday" means, and it costs one flatMap.
+Both new cases are pinned; every slice-1 test still passes unchanged, which is the evidence the
+rule was widened rather than replaced.
+
+**`"no-availability"` became `"no-calendar"`.** The word the reason named no longer exists in the
+model, and the condition changed shape with it: *no calendar resolves* (no `calendarId`, no
+default, or a dangling id) is `"no-calendar"`, while a calendar that resolves but has no working
+minutes that day is `"outside-hours"`. The old code called an empty `availability: []` array
+"no availability configured"; an empty calendar is now a configured calendar that never opens,
+which is the more useful distinction and the one slice 2 flagged as open.
+
+Calendars reach features the way resources already do — `FeatureModuleCtx.getWorkingTime()` and
+`CalendarHost.getOptions().workingTime` — **not** as a kernel collection. ADR 0008 says "a
 `calendars` collection on the kernel", but ADR 0001 says the kernel is feature-agnostic and owns
 events; resources already ride in through module options for exactly that reason. Recording the
-deviation here rather than quietly picking one.
+deviation rather than quietly picking one. `availabilityModule` and `resizeModule` both take
+`workingTime` as a value-or-thunk, mirroring how they already take `resources`, so `setResources`
+and a swapped `calendars` array are both picked up without remounting — the availability feature's
+minute cache now invalidates on either identity changing, not just resources.
 
-Breaking, and the whole point of landing it pre-alpha. Both examples and every fixture in the
-suite migrate: `availability: [{ weekdays, startTime, endTime }]` becomes a calendar plus a
-`calendarId`. The examples are the honest test of whether the shape is usable — if declaring the
-company week once and a per-person shift on top of it is not obviously nicer there, the model is
-wrong.
+**`Availability` is gone as a name.** ADR 0008 says the shape "remains, nested one level down",
+and it does — `RecurrentWorkingInterval` is the same `{ weekdays, startTime, endTime }` — but
+keeping a second name for it in a breaking release buys nothing but confusion. `WorkingCalendar`,
+`WorkingInterval`, `RecurrentWorkingInterval` and `getWorkingTime` are exported from the package
+root; the resolver is public because ADR 0004/0006 want it callable server-side.
+
+The examples are where the shape had to prove itself, and they took opposite shapes. The **calendar
+example** collapsed to nothing: two rooms that both declared an identical Mon-Fri block now declare
+none, and one `office` calendar is named once as `defaultCalendarId`. The **timeline example**
+keeps five genuinely different shifts, so each is its own calendar with `parentId: "company"`, and
+the parent holds one interval — a Dec 24-31 shutdown that all five inherit and none restates. The
+first case is the duplication ADR 0008 opens with; the second is the hierarchy actually earning its
+keep.
+
+Test fixtures migrated mechanically — a local `workingHours(...slots)` helper pushes a calendar
+into a shared array and returns its generated id, so a resource literal's `availability: [...]`
+became `calendarId: workingHours(...)` with the slots untouched. One assertion changed meaning
+rather than shape (`no-availability` → `no-calendar`), and two tests were added for what the model
+newly makes expressible: the project-calendar fallback, and a resource resolving through its parent
+chain.
+
+The timeline example has one pre-existing type error (`event.resources?.[0]?.id` on a
+`Resource | string` union, unchanged since before this plan); it is not touched here.
 
 ### Slice 4 — event overrides and the intersection policy
 
