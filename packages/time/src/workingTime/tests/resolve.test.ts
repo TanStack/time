@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   getWorkingTime,
+  hasAnyWorkingCalendar,
   hasWorkingCalendar,
   resolveCalendarChain,
   resolveDayMinutes,
+  resolveLayeredDayMinutes,
 } from "../resolve";
 import type { WorkingCalendar } from "../types";
 
@@ -272,6 +274,55 @@ describe("resolveDayMinutes", () => {
     expect(resolveDayMinutes("ana", MONDAY, calendars)).toEqual([
       { startMinutes: 600, endMinutes: 660 },
     ]);
+  });
+});
+
+describe("resolveLayeredDayMinutes", () => {
+  const calendars: Array<WorkingCalendar> = [
+    officeWeek,
+    {
+      id: "late-meeting",
+      intervals: [
+        {
+          isWorking: true,
+          startDate: MONDAY,
+          endDate: MONDAY,
+          startTime: "18:00",
+          endTime: "20:00",
+        },
+      ],
+    },
+    {
+      id: "closed-monday",
+      intervals: [{ isWorking: false, startDate: MONDAY, endDate: MONDAY }],
+    },
+  ];
+
+  it("layers an event calendar over the resource chain", () => {
+    expect(
+      resolveLayeredDayMinutes(["project", "late-meeting"], MONDAY, calendars),
+    ).toEqual([
+      { startMinutes: 540, endMinutes: 1020 },
+      { startMinutes: 1080, endMinutes: 1200 },
+    ]);
+  });
+
+  it("gives the event layer the last word at equal specificity", () => {
+    expect(
+      resolveLayeredDayMinutes(
+        ["closed-monday", "late-meeting"],
+        MONDAY,
+        calendars,
+      ),
+    ).toEqual([{ startMinutes: 1080, endMinutes: 1200 }]);
+  });
+
+  it("ignores layers that resolve to nothing", () => {
+    expect(
+      resolveLayeredDayMinutes([undefined, "project"], MONDAY, calendars),
+    ).toEqual([{ startMinutes: 540, endMinutes: 1020 }]);
+    expect(hasAnyWorkingCalendar([undefined, "project"], calendars)).toBe(true);
+    expect(hasAnyWorkingCalendar([undefined, "gone"], calendars)).toBe(false);
   });
 });
 

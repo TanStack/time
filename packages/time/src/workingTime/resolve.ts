@@ -47,6 +47,15 @@ export function hasWorkingCalendar(
   return resolveCalendarChain(calendarId, calendars).length > 0;
 }
 
+export function hasAnyWorkingCalendar(
+  calendarIds: Array<string | undefined>,
+  calendars: Array<WorkingCalendar> | null | undefined,
+): boolean {
+  return calendarIds.some((calendarId) =>
+    hasWorkingCalendar(calendarId, calendars),
+  );
+}
+
 function specificity(interval: WorkingInterval): number {
   const dated =
     interval.startDate !== undefined || interval.endDate !== undefined;
@@ -83,7 +92,17 @@ export function resolveDayMinutes(
   date: string,
   calendars: Array<WorkingCalendar> | null | undefined,
 ): Array<MinuteRange> {
-  const chain = resolveCalendarChain(calendarId, calendars);
+  return resolveLayeredDayMinutes([calendarId], date, calendars);
+}
+
+export function resolveLayeredDayMinutes(
+  calendarIds: Array<string | undefined>,
+  date: string,
+  calendars: Array<WorkingCalendar> | null | undefined,
+): Array<MinuteRange> {
+  const chain = calendarIds.flatMap((calendarId) =>
+    resolveCalendarChain(calendarId, calendars),
+  );
   if (chain.length === 0) return [];
 
   const day = date.slice(0, 10);

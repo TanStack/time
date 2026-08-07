@@ -591,6 +591,108 @@ describe("CalendarCore", () => {
       expect(details[0]!.resourceId).toBe("r4");
     });
 
+    test("resolves project, resource and event calendars together", () => {
+      const hierarchy: Array<WorkingCalendar> = [
+        {
+          id: "company",
+          label: "Company",
+          intervals: [
+            {
+              isWorking: true,
+              recurrent: {
+                weekdays: [1, 2, 3, 4, 5],
+                startTime: "09:00",
+                endTime: "17:00",
+              },
+            },
+            { isWorking: false, startDate: DATE_TUE, endDate: DATE_TUE },
+          ],
+        },
+        {
+          id: "ana-shift",
+          parentId: "company",
+          intervals: [
+            {
+              isWorking: true,
+              recurrent: {
+                weekdays: [1, 2, 3, 4, 5],
+                startTime: "08:00",
+                endTime: "17:00",
+              },
+            },
+          ],
+        },
+        {
+          id: "after-hours",
+          intervals: [
+            {
+              isWorking: true,
+              startDate: DATE_MON,
+              endDate: DATE_MON,
+              startTime: "17:00",
+              endTime: "19:00",
+            },
+          ],
+        },
+      ];
+
+      const ana: TestResource = {
+        id: "ana",
+        label: "Ana",
+        calendarId: "ana-shift",
+      };
+      const cal = createTestCalendar({
+        resources: [ana],
+        calendars: hierarchy,
+      });
+
+      expect(
+        cal.getUnavailableMinuteRanges(DATE_MON, { resourceIds: ["ana"] }),
+      ).toEqual([
+        { startMinutes: 0, endMinutes: 480 },
+        { startMinutes: 1020, endMinutes: 1440 },
+      ]);
+
+      expect(
+        cal.getUnavailableMinuteRanges(DATE_TUE, { resourceIds: ["ana"] }),
+      ).toEqual([{ startMinutes: 0, endMinutes: 1440 }]);
+
+      const lateEvent = {
+        title: "Late review",
+        start: `${DATE_MON}T17:00:00`,
+        end: `${DATE_MON}T19:00:00`,
+        resources: [ana],
+      };
+
+      expect(cal.validateEventPlacement(lateEvent).blocked).toBe(true);
+      expect(
+        cal.validateEventPlacement({ ...lateEvent, calendarId: "after-hours" })
+          .blocked,
+      ).toBe(false);
+    });
+
+    test("the union policy needs every assigned resource to be closed", () => {
+      const placement = {
+        title: "Evening pairing",
+        start: `${DATE_MON}T17:30:00`,
+        end: `${DATE_MON}T18:30:00`,
+        resources: [weekdayResource, allDayResource],
+      };
+
+      expect(
+        createTestCalendar({
+          resources: [weekdayResource, allDayResource],
+        }).validateEventPlacement(placement).blocked,
+      ).toBe(true);
+
+      expect(
+        createTestCalendar({
+          resources: [weekdayResource, allDayResource],
+          multiResource: "union",
+        }).validateEventPlacement(placement).blocked,
+      ).toBe(false);
+    });
+
     test("falls back to the project calendar when a resource names none", () => {
       const cal = createTestCalendar({
         resources: [noAvailabilityResource],
@@ -6399,6 +6501,54 @@ describe("CalendarCore", () => {
       expect(cal.getEvents()).toHaveLength(1);
       expect(cal.getEvents()[0]!.title).toBe("From The Top");
       expect(cal.getEvents()[0]!.recurrence?.until).toBeUndefined();
+    });
+
+    test("editRecurringEvent with scope thisAndFollowing at the master start clears that occurrence's own override", async () => {
+      const cal = createTestCalendar({ events: [recurringEvent] });
+
+      await cal.editRecurringEvent(
+        "rec-ex",
+        { start: "2025-06-02T09:30:00", end: "2025-06-02T10:30:00" },
+        { scope: "this", occurrenceStart: "2025-06-02T09:00:00" },
+      );
+
+      const result = await cal.editRecurringEvent(
+        "rec-ex",
+        { start: "2025-06-02T09:30:00", end: "2025-06-02T12:00:00" },
+        { scope: "thisAndFollowing", occurrenceStart: "2025-06-02T09:00:00" },
+      );
+
+      expect(result.success).toBe(true);
+      expect(cal.getEvents()[0]!.recurrence?.overrides).toEqual([]);
+      expect(cal.getEventsByDate("2025-06-02")[0]).toMatchObject({
+        start: "2025-06-02T09:30:00",
+        end: "2025-06-02T12:00:00",
+      });
+      expect(cal.getEventsByDate("2025-06-09")[0]).toMatchObject({
+        start: "2025-06-09T09:30:00",
+        end: "2025-06-09T12:00:00",
+      });
+    });
+
+    test("editRecurringEvent with scope thisAndFollowing at the master start keeps later overrides", async () => {
+      const cal = createTestCalendar({ events: [recurringEvent] });
+
+      await cal.editRecurringEvent(
+        "rec-ex",
+        { title: "Moved Later One" },
+        { scope: "this", occurrenceStart: "2025-06-09T09:00:00" },
+      );
+
+      await cal.editRecurringEvent(
+        "rec-ex",
+        { end: "2025-06-02T12:00:00" },
+        { scope: "thisAndFollowing", occurrenceStart: "2025-06-02T09:00:00" },
+      );
+
+      expect(cal.getEvents()[0]!.recurrence?.overrides).toHaveLength(1);
+      expect(cal.getEventsByDate("2025-06-09")[0]!.title).toBe(
+        "Moved Later One",
+      );
     });
 
     test("editRecurringEvent blocks an occurrence moved into unavailable time", async () => {

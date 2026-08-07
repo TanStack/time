@@ -68,6 +68,7 @@ export interface CalendarHost<
     end: string;
     resources?: Array<TResource | string>;
     consumption?: Array<number>;
+    calendarId?: string;
   }) => { blocked: boolean; message?: string };
 }
 

@@ -215,15 +215,42 @@ chain.
 The timeline example has one pre-existing type error (`event.resources?.[0]?.id` on a
 `Resource | string` union, unchanged since before this plan); it is not touched here.
 
-### Slice 4 — event overrides and the intersection policy
+### Slice 4 — event overrides and the intersection policy ✅
 
-`Event.calendarId` — the third layer. When an event names a calendar, that calendar is what the
-event is validated against, layered over the resource's chain rather than replacing it, so an
-override says "this meeting may run late" without restating the working week.
+`Event.calendarId` is the third layer, and it needed one new primitive:
+`resolveLayeredDayMinutes(calendarIds, date, calendars)` concatenates several parent chains into
+one interval list before the existing specificity sort runs. `resolveDayMinutes` is now a one-line
+call into it. Because the sort is global, an event's dated exception outranks every recurring
+pattern beneath it, and at equal specificity the event layer is last and therefore wins — the two
+cases that make "this meeting may run late" work without restating the working week. 1,078 tests.
 
-Multi-resource policy becomes explicit: `intersection` (default, and what the code already does)
-or `union`, as a calendar option. The shading read keeps unioning regardless — it answers "when
-does nobody work", which is a different question from "when can this event run".
+The event calendar rides down the same path the target event already took: `calendarId` on
+`AvailabilityTargetEvent` and `AvailabilityQuery`, and an optional `eventCalendarId` argument on
+`getUnavailabilityDetails`, `checkDaySpan` and `mergeUnavailableMinuteRanges`. The alternative —
+putting it on `WorkingTimeConfig` — would have made a per-event value look like configuration.
+
+**Multi-resource policy is one function, applied once.** `WorkingTimeConfig.multiResource`
+(`"intersection"` default, `"union"`) is consumed by `applyMultiResourcePolicy`, which drops the
+detail list unless every assigned resource produced one. Putting it in `getUnavailabilityDetails`
+rather than in each caller means the veto, the pre-flight and the day-span check cannot disagree
+about it — `checkDaySpan` filters those same details further, so it inherits the policy rather than
+re-implementing it. `CalendarCoreOptions.multiResource` threads it through, with a test at the
+public surface because untested wiring is where this kind of option quietly stops working.
+
+The shading read keeps unioning regardless: `mergeUnavailableMinuteRanges` answers "when does
+nobody work", which is a different question from "when can this event run".
+
+**A layering semantic worth stating plainly, because it surprised the e2e test.** A child calendar
+declaring `08:00-17:00` on top of a parent's `09:00-17:00` yields `08:00-17:00`, not a replacement —
+paint is additive where both say *working*. ADR 0008's own wording ("a child interval overrides the
+parent for the span it covers, otherwise the parent applies") says the same thing, so a resource
+that wants a *shorter* day declares the tail non-working rather than declaring a narrower window.
+The end-to-end test pins it deliberately instead of leaving it as an accident.
+
+That test is the definition-of-done item: one calendar composed with a company calendar (recurring
+week plus a dated shutdown), a resource calendar under it, and an event calendar over both —
+asserting the resource's early start, the shutdown swallowing the whole day for everyone, and an
+after-hours event that places only when it names its override.
 
 ### Slice 5 — `workingTimeFeature`
 
@@ -255,7 +282,7 @@ only composition still links none of it.
 - `getWorkingTime(calendarId, range, calendars)` is pure and serializable both ways — the
   purity test covers `src/workingTime/`, so it can run server-side or as a delegatable stage
   (ADR 0004/0006) without change.
-- A three-level hierarchy resolves correctly through the *public* surface: project shutdown,
+- ✅ A three-level hierarchy resolves correctly through the *public* surface: project shutdown,
   resource shift, event override, verified against a composed calendar rather than the resolver
-  alone.
+  alone (`calendar.test.ts`, "resolves project, resource and event calendars together").
 - A `dayEventLayoutFeature`-only bundle links no working-time code.

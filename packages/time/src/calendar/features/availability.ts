@@ -64,6 +64,7 @@ export interface AvailabilityApi<
     end: string;
     resources?: Array<TResource | string>;
     consumption?: Array<number>;
+    calendarId?: string;
   }) => { blocked: boolean; message?: string };
 }
 
@@ -171,6 +172,7 @@ export function resourceAvailabilityFeature<
       end: newEnd,
       resources: newResources ?? event.resources,
       consumption: newConsumption ?? event.consumption,
+      calendarId: event.calendarId,
     });
 
     return conflict ?? null;
@@ -213,6 +215,7 @@ export function resourceAvailabilityFeature<
           endMinutes: options.endMinutes,
           resources,
           workingTime: host.getOptions().workingTime,
+          eventCalendarId: selfEvent?.calendarId,
           consumption: selfEvent?.consumption,
           otherEvents: host
             .getEventsByDate(options.date)
@@ -253,6 +256,7 @@ export function resourceAvailabilityFeature<
           end: event.end,
           resources: event.resources,
           consumption: event.consumption,
+          calendarId: event.calendarId,
         } as TEvent;
 
         const conflict = conflictOf(

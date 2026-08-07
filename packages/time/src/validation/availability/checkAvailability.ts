@@ -1,5 +1,6 @@
 import { Temporal } from "@js-temporal/polyfill";
 import {
+  applyMultiResourcePolicy,
   formatMinutesToTime,
   MINUTES_IN_DAY,
   resourceDayWorkingTime,
@@ -18,6 +19,7 @@ export interface AvailabilityTargetEvent {
   title: string;
   start: string;
   end: string;
+  calendarId?: string;
 }
 
 export interface AvailabilityOtherEvent {
@@ -66,6 +68,7 @@ export function getUnavailabilityDetails(
   startMinutes: number,
   endMinutes: number,
   workingTime: WorkingTimeConfig,
+  eventCalendarId?: string,
 ): Array<AvailabilityUnavailabilityReason> {
   if (resources.length === 0) return [];
 
@@ -76,6 +79,7 @@ export function getUnavailabilityDetails(
       resource,
       date,
       workingTime,
+      eventCalendarId,
     );
 
     if (!configured) {
@@ -123,7 +127,7 @@ export function getUnavailabilityDetails(
     }
   }
 
-  return details;
+  return applyMultiResourcePolicy(details, resources.length, workingTime);
 }
 
 export function checkAvailability(
@@ -167,6 +171,7 @@ export function checkAvailability(
         overlapStartMins,
         overlapEndMins,
         input.workingTime,
+        event.calendarId,
       );
 
       if (details.length > 0) {

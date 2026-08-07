@@ -7,6 +7,7 @@ import {
   removeOccurrenceIntent,
 } from "~/kernel/modules";
 import {
+  dropOccurrenceExceptions,
   durationPreservingEnd,
   getRecurringOccurrence,
   masterIdOf,
@@ -388,9 +389,24 @@ export function eventRecurrenceFeature<
         }
 
         if (occurrenceStart === toPlainDateTimeString(master.start)) {
-          return host.editEvent(master.id, updates, {
-            dependsOn: options.dependsOn,
-          });
+          const withoutOwnException =
+            recurrenceUpdate != null
+              ? null
+              : dropOccurrenceExceptions<TResource, TEvent>(
+                  master.recurrence,
+                  occurrenceStart,
+                );
+
+          return host.editEvent(
+            master.id,
+            withoutOwnException
+              ? ({
+                  ...updates,
+                  recurrence: withoutOwnException,
+                } as Partial<Omit<TEvent, "id">>)
+              : updates,
+            { dependsOn: options.dependsOn },
+          );
         }
 
         writeOccurrenceEdit(

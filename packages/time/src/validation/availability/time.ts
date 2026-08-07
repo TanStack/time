@@ -1,7 +1,7 @@
 import {
-  hasWorkingCalendar,
+  hasAnyWorkingCalendar,
   invertMinuteRanges,
-  resolveDayMinutes,
+  resolveLayeredDayMinutes,
   type MinuteRange,
   type WorkingCalendar,
 } from "~/workingTime";
@@ -19,6 +19,7 @@ export {
 export interface WorkingTimeConfig {
   calendars?: Array<WorkingCalendar> | null;
   defaultCalendarId?: string;
+  multiResource?: "intersection" | "union";
 }
 
 export interface CalendarReference {
@@ -42,13 +43,23 @@ export function resourceDayWorkingTime(
   resource: CalendarReference,
   date: string,
   config: WorkingTimeConfig,
+  eventCalendarId?: string,
 ): ResourceDayWorkingTime {
-  const calendarId = effectiveCalendarId(resource, config);
-  const working = resolveDayMinutes(calendarId, date, config.calendars);
+  const layers = [effectiveCalendarId(resource, config), eventCalendarId];
+  const working = resolveLayeredDayMinutes(layers, date, config.calendars);
 
   return {
     working,
     nonWorking: invertMinuteRanges(working),
-    configured: hasWorkingCalendar(calendarId, config.calendars),
+    configured: hasAnyWorkingCalendar(layers, config.calendars),
   };
+}
+
+export function applyMultiResourcePolicy<TDetail>(
+  details: Array<TDetail>,
+  resourceCount: number,
+  config: WorkingTimeConfig,
+): Array<TDetail> {
+  if (config.multiResource !== "union") return details;
+  return details.length >= resourceCount ? details : [];
 }

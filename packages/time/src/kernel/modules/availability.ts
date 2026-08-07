@@ -14,6 +14,7 @@ interface CalendarLikeEvent extends KernelEvent {
   title?: string;
   resources?: Array<AvailabilityModuleResource | string>;
   consumption?: Array<number>;
+  calendarId?: string;
   masterId?: string;
   _recurringMasterId?: string;
   _originalStart?: string;
@@ -35,6 +36,7 @@ export interface AvailabilityQuery {
   end: string;
   resources?: Array<AvailabilityModuleResource | string>;
   consumption?: Array<number>;
+  calendarId?: string;
 }
 
 export interface AvailabilityModuleApi {
@@ -112,6 +114,7 @@ export function availabilityModule<E extends KernelEvent>(
         title: event.title ?? event.id,
         start: toPlainDateTimeString(event.start),
         end: toPlainDateTimeString(event.end),
+        calendarId: event.calendarId,
       },
       resources: resolved,
       workingTime: workingTime(),

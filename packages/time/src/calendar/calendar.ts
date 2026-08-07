@@ -64,6 +64,8 @@ export interface CalendarCoreOptions<
 
   defaultCalendarId?: string;
 
+  multiResource?: "intersection" | "union";
+
   fetchEvents?: (range: {
     start: string;
     end: string;
@@ -179,6 +181,7 @@ type ParsedCalendarCoreOptions<
   resources: Array<TResource> | null;
   calendars: Array<WorkingCalendar> | null;
   defaultCalendarId?: string;
+  multiResource?: "intersection" | "union";
   fetchEvents?: (range: {
     start: string;
     end: string;
@@ -240,6 +243,7 @@ export class CalendarCore<
       resources: options.resources || null,
       calendars: options.calendars || null,
       defaultCalendarId: options.defaultCalendarId,
+      multiResource: options.multiResource,
       fetchEvents: options.fetchEvents,
       features: options.features,
     });
@@ -386,6 +390,7 @@ export class CalendarCore<
     return {
       calendars: this.options.calendars,
       defaultCalendarId: this.options.defaultCalendarId,
+      multiResource: this.options.multiResource,
     };
   }
 

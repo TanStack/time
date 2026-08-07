@@ -13,6 +13,7 @@ export function mergeUnavailableMinuteRanges(
   date: string,
   workingTime: WorkingTimeConfig,
   resourceIds?: Array<string>,
+  eventCalendarId?: string,
 ): Array<MinuteRange> | null {
   if (!resources || resources.length === 0) return null;
 
@@ -24,7 +25,8 @@ export function mergeUnavailableMinuteRanges(
   const available: Array<MinuteRange> = [];
   for (const resource of selected) {
     available.push(
-      ...resourceDayWorkingTime(resource, date, workingTime).working,
+      ...resourceDayWorkingTime(resource, date, workingTime, eventCalendarId)
+        .working,
     );
   }
 

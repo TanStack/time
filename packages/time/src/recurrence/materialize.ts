@@ -139,6 +139,41 @@ export function makeSplitRecurringEventId(
   return id;
 }
 
+export function dropOccurrenceExceptions<
+  TResource extends Resource,
+  TEvent extends Event<TResource>,
+>(
+  recurrence: TEvent["recurrence"],
+  occurrenceStart: string,
+): TEvent["recurrence"] | null {
+  if (!recurrence) return null;
+
+  const rule = normalizeRecurrenceRule(recurrence);
+  const exDates = (rule.exDates ?? []).filter(
+    (value) => !recurrenceInputMatchesOccurrence(value, occurrenceStart),
+  );
+  const overrides = (rule.overrides ?? []).filter(
+    (override) =>
+      !recurrenceInputMatchesOccurrence(
+        override.originalStart,
+        occurrenceStart,
+      ),
+  );
+
+  if (
+    exDates.length === (rule.exDates ?? []).length &&
+    overrides.length === (rule.overrides ?? []).length
+  ) {
+    return null;
+  }
+
+  return normalizeRecurrenceRule({
+    ...rule,
+    exDates,
+    overrides,
+  }) as TEvent["recurrence"];
+}
+
 export interface MaterializeEditInput<
   TResource extends Resource,
   TEvent extends Event<TResource>,

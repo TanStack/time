@@ -70,6 +70,8 @@ export interface Event<TResource extends Resource = Resource> {
   resources?: Array<TResource | string>;
   consumption?: Array<number>;
 
+  calendarId?: string;
+
   dependsOn?: Array<EventDependency>;
 
   recurrence?: RecurrenceRule<TResource>;

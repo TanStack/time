@@ -113,6 +113,88 @@ describe("checkAvailability", () => {
     expect(conflicts).toHaveLength(0);
   });
 
+  it("lets an event calendar open time the resource calendar closes", () => {
+    const late = {
+      id: "e1",
+      title: "Late",
+      start: "2026-01-05T18:00:00",
+      end: "2026-01-05T19:00:00",
+    };
+
+    expect(
+      checkAvailability({ event: late, resources: [nineToFive], workingTime }),
+    ).toHaveLength(1);
+
+    expect(
+      checkAvailability({
+        event: { ...late, calendarId: "evening-exception" },
+        resources: [nineToFive],
+        workingTime: {
+          calendars: [
+            ...workingTime.calendars!,
+            {
+              id: "evening-exception",
+              intervals: [
+                {
+                  isWorking: true,
+                  startDate: "2026-01-05",
+                  endDate: "2026-01-05",
+                  startTime: "17:00",
+                  endTime: "20:00",
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    ).toHaveLength(0);
+  });
+
+  it("blocks when any assigned resource is closed, by default", () => {
+    const conflicts = checkAvailability({
+      event: {
+        id: "e1",
+        title: "Pairing",
+        start: "2026-01-05T18:00:00",
+        end: "2026-01-05T19:00:00",
+      },
+      resources: [
+        nineToFive,
+        { id: "r9", label: "Always", calendarId: "open" },
+      ],
+      workingTime,
+    });
+
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0]!.resourceDetails).toHaveLength(1);
+    expect(conflicts[0]!.resourceDetails[0]!.resourceId).toBe("r1");
+  });
+
+  it("blocks under the union policy only when every resource is closed", () => {
+    const union: WorkingTimeConfig = { ...workingTime, multiResource: "union" };
+    const event = {
+      id: "e1",
+      title: "Pairing",
+      start: "2026-01-05T18:00:00",
+      end: "2026-01-05T19:00:00",
+    };
+
+    expect(
+      checkAvailability({
+        event,
+        resources: [
+          nineToFive,
+          { id: "r9", label: "Always", calendarId: "open" },
+        ],
+        workingTime: union,
+      }),
+    ).toHaveLength(0);
+
+    expect(
+      checkAvailability({ event, resources: [nineToFive], workingTime: union }),
+    ).toHaveLength(1);
+  });
+
   it("returns no conflict when there are no resources", () => {
     const conflicts = checkAvailability({
       event: {

@@ -22,6 +22,7 @@ export interface CheckDaySpanInput {
   endMinutes: number;
   resources: Array<AvailabilityResourceInput>;
   workingTime: WorkingTimeConfig;
+  eventCalendarId?: string;
   otherEvents?: Array<DaySpanEvent>;
   consumption?: Array<number>;
 }
@@ -47,9 +48,16 @@ export function checkDaySpan(
     startMinutes,
     endMinutes,
     workingTime,
+    input.eventCalendarId,
   );
   const unavailable =
-    mergeUnavailableMinuteRanges(resources, date, workingTime) ?? [];
+    mergeUnavailableMinuteRanges(
+      resources,
+      date,
+      workingTime,
+      undefined,
+      input.eventCalendarId,
+    ) ?? [];
 
   for (const range of unavailable) {
     if (!overlaps(range, span)) continue;
@@ -58,7 +66,12 @@ export function checkDaySpan(
       const resource = resources.find((r) => r.id === detail.resourceId);
       if (!resource) return false;
 
-      const slots = resourceDayWorkingTime(resource, date, workingTime).working;
+      const slots = resourceDayWorkingTime(
+        resource,
+        date,
+        workingTime,
+        input.eventCalendarId,
+      ).working;
       if (slots.length === 0) return true;
 
       return !slots.some((slot) => overlaps(slot, range));
