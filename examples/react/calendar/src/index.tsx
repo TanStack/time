@@ -634,7 +634,9 @@ function ScheduleView({
   periodDayCount,
   overlapMode,
 }: {
-  calendar: ReturnType<typeof useCalendar<typeof features, Resource, Event<Resource>>>;
+  calendar: ReturnType<
+    typeof useCalendar<typeof features, Resource, Event<Resource>>
+  >;
   days: Array<Day<Resource, Event<Resource>>>;
   resources: Array<Resource>;
   onEventClick: (event: Event<Resource>, scope?: RecurrenceEditScope) => void;
