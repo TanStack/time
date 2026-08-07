@@ -9,7 +9,7 @@ title: calendarFeatures
 function calendarFeatures<TFeatures>(features): TFeatures;
 ```
 
-Defined in: [calendar/features/calendarFeatures.ts:12](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/calendarFeatures.ts#L12)
+Defined in: [calendar/features/calendarFeatures.ts:5](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/calendarFeatures.ts#L5)
 
 ## Type Parameters
 

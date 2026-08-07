@@ -17,6 +17,7 @@ title: "@tanstack/time"
 - [AnyCalendarFeature](interfaces/AnyCalendarFeature.md)
 - [AvailabilityApi](interfaces/AvailabilityApi.md)
 - [AvailabilityConflict](interfaces/AvailabilityConflict.md)
+- [AvailabilityPeers](interfaces/AvailabilityPeers.md)
 - [BuildDaysInput](interfaces/BuildDaysInput.md)
 - [BuiltInFeatureApiRegistry](interfaces/BuiltInFeatureApiRegistry.md)
 - [CalendarCoreOptions](interfaces/CalendarCoreOptions.md)
@@ -122,7 +123,9 @@ title: "@tanstack/time"
 - [ViewMode](interfaces/ViewMode.md)
 - [WorkingCalendar](interfaces/WorkingCalendar.md)
 - [WorkingInterval](interfaces/WorkingInterval.md)
+- [WorkingTimeApi](interfaces/WorkingTimeApi.md)
 - [WorkingTimeRange](interfaces/WorkingTimeRange.md)
+- [WorkingTimeTarget](interfaces/WorkingTimeTarget.md)
 
 ## Type Aliases
 
@@ -248,3 +251,4 @@ title: "@tanstack/time"
 - [toPlainTimeString](functions/toPlainTimeString.md)
 - [toUnavailableRanges](functions/toUnavailableRanges.md)
 - [until](functions/until.md)
+- [workingTimeFeature](functions/workingTimeFeature.md)
