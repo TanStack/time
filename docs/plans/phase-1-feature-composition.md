@@ -7,14 +7,15 @@ the intersection of what was composed.
 
 Slices 1-3 built the seam, moved every gatable method into a feature, and made `features` an
 option. Slices 4-5 gate the *type* and delete the delegates. Slices 6-8 empty core of domain algorithms:
-availability, recurrence reads, the dependency graph walks and `validateResize`.
+availability, recurrence reads, the dependency graph walks and `validateResize`. Slice 9 moves
+availability enforcement into the kernel's write pipeline.
 
 Lands **first** in Phase 1. ADR 0008 (working-time hierarchy) and ADR 0007 (solver fields)
 attach as features (`workingTimeFeature`, `schedulingFeature`), so doing this after them means
 writing them twice.
 
 **Method:** same strangler-fig as Phase 0. The test suite stays green after every slice (1,007 at
-the start of Phase 1, 1,045 now).
+the start of Phase 1, 1,047 now).
 `CalendarCore`'s surface keeps working until slice 5 deliberately removes it — the methods
 become thin delegates to module apis before the composition seam is exposed, so no slice both
 moves logic and changes the public shape.
@@ -441,10 +442,41 @@ loop blocks instead, which is a different branch.
 `computeCascade`, `requiredForwardShiftMs`, `calculateResizedEvent` and `ResizeController` — the only
 match is the owner table's `"createResizeController"` string.
 
+### Slice 9 — availability enforced by the pipeline ✅
+
+`resourceAvailabilityFeature` now mounts `availabilityModule`, so the kernel's validate stage
+vetoes any write that violates availability — including `commitAdd`, `commitUpdate` and resize
+commits, which previously skipped the check entirely because only `addEvent` / `editEvent` ran a
+pre-flight validation.
+
+One algorithm, two callers. The module's stage body moved into a local `evaluate(event, others)`
+that the stage and a new `evaluateAvailability` module api both call, and the feature's
+`checkEventAvailability` / `validateEventPlacement` delegate to that api instead of calling
+`checkAvailability` themselves. The kernel `validate()` dry-run the plan called for turned out to be
+unnecessary: sharing the function is what prevents the veto and the pre-flight from drifting, and a
+dry-run would only have added a round trip. Its own resources come from `FeatureModuleCtx.getResources`,
+called per evaluation, so `setResources` is picked up without remounting.
+
+**Mounting the veto exposed a bug in the stage.** It validated each op against `ctx.getEvents()` —
+the state *before* the write — so a batch whose ops move several events tripped over positions the
+same batch was replacing. A dependency cascade shifting three events on a capacity-2 resource read
+as an overbooking. The stage now folds the batch's own ops over the stored state first and validates
+the result, which is what "validate this write" should always have meant.
+
+`_write` splits into `_write` (ops, as before) and `_writeChecked` (ops plus conflicts). `commitAdd`
+and `commitUpdate` gained private variants that return conflicts and, crucially, **stop emitting
+`event:added` / `event:updated` when nothing was committed** — with no veto mounted that was
+unreachable, and with one it would have been a lie. `addEvent` / `editEvent` map a rejection to
+`SaveEventResult.error` using only the conflict's `message`, so core still knows nothing about
+availability's vocabulary; the pre-flight call stays because it is what produces the good message.
+
+Atomicity is the visible payoff: a `commitUpdate` whose dependency cascade would push a dependent
+past a resource's closing time now applies *nothing*, where before the cascade landed and the
+availability check was never consulted.
+
 ## Remaining work
 
-- **Route write-time availability through the kernel veto.** Needs `_write` to surface conflicts as
-  `SaveEventResult` errors and a kernel `validate()` dry-run for pre-flight callers
-  (`validateMove`, `validateResize`). Until then availability is enforced by explicit calls, not by
-  the pipeline, and `commitAdd` / `commitUpdate` / resize commits skip it exactly as before.
 - The Solid adapter is written against the composed shape, not ported from the monolith.
+- `validateMove` and `validateResize` still pre-flight through the availability api rather than a
+  kernel dry-run. They share the module's algorithm, so this is a call-path question, not a
+  correctness one — revisit if a third caller appears.

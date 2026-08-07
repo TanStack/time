@@ -20,8 +20,25 @@ interface CalendarLikeEvent extends KernelEvent {
 }
 
 export interface AvailabilityModuleOptions {
-  resources: Array<AvailabilityModuleResource>;
+  resources:
+    | Array<AvailabilityModuleResource>
+    | (() => Array<AvailabilityModuleResource>);
   priority?: number;
+}
+
+export interface AvailabilityQuery {
+  id: string;
+  title?: string;
+  start: string;
+  end: string;
+  resources?: Array<AvailabilityModuleResource | string>;
+  consumption?: Array<number>;
+}
+
+export interface AvailabilityModuleApi {
+  evaluateAvailability: (
+    event: AvailabilityQuery,
+  ) => Array<AvailabilityConflict>;
 }
 
 function resolveResources(
@@ -54,11 +71,56 @@ function toConflict(
 
 export function availabilityModule<E extends KernelEvent>(
   options: AvailabilityModuleOptions,
-): Module<E> {
-  const known = options.resources;
+): Module<E, AvailabilityModuleApi> {
+  const knownResources = (): Array<AvailabilityModuleResource> =>
+    typeof options.resources === "function"
+      ? options.resources()
+      : options.resources;
+
+  const evaluate = (
+    event: CalendarLikeEvent,
+    others: Array<CalendarLikeEvent>,
+  ): Array<AvailabilityConflict> => {
+    const resolved = resolveResources(event, knownResources());
+    if (resolved.length === 0) return [];
+
+    const otherEvents: Array<AvailabilityOtherEvent> = others
+      .filter((e) => e.id !== event.id && !e._originalStart)
+      .map((e) => ({
+        id: e.id,
+        start: toPlainDateTimeString(
+          (e._originalStart ?? e.start) as string | Date | number,
+        ),
+        end: toPlainDateTimeString(
+          (e._originalEnd ?? e.end) as string | Date | number,
+        ),
+        resourceIds: resourceIdsOf(e),
+        consumption: e.consumption,
+        masterId: e._recurringMasterId ?? e.id,
+      }));
+
+    return checkAvailability({
+      event: {
+        id: event.id,
+        title: event.title ?? event.id,
+        start: toPlainDateTimeString(event.start),
+        end: toPlainDateTimeString(event.end),
+      },
+      resources: resolved,
+      consumption: event.consumption,
+      otherEvents,
+    });
+  };
 
   return {
     name: "availability",
+    api: (ctx) => ({
+      evaluateAvailability: (event) =>
+        evaluate(
+          event as unknown as CalendarLikeEvent,
+          ctx.getEvents() as Array<CalendarLikeEvent>,
+        ),
+    }),
     contributions: [
       {
         pipeline: "write",
@@ -67,6 +129,17 @@ export function availabilityModule<E extends KernelEvent>(
         priority: options.priority,
         run: (batch, ctx) => {
           const conflicts: Array<Conflict> = [];
+          const settled = new Map<string, CalendarLikeEvent>(
+            (ctx.getEvents() as Array<CalendarLikeEvent>).map((e) => [e.id, e]),
+          );
+          for (const op of batch.ops) {
+            if (op.kind === "intent") continue;
+            if (op.kind === "remove") settled.delete(op.id);
+            else if (op.kind === "add")
+              settled.set(op.event.id, op.event as CalendarLikeEvent);
+            else settled.set(op.id, op.after as CalendarLikeEvent);
+          }
+          const others = [...settled.values()];
 
           for (const op of batch.ops) {
             if (op.kind === "remove" || op.kind === "intent") continue;
@@ -74,39 +147,7 @@ export function availabilityModule<E extends KernelEvent>(
               op.kind === "add" ? op.event : op.after
             ) as CalendarLikeEvent;
 
-            const resolved = resolveResources(event, known);
-            if (resolved.length === 0) continue;
-
-            const otherEvents: Array<AvailabilityOtherEvent> = (
-              ctx.getEvents() as Array<CalendarLikeEvent>
-            )
-              .filter((e) => e.id !== event.id && !e._originalStart)
-              .map((e) => ({
-                id: e.id,
-                start: toPlainDateTimeString(
-                  (e._originalStart ?? e.start) as string | Date | number,
-                ),
-                end: toPlainDateTimeString(
-                  (e._originalEnd ?? e.end) as string | Date | number,
-                ),
-                resourceIds: resourceIdsOf(e),
-                consumption: e.consumption,
-                masterId: e._recurringMasterId ?? e.id,
-              }));
-
-            const found = checkAvailability({
-              event: {
-                id: event.id,
-                title: event.title ?? event.id,
-                start: toPlainDateTimeString(event.start),
-                end: toPlainDateTimeString(event.end),
-              },
-              resources: resolved,
-              consumption: event.consumption,
-              otherEvents,
-            });
-
-            for (const conflict of found) {
+            for (const conflict of evaluate(event, others)) {
               conflicts.push(toConflict(event, conflict));
             }
           }

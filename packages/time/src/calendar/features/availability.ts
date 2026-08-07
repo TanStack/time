@@ -1,14 +1,14 @@
-import { toPlainDateTimeString } from "~/date/parse";
+import { availabilityModule } from "~/kernel/modules";
 import { toUnavailableRanges } from "~/projection";
 import {
-  checkAvailability,
   checkDaySpan,
   getUnavailabilityDetails as computeUnavailabilityDetails,
   mergeUnavailableMinuteRanges,
 } from "~/validation/availability";
+import type { KernelEvent } from "~/kernel";
+import type { AvailabilityModuleApi } from "~/kernel/modules";
 import type {
   AvailabilityConflict,
-  AvailabilityOtherEvent,
   MinuteRange,
 } from "~/validation/availability";
 import type { UnavailableRange } from "~/projection";
@@ -72,7 +72,7 @@ export function resourceAvailabilityFeature<
 >(): CalendarFeature<
   TResource,
   TEvent,
-  object,
+  AvailabilityModuleApi,
   AvailabilityApi<TResource, TEvent>,
   "availability"
 > {
@@ -94,18 +94,6 @@ export function resourceAvailabilityFeature<
     resources?: Array<TResource | string>;
   }): Array<string> =>
     (event.resources ?? []).map((r) => (typeof r === "string" ? r : r.id));
-
-  const resolveResources = (
-    host: CalendarHost<TResource, TEvent>,
-    resources: Array<TResource | string> | undefined,
-  ): Array<TResource> =>
-    (resources ?? []).map((r) => {
-      if (typeof r !== "string") return r;
-      return (
-        host.getOptions().resources?.find((res) => res.id === r) ??
-        ({ id: r, label: r } as TResource)
-      );
-    });
 
   const mergedMinutes = (
     host: CalendarHost<TResource, TEvent>,
@@ -157,41 +145,20 @@ export function resourceAvailabilityFeature<
   };
 
   const conflictOf = (
-    host: CalendarHost<TResource, TEvent>,
+    module: AvailabilityModuleApi,
     event: TEvent,
     newStart: string,
     newEnd: string,
     newResources?: Array<TResource | string>,
     newConsumption?: Array<number>,
   ): AvailabilityConflict | null => {
-    const resources = newResources
-      ? resolveResources(host, newResources)
-      : resolveResources(host, event.resources);
-    if (!resources.length) return null;
-
-    const otherEvents: Array<AvailabilityOtherEvent> = [];
-    for (const candidate of host.getEvents()) {
-      if (candidate._originalStart) continue;
-      otherEvents.push({
-        id: candidate.id,
-        start: toPlainDateTimeString(candidate.start),
-        end: toPlainDateTimeString(candidate.end),
-        resourceIds: resourceIdsOf(candidate),
-        consumption: candidate.consumption,
-        masterId: candidate._recurringMasterId ?? candidate.id,
-      });
-    }
-
-    const [conflict] = checkAvailability({
-      event: {
-        id: event.id,
-        title: event.title,
-        start: newStart,
-        end: newEnd,
-      },
-      resources,
+    const [conflict] = module.evaluateAvailability({
+      id: event.id,
+      title: event.title,
+      start: newStart,
+      end: newEnd,
+      resources: newResources ?? event.resources,
       consumption: newConsumption ?? event.consumption,
-      otherEvents,
     });
 
     return conflict ?? null;
@@ -199,7 +166,11 @@ export function resourceAvailabilityFeature<
 
   return {
     name: "availability",
-    api: (host) => ({
+    module: (ctx) =>
+      availabilityModule<TEvent & KernelEvent>({
+        resources: () => ctx.getResources(),
+      }),
+    api: (host, module) => ({
       getUnavailableRanges: (date, options) => {
         const merged = mergedMinutes(host, date, options?.resourceIds);
         if (merged === null) return [];
@@ -252,7 +223,14 @@ export function resourceAvailabilityFeature<
         newResources,
         newConsumption,
       ) =>
-        conflictOf(host, event, newStart, newEnd, newResources, newConsumption),
+        conflictOf(
+          module,
+          event,
+          newStart,
+          newEnd,
+          newResources,
+          newConsumption,
+        ),
       validateEventPlacement: (event) => {
         const placeholder = {
           id: event.id ?? "__validate_placement__",
@@ -264,7 +242,7 @@ export function resourceAvailabilityFeature<
         } as TEvent;
 
         const conflict = conflictOf(
-          host,
+          module,
           placeholder,
           event.start,
           event.end,

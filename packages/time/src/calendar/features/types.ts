@@ -69,8 +69,9 @@ export interface CalendarHost<
   }) => { blocked: boolean; message?: string };
 }
 
-export interface FeatureModuleCtx {
+export interface FeatureModuleCtx<TResource extends Resource = Resource> {
   timeZone: Temporal.TimeZoneLike;
+  getResources: () => Array<TResource>;
 }
 
 export interface CalendarFeature<
@@ -83,7 +84,9 @@ export interface CalendarFeature<
 > {
   name: TName;
   requires?: ReadonlyArray<string>;
-  module?: (ctx: FeatureModuleCtx) => Module<TEvent & KernelEvent, TModuleApi>;
+  module?: (
+    ctx: FeatureModuleCtx<TResource>,
+  ) => Module<TEvent & KernelEvent, TModuleApi>;
   api?: (
     host: CalendarHost<TResource, TEvent>,
     module: TModuleApi,
@@ -97,7 +100,9 @@ export interface AnyCalendarFeature<
 > {
   name: string;
   requires?: ReadonlyArray<string>;
-  module?: (ctx: FeatureModuleCtx) => Module<TEvent & KernelEvent, unknown>;
+  module?: (
+    ctx: FeatureModuleCtx<TResource>,
+  ) => Module<TEvent & KernelEvent, unknown>;
   api?: (
     host: CalendarHost<TResource, TEvent>,
     module: never,

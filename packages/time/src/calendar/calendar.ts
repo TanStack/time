@@ -16,6 +16,7 @@ import type {
   FullFeatureApi,
 } from "./features";
 import type {
+  Conflict,
   Module,
   InvertibleOp,
   IntentOp,
@@ -33,6 +34,7 @@ import type {
   Day,
   Event,
   EventDependency,
+  ResizeError,
   Resource,
   SaveEventResult,
   TimeSlot,
@@ -257,11 +259,16 @@ export class CalendarCore<
     this._eventsCache = null;
     const features = this.options.features.map((factory) => factory());
     this._featureNames = new Set(features.map((feature) => feature.name));
-    const ctx: FeatureModuleCtx = { timeZone: this.options.timeZone };
+    const ctx: FeatureModuleCtx<TResource> = {
+      timeZone: this.options.timeZone,
+      getResources: () => this.options.resources ?? [],
+    };
 
     const modules: Record<string, Module<WritableEvent<TEvent>, unknown>> = {};
     for (const feature of features) {
-      const module = feature.module?.(ctx);
+      const module = feature.module?.(
+        ctx as unknown as FeatureModuleCtx<Resource>,
+      );
       if (module) {
         modules[feature.name] = (module) as unknown as Module<
           WritableEvent<TEvent>,
@@ -399,17 +406,41 @@ export class CalendarCore<
     ops: Array<InvertibleOp<TEvent> | IntentOp>,
     reason: string,
   ): Array<InvertibleOp<TEvent>> {
+    return this._writeChecked(ops, reason).committed;
+  }
+
+  private _writeChecked(
+    ops: Array<InvertibleOp<TEvent> | IntentOp>,
+    reason: string,
+  ): { committed: Array<InvertibleOp<TEvent>>; conflicts: Array<Conflict> } {
     const result = this._kernel.write(
       ops as Array<WriteOp<WritableEvent<TEvent>>>,
       reason,
     );
-    if (result.status !== "committed") return [];
+    if (result.status !== "committed") {
+      return { committed: [], conflicts: result.conflicts };
+    }
 
     const committed = result.batch.ops as unknown as Array<
       InvertibleOp<TEvent>
     >;
     this._applyOps(committed);
-    return committed;
+    return { committed, conflicts: [] };
+  }
+
+  private _conflictError(
+    event: { id: string; title: string; start: string; end: string },
+    conflicts: Array<Conflict>,
+  ): ResizeError {
+    const [first] = conflicts;
+    return {
+      eventId: event.id,
+      eventTitle: event.title,
+      reason: "blocked",
+      message: first?.message ?? `"${event.title}" was rejected on write.`,
+      originalStart: event.start,
+      originalEnd: event.end,
+    };
   }
 
   private _eventDateKey(event: TEvent): string {
@@ -799,8 +830,16 @@ export class CalendarCore<
   }
 
   commitAdd(event: TEvent) {
+    this._commitAdd(event);
+  }
+
+  private _commitAdd(event: TEvent): Array<Conflict> {
     const normalized = this.normalizeEvent(event);
-    this._write([{ kind: "add", event: normalized }], "add");
+    const { committed, conflicts } = this._writeChecked(
+      [{ kind: "add", event: normalized }],
+      "add",
+    );
+    if (committed.length === 0) return conflicts;
 
     getTimeClient().emit("event:added", {
       eventId: normalized.id,
@@ -808,11 +847,19 @@ export class CalendarCore<
       start: normalized.start as string,
       end: normalized.end as string,
     });
+    return [];
   }
 
   commitUpdate(id: Event["id"], updates: Partial<Omit<TEvent, "id">>) {
+    this._commitUpdate(id, updates);
+  }
+
+  private _commitUpdate(
+    id: Event["id"],
+    updates: Partial<Omit<TEvent, "id">>,
+  ): Array<Conflict> {
     const existingEvent = this._eventMap.get(id);
-    if (!existingEvent) return;
+    if (!existingEvent) return [];
 
     const recurrenceUpdate = (updates as { recurrence?: TEvent["recurrence"] })
       .recurrence;
@@ -837,10 +884,11 @@ export class CalendarCore<
       ...normalizedUpdates,
     } as TEvent;
 
-    const committed = this._write(
+    const { committed, conflicts } = this._writeChecked(
       [{ kind: "update", id, before: existingEvent, after: nextEvent }],
       "update",
     );
+    if (committed.length === 0) return conflicts;
 
     for (const op of committed) {
       if (op.kind !== "update" || op.id === id) continue;
@@ -863,6 +911,7 @@ export class CalendarCore<
       end: toPlainDateTimeString(nextEvent.end),
       updates: normalizedUpdates as Record<string, unknown>,
     });
+    return [];
   }
 
   getEvents(): Array<TEvent> {
@@ -1030,7 +1079,17 @@ export class CalendarCore<
       };
     }
 
-    this.commitAdd(event);
+    const addConflicts = this._commitAdd(event);
+    if (addConflicts.length > 0) {
+      return {
+        success: false,
+        error: this._conflictError(
+          { id: event.id, title: event.title, start: startStr, end: endStr },
+          addConflicts,
+        ),
+      };
+    }
+
     return { success: true };
   }
 
@@ -1128,7 +1187,22 @@ export class CalendarCore<
       }
     }
 
-    this.commitUpdate(eventId, updates);
+    const updateConflicts = this._commitUpdate(eventId, updates);
+    if (updateConflicts.length > 0) {
+      return {
+        success: false,
+        error: this._conflictError(
+          {
+            id: eventId,
+            title: existingEvent.title,
+            start: effectiveStart,
+            end: effectiveEnd,
+          },
+          updateConflicts,
+        ),
+      };
+    }
+
     return { success: true };
   }
 

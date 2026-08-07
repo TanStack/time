@@ -5,6 +5,7 @@ import {
   dayEventLayoutFeature,
   eventRecurrenceFeature,
   eventResizeFeature,
+  eventDependencyFeature,
   historyFeature,
   resourceAvailabilityFeature,
 } from "../features";
@@ -226,6 +227,72 @@ describe("calendarFeatures composition", () => {
     const allowed = await withoutAvailability.addEvent(eveningEvent);
     expect(allowed.success).toBe(true);
     expect(withoutAvailability.getEvents()).toHaveLength(1);
+  });
+
+  test("the availability veto stops a commit that skips validation", () => {
+    const cal = createTestCalendar(
+      calendarFeatures([resourceAvailabilityFeature]),
+      [],
+      [morningRoom],
+    );
+
+    cal.commitAdd(eveningEvent);
+    expect(cal.getEvents()).toHaveLength(0);
+
+    cal.commitAdd({
+      ...eveningEvent,
+      start: `${DAY}T09:00:00`,
+      end: `${DAY}T10:00:00`,
+    });
+    expect(cal.getEvents()).toHaveLength(1);
+
+    cal.commitUpdate("late", {
+      start: `${DAY}T20:00:00`,
+      end: `${DAY}T21:00:00`,
+    });
+    expect(cal.getEvents()[0]!.start).toBe(`${DAY}T09:00:00`);
+  });
+
+  test("a cascade that violates availability blocks the whole batch", () => {
+    const dependentPair = [
+      {
+        id: "a",
+        title: "A",
+        start: `${DAY}T09:00:00`,
+        end: `${DAY}T10:00:00`,
+        resources: ["r1"],
+      },
+      {
+        id: "b",
+        title: "B",
+        start: `${DAY}T10:00:00`,
+        end: `${DAY}T11:00:00`,
+        resources: ["r1"],
+        dependsOn: [{ id: "a", type: "FS" as const }],
+      },
+    ];
+
+    const blocked = createTestCalendar(
+      calendarFeatures([resourceAvailabilityFeature, eventDependencyFeature]),
+      dependentPair.map((event) => ({ ...event })),
+      [morningRoom],
+    );
+    blocked.commitUpdate("a", { end: `${DAY}T11:30:00` });
+
+    const afterBlock = new Map(blocked.getEvents().map((e) => [e.id, e]));
+    expect(afterBlock.get("a")!.end).toBe(`${DAY}T10:00:00`);
+    expect(afterBlock.get("b")!.start).toBe(`${DAY}T10:00:00`);
+
+    const allowed = createTestCalendar(
+      calendarFeatures([resourceAvailabilityFeature, eventDependencyFeature]),
+      dependentPair.map((event) => ({ ...event })),
+      [morningRoom],
+    );
+    allowed.commitUpdate("a", { end: `${DAY}T10:30:00` });
+
+    const afterCommit = new Map(allowed.getEvents().map((e) => [e.id, e]));
+    expect(afterCommit.get("a")!.end).toBe(`${DAY}T10:30:00`);
+    expect(afterCommit.get("b")!.start).toBe(`${DAY}T10:30:00`);
   });
 
   test("validateMove stops consulting availability when it is absent", () => {
