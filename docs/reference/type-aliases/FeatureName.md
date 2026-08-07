@@ -9,7 +9,7 @@ title: FeatureName
 type FeatureName<TFactory> = TFactory extends (...args) => object ? TName : never;
 ```
 
-Defined in: [calendar/features/types.ts:113](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L113)
+Defined in: [calendar/features/types.ts:118](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L118)
 
 ## Type Parameters
 

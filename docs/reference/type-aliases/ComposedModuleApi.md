@@ -9,7 +9,7 @@ title: ComposedModuleApi
 type ComposedModuleApi<TFeatures> = UnionToIntersection<{ [K in keyof TFeatures]: FeatureModuleApi<TFeatures[K]> }[keyof TFeatures]>;
 ```
 
-Defined in: [calendar/features/types.ts:139](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L139)
+Defined in: [calendar/features/types.ts:144](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L144)
 
 ## Type Parameters
 
