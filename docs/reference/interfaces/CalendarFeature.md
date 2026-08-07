@@ -3,9 +3,9 @@ id: CalendarFeature
 title: CalendarFeature
 ---
 
-# Interface: CalendarFeature\<TResource, TEvent, TModuleApi, TApi, TName\>
+# Interface: CalendarFeature\<TResource, TEvent, TModuleApi, TApi, TName, TPeers\>
 
-Defined in: [calendar/features/types.ts:90](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L90)
+Defined in: [calendar/features/types.ts:76](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L76)
 
 ## Type Parameters
 
@@ -29,15 +29,19 @@ Defined in: [calendar/features/types.ts:90](https://github.com/TanStack/time/blo
 
 `TName` *extends* `string` = `string`
 
+### TPeers
+
+`TPeers` = `object`
+
 ## Properties
 
 ### api()?
 
 ```ts
-optional api: (host, module) => TApi;
+optional api: (host, module, peers) => TApi;
 ```
 
-Defined in: [calendar/features/types.ts:100](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L100)
+Defined in: [calendar/features/types.ts:87](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L87)
 
 #### Parameters
 
@@ -48,6 +52,10 @@ Defined in: [calendar/features/types.ts:100](https://github.com/TanStack/time/bl
 ##### module
 
 `TModuleApi`
+
+##### peers
+
+`TPeers`
 
 #### Returns
 
@@ -61,7 +69,7 @@ Defined in: [calendar/features/types.ts:100](https://github.com/TanStack/time/bl
 optional module: (ctx) => Module<TEvent & KernelEvent, TModuleApi>;
 ```
 
-Defined in: [calendar/features/types.ts:99](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L99)
+Defined in: [calendar/features/types.ts:86](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L86)
 
 #### Parameters
 
@@ -81,7 +89,7 @@ Defined in: [calendar/features/types.ts:99](https://github.com/TanStack/time/blo
 name: TName;
 ```
 
-Defined in: [calendar/features/types.ts:97](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L97)
+Defined in: [calendar/features/types.ts:84](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L84)
 
 ***
 
@@ -91,4 +99,4 @@ Defined in: [calendar/features/types.ts:97](https://github.com/TanStack/time/blo
 optional requires: readonly string[];
 ```
 
-Defined in: [calendar/features/types.ts:98](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L98)
+Defined in: [calendar/features/types.ts:85](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L85)

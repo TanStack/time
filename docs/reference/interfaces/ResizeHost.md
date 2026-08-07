@@ -1,15 +1,15 @@
 ---
-id: CalendarHost
-title: CalendarHost
+id: ResizeHost
+title: ResizeHost
 ---
 
-# Interface: CalendarHost\<TResource, TEvent\>
+# Interface: ResizeHost\<TResource, TEvent\>
 
-Defined in: [calendar/features/types.ts:20](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L20)
+Defined in: [calendar/resizeController.ts:19](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L19)
 
-## Extended by
+## Extends
 
-- [`ResizeHost`](ResizeHost.md)
+- [`CalendarHost`](CalendarHost.md)\<`TResource`, `TEvent`\>
 
 ## Type Parameters
 
@@ -45,6 +45,10 @@ Defined in: [calendar/features/types.ts:50](https://github.com/TanStack/time/blo
 
 `void`
 
+#### Inherited from
+
+[`CalendarHost`](CalendarHost.md).[`commitUpdate`](CalendarHost.md#commitupdate)
+
 ***
 
 ### editEvent()
@@ -75,6 +79,44 @@ Defined in: [calendar/features/types.ts:44](https://github.com/TanStack/time/blo
 
 `Promise`\<[`SaveEventResult`](../type-aliases/SaveEventResult.md)\>
 
+#### Inherited from
+
+[`CalendarHost`](CalendarHost.md).[`editEvent`](CalendarHost.md#editevent)
+
+***
+
+### editRecurringEvent()
+
+```ts
+editRecurringEvent: (eventId, updates, options) => Promise<SaveEventResult>;
+```
+
+Defined in: [calendar/resizeController.ts:24](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L24)
+
+#### Parameters
+
+##### eventId
+
+`string`
+
+##### updates
+
+`Partial`\<`Omit`\<`TEvent`, `"id"`\>\>
+
+##### options
+
+###### occurrenceStart?
+
+[`EventDateTimeInput`](../type-aliases/EventDateTimeInput.md)
+
+###### scope
+
+[`RecurrenceEditScope`](../type-aliases/RecurrenceEditScope.md)
+
+#### Returns
+
+`Promise`\<[`SaveEventResult`](../type-aliases/SaveEventResult.md)\>
+
 ***
 
 ### fetchEventsForRange()
@@ -99,6 +141,10 @@ Defined in: [calendar/features/types.ts:43](https://github.com/TanStack/time/blo
 
 `Promise`\<`void`\>
 
+#### Inherited from
+
+[`CalendarHost`](CalendarHost.md).[`fetchEventsForRange`](CalendarHost.md#fetcheventsforrange)
+
 ***
 
 ### getDaysWithEvents()
@@ -112,6 +158,10 @@ Defined in: [calendar/features/types.ts:36](https://github.com/TanStack/time/blo
 #### Returns
 
 [`Day`](../type-aliases/Day.md)\<`TResource`, `TEvent`\>[]
+
+#### Inherited from
+
+[`CalendarHost`](CalendarHost.md).[`getDaysWithEvents`](CalendarHost.md#getdayswithevents)
 
 ***
 
@@ -132,6 +182,10 @@ Defined in: [calendar/features/types.ts:24](https://github.com/TanStack/time/blo
 #### Returns
 
 `TEvent` \| `undefined`
+
+#### Inherited from
+
+[`CalendarHost`](CalendarHost.md).[`getEvent`](CalendarHost.md#getevent)
 
 ***
 
@@ -159,6 +213,10 @@ Defined in: [calendar/features/types.ts:32](https://github.com/TanStack/time/blo
 
 `Map`\<`string`, `TEvent`[]\>
 
+#### Inherited from
+
+[`CalendarHost`](CalendarHost.md).[`getEventMap`](CalendarHost.md#geteventmap)
+
 ***
 
 ### getEvents()
@@ -172,6 +230,10 @@ Defined in: [calendar/features/types.ts:25](https://github.com/TanStack/time/blo
 #### Returns
 
 `TEvent`[]
+
+#### Inherited from
+
+[`CalendarHost`](CalendarHost.md).[`getEvents`](CalendarHost.md#getevents)
 
 ***
 
@@ -192,6 +254,10 @@ Defined in: [calendar/features/types.ts:37](https://github.com/TanStack/time/blo
 #### Returns
 
 `TEvent`[]
+
+#### Inherited from
+
+[`CalendarHost`](CalendarHost.md).[`getEventsByDate`](CalendarHost.md#geteventsbydate)
 
 ***
 
@@ -225,6 +291,10 @@ resources: TResource[] | null;
 timeZone: TimeZoneLike;
 ```
 
+#### Inherited from
+
+[`CalendarHost`](CalendarHost.md).[`getOptions`](CalendarHost.md#getoptions)
+
 ***
 
 ### getState()
@@ -238,6 +308,10 @@ Defined in: [calendar/features/types.ts:26](https://github.com/TanStack/time/blo
 #### Returns
 
 [`CalendarStore`](CalendarStore.md)
+
+#### Inherited from
+
+[`CalendarHost`](CalendarHost.md).[`getState`](CalendarHost.md#getstate)
 
 ***
 
@@ -259,6 +333,10 @@ Defined in: [calendar/features/types.ts:38](https://github.com/TanStack/time/blo
 
 `void`
 
+#### Inherited from
+
+[`CalendarHost`](CalendarHost.md).[`goToSpecificPeriod`](CalendarHost.md#gotospecificperiod)
+
 ***
 
 ### removeEvent()
@@ -278,6 +356,10 @@ Defined in: [calendar/features/types.ts:49](https://github.com/TanStack/time/blo
 #### Returns
 
 `void`
+
+#### Inherited from
+
+[`CalendarHost`](CalendarHost.md).[`removeEvent`](CalendarHost.md#removeevent)
 
 ***
 
@@ -328,6 +410,10 @@ optional error: ResizeError;
 ```ts
 valid: boolean;
 ```
+
+#### Inherited from
+
+[`CalendarHost`](CalendarHost.md).[`validateEventDependencies`](CalendarHost.md#validateeventdependencies)
 
 ***
 
@@ -383,6 +469,10 @@ blocked: boolean;
 optional message: string;
 ```
 
+#### Inherited from
+
+[`CalendarHost`](CalendarHost.md).[`validateEventPlacement`](CalendarHost.md#validateeventplacement)
+
 ***
 
 ### validateMove()
@@ -437,6 +527,30 @@ optional blockedEventTitle: string;
 optional message: string;
 ```
 
+#### Inherited from
+
+[`CalendarHost`](CalendarHost.md).[`validateMove`](CalendarHost.md#validatemove)
+
+***
+
+### validateResize()
+
+```ts
+validateResize: (options) => ValidateResizeResult;
+```
+
+Defined in: [calendar/resizeController.ts:23](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L23)
+
+#### Parameters
+
+##### options
+
+[`ValidateResizeOptions`](ValidateResizeOptions.md)
+
+#### Returns
+
+[`ValidateResizeResult`](ValidateResizeResult.md)
+
 ***
 
 ### write()
@@ -460,3 +574,7 @@ Defined in: [calendar/features/types.ts:39](https://github.com/TanStack/time/blo
 #### Returns
 
 `InvertibleOp`\<`TEvent`\>[]
+
+#### Inherited from
+
+[`CalendarHost`](CalendarHost.md).[`write`](CalendarHost.md#write)

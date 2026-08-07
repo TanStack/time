@@ -5,7 +5,7 @@ title: DependencyCreationApi
 
 # Interface: DependencyCreationApi
 
-Defined in: [calendar/features/dependency.ts:10](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L10)
+Defined in: [calendar/features/dependency.ts:55](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L55)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/features/dependency.ts:10](https://github.com/TanStack/tim
 createDependency: (sourceId, targetId, type?) => object;
 ```
 
-Defined in: [calendar/features/dependency.ts:11](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L11)
+Defined in: [calendar/features/dependency.ts:56](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L56)
 
 #### Parameters
 

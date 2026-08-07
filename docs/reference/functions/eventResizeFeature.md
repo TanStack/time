@@ -6,10 +6,10 @@ title: eventResizeFeature
 # Function: eventResizeFeature()
 
 ```ts
-function eventResizeFeature<TResource, TEvent>(): CalendarFeature<TResource, TEvent, object, ResizeFeatureApi<TResource, TEvent>, "resize">;
+function eventResizeFeature<TResource, TEvent>(): CalendarFeature<TResource, TEvent, object, ResizeFeatureApi<TResource, TEvent>, "resize", ResizePeers<TResource, TEvent>>;
 ```
 
-Defined in: [calendar/features/resize.ts:19](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L19)
+Defined in: [calendar/features/resize.ts:47](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L47)
 
 ## Type Parameters
 
@@ -23,4 +23,4 @@ Defined in: [calendar/features/resize.ts:19](https://github.com/TanStack/time/bl
 
 ## Returns
 
-[`CalendarFeature`](../interfaces/CalendarFeature.md)\<`TResource`, `TEvent`, `object`, [`ResizeFeatureApi`](../interfaces/ResizeFeatureApi.md)\<`TResource`, `TEvent`\>, `"resize"`\>
+[`CalendarFeature`](../interfaces/CalendarFeature.md)\<`TResource`, `TEvent`, `object`, [`ResizeFeatureApi`](../interfaces/ResizeFeatureApi.md)\<`TResource`, `TEvent`\>, `"resize"`, [`ResizePeers`](../interfaces/ResizePeers.md)\<`TResource`, `TEvent`\>\>
