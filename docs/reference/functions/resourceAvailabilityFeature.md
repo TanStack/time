@@ -6,7 +6,7 @@ title: resourceAvailabilityFeature
 # Function: resourceAvailabilityFeature()
 
 ```ts
-function resourceAvailabilityFeature<TResource, TEvent>(): CalendarFeature<TResource, TEvent, object, AvailabilityApi<TResource, TEvent>, "availability">;
+function resourceAvailabilityFeature<TResource, TEvent>(): CalendarFeature<TResource, TEvent, AvailabilityModuleApi, AvailabilityApi<TResource, TEvent>, "availability">;
 ```
 
 Defined in: [calendar/features/availability.ts:69](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L69)
@@ -23,4 +23,4 @@ Defined in: [calendar/features/availability.ts:69](https://github.com/TanStack/t
 
 ## Returns
 
-[`CalendarFeature`](../interfaces/CalendarFeature.md)\<`TResource`, `TEvent`, `object`, [`AvailabilityApi`](../interfaces/AvailabilityApi.md)\<`TResource`, `TEvent`\>, `"availability"`\>
+[`CalendarFeature`](../interfaces/CalendarFeature.md)\<`TResource`, `TEvent`, `AvailabilityModuleApi`, [`AvailabilityApi`](../interfaces/AvailabilityApi.md)\<`TResource`, `TEvent`\>, `"availability"`\>
