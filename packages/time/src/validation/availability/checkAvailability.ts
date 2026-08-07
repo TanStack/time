@@ -1,9 +1,8 @@
 import { Temporal } from "@js-temporal/polyfill";
 import {
   formatMinutesToTime,
-  getWeekday,
   MINUTES_IN_DAY,
-  resourceDayAvail,
+  resourceDayWorkingTime,
   type AvailabilitySlotInput,
 } from "./time";
 
@@ -68,7 +67,6 @@ export function getUnavailabilityDetails(
 ): Array<AvailabilityUnavailabilityReason> {
   if (resources.length === 0) return [];
 
-  const weekday = getWeekday(date);
   const details: Array<AvailabilityUnavailabilityReason> = [];
 
   for (const resource of resources) {
@@ -82,8 +80,10 @@ export function getUnavailabilityDetails(
       continue;
     }
 
-    const info = resourceDayAvail(resource.availability, weekday);
-    const availableSlots = info.slotsForWeekday;
+    const availableSlots = resourceDayWorkingTime(
+      resource.availability,
+      date,
+    ).working;
 
     if (availableSlots.length === 0) {
       details.push({

@@ -1,6 +1,6 @@
 import { getUnavailabilityDetails } from "./checkAvailability";
 import { toUnavailabilityConflict } from "./conflicts";
-import { formatMinutesToTime, resourceDayAvail, getWeekday } from "./time";
+import { formatMinutesToTime, resourceDayWorkingTime } from "./time";
 import { mergeUnavailableMinuteRanges } from "./unavailableRanges";
 import type {
   AvailabilityConflict,
@@ -46,8 +46,6 @@ export function checkDaySpan(
     startMinutes,
     endMinutes,
   );
-  const weekday = getWeekday(date);
-
   for (const range of mergeUnavailableMinuteRanges(resources, date) ?? []) {
     if (!overlaps(range, span)) continue;
 
@@ -55,10 +53,7 @@ export function checkDaySpan(
       const resource = resources.find((r) => r.id === detail.resourceId);
       if (!resource) return false;
 
-      const slots = resourceDayAvail(
-        resource.availability,
-        weekday,
-      ).slotsForWeekday;
+      const slots = resourceDayWorkingTime(resource.availability, date).working;
       if (slots.length === 0) return true;
 
       return !slots.some((slot) => overlaps(slot, range));

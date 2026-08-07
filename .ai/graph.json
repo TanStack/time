@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-06T21:46:39.699Z",
+  "generated": "2026-08-07T18:06:55.381Z",
   "packages": [
     {
       "name": "@tanstack/react-time",
@@ -82,7 +82,9 @@
     {
       "name": "@tanstack/solid-time",
       "path": "packages/solid-time",
-      "exports": [],
+      "exports": [
+        "* from ./createCalendar"
+      ],
       "dependencies": [
         "@tanstack/solid-store",
         "@tanstack/time"
@@ -100,7 +102,37 @@
         "@tanstack/time"
       ],
       "files": [
-        "packages/solid-time/src/index.ts"
+        "packages/solid-time/src/index.ts",
+        "packages/solid-time/src/createCalendar/createCalendar.ts",
+        "packages/solid-time/src/createCalendar/index.ts"
+      ],
+      "tests": []
+    },
+    {
+      "name": "@tanstack/solid-time-devtools",
+      "path": "packages/solid-time-devtools",
+      "exports": [
+        "TimeDevtools",
+        "timeDevtoolsPlugin"
+      ],
+      "dependencies": [
+        "@tanstack/devtools-utils",
+        "@tanstack/time-devtools"
+      ],
+      "devDependencies": [
+        "solid-js",
+        "vite-plugin-solid"
+      ],
+      "peerDependencies": [
+        "solid-js"
+      ],
+      "internalDeps": [
+        "@tanstack/devtools-utils",
+        "@tanstack/time-devtools"
+      ],
+      "files": [
+        "packages/solid-time-devtools/src/index.ts",
+        "packages/solid-time-devtools/src/production.ts"
       ],
       "tests": []
     },
@@ -140,20 +172,19 @@
         "packages/time/src/calendar/types.ts",
         "packages/time/src/client/TimeClient.ts",
         "packages/time/src/client/index.ts",
-        "packages/time/src/formatter/extractLocaleOptions.ts",
-        "packages/time/src/formatter/shared.ts",
         "packages/time/src/date/index.ts",
         "packages/time/src/date/types.ts",
         "packages/time/src/date/validateDate.ts",
-        "packages/time/src/kernel/apiGuard.ts",
+        "packages/time/src/formatter/extractLocaleOptions.ts",
+        "packages/time/src/formatter/shared.ts",
+        "packages/time/src/polyfills/getWeekInfo.ts",
+        "packages/time/src/polyfills/types.ts",
+        "packages/time/src/polyfills/weekInfoData.ts",
         "packages/time/src/kernel/history.ts",
         "packages/time/src/kernel/index.ts",
         "packages/time/src/kernel/kernel.ts",
         "packages/time/src/kernel/pipeline.ts",
         "packages/time/src/kernel/types.ts",
-        "packages/time/src/polyfills/getWeekInfo.ts",
-        "packages/time/src/polyfills/types.ts",
-        "packages/time/src/polyfills/weekInfoData.ts",
         "packages/time/src/projection/bucketByDay.ts",
         "packages/time/src/projection/index.ts",
         "packages/time/src/projection/layout.ts",
@@ -170,6 +201,7 @@
         "packages/time/src/utils/index.ts",
         "packages/time/src/utils/weekUtils.ts",
         "packages/time/src/calendar/tests/composedApi.test-d.ts",
+        "packages/time/src/calendar/features/availability.ts",
         "packages/time/src/calendar/features/calendarFeatures.ts",
         "packages/time/src/calendar/features/dayLayout.ts",
         "packages/time/src/calendar/features/dependency.ts",
@@ -180,64 +212,54 @@
         "packages/time/src/calendar/features/resize.ts",
         "packages/time/src/calendar/features/timeline.ts",
         "packages/time/src/calendar/features/types.ts",
-        "packages/time/src/formatter/buildDateFormatter/buildDateFormatter.ts",
-        "packages/time/src/formatter/buildDateFormatter/index.ts",
-        "packages/time/src/formatter/buildDateTimeFormatter/buildDateTimeFormatter.ts",
-        "packages/time/src/formatter/buildDateTimeFormatter/index.ts",
-        "packages/time/src/formatter/buildFinalFormatter/buildFinalFormatter.ts",
-        "packages/time/src/formatter/buildFinalFormatter/index.ts",
-        "packages/time/src/formatter/buildTimeFormatter/buildTimeFormatter.ts",
-        "packages/time/src/formatter/buildTimeFormatter/index.ts",
-        "packages/time/src/date/add/add.ts",
-        "packages/time/src/date/add/index.ts",
         "packages/time/src/date/ceil/ceil.ts",
         "packages/time/src/date/ceil/index.ts",
-        "packages/time/src/date/endOf/endOf.ts",
-        "packages/time/src/date/endOf/index.ts",
-        "packages/time/src/date/count/count.ts",
-        "packages/time/src/date/count/index.ts",
+        "packages/time/src/date/add/add.ts",
+        "packages/time/src/date/add/index.ts",
         "packages/time/src/date/clamp/clamp.ts",
         "packages/time/src/date/clamp/index.ts",
+        "packages/time/src/date/count/count.ts",
+        "packages/time/src/date/count/index.ts",
         "packages/time/src/date/equals/equals.ts",
         "packages/time/src/date/equals/index.ts",
+        "packages/time/src/date/endOf/endOf.ts",
+        "packages/time/src/date/endOf/index.ts",
         "packages/time/src/date/fromUnixTime/fromUnixTime.ts",
         "packages/time/src/date/fromUnixTime/index.ts",
         "packages/time/src/date/format/format.ts",
         "packages/time/src/date/format/index.ts",
-        "packages/time/src/date/getDayOfYear/getDayOfYear.ts",
-        "packages/time/src/date/getDayOfYear/index.ts",
         "packages/time/src/date/getUnixTime/getUnixTime.ts",
         "packages/time/src/date/getUnixTime/index.ts",
         "packages/time/src/date/getWeek/getWeek.ts",
         "packages/time/src/date/getWeek/index.ts",
-        "packages/time/src/date/intersects/index.ts",
-        "packages/time/src/date/intersects/intersects.ts",
         "packages/time/src/date/helpers/index.ts",
         "packages/time/src/date/helpers/normalizeLocale.ts",
         "packages/time/src/date/helpers/normalizeWeek.ts",
         "packages/time/src/date/helpers/toZonedDateTime.ts",
+        "packages/time/src/date/intersects/index.ts",
+        "packages/time/src/date/intersects/intersects.ts",
         "packages/time/src/date/isAfter/index.ts",
         "packages/time/src/date/isAfter/isAfter.ts",
         "packages/time/src/date/isBetween/index.ts",
         "packages/time/src/date/isBetween/isBetween.ts",
         "packages/time/src/date/isBefore/index.ts",
         "packages/time/src/date/isBefore/isBefore.ts",
-        "packages/time/src/date/isLeapYear/index.ts",
-        "packages/time/src/date/isLeapYear/isLeapYear.ts",
-        "packages/time/src/date/isSameOrAfter/index.ts",
-        "packages/time/src/date/isSameOrAfter/isSameOrAfter.ts",
-        "packages/time/src/date/isPast/index.ts",
-        "packages/time/src/date/isPast/isPast.ts",
-        "packages/time/src/date/isSameOrBefore/index.ts",
-        "packages/time/src/date/isSameOrBefore/isSameOrBefore.ts",
         "packages/time/src/date/isFuture/index.ts",
         "packages/time/src/date/isFuture/isFuture.ts",
-        "packages/time/src/date/isWeekend/index.ts",
-        "packages/time/src/date/isWeekend/isWeekend.ts",
+        "packages/time/src/date/getDayOfYear/getDayOfYear.ts",
+        "packages/time/src/date/getDayOfYear/index.ts",
+        "packages/time/src/date/isLeapYear/index.ts",
+        "packages/time/src/date/isLeapYear/isLeapYear.ts",
+        "packages/time/src/date/isPast/index.ts",
+        "packages/time/src/date/isPast/isPast.ts",
+        "packages/time/src/date/isSameOrAfter/index.ts",
+        "packages/time/src/date/isSameOrAfter/isSameOrAfter.ts",
         "packages/time/src/date/isValidDate/index.ts",
         "packages/time/src/date/isValidDate/isValidDate.ts",
         "packages/time/src/date/max/index.ts",
         "packages/time/src/date/max/max.ts",
+        "packages/time/src/date/isSameOrBefore/index.ts",
+        "packages/time/src/date/isSameOrBefore/isSameOrBefore.ts",
         "packages/time/src/date/min/index.ts",
         "packages/time/src/date/min/min.ts",
         "packages/time/src/date/range/index.ts",
@@ -250,14 +272,24 @@
         "packages/time/src/date/round/round.ts",
         "packages/time/src/date/since/index.ts",
         "packages/time/src/date/since/since.ts",
+        "packages/time/src/date/isWeekend/index.ts",
+        "packages/time/src/date/isWeekend/isWeekend.ts",
         "packages/time/src/date/startOf/index.ts",
         "packages/time/src/date/startOf/startOf.ts",
-        "packages/time/src/date/until/index.ts",
-        "packages/time/src/date/until/until.ts",
         "packages/time/src/date/subtract/index.ts",
         "packages/time/src/date/subtract/subtract.ts",
+        "packages/time/src/date/until/index.ts",
+        "packages/time/src/date/until/until.ts",
         "packages/time/src/date/withDateOperation/index.ts",
         "packages/time/src/date/withDateOperation/withDateOperation.ts",
+        "packages/time/src/formatter/buildDateFormatter/buildDateFormatter.ts",
+        "packages/time/src/formatter/buildDateFormatter/index.ts",
+        "packages/time/src/formatter/buildDateTimeFormatter/buildDateTimeFormatter.ts",
+        "packages/time/src/formatter/buildDateTimeFormatter/index.ts",
+        "packages/time/src/formatter/buildFinalFormatter/buildFinalFormatter.ts",
+        "packages/time/src/formatter/buildFinalFormatter/index.ts",
+        "packages/time/src/formatter/buildTimeFormatter/buildTimeFormatter.ts",
+        "packages/time/src/formatter/buildTimeFormatter/index.ts",
         "packages/time/src/kernel/modules/availability.ts",
         "packages/time/src/kernel/modules/dependency.ts",
         "packages/time/src/kernel/modules/index.ts",
@@ -285,58 +317,58 @@
         "packages/time/src/date/withDateOperation/withDateOperation.test.ts",
         "packages/time/src/kernel/tests/history.test.ts",
         "packages/time/src/kernel/tests/kernel.test.ts",
-        "packages/time/src/recurrence/tests/expandRecurringEvent.test.ts",
-        "packages/time/src/recurrence/tests/materialize.test.ts",
-        "packages/time/src/recurrence/tests/occurrence.test.ts",
         "packages/time/src/projection/tests/bucketByDay.test.ts",
         "packages/time/src/projection/tests/kernelDaysParity.test.ts",
         "packages/time/src/projection/tests/layout.test.ts",
         "packages/time/src/projection/tests/timelineLayout.test.ts",
         "packages/time/src/projection/tests/unavailability.test.ts",
-        "packages/time/src/validation/tests/purity.test.ts",
-        "packages/time/src/formatter/buildFinalFormatter/tests/buildFinalFormatter.test.ts",
-        "packages/time/src/date/add/tests/add.test.ts",
-        "packages/time/src/date/endOf/tests/endOf.test.ts",
+        "packages/time/src/recurrence/tests/expandRecurringEvent.test.ts",
+        "packages/time/src/recurrence/tests/materialize.test.ts",
+        "packages/time/src/recurrence/tests/occurrence.test.ts",
         "packages/time/src/date/ceil/tests/ceil.test.ts",
+        "packages/time/src/validation/tests/purity.test.ts",
+        "packages/time/src/date/add/tests/add.test.ts",
         "packages/time/src/date/clamp/tests/clamp.test.ts",
         "packages/time/src/date/count/tests/count.test.ts",
         "packages/time/src/date/equals/tests/equals.test.ts",
+        "packages/time/src/date/endOf/tests/endOf.test.ts",
         "packages/time/src/date/fromUnixTime/tests/fromUnixTime.test.ts",
         "packages/time/src/date/format/tests/format.test.ts",
-        "packages/time/src/date/getDayOfYear/tests/getDayOfYear.test.ts",
         "packages/time/src/date/getUnixTime/tests/getUnixTime.test.ts",
         "packages/time/src/date/getWeek/tests/getWeek.test.ts",
         "packages/time/src/date/intersects/tests/intersects.test.ts",
-        "packages/time/src/date/isBetween/tests/isBetween.test.ts",
         "packages/time/src/date/isAfter/tests/isAfter.test.ts",
+        "packages/time/src/date/isBetween/tests/isBetween.test.ts",
         "packages/time/src/date/isBefore/tests/isBefore.test.ts",
-        "packages/time/src/date/isLeapYear/tests/isLeapYear.test.ts",
-        "packages/time/src/date/isSameOrAfter/tests/isSameOrAfter.test.ts",
-        "packages/time/src/date/isPast/tests/isPast.test.ts",
-        "packages/time/src/date/isSameOrBefore/tests/isSameOrBefore.test.ts",
+        "packages/time/src/date/getDayOfYear/tests/getDayOfYear.test.ts",
         "packages/time/src/date/isFuture/tests/isFuture.test.ts",
-        "packages/time/src/date/isWeekend/tests/isWeekend.test.ts",
+        "packages/time/src/date/isPast/tests/isPast.test.ts",
+        "packages/time/src/date/isLeapYear/tests/isLeapYear.test.ts",
         "packages/time/src/date/isValidDate/tests/isValidDate.test.ts",
-        "packages/time/src/date/range/tests/range.test.ts",
+        "packages/time/src/date/isSameOrAfter/tests/isSameOrAfter.test.ts",
         "packages/time/src/date/max/tests/max.test.ts",
+        "packages/time/src/date/isSameOrBefore/tests/isSameOrBefore.test.ts",
+        "packages/time/src/date/range/tests/range.test.ts",
         "packages/time/src/date/min/tests/min.test.ts",
-        "packages/time/src/date/round/tests/round.test.ts",
-        "packages/time/src/date/parse/tests/parse.test.ts",
         "packages/time/src/date/since/tests/since.test.ts",
         "packages/time/src/date/set/tests/set.test.ts",
         "packages/time/src/date/startOf/tests/startOf.test.ts",
-        "packages/time/src/date/until/tests/until.test.ts",
+        "packages/time/src/date/round/tests/round.test.ts",
+        "packages/time/src/date/isWeekend/tests/isWeekend.test.ts",
         "packages/time/src/date/subtract/tests/subtract.test.ts",
+        "packages/time/src/date/parse/tests/parse.test.ts",
+        "packages/time/src/formatter/buildFinalFormatter/tests/buildFinalFormatter.test.ts",
+        "packages/time/src/date/until/tests/until.test.ts",
+        "packages/time/src/validation/availability/tests/checkAvailability.test.ts",
+        "packages/time/src/validation/availability/tests/checkDaySpan.test.ts",
+        "packages/time/src/validation/availability/tests/time.test.ts",
+        "packages/time/src/validation/availability/tests/unavailableRanges.test.ts",
         "packages/time/src/kernel/modules/tests/availability.test.ts",
         "packages/time/src/kernel/modules/tests/dependency.test.ts",
         "packages/time/src/kernel/modules/tests/layout.test.ts",
         "packages/time/src/kernel/modules/tests/recurrence.test.ts",
         "packages/time/src/kernel/modules/tests/resize.test.ts",
         "packages/time/src/kernel/modules/tests/undo.test.ts",
-        "packages/time/src/validation/availability/tests/checkAvailability.test.ts",
-        "packages/time/src/validation/availability/tests/checkDaySpan.test.ts",
-        "packages/time/src/validation/availability/tests/time.test.ts",
-        "packages/time/src/validation/availability/tests/unavailableRanges.test.ts",
         "packages/time/src/validation/dependency/tests/dependency.test.ts",
         "packages/time/src/validation/dependency/tests/graph.test.ts",
         "packages/time/src/validation/dependency/tests/propagate.test.ts"
@@ -368,34 +400,6 @@
         "packages/time-devtools/src/index.ts",
         "packages/time-devtools/src/production.ts",
         "packages/time-devtools/src/styles/use-styles.ts"
-      ],
-      "tests": []
-    },
-    {
-      "name": "@tanstack/solid-time-devtools",
-      "path": "packages/solid-time-devtools",
-      "exports": [
-        "TimeDevtools",
-        "timeDevtoolsPlugin"
-      ],
-      "dependencies": [
-        "@tanstack/devtools-utils",
-        "@tanstack/time-devtools"
-      ],
-      "devDependencies": [
-        "solid-js",
-        "vite-plugin-solid"
-      ],
-      "peerDependencies": [
-        "solid-js"
-      ],
-      "internalDeps": [
-        "@tanstack/devtools-utils",
-        "@tanstack/time-devtools"
-      ],
-      "files": [
-        "packages/solid-time-devtools/src/index.ts",
-        "packages/solid-time-devtools/src/production.ts"
       ],
       "tests": []
     }
@@ -432,6 +436,16 @@
       "type": "dependency"
     },
     {
+      "from": "@tanstack/solid-time-devtools",
+      "to": "@tanstack/devtools-utils",
+      "type": "dependency"
+    },
+    {
+      "from": "@tanstack/solid-time-devtools",
+      "to": "@tanstack/time-devtools",
+      "type": "dependency"
+    },
+    {
       "from": "@tanstack/time",
       "to": "@tanstack/devtools-event-client",
       "type": "dependency"
@@ -454,16 +468,6 @@
     {
       "from": "@tanstack/time-devtools",
       "to": "@tanstack/time",
-      "type": "dependency"
-    },
-    {
-      "from": "@tanstack/solid-time-devtools",
-      "to": "@tanstack/devtools-utils",
-      "type": "dependency"
-    },
-    {
-      "from": "@tanstack/solid-time-devtools",
-      "to": "@tanstack/time-devtools",
       "type": "dependency"
     }
   ]

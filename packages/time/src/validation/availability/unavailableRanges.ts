@@ -1,9 +1,8 @@
 import {
-  getWeekday,
   invertMinuteRanges,
   mergeMinuteRanges,
   MINUTES_IN_DAY,
-  resourceDayAvail,
+  resourceDayWorkingTime,
   type MinuteRange,
 } from "./time";
 import type { AvailabilityResourceInput } from "./checkAvailability";
@@ -20,12 +19,11 @@ export function mergeUnavailableMinuteRanges(
     : resources;
   if (selected.length === 0) return null;
 
-  const weekday = getWeekday(date);
   const available: Array<MinuteRange> = [];
   for (const resource of selected) {
     if (!resource.availability) continue;
     available.push(
-      ...resourceDayAvail(resource.availability, weekday).available,
+      ...resourceDayWorkingTime(resource.availability, date).working,
     );
   }
 

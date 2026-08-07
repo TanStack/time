@@ -2,7 +2,12 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const PURE_DIRS = ["src/validation", "src/projection", "src/recurrence"];
+const PURE_DIRS = [
+  "src/validation",
+  "src/projection",
+  "src/recurrence",
+  "src/workingTime",
+];
 
 const FORBIDDEN = [
   { pattern: /@tanstack\/store/, why: "state store" },
