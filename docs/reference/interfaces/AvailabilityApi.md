@@ -5,7 +5,7 @@ title: AvailabilityApi
 
 # Interface: AvailabilityApi\<TResource, TEvent\>
 
-Defined in: [calendar/features/availability.ts:26](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L26)
+Defined in: [calendar/features/availability.ts:27](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L27)
 
 ## Type Parameters
 
@@ -25,7 +25,7 @@ Defined in: [calendar/features/availability.ts:26](https://github.com/TanStack/t
 checkEventAvailability: (event, newStart, newEnd, newResources?, newConsumption?) => AvailabilityConflict | null;
 ```
 
-Defined in: [calendar/features/availability.ts:52](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L52)
+Defined in: [calendar/features/availability.ts:53](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L53)
 
 #### Parameters
 
@@ -61,7 +61,7 @@ Defined in: [calendar/features/availability.ts:52](https://github.com/TanStack/t
 getDaySpanConflicts: (options) => AvailabilityConflict[];
 ```
 
-Defined in: [calendar/features/availability.ts:44](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L44)
+Defined in: [calendar/features/availability.ts:45](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L45)
 
 #### Parameters
 
@@ -103,7 +103,7 @@ Defined in: [calendar/features/availability.ts:44](https://github.com/TanStack/t
 getUnavailabilityDetails: (date, startMinutes, endMinutes, options?) => UnavailabilityDetail[];
 ```
 
-Defined in: [calendar/features/availability.ts:38](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L38)
+Defined in: [calendar/features/availability.ts:39](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L39)
 
 #### Parameters
 
@@ -137,7 +137,7 @@ Defined in: [calendar/features/availability.ts:38](https://github.com/TanStack/t
 getUnavailableMinuteRanges: (date, options?) => UnavailableTimeRange[];
 ```
 
-Defined in: [calendar/features/availability.ts:34](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L34)
+Defined in: [calendar/features/availability.ts:35](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L35)
 
 #### Parameters
 
@@ -163,7 +163,7 @@ Defined in: [calendar/features/availability.ts:34](https://github.com/TanStack/t
 getUnavailableRanges: (date, options?) => UnavailableRange[];
 ```
 
-Defined in: [calendar/features/availability.ts:30](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L30)
+Defined in: [calendar/features/availability.ts:31](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L31)
 
 #### Parameters
 
@@ -189,7 +189,7 @@ Defined in: [calendar/features/availability.ts:30](https://github.com/TanStack/t
 validateEventPlacement: (event) => object;
 ```
 
-Defined in: [calendar/features/availability.ts:59](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L59)
+Defined in: [calendar/features/availability.ts:60](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L60)
 
 #### Parameters
 

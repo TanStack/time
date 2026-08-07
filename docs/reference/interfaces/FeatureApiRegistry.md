@@ -85,7 +85,7 @@ Defined in: [calendar/features/registry.ts:21](https://github.com/TanStack/time/
 peerReader: PeerReaderApi<TResource, TEvent>;
 ```
 
-Defined in: [calendar/tests/features.test.ts:35](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/tests/features.test.ts#L35)
+Defined in: [calendar/tests/features.test.ts:36](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/tests/features.test.ts#L36)
 
 ***
 

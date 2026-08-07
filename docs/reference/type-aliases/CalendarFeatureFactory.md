@@ -9,7 +9,7 @@ title: CalendarFeatureFactory
 type CalendarFeatureFactory = () => AnyCalendarFeature<Resource, Event<Resource>>;
 ```
 
-Defined in: [calendar/features/types.ts:113](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L113)
+Defined in: [calendar/features/types.ts:116](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L116)
 
 ## Returns
 

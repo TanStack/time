@@ -15,7 +15,6 @@ title: "@tanstack/time"
 
 - [AddOptions](interfaces/AddOptions.md)
 - [AnyCalendarFeature](interfaces/AnyCalendarFeature.md)
-- [Availability](interfaces/Availability.md)
 - [AvailabilityApi](interfaces/AvailabilityApi.md)
 - [AvailabilityConflict](interfaces/AvailabilityConflict.md)
 - [BuildDaysInput](interfaces/BuildDaysInput.md)
@@ -78,6 +77,7 @@ title: "@tanstack/time"
 - [RecurrenceOverride](interfaces/RecurrenceOverride.md)
 - [RecurrenceReadApi](interfaces/RecurrenceReadApi.md)
 - [RecurrenceRule](interfaces/RecurrenceRule.md)
+- [RecurrentWorkingInterval](interfaces/RecurrentWorkingInterval.md)
 - [ResizeConstraints](interfaces/ResizeConstraints.md)
 - [ResizeControllerOptions](interfaces/ResizeControllerOptions.md)
 - [ResizeError](interfaces/ResizeError.md)
@@ -120,6 +120,9 @@ title: "@tanstack/time"
 - [ValidateResizeOptions](interfaces/ValidateResizeOptions.md)
 - [ValidateResizeResult](interfaces/ValidateResizeResult.md)
 - [ViewMode](interfaces/ViewMode.md)
+- [WorkingCalendar](interfaces/WorkingCalendar.md)
+- [WorkingInterval](interfaces/WorkingInterval.md)
+- [WorkingTimeRange](interfaces/WorkingTimeRange.md)
 
 ## Type Aliases
 
@@ -208,6 +211,7 @@ title: "@tanstack/time"
 - [getTimeSlots](functions/getTimeSlots.md)
 - [getUnixTime](functions/getUnixTime.md)
 - [getWeek](functions/getWeek.md)
+- [getWorkingTime](functions/getWorkingTime.md)
 - [groupDaysBy](functions/groupDaysBy.md)
 - [historyFeature](functions/historyFeature.md)
 - [intersects](functions/intersects.md)
