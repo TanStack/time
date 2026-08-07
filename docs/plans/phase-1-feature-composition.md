@@ -15,7 +15,7 @@ attach as features (`workingTimeFeature`, `schedulingFeature`), so doing this af
 writing them twice.
 
 **Method:** same strangler-fig as Phase 0. The test suite stays green after every slice (1,007 at
-the start of Phase 1, 1,047 now).
+the start of Phase 1, 1,047 in `@tanstack/time` now, plus 5 in `@tanstack/solid-time`).
 `CalendarCore`'s surface keeps working until slice 5 deliberately removes it — the methods
 become thin delegates to module apis before the composition seam is exposed, so no slice both
 moves logic and changes the public shape.
@@ -474,9 +474,36 @@ Atomicity is the visible payoff: a `commitUpdate` whose dependency cascade would
 past a resource's closing time now applies *nothing*, where before the cascade landed and the
 availability check was never consulted.
 
+### Slice 10 — the Solid adapter ✅
+
+`@tanstack/solid-time` was an empty `index.ts`. It ships `createCalendar` written against the
+composed shape — nothing was ported from the pre-composition surface, which is why this slice waited
+for the others.
+
+It returns `{ calendar, state, days, isPending }` rather than one flattened bag like the React hook.
+`calendar` is the instance (core methods plus composed api, stable identity); the other three are
+accessors. Flattening would have meant either wrapping every method or making the reactive values
+non-reactive, and in Solid the split is the honest shape.
+
+The resize surface is gated the same way as React's — `"resize" extends
+FeatureName<TFeatures[number]>` — but with none of the machinery: **Solid has no rules-of-hooks, so
+an uncomposed resize feature simply returns an object without those keys.** React needed
+`inertResizeController` to keep `useSyncExternalStore` unconditional. The runtime test asserts
+`"resizeState" in result === false`.
+
+`resize` options may be a plain object or an accessor; a `createEffect` pushes them into the
+controller either way, and `onCleanup` handles unsubscribe and `destroy`.
+
+Two bits of setup the empty package never needed: `vitest.config.ts` had to inline `solid-js` and
+`@tanstack/solid-store` (`@tanstack/solid-store` resolves to `dist/source/index.jsx` under the
+`solid` export condition, which Node's loader refuses), and the package needs its own
+`.oxlintrc.json` turning off `react-hooks/*` — the root config applies them everywhere, and
+`useStore` inside a `create*` function trips `rules-of-hooks`.
+
 ## Remaining work
 
-- The Solid adapter is written against the composed shape, not ported from the monolith.
 - `validateMove` and `validateResize` still pre-flight through the availability api rather than a
   kernel dry-run. They share the module's algorithm, so this is a call-path question, not a
   correctness one — revisit if a third caller appears.
+- No Solid example app. The adapter is covered by five tests over `createRoot`, not by a running
+  view.
