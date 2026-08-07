@@ -31,7 +31,7 @@ Defined in: [calendar/resizeController.ts:115](https://github.com/TanStack/time/
 
 ##### host
 
-`CalendarHost`\<`TResource`, `TEvent`\>
+[`CalendarHost`](../interfaces/CalendarHost.md)\<`TResource`, `TEvent`\>
 
 ##### options
 
