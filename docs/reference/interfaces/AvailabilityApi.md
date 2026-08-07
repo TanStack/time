@@ -195,6 +195,10 @@ Defined in: [calendar/features/availability.ts:60](https://github.com/TanStack/t
 
 ##### event
 
+###### calendarId?
+
+`string`
+
 ###### consumption?
 
 `number`[]

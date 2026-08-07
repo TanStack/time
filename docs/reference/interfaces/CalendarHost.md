@@ -349,6 +349,10 @@ Defined in: [calendar/features/types.ts:64](https://github.com/TanStack/time/blo
 
 ##### event
 
+###### calendarId?
+
+`string`
+
 ###### consumption?
 
 `number`[]

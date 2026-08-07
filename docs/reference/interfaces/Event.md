@@ -21,7 +21,7 @@ Defined in: [calendar/types.ts:65](https://github.com/TanStack/time/blob/main/pa
 optional _occurrenceIndex: number;
 ```
 
-Defined in: [calendar/types.ts:85](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L85)
+Defined in: [calendar/types.ts:87](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L87)
 
 ***
 
@@ -31,7 +31,7 @@ Defined in: [calendar/types.ts:85](https://github.com/TanStack/time/blob/main/pa
 optional _occurrenceOriginalStart: string;
 ```
 
-Defined in: [calendar/types.ts:87](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L87)
+Defined in: [calendar/types.ts:89](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L89)
 
 ***
 
@@ -41,7 +41,7 @@ Defined in: [calendar/types.ts:87](https://github.com/TanStack/time/blob/main/pa
 optional _originalEnd: string;
 ```
 
-Defined in: [calendar/types.ts:81](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L81)
+Defined in: [calendar/types.ts:83](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L83)
 
 ***
 
@@ -51,7 +51,7 @@ Defined in: [calendar/types.ts:81](https://github.com/TanStack/time/blob/main/pa
 optional _originalStart: string;
 ```
 
-Defined in: [calendar/types.ts:79](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L79)
+Defined in: [calendar/types.ts:81](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L81)
 
 ***
 
@@ -61,7 +61,7 @@ Defined in: [calendar/types.ts:79](https://github.com/TanStack/time/blob/main/pa
 optional _recurringMasterId: string;
 ```
 
-Defined in: [calendar/types.ts:83](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L83)
+Defined in: [calendar/types.ts:85](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L85)
 
 ***
 
@@ -71,7 +71,17 @@ Defined in: [calendar/types.ts:83](https://github.com/TanStack/time/blob/main/pa
 optional allDay: boolean;
 ```
 
-Defined in: [calendar/types.ts:77](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L77)
+Defined in: [calendar/types.ts:79](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L79)
+
+***
+
+### calendarId?
+
+```ts
+optional calendarId: string;
+```
+
+Defined in: [calendar/types.ts:73](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L73)
 
 ***
 
@@ -91,7 +101,7 @@ Defined in: [calendar/types.ts:71](https://github.com/TanStack/time/blob/main/pa
 optional dependsOn: EventDependency[];
 ```
 
-Defined in: [calendar/types.ts:73](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L73)
+Defined in: [calendar/types.ts:75](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L75)
 
 ***
 
@@ -121,7 +131,7 @@ Defined in: [calendar/types.ts:66](https://github.com/TanStack/time/blob/main/pa
 optional recurrence: RecurrenceRule<TResource>;
 ```
 
-Defined in: [calendar/types.ts:75](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L75)
+Defined in: [calendar/types.ts:77](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L77)
 
 ***
 
