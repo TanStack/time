@@ -19,6 +19,7 @@ title: "@tanstack/time"
 - [AvailabilityApi](interfaces/AvailabilityApi.md)
 - [AvailabilityConflict](interfaces/AvailabilityConflict.md)
 - [BuildDaysInput](interfaces/BuildDaysInput.md)
+- [BuiltInFeatureApiRegistry](interfaces/BuiltInFeatureApiRegistry.md)
 - [CalendarCoreOptions](interfaces/CalendarCoreOptions.md)
 - [CalendarFeature](interfaces/CalendarFeature.md)
 - [CalendarHost](interfaces/CalendarHost.md)
@@ -33,6 +34,8 @@ title: "@tanstack/time"
 - [DayLayoutApi](interfaces/DayLayoutApi.md)
 - [DayView](interfaces/DayView.md)
 - [DependencyCreationApi](interfaces/DependencyCreationApi.md)
+- [DependencyGraphApi](interfaces/DependencyGraphApi.md)
+- [DependencyShift](interfaces/DependencyShift.md)
 - [EndOfOptions](interfaces/EndOfOptions.md)
 - [EqualsOptions](interfaces/EqualsOptions.md)
 - [Event](interfaces/Event.md)
@@ -80,6 +83,8 @@ title: "@tanstack/time"
 - [ResizeError](interfaces/ResizeError.md)
 - [ResizeFeatureApi](interfaces/ResizeFeatureApi.md)
 - [ResizeHandleStyle](interfaces/ResizeHandleStyle.md)
+- [ResizeHost](interfaces/ResizeHost.md)
+- [ResizePeers](interfaces/ResizePeers.md)
 - [ResizePreviewOptions](interfaces/ResizePreviewOptions.md)
 - [ResizeStartArgs](interfaces/ResizeStartArgs.md)
 - [ResizeState](interfaces/ResizeState.md)
@@ -118,6 +123,7 @@ title: "@tanstack/time"
 
 ## Type Aliases
 
+- [BuiltInFeatureApi](type-aliases/BuiltInFeatureApi.md)
 - [Calendar](type-aliases/Calendar.md)
 - [CalendarApi](type-aliases/CalendarApi.md)
 - [CalendarFeatureFactory](type-aliases/CalendarFeatureFactory.md)

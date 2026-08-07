@@ -5,7 +5,7 @@ title: ResizeFeatureApi
 
 # Interface: ResizeFeatureApi\<TResource, TEvent\>
 
-Defined in: [calendar/features/resize.ts:9](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L9)
+Defined in: [calendar/features/resize.ts:26](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L26)
 
 ## Type Parameters
 
@@ -25,7 +25,7 @@ Defined in: [calendar/features/resize.ts:9](https://github.com/TanStack/time/blo
 createResizeController: (options?) => ResizeController<TResource, TEvent>;
 ```
 
-Defined in: [calendar/features/resize.ts:13](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L13)
+Defined in: [calendar/features/resize.ts:30](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L30)
 
 #### Parameters
 
@@ -45,7 +45,7 @@ Defined in: [calendar/features/resize.ts:13](https://github.com/TanStack/time/bl
 getEventSegmentInfo: (event) => SegmentInfo;
 ```
 
-Defined in: [calendar/features/resize.ts:16](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L16)
+Defined in: [calendar/features/resize.ts:33](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L33)
 
 #### Parameters
 
@@ -56,3 +56,23 @@ Defined in: [calendar/features/resize.ts:16](https://github.com/TanStack/time/bl
 #### Returns
 
 [`SegmentInfo`](SegmentInfo.md)
+
+***
+
+### validateResize()
+
+```ts
+validateResize: (options) => ValidateResizeResult;
+```
+
+Defined in: [calendar/features/resize.ts:34](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L34)
+
+#### Parameters
+
+##### options
+
+[`ValidateResizeOptions`](ValidateResizeOptions.md)
+
+#### Returns
+
+[`ValidateResizeResult`](ValidateResizeResult.md)

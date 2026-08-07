@@ -5,7 +5,7 @@ title: FeatureModuleCtx
 
 # Interface: FeatureModuleCtx
 
-Defined in: [calendar/features/types.ts:86](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L86)
+Defined in: [calendar/features/types.ts:72](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L72)
 
 ## Properties
 
@@ -15,4 +15,4 @@ Defined in: [calendar/features/types.ts:86](https://github.com/TanStack/time/blo
 timeZone: TimeZoneLike;
 ```
 
-Defined in: [calendar/features/types.ts:87](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L87)
+Defined in: [calendar/features/types.ts:73](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L73)

@@ -9,7 +9,7 @@ title: FEATURE_API_OWNERS
 const FEATURE_API_OWNERS: object;
 ```
 
-Defined in: [calendar/features/registry.ts:58](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L58)
+Defined in: [calendar/features/registry.ts:75](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L75)
 
 ## Type Declaration
 
@@ -49,10 +49,28 @@ readonly createResizeController: "eventResizeFeature" = "eventResizeFeature";
 readonly editRecurringEvent: "eventRecurrenceFeature" = "eventRecurrenceFeature";
 ```
 
+### findViolatedDependency
+
+```ts
+readonly findViolatedDependency: "eventDependencyFeature" = "eventDependencyFeature";
+```
+
+### getAffectedByDelta
+
+```ts
+readonly getAffectedByDelta: "eventDependencyFeature" = "eventDependencyFeature";
+```
+
 ### getDaySpanConflicts
 
 ```ts
 readonly getDaySpanConflicts: "resourceAvailabilityFeature" = "resourceAvailabilityFeature";
+```
+
+### getDependentShifts
+
+```ts
+readonly getDependentShifts: "eventDependencyFeature" = "eventDependencyFeature";
 ```
 
 ### getEventProps
@@ -77,6 +95,12 @@ readonly getEventSegmentInfo: "eventResizeFeature" = "eventResizeFeature";
 
 ```ts
 readonly getMasterEvent: "eventRecurrenceFeature" = "eventRecurrenceFeature";
+```
+
+### getPredecessorShifts
+
+```ts
+readonly getPredecessorShifts: "eventDependencyFeature" = "eventDependencyFeature";
 ```
 
 ### getTimelineLayout
@@ -127,6 +151,12 @@ readonly redo: "historyFeature" = "historyFeature";
 readonly removeRecurringEvent: "eventRecurrenceFeature" = "eventRecurrenceFeature";
 ```
 
+### resolveOccurrence
+
+```ts
+readonly resolveOccurrence: "eventRecurrenceFeature" = "eventRecurrenceFeature";
+```
+
 ### undo
 
 ```ts
@@ -143,4 +173,10 @@ readonly validateEventDependencies: "eventDependencyFeature" = "eventDependencyF
 
 ```ts
 readonly validateEventPlacement: "resourceAvailabilityFeature" = "resourceAvailabilityFeature";
+```
+
+### validateResize
+
+```ts
+readonly validateResize: "eventResizeFeature" = "eventResizeFeature";
 ```

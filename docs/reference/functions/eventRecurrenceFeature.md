@@ -9,7 +9,7 @@ title: eventRecurrenceFeature
 function eventRecurrenceFeature<TResource, TEvent>(): CalendarFeature<TResource, TEvent, RecurrenceApi<TEvent & KernelEvent>, RecurrenceNavigationApi & RecurrenceEditApi<TResource, TEvent> & RecurrenceReadApi<TResource, TEvent>, "recurrence">;
 ```
 
-Defined in: [calendar/features/recurrence.ts:84](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/recurrence.ts#L84)
+Defined in: [calendar/features/recurrence.ts:89](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/recurrence.ts#L89)
 
 ## Type Parameters
 

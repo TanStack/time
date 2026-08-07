@@ -5,7 +5,7 @@ title: AnyCalendarFeature
 
 # Interface: AnyCalendarFeature\<TResource, TEvent\>
 
-Defined in: [calendar/features/types.ts:103](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L103)
+Defined in: [calendar/features/types.ts:94](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L94)
 
 ## Type Parameters
 
@@ -22,10 +22,10 @@ Defined in: [calendar/features/types.ts:103](https://github.com/TanStack/time/bl
 ### api()?
 
 ```ts
-optional api: (host, module) => object | undefined;
+optional api: (host, module, peers) => object | undefined;
 ```
 
-Defined in: [calendar/features/types.ts:110](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L110)
+Defined in: [calendar/features/types.ts:101](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L101)
 
 #### Parameters
 
@@ -34,6 +34,10 @@ Defined in: [calendar/features/types.ts:110](https://github.com/TanStack/time/bl
 [`CalendarHost`](CalendarHost.md)\<`TResource`, `TEvent`\>
 
 ##### module
+
+`never`
+
+##### peers
 
 `never`
 
@@ -49,7 +53,7 @@ Defined in: [calendar/features/types.ts:110](https://github.com/TanStack/time/bl
 optional module: (ctx) => Module<TEvent & KernelEvent, unknown>;
 ```
 
-Defined in: [calendar/features/types.ts:109](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L109)
+Defined in: [calendar/features/types.ts:100](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L100)
 
 #### Parameters
 
@@ -69,7 +73,7 @@ Defined in: [calendar/features/types.ts:109](https://github.com/TanStack/time/bl
 name: string;
 ```
 
-Defined in: [calendar/features/types.ts:107](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L107)
+Defined in: [calendar/features/types.ts:98](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L98)
 
 ***
 
@@ -79,4 +83,4 @@ Defined in: [calendar/features/types.ts:107](https://github.com/TanStack/time/bl
 optional requires: readonly string[];
 ```
 
-Defined in: [calendar/features/types.ts:108](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L108)
+Defined in: [calendar/features/types.ts:99](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L99)
