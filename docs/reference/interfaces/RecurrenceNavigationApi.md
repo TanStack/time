@@ -5,7 +5,7 @@ title: RecurrenceNavigationApi
 
 # Interface: RecurrenceNavigationApi
 
-Defined in: [calendar/features/recurrence.ts:47](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/recurrence.ts#L47)
+Defined in: [calendar/features/recurrence.ts:48](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/recurrence.ts#L48)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/features/recurrence.ts:47](https://github.com/TanStack/tim
 goToNextOccurrence: (eventId, fromDate?) => void;
 ```
 
-Defined in: [calendar/features/recurrence.ts:48](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/recurrence.ts#L48)
+Defined in: [calendar/features/recurrence.ts:49](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/recurrence.ts#L49)
 
 #### Parameters
 
@@ -39,7 +39,7 @@ Defined in: [calendar/features/recurrence.ts:48](https://github.com/TanStack/tim
 goToPreviousOccurrence: (eventId, fromDate?) => void;
 ```
 
-Defined in: [calendar/features/recurrence.ts:49](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/recurrence.ts#L49)
+Defined in: [calendar/features/recurrence.ts:50](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/recurrence.ts#L50)
 
 #### Parameters
 

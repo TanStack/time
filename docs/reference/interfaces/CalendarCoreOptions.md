@@ -115,7 +115,7 @@ Defined in: [calendar/calendar.ts:57](https://github.com/TanStack/time/blob/main
 optional fetchEvents: (range) => Promise<NoInfer<TEvent>[]>;
 ```
 
-Defined in: [calendar/calendar.ts:67](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L67)
+Defined in: [calendar/calendar.ts:69](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L69)
 
 #### Parameters
 
@@ -141,7 +141,7 @@ Defined in: [calendar/calendar.ts:67](https://github.com/TanStack/time/blob/main
 optional layout: LayoutOptions;
 ```
 
-Defined in: [calendar/calendar.ts:72](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L72)
+Defined in: [calendar/calendar.ts:74](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L74)
 
 ***
 
@@ -156,6 +156,16 @@ Defined in: [calendar/date-core.ts:56](https://github.com/TanStack/time/blob/mai
 #### Inherited from
 
 [`DateCoreOptions`](DateCoreOptions.md).[`locale`](DateCoreOptions.md#locale)
+
+***
+
+### multiResource?
+
+```ts
+optional multiResource: "intersection" | "union";
+```
+
+Defined in: [calendar/calendar.ts:67](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L67)
 
 ***
 

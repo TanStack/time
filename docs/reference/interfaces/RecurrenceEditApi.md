@@ -5,7 +5,7 @@ title: RecurrenceEditApi
 
 # Interface: RecurrenceEditApi\<TResource, TEvent\>
 
-Defined in: [calendar/features/recurrence.ts:55](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/recurrence.ts#L55)
+Defined in: [calendar/features/recurrence.ts:56](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/recurrence.ts#L56)
 
 ## Type Parameters
 
@@ -25,7 +25,7 @@ Defined in: [calendar/features/recurrence.ts:55](https://github.com/TanStack/tim
 editRecurringEvent: (eventId, updates, options) => Promise<SaveEventResult>;
 ```
 
-Defined in: [calendar/features/recurrence.ts:59](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/recurrence.ts#L59)
+Defined in: [calendar/features/recurrence.ts:60](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/recurrence.ts#L60)
 
 #### Parameters
 
@@ -63,7 +63,7 @@ Defined in: [calendar/features/recurrence.ts:59](https://github.com/TanStack/tim
 removeRecurringEvent: (eventId, options) => void;
 ```
 
-Defined in: [calendar/features/recurrence.ts:68](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/recurrence.ts#L68)
+Defined in: [calendar/features/recurrence.ts:69](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/recurrence.ts#L69)
 
 #### Parameters
 
