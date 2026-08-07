@@ -38,6 +38,7 @@ export interface CalendarHost<
     end: string;
   }) => Map<string, Array<TEvent>>;
   getDaysWithEvents: () => Array<Day<TResource, TEvent>>;
+  getEventsByDate: (date: string) => Array<TEvent>;
   goToSpecificPeriod: (isoDate: string) => void;
   write: (
     ops: Array<InvertibleOp<TEvent> | IntentOp>,

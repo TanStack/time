@@ -1,6 +1,6 @@
 import { Temporal } from "@js-temporal/polyfill";
 import { getTimeClient } from "../client";
-import { bucketByDay, toUnavailableRanges } from "~/projection";
+import { bucketByDay } from "~/projection";
 import type { LayoutOptions } from "~/projection";
 import {
   expandRecurringEvent,
@@ -12,11 +12,13 @@ import { createKernel } from "~/kernel";
 import { FEATURE_API_OWNERS } from "./features";
 import type {
   AnyCalendarFeature,
+  AvailabilityApi,
   CalendarFeatureList,
   CalendarHost,
   ComposedApi,
   FeatureModuleCtx,
   FullFeatureApi,
+  UnavailabilityDetail,
 } from "./features";
 import type {
   Module,
@@ -42,25 +44,16 @@ import type {
   Resource,
   SaveEventResult,
   TimeSlot,
-  UnavailableRange,
   ValidateResizeOptions,
   ValidateResizeResult,
 } from "./types";
 import type { CalendarStore } from "./types";
 import { toPlainDateString, toPlainDateTimeString } from "~/date/parse";
 import {
-  checkAvailability,
-  checkDaySpan,
   describeUnavailability,
   formatMinutesToTime,
-  getUnavailabilityDetails as computeUnavailabilityDetails,
-  mergeUnavailableMinuteRanges,
   MINUTES_IN_DAY,
   toUnavailabilityConflict,
-} from "~/validation/availability";
-import type {
-  AvailabilityOtherEvent,
-  MinuteRange,
 } from "~/validation/availability";
 import {
   computeCascade,
@@ -141,13 +134,6 @@ interface CalendarActions<
 
   removeEvent: (id: Event["id"]) => void;
 
-  getUnavailableRanges: (
-    date: string,
-    options?: {
-      resourceIds?: Array<TResource["id"]>;
-    },
-  ) => Array<UnavailableRange>;
-
   formatPeriodLabel: (options?: { locale?: string }) => string;
 
   formatCurrentPeriod: (options?: { locale?: string }) => string;
@@ -166,12 +152,6 @@ interface CalendarActions<
 
   fetchEventsForRange: (start: string, end: string) => Promise<void>;
 
-  validateEventPlacement: (event: {
-    title: string;
-    start: string;
-    end: string;
-    resources?: Array<TResource | string>;
-  }) => { blocked: boolean; message?: string };
   setResources: (resources: Array<TResource> | null) => void;
   setEvents: (events: Array<TEvent> | null) => void;
 }
@@ -259,28 +239,12 @@ export class CalendarCore<
 
   private _eventsCache: Array<TEvent> | null = null;
 
-  private _mergedUnavailMinuteCache = new Map<string, Array<MinuteRange>>();
-
   private _mapVersion = 0;
   private _eventMapCache = new Map<string, Map<string, Array<TEvent>>>();
   private _eventMapCacheVersion = -1;
 
   private _bumpMapVersion() {
     this._mapVersion++;
-  }
-
-  private _resolveEventResources(event: {
-    resources?: Array<TResource | string>;
-  }): Array<TResource> {
-    return (event.resources ?? []).map((r) => {
-      if (typeof r === "string") {
-        return (
-          this.options.resources?.find((res) => res.id === r) ??
-          ({ id: r, label: r } as TResource)
-        );
-      }
-      return r;
-    });
   }
 
   private _getEventResourceIds(event: {
@@ -398,6 +362,71 @@ export class CalendarCore<
     }
   }
 
+  private get _availability(): AvailabilityApi<TResource, TEvent> | null {
+    return this.hasFeature("availability") ? this._api : null;
+  }
+
+  private _checkAvailability(
+    event: TEvent,
+    newStart: string,
+    newEnd: string,
+    newResources?: Array<TResource | string>,
+    newConsumption?: Array<number>,
+  ): AvailabilityConflict | null {
+    return (
+      this._availability?.checkEventAvailability(
+        event,
+        newStart,
+        newEnd,
+        newResources,
+        newConsumption,
+      ) ?? null
+    );
+  }
+
+  private _unavailableMinutes(
+    date: string,
+    options?: { resourceIds?: Array<string> },
+  ): Array<UnavailableTimeRange> {
+    return this._availability?.getUnavailableMinuteRanges(date, options) ?? [];
+  }
+
+  private _unavailabilityDetails(
+    date: string,
+    startMinutes: number,
+    endMinutes: number,
+    options?: { resourceIds?: Array<string> },
+  ): Array<UnavailabilityDetail> {
+    return (
+      this._availability?.getUnavailabilityDetails(
+        date,
+        startMinutes,
+        endMinutes,
+        options,
+      ) ?? []
+    );
+  }
+
+  private _daySpanConflicts(
+    dayDate: string,
+    startMins: number,
+    endMins: number,
+    eventId: string,
+    resourceIds: Array<string>,
+    resizeEvent?: TEvent,
+  ): Array<AvailabilityConflict> {
+    return (
+      this._availability?.getDaySpanConflicts({
+        date: dayDate,
+        startMinutes: startMins,
+        endMinutes: endMins,
+        eventId,
+        resourceIds,
+        event: resizeEvent,
+      }) ?? []
+    );
+  }
+
   private _host(): CalendarHost<TResource, TEvent> {
     return {
       getEvent: (id) => this._eventMap.get(id),
@@ -410,6 +439,7 @@ export class CalendarCore<
       }),
       getEventMap: (window) => this.getEventMap(window),
       getDaysWithEvents: () => this.getDaysWithEvents(),
+      getEventsByDate: (date) => this.getEventsByDate(date),
       goToSpecificPeriod: (isoDate) => this.goToSpecificPeriod(isoDate),
       write: (ops, reason) => this._write(ops, reason),
       fetchEventsForRange: (start, end) => this.fetchEventsForRange(start, end),
@@ -424,7 +454,10 @@ export class CalendarCore<
       validateEventDependencies: (event, dependsOn) =>
         this._api.validateEventDependencies(event, dependsOn),
       validateResize: (options) => this.validateResize(options),
-      validateEventPlacement: (event) => this.validateEventPlacement(event),
+      validateEventPlacement: (event) =>
+        this._availability?.validateEventPlacement(event) ?? {
+          blocked: false,
+        },
     };
   }
 
@@ -949,50 +982,6 @@ export class CalendarCore<
     return affected;
   }
 
-  private checkEventAvailability(
-    event: TEvent,
-    newStart: string,
-    newEnd: string,
-    newResources?: Array<TResource | string>,
-    newConsumption?: Array<number>,
-  ): AvailabilityConflict | null {
-    const resources =
-      newResources?.map((r) =>
-        typeof r === "string"
-          ? (this.options.resources?.find((res) => res.id === r) ??
-            ({ id: r, label: r } as TResource))
-          : r,
-      ) || this._resolveEventResources(event);
-    if (!resources?.length) return null;
-
-    const otherEvents: Array<AvailabilityOtherEvent> = [];
-    for (const candidate of this._eventMap.values()) {
-      if (candidate._originalStart) continue;
-      otherEvents.push({
-        id: candidate.id,
-        start: toPlainDateTimeString(candidate.start),
-        end: toPlainDateTimeString(candidate.end),
-        resourceIds: this._getEventResourceIds(candidate),
-        consumption: candidate.consumption,
-        masterId: candidate._recurringMasterId ?? candidate.id,
-      });
-    }
-
-    const [conflict] = checkAvailability({
-      event: {
-        id: event.id,
-        title: event.title,
-        start: newStart,
-        end: newEnd,
-      },
-      resources,
-      consumption: newConsumption ?? event.consumption,
-      otherEvents,
-    });
-
-    return conflict ?? null;
-  }
-
   getEvents(): Array<TEvent> {
     return [...this._eventsView()];
   }
@@ -1074,7 +1063,7 @@ export class CalendarCore<
         const pred = this._eventMap.get(shift.id);
         if (!pred) continue;
 
-        if (this.checkEventAvailability(pred, shift.newStart, shift.newEnd)) {
+        if (this._checkAvailability(pred, shift.newStart, shift.newEnd)) {
           return {
             blocked: true,
             blockedEventTitle: pred.title,
@@ -1084,7 +1073,7 @@ export class CalendarCore<
       }
     }
 
-    const conflict = this.checkEventAvailability(
+    const conflict = this._checkAvailability(
       event,
       newStart,
       newEnd,
@@ -1121,7 +1110,7 @@ export class CalendarCore<
         newStart: depStart,
         newEnd: depEnd,
       } of affected) {
-        const depConflict = this.checkEventAvailability(dep, depStart, depEnd);
+        const depConflict = this._checkAvailability(dep, depStart, depEnd);
         if (depConflict) {
           return {
             blocked: true,
@@ -1153,9 +1142,7 @@ export class CalendarCore<
         const successor = this._eventMap.get(shift.id);
         if (!successor) continue;
 
-        if (
-          this.checkEventAvailability(successor, shift.newStart, shift.newEnd)
-        ) {
+        if (this._checkAvailability(successor, shift.newStart, shift.newEnd)) {
           return {
             blocked: true,
             blockedEventTitle: successor.title,
@@ -1163,47 +1150,6 @@ export class CalendarCore<
           };
         }
       }
-    }
-
-    return { blocked: false };
-  }
-
-  validateEventPlacement(event: {
-    id?: string;
-    title: string;
-    start: string;
-    end: string;
-    resources?: Array<TResource | string>;
-    consumption?: Array<number>;
-  }): { blocked: boolean; message?: string } {
-    const placeholderEvent = {
-      id: event.id ?? "__validate_placement__",
-      title: event.title,
-      start: event.start,
-      end: event.end,
-      resources: event.resources,
-      consumption: event.consumption,
-    } as TEvent;
-
-    const conflict = this.checkEventAvailability(
-      placeholderEvent,
-      event.start,
-      event.end,
-      event.resources,
-      event.consumption,
-    );
-
-    if (conflict) {
-      const isCapacity = conflict.resourceDetails.some(
-        (d) => d.reason === "capacity",
-      );
-      const message = isCapacity
-        ? `Cannot place "${event.title}" here — ${conflict.description}.`
-        : `Cannot place "${event.title}" here — it falls inside an unavailable zone.`;
-      return {
-        blocked: true,
-        message,
-      };
     }
 
     return { blocked: false };
@@ -1235,7 +1181,7 @@ export class CalendarCore<
       }
     }
 
-    const placementValidation = this.validateEventPlacement({
+    const placementValidation = this._availability?.validateEventPlacement({
       id: event.id,
       title: event.title,
       start: startStr,
@@ -1243,7 +1189,7 @@ export class CalendarCore<
       resources: event.resources,
       consumption: event.consumption,
     });
-    if (placementValidation.blocked) {
+    if (placementValidation?.blocked) {
       return {
         success: false,
         error: {
@@ -1375,129 +1321,6 @@ export class CalendarCore<
     });
   }
 
-  getUnavailableRanges(
-    date: string,
-    options?: {
-      resourceIds?: Array<TResource["id"]>;
-    },
-  ): Array<UnavailableRange> {
-    const merged = this._getMergedUnavailableMinuteRanges(
-      date,
-      options?.resourceIds,
-    );
-    if (merged === null) return [];
-
-    return toUnavailableRanges(merged);
-  }
-
-  private _getMergedUnavailableMinuteRanges(
-    date: string,
-    resourceIds?: Array<TResource["id"]>,
-  ): Array<MinuteRange> | null {
-    const allResources = this.options.resources;
-    if (!allResources || allResources.length === 0) return null;
-
-    const ids = (
-      resourceIds
-        ? allResources
-            .filter((r) => resourceIds.includes(r.id))
-            .map((r) => r.id)
-        : allResources.map((r) => r.id)
-    ).slice();
-    if (ids.length === 0) return null;
-
-    const cacheKey = `${ids.slice().sort().join(",")}|${date}`;
-    const cached = this._mergedUnavailMinuteCache.get(cacheKey);
-    if (cached) return cached;
-
-    const merged = mergeUnavailableMinuteRanges(allResources, date, ids);
-    if (merged === null) return null;
-
-    this._mergedUnavailMinuteCache.set(cacheKey, merged);
-    return merged;
-  }
-
-  getUnavailabilityDetails(
-    date: string,
-    startMinutes: number,
-    endMinutes: number,
-    options?: {
-      resourceIds?: Array<TResource["id"]>;
-    },
-  ): Array<{
-    resourceId: string;
-    resourceLabel: string;
-    reason: "outside-hours" | "capacity" | "no-availability";
-    description: string;
-  }> {
-    const resources = options?.resourceIds
-      ? this.options.resources?.filter((resource) =>
-          options.resourceIds?.includes(resource.id),
-        )
-      : this.options.resources;
-
-    if (!resources || resources.length === 0) {
-      return [];
-    }
-
-    return computeUnavailabilityDetails(
-      resources,
-      date,
-      startMinutes,
-      endMinutes,
-    );
-  }
-
-  private getUnavailableMinuteRanges(
-    date: string,
-    options?: { resourceIds?: Array<string> },
-  ): Array<UnavailableTimeRange> {
-    const merged = this._getMergedUnavailableMinuteRanges(
-      date,
-      options?.resourceIds,
-    );
-    if (!merged) return [];
-    return merged.map((r) => ({
-      startMinutes: r.startMinutes,
-      endMinutes: r.endMinutes,
-    }));
-  }
-
-  private getResizeConflicts(
-    dayDate: string,
-    startMins: number,
-    endMins: number,
-    eventId: string,
-    resourceIds: Array<string>,
-    resizeEvent?: TEvent,
-  ): Array<AvailabilityConflict> {
-    const resources = (this.options.resources ?? []).filter((resource) =>
-      resourceIds.includes(resource.id),
-    );
-    const selfEvent = resizeEvent ?? this._eventMap.get(eventId);
-
-    return checkDaySpan({
-      date: dayDate,
-      startMinutes: startMins,
-      endMinutes: endMins,
-      resources,
-      consumption: selfEvent?.consumption,
-      otherEvents: this.getEventsByDate(dayDate)
-        .filter((event) => event.id !== eventId)
-        .map((event) => {
-          const start = new Date(event.start);
-          const end = new Date(event.end);
-          return {
-            id: event.id,
-            startMinutes: start.getHours() * 60 + start.getMinutes(),
-            endMinutes: end.getHours() * 60 + end.getMinutes(),
-            resourceIds: this._getEventResourceIds(event),
-            consumption: event.consumption,
-          };
-        }),
-    });
-  }
-
   validateResize(options: ValidateResizeOptions): ValidateResizeResult {
     const {
       eventId,
@@ -1521,7 +1344,7 @@ export class CalendarCore<
     );
     const resourceIds = event ? this._getEventResourceIds(event) : undefined;
 
-    const unavailableRanges = this.getUnavailableMinuteRanges(targetDayDate, {
+    const unavailableRanges = this._unavailableMinutes(targetDayDate, {
       resourceIds,
     });
 
@@ -1563,7 +1386,7 @@ export class CalendarCore<
       const currentStartMinutes = origStartHourMins;
 
       if (resourceIds?.length) {
-        const unavailabilityDetails = this.getUnavailabilityDetails(
+        const unavailabilityDetails = this._unavailabilityDetails(
           targetDayDate,
           snappedTargetStartMinutes,
           MINUTES_IN_DAY,
@@ -1586,7 +1409,7 @@ export class CalendarCore<
       }
 
       if (!shouldBlockResize && resourceIds?.length) {
-        const sourceUnavailabilityDetails = this.getUnavailabilityDetails(
+        const sourceUnavailabilityDetails = this._unavailabilityDetails(
           originalStartDate,
           0,
           currentStartMinutes,
@@ -1615,7 +1438,7 @@ export class CalendarCore<
       const currentEndMinutes = origEndHourMins;
 
       if (resourceIds?.length) {
-        const unavailabilityDetails = this.getUnavailabilityDetails(
+        const unavailabilityDetails = this._unavailabilityDetails(
           targetDayDate,
           0,
           snappedTargetEndMinutes,
@@ -1638,7 +1461,7 @@ export class CalendarCore<
       }
 
       if (!shouldBlockResize && resourceIds?.length) {
-        const sourceUnavailabilityDetails = this.getUnavailabilityDetails(
+        const sourceUnavailabilityDetails = this._unavailabilityDetails(
           originalEndDate,
           currentEndMinutes,
           MINUTES_IN_DAY,
@@ -1679,7 +1502,7 @@ export class CalendarCore<
       );
 
       if (resourceIds?.length) {
-        const unavailabilityDetails = this.getUnavailabilityDetails(
+        const unavailabilityDetails = this._unavailabilityDetails(
           targetDayDate,
           snappedStartMinutes,
           snappedEndMinutes,
@@ -1702,7 +1525,7 @@ export class CalendarCore<
       }
 
       if (!shouldBlockResize && resourceIds?.length) {
-        const detailedConflicts = this.getResizeConflicts(
+        const detailedConflicts = this._daySpanConflicts(
           targetDayDate,
           snappedStartMinutes,
           snappedEndMinutes,
@@ -1772,7 +1595,7 @@ export class CalendarCore<
               (overlapEndMs - dayStartMs) / 60_000,
             );
 
-            const dayConflicts = this.getResizeConflicts(
+            const dayConflicts = this._daySpanConflicts(
               dayStr,
               overlapStartMins,
               overlapEndMins,
@@ -1854,14 +1677,14 @@ export class CalendarCore<
       );
 
       for (const { event: affectedEvent, newStart, newEnd } of affected) {
-        const alreadyConflicting = this.checkEventAvailability(
+        const alreadyConflicting = this._checkAvailability(
           affectedEvent,
           toPlainDateTimeString(affectedEvent.start),
           toPlainDateTimeString(affectedEvent.end),
         );
         if (alreadyConflicting) continue;
 
-        const conflict = this.checkEventAvailability(
+        const conflict = this._checkAvailability(
           affectedEvent,
           newStart,
           newEnd,
@@ -1896,7 +1719,7 @@ export class CalendarCore<
                 .toString({ smallestUnit: "second" })
             : originalEnd;
 
-        const spanConflict = this.checkEventAvailability(
+        const spanConflict = this._checkAvailability(
           selfEvent,
           proposedNewStart,
           proposedNewEnd,
@@ -1946,7 +1769,6 @@ export class CalendarCore<
 
   setResources(resources: Array<TResource> | null) {
     this.options.resources = resources;
-    this._mergedUnavailMinuteCache.clear();
 
     this._bumpMapVersion();
   }
@@ -1956,7 +1778,6 @@ export class CalendarCore<
     this._eventMap.clear();
     this._dependentsMap.clear();
     this._dateIndex.clear();
-    this._mergedUnavailMinuteCache.clear();
     this._bumpMapVersion();
     this._seedKernel(next);
     next.forEach((e) => this._indexAddEvent(e));

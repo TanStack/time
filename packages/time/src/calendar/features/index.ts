@@ -2,6 +2,7 @@ export * from "./types";
 export * from "./calendarFeatures";
 export * from "./registry";
 export * from "./history";
+export * from "./availability";
 export * from "./dependency";
 export * from "./recurrence";
 export * from "./resize";

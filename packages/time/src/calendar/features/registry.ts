@@ -1,5 +1,6 @@
 import type { DependencyApi } from "~/kernel/modules";
 import type { Event, Resource } from "../types";
+import type { AvailabilityApi } from "./availability";
 import type { DayLayoutApi } from "./dayLayout";
 import type { DependencyCreationApi } from "./dependency";
 import type { HistoryApi } from "./history";
@@ -16,6 +17,7 @@ export interface FeatureApiRegistry<
   TResource extends Resource,
   TEvent extends Event<TResource>,
 > {
+  availability: AvailabilityApi<TResource, TEvent>;
   history: HistoryApi;
   recurrence: RecurrenceNavigationApi &
     RecurrenceEditApi<TResource, TEvent> &
@@ -67,6 +69,12 @@ export const FEATURE_API_OWNERS = {
   validateEventDependencies: "eventDependencyFeature",
   createResizeController: "eventResizeFeature",
   getEventSegmentInfo: "eventResizeFeature",
+  getUnavailableRanges: "resourceAvailabilityFeature",
+  getUnavailableMinuteRanges: "resourceAvailabilityFeature",
+  getUnavailabilityDetails: "resourceAvailabilityFeature",
+  getDaySpanConflicts: "resourceAvailabilityFeature",
+  checkEventAvailability: "resourceAvailabilityFeature",
+  validateEventPlacement: "resourceAvailabilityFeature",
   getEventProps: "dayEventLayoutFeature",
   getEventsByResource: "timelineFeature",
   getTimelineLayout: "timelineFeature",

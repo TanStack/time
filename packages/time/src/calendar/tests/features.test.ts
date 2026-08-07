@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { assert, describe, expect, test } from "vitest";
 import { createCalendar } from "../calendar";
 import {
   calendarFeatures,
@@ -6,6 +6,7 @@ import {
   eventRecurrenceFeature,
   eventResizeFeature,
   historyFeature,
+  resourceAvailabilityFeature,
 } from "../features";
 import type {
   CalendarFeature,
@@ -33,14 +34,32 @@ const recurringEvent: TestEvent = {
 function createTestCalendar<TFeatures extends CalendarFeatureList>(
   features: TFeatures,
   events: Array<TestEvent> = [],
+  resources?: Array<TestResource>,
 ) {
   return createCalendar<TFeatures, TestResource, TestEvent>({
     viewMode: { value: 1, unit: "week" },
     timeZone: "UTC",
     events,
+    resources,
     features,
   });
 }
+
+const morningRoom: TestResource = {
+  id: "r1",
+  label: "Morning Room",
+  availability: [
+    { weekdays: [1, 2, 3, 4, 5], startTime: "08:00", endTime: "12:00" },
+  ],
+};
+
+const eveningEvent: TestEvent = {
+  id: "late",
+  title: "Late",
+  start: `${DAY}T20:00:00`,
+  end: `${DAY}T21:00:00`,
+  resources: ["r1"],
+};
 
 describe("calendarFeatures composition", () => {
   test("composes only the features it is given", () => {
@@ -150,6 +169,67 @@ describe("calendarFeatures composition", () => {
         calendarFeatures([dayEventLayoutFeature, shadowFeature]),
       ),
     ).toThrow(/contributes api "getEventProps"/);
+  });
+
+  test("availability blocks a write only when it is composed", async () => {
+    const withAvailability = createTestCalendar(
+      calendarFeatures([resourceAvailabilityFeature]),
+      [],
+      [morningRoom],
+    );
+    const blocked = await withAvailability.addEvent(eveningEvent);
+    assert(!blocked.success);
+    expect(blocked.error.message).toContain("unavailable zone");
+    expect(withAvailability.getEvents()).toHaveLength(0);
+
+    const withoutAvailability = createTestCalendar(
+      calendarFeatures([dayEventLayoutFeature]),
+      [],
+      [morningRoom],
+    );
+    const allowed = await withoutAvailability.addEvent(eveningEvent);
+    expect(allowed.success).toBe(true);
+    expect(withoutAvailability.getEvents()).toHaveLength(1);
+  });
+
+  test("validateMove stops consulting availability when it is absent", () => {
+    const withAvailability = createTestCalendar(
+      calendarFeatures([resourceAvailabilityFeature]),
+      [{ ...eveningEvent, start: `${DAY}T09:00:00`, end: `${DAY}T10:00:00` }],
+      [morningRoom],
+    );
+    expect(
+      withAvailability.validateMove(
+        "late",
+        `${DAY}T20:00:00`,
+        `${DAY}T21:00:00`,
+      ).blocked,
+    ).toBe(true);
+
+    const withoutAvailability = createTestCalendar(
+      calendarFeatures([dayEventLayoutFeature]),
+      [{ ...eveningEvent, start: `${DAY}T09:00:00`, end: `${DAY}T10:00:00` }],
+      [morningRoom],
+    );
+    expect(
+      withoutAvailability.validateMove(
+        "late",
+        `${DAY}T20:00:00`,
+        `${DAY}T21:00:00`,
+      ).blocked,
+    ).toBe(false);
+  });
+
+  test("availability reads are unreachable without the feature", () => {
+    const cal = createTestCalendar(
+      calendarFeatures([dayEventLayoutFeature]),
+      [],
+      [morningRoom],
+    );
+
+    expect(() => uncomposed(cal).getUnavailableRanges(DAY)).toThrow(
+      'CalendarCore: "getUnavailableRanges" requires resourceAvailabilityFeature. Compose it via calendarFeatures([resourceAvailabilityFeature, ...]).',
+    );
   });
 
   test("throws when a feature shadows a core method", () => {

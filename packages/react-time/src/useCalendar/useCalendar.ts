@@ -258,16 +258,6 @@ export const useCalendar = <
     [calendarCore],
   );
 
-  const getUnavailableRanges = useCallback<
-    typeof calendarCore.getUnavailableRanges
-  >(
-    (date, rangeOptions) =>
-      calendarCore.getUnavailableRanges(date, {
-        resourceIds: rangeOptions?.resourceIds,
-      }),
-    [calendarCore],
-  );
-
   const getEvents = useCallback<typeof calendarCore.getEvents>(
     () => calendarCore.getEvents(),
     [calendarCore],
@@ -285,10 +275,6 @@ export const useCalendar = <
     (start, end) => calendarCore.fetchEventsForRange(start, end),
     [calendarCore],
   );
-
-  const validateEventPlacement = useCallback<
-    typeof calendarCore.validateEventPlacement
-  >((event) => calendarCore.validateEventPlacement(event), [calendarCore]);
 
   const formatPeriodLabel = useCallback<typeof calendarCore.formatPeriodLabel>(
     (labelOptions) => calendarCore.formatPeriodLabel(labelOptions),
@@ -350,11 +336,9 @@ export const useCalendar = <
     resizeState,
     getResizeHandleProps,
     getDayColumnProps,
-    getUnavailableRanges,
     getEvents,
     validateMove,
     fetchEventsForRange,
-    validateEventPlacement,
     formatPeriodLabel,
     formatCurrentPeriod,
     setResources,

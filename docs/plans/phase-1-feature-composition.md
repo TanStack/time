@@ -5,15 +5,16 @@ Implements ADR 0009. Turns the fixed module set and the flat 49-key `useCalendar
 `calendarFeatures({ ... })`, modules contribute their own methods, and the instance surface is
 the intersection of what was composed.
 
-Slices 1-3 are done: the seam exists, every gatable method lives in a feature, and `features` is
-accepted (defaulting to the full preset). Slices 4-5 gate the *type* and delete the delegates.
+Slices 1-3 built the seam, moved every gatable method into a feature, and made `features` an
+option. Slices 4-5 gate the *type* and delete the delegates. Slice 6 takes availability out of
+core.
 
 Lands **first** in Phase 1. ADR 0008 (working-time hierarchy) and ADR 0007 (solver fields)
 attach as features (`workingTimeFeature`, `schedulingFeature`), so doing this after them means
 writing them twice.
 
 **Method:** same strangler-fig as Phase 0. The test suite stays green after every slice (1,007 at
-the start of Phase 1, 1,029 now).
+the start of Phase 1, 1,041 now).
 `CalendarCore`'s surface keeps working until slice 5 deliberately removes it — the methods
 become thin delegates to module apis before the composition seam is exposed, so no slice both
 moves logic and changes the public shape.
@@ -325,18 +326,57 @@ both numbers is the Temporal polyfill.
   to the type checker.
 - ⚠️ A read-only day view composes `dayEventLayoutFeature` alone and pulls in no recurrence,
   dependency, resize or timeline code — verified against the built bundle, not by inspection.
-  Feature code does shake out (slice 5 measured it), but two pieces still ride along inside core:
-  `getEventMap`'s own recurrence expansion (`expandRecurringEvent`) and the availability
-  validators (`checkAvailability`). Both are core methods, not features, so this closes when
-  availability moves out and the read expansion is unified with `recurrenceModule`'s stage.
+  Feature code shakes out (slice 5 measured it) and the availability validators left in slice 6.
+  One piece still rides along inside core: `getEventMap`'s own recurrence expansion
+  (`expandRecurringEvent`). It closes when that read is unified with `recurrenceModule`'s stage.
+
+### Slice 6 — resourceAvailabilityFeature ✅
+
+All availability computation left `CalendarCore`. The feature owns six methods: the three from the
+table (`getUnavailableRanges`, `getUnavailabilityDetails`, `validateEventPlacement`) plus three
+that were private and are what the composite validators actually call —
+`checkEventAvailability`, `getUnavailableMinuteRanges` and `getDaySpanConflicts` (was
+`getResizeConflicts`). Exposing the private three is the price of gating the public three: leave
+them behind and `checkAvailability` / `checkDaySpan` / `mergeUnavailableMinuteRanges` stay in the
+core bundle, which is the whole thing this was for.
+
+**The veto route was rejected for now.** ADR 0001's answer would be to mount `availabilityModule`
+so the kernel's validate pipeline enforces availability, and that is still the destination — but
+mounting it today changes semantics: `commitAdd` / `commitUpdate` and every resize commit go
+straight to `_write`, which returns `[]` on rejection, so writes that violate availability would
+silently no-op instead of applying. That needs `_write` to surface conflicts as `SaveEventResult`
+errors and a kernel dry-run (`validate()` without commit) for the pre-flight callers, which is its
+own slice. This one moves the code without moving the enforcement point.
+
+`validateMove` and `validateResize` stay on core, as the surface table always said for
+`validateMove`: both are composite validators that ask what is mounted. They reach the feature
+through four private wrappers (`_checkAvailability`, `_unavailableMinutes`,
+`_unavailabilityDetails`, `_daySpanConflicts`) that return "nothing blocked" when
+`hasFeature("availability")` is false. So an app without the feature composed gets no availability
+enforcement anywhere — writes succeed, moves are unblocked — which is the correct reading of "not
+composed". `validateResize` did not move into `eventResizeFeature` as the table suggests: it would
+then need availability as a peer, and feature-to-peer access is still unresolved.
+
+The merged-minutes cache moved into the feature's closure. Core used to clear it from
+`setResources` / `setEvents`; the feature cannot see those calls, so it compares
+`host.getOptions().resources` by identity and clears when the array changes — `setResources`
+assigns a new array, and events never affected this cache in the first place.
+
+`CalendarHost` gained `getEventsByDate`, which `getDaySpanConflicts` needs.
+
+Bundle check, day-only composition: 246.6 kB minified (63.7 kB gzip), down from 253.7 kB / 65.5 kB.
+`checkDaySpan`, `mergeUnavailableMinuteRanges` and every `checkAvailability` internal
+(`"outside-hours"`, `"no-availability"`) are gone. `MINUTES_IN_DAY` and the `resourceDetails` reads
+remain — a constant and core's message shaping.
 
 ## Remaining work
 
-- `resourceAvailabilityFeature` is still unmade: `getUnavailableRanges`,
-  `getUnavailabilityDetails`, `validateEventPlacement` and `validateResize` stay on core because
-  `availabilityModule` bundles the veto stage with the read helpers. Splitting the veto out is the
-  precondition.
-- `CalendarCore.getEventMap` duplicates recurrence expansion, so read expansion is ungated.
-- `validateResize` and `editRecurringEvent` are on `CalendarHost` only until those two land; they
-  are the last host members a feature uses to reach a peer rather than the kernel.
+- **Route write-time availability through the kernel veto.** Needs `_write` to surface conflicts as
+  `SaveEventResult` errors and a kernel `validate()` dry-run for pre-flight callers
+  (`validateMove`, `validateResize`). Until then availability is enforced by explicit calls, not by
+  the pipeline, and `commitAdd` / `commitUpdate` / resize commits skip it exactly as before.
+- `CalendarCore.getEventMap` duplicates recurrence expansion, so read expansion is ungated. This is
+  the last leak in the day-only bundle (`expandRecurringEvent`).
+- `validateResize` and `editRecurringEvent` are on `CalendarHost` only until the veto route lands;
+  they are the last host members a feature uses to reach a peer rather than the kernel.
 - The Solid adapter is written against the composed shape, not ported from the monolith.

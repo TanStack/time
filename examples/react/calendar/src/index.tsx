@@ -10,6 +10,7 @@ import {
   eventRecurrenceFeature,
   eventResizeFeature,
   historyFeature,
+  resourceAvailabilityFeature,
 } from "@tanstack/time";
 import ReactDOM from "react-dom/client";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -51,6 +52,7 @@ import "./index.css";
 
 const features = calendarFeatures([
   historyFeature,
+  resourceAvailabilityFeature,
   eventRecurrenceFeature,
   eventResizeFeature,
   dayEventLayoutFeature,

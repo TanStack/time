@@ -1,3 +1,4 @@
+import { resourceAvailabilityFeature } from "./availability";
 import { dayEventLayoutFeature } from "./dayLayout";
 import { eventDependencyFeature } from "./dependency";
 import { historyFeature } from "./history";
@@ -18,6 +19,7 @@ export const stockFeatures = [
   historyFeature,
   eventRecurrenceFeature,
   eventDependencyFeature,
+  resourceAvailabilityFeature,
   eventResizeFeature,
   dayEventLayoutFeature,
   timelineFeature,
