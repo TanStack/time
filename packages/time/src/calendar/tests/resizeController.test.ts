@@ -3,7 +3,7 @@ import { createCalendar } from "../calendar";
 import { stockFeatures } from "../features";
 import type { StockFeatures } from "../features";
 import { ResizeController } from "../resizeController";
-import type { CalendarHost } from "../features";
+import type { ResizeHost } from "../resizeController";
 import type { Event, Resource, ValidateResizeOptions } from "../types";
 
 type TestResource = Resource;
@@ -28,7 +28,7 @@ function dayColumn(left: number, right: number): HTMLElement {
 }
 
 function createHost(
-  overrides: Partial<CalendarHost<TestResource, TestEvent>> = {},
+  overrides: Partial<ResizeHost<TestResource, TestEvent>> = {},
   daysInView = 1,
 ) {
   const validated: Array<ValidateResizeOptions> = [];
@@ -76,7 +76,7 @@ function createHost(
     },
     validateEventPlacement: () => ({ blocked: false }),
     ...overrides,
-  } as CalendarHost<TestResource, TestEvent> & {
+  } as ResizeHost<TestResource, TestEvent> & {
     commitUpdate: ReturnType<typeof vi.fn>;
   };
 

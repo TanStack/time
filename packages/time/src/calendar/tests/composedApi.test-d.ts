@@ -8,7 +8,11 @@ import {
   historyFeature,
 } from "../features";
 import type { CalendarApi } from "../calendar";
-import type { ComposedApi, FullFeatureApi, StockFeatures } from "../features";
+import type {
+  BuiltInFeatureApi,
+  ComposedApi,
+  StockFeatures,
+} from "../features";
 import type { Event, EventProps, Resource } from "../types";
 
 type TestEvent = Event<Resource>;
@@ -60,12 +64,12 @@ describe("CalendarApi is the intersection of what was composed", () => {
   test("stockFeatures composes every registered feature", () => {
     expectTypeOf<
       ComposedApi<StockFeatures, Resource, TestEvent>
-    >().toEqualTypeOf<FullFeatureApi<Resource, TestEvent>>();
+    >().toEqualTypeOf<BuiltInFeatureApi<Resource, TestEvent>>();
   });
 
   test("the feature owner table covers every registered api key", () => {
     expectTypeOf<keyof typeof FEATURE_API_OWNERS>().toEqualTypeOf<
-      keyof FullFeatureApi<Resource, TestEvent>
+      keyof BuiltInFeatureApi<Resource, TestEvent>
     >();
   });
 });

@@ -12,11 +12,28 @@ import type {
   CalendarFeature,
   CalendarFeatureList,
   FullFeatureApi,
+  RecurrenceReadApi,
 } from "../features";
 import type { Event, Resource } from "../types";
 
 type TestResource = Resource;
 type TestEvent = Event<TestResource>;
+
+interface PeerReaderApi<
+  TResource extends Resource,
+  TEvent extends Event<TResource>,
+> {
+  masterTitleOf: (eventId: string) => TEvent["title"] | undefined;
+}
+
+declare module "../features" {
+  interface FeatureApiRegistry<
+    TResource extends Resource,
+    TEvent extends Event<TResource>,
+  > {
+    peerReader: PeerReaderApi<TResource, TEvent>;
+  }
+}
 
 const uncomposed = (cal: object): FullFeatureApi<TestResource, TestEvent> =>
   cal as FullFeatureApi<TestResource, TestEvent>;
@@ -171,6 +188,25 @@ describe("calendarFeatures composition", () => {
     ).toThrow(/contributes api "getEventProps"/);
   });
 
+  test("occurrences are read back only when recurrence is composed", () => {
+    const nextWeek = "2025-06-09";
+
+    const withRecurrence = createTestCalendar(
+      calendarFeatures([eventRecurrenceFeature]),
+      [recurringEvent],
+    );
+    withRecurrence.goToSpecificPeriod(nextWeek);
+    expect(withRecurrence.getEventsByDate(nextWeek)).toHaveLength(1);
+
+    const withoutRecurrence = createTestCalendar(
+      calendarFeatures([dayEventLayoutFeature]),
+      [recurringEvent],
+    );
+    withoutRecurrence.goToSpecificPeriod(nextWeek);
+    expect(withoutRecurrence.getEventsByDate(nextWeek)).toHaveLength(0);
+    expect(withoutRecurrence.getEventsByDate(DAY)).toHaveLength(1);
+  });
+
   test("availability blocks a write only when it is composed", async () => {
     const withAvailability = createTestCalendar(
       calendarFeatures([resourceAvailabilityFeature]),
@@ -229,6 +265,100 @@ describe("calendarFeatures composition", () => {
 
     expect(() => uncomposed(cal).getUnavailableRanges(DAY)).toThrow(
       'CalendarCore: "getUnavailableRanges" requires resourceAvailabilityFeature. Compose it via calendarFeatures([resourceAvailabilityFeature, ...]).',
+    );
+  });
+
+  test("a feature reads a declared peer's api", () => {
+    const peerReadingFeature = (): CalendarFeature<
+      TestResource,
+      TestEvent,
+      object,
+      PeerReaderApi<TestResource, TestEvent>,
+      "peerReader",
+      { recurrence: RecurrenceReadApi<TestResource, TestEvent> }
+    > => ({
+      name: "peerReader",
+      requires: ["recurrence"],
+      api: (host, _module, peers) => ({
+        masterTitleOf: (eventId) => {
+          const event = host.getEvent(eventId);
+          if (!event) return undefined;
+          return peers.recurrence.getMasterEvent(event).title;
+        },
+      }),
+    });
+
+    const cal = createTestCalendar(
+      calendarFeatures([eventRecurrenceFeature, peerReadingFeature]),
+      [recurringEvent],
+    );
+
+    expect(cal.masterTitleOf("rec")).toBe("Recurring");
+    expect(() =>
+      createTestCalendar(calendarFeatures([peerReadingFeature])),
+    ).toThrow(/"peerReader" requires "recurrence"/);
+  });
+
+  test("resize blocks on unavailable time only with availability composed", () => {
+    const resizeOptions = {
+      eventId: "late",
+      originalStart: `${DAY}T09:00:00`,
+      originalEnd: `${DAY}T10:00:00`,
+      edge: "bottom" as const,
+      totalDeltaMinutes: 600,
+      targetDayDate: DAY,
+      originalDayDate: DAY,
+    };
+    const events = [
+      { ...eveningEvent, start: `${DAY}T09:00:00`, end: `${DAY}T10:00:00` },
+    ];
+
+    const withAvailability = createTestCalendar(
+      calendarFeatures([
+        eventRecurrenceFeature,
+        resourceAvailabilityFeature,
+        eventResizeFeature,
+      ]),
+      events,
+      [morningRoom],
+    );
+    expect(withAvailability.validateResize(resizeOptions).blocked).toBe(true);
+
+    const withoutAvailability = createTestCalendar(
+      calendarFeatures([eventRecurrenceFeature, eventResizeFeature]),
+      events,
+      [morningRoom],
+    );
+    expect(withoutAvailability.validateResize(resizeOptions).blocked).toBe(
+      false,
+    );
+  });
+
+  test("resize across days blocks on the target day's unavailability", () => {
+    const cal = createTestCalendar(
+      calendarFeatures([
+        eventRecurrenceFeature,
+        resourceAvailabilityFeature,
+        eventResizeFeature,
+      ]),
+      [{ ...eveningEvent, start: `${DAY}T09:00:00`, end: `${DAY}T10:00:00` }],
+      [morningRoom],
+    );
+
+    const validation = cal.validateResize({
+      eventId: "late",
+      originalStart: `${DAY}T09:00:00`,
+      originalEnd: `${DAY}T10:00:00`,
+      edge: "top",
+      totalDeltaMinutes: -600,
+      targetDayDate: "2025-06-01",
+      originalDayDate: DAY,
+    });
+
+    expect(validation.blocked).toBe(true);
+    expect(validation.error?.reason).toBe("unavailable-time");
+    expect(validation.error?.message).toMatch(
+      /^Unavailable: Event at 23:00 conflicts with /,
     );
   });
 

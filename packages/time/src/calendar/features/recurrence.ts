@@ -79,6 +79,11 @@ export interface RecurrenceReadApi<
   TEvent extends Event<TResource>,
 > {
   getMasterEvent: (event: TEvent) => TEvent;
+  resolveOccurrence: (
+    eventId: string,
+    occurrenceStart?: string,
+    fallbackStart?: string,
+  ) => TEvent | undefined;
 }
 
 export function eventRecurrenceFeature<
@@ -186,6 +191,22 @@ export function eventRecurrenceFeature<
     api: (host, module) => ({
       getMasterEvent: (event) =>
         module.getMasterEvent(event as TEvent & KernelEvent) as TEvent,
+      resolveOccurrence: (eventId, occurrenceStart, fallbackStart) => {
+        const direct = host.getEvent(eventId);
+        const master = resolveMaster(host, eventId);
+        if (!master?.recurrence) return direct;
+
+        const resolvedStart =
+          occurrenceStart ??
+          (direct ? toPlainDateTimeString(direct.start) : fallbackStart);
+        if (!resolvedStart) return direct;
+
+        return (
+          getRecurringOccurrence<TResource, TEvent>(master, resolvedStart) ??
+          direct ??
+          master
+        );
+      },
       goToNextOccurrence: (eventId, fromDate) => {
         const master = resolveMaster(host, eventId);
         if (!master) return;

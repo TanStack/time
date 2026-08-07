@@ -6,15 +6,15 @@ Implements ADR 0009. Turns the fixed module set and the flat 49-key `useCalendar
 the intersection of what was composed.
 
 Slices 1-3 built the seam, moved every gatable method into a feature, and made `features` an
-option. Slices 4-5 gate the *type* and delete the delegates. Slice 6 takes availability out of
-core.
+option. Slices 4-5 gate the *type* and delete the delegates. Slices 6-8 empty core of domain algorithms:
+availability, recurrence reads, the dependency graph walks and `validateResize`.
 
 Lands **first** in Phase 1. ADR 0008 (working-time hierarchy) and ADR 0007 (solver fields)
 attach as features (`workingTimeFeature`, `schedulingFeature`), so doing this after them means
 writing them twice.
 
 **Method:** same strangler-fig as Phase 0. The test suite stays green after every slice (1,007 at
-the start of Phase 1, 1,041 now).
+the start of Phase 1, 1,045 now).
 `CalendarCore`'s surface keeps working until slice 5 deliberately removes it — the methods
 become thin delegates to module apis before the composition seam is exposed, so no slice both
 moves logic and changes the public shape.
@@ -36,9 +36,10 @@ moves logic and changes the public shape.
 | `dayEventLayoutFeature` | `getEventProps` |
 | `timelineFeature` | `getTimelineLayout` · `getEventsByResource` |
 
-`validateMove` is deliberately absent: it consults dependency *and* availability rules, so it
-stays on core and asks the kernel's validate pipeline what is mounted. That is what the veto
-stage already does — a composite validator is not a feature.
+`validateMove` is deliberately absent: it consults dependency *and* availability rules, so it stays
+on core and asks whichever of them is composed. Slice 8 made that literal — it calls the two
+features' apis and treats an absent feature as "nothing blocked". The kernel veto would be the
+tidier mechanism and is still open; a composite validator is not itself a feature either way.
 
 ## Slices
 
@@ -324,11 +325,9 @@ both numbers is the Temporal polyfill.
   typecheck otherwise — through `createCalendar()` / `useCalendar()`. A directly constructed
   `CalendarCore` is typed core-only, so the composed methods are present at runtime but invisible
   to the type checker.
-- ⚠️ A read-only day view composes `dayEventLayoutFeature` alone and pulls in no recurrence,
+- ✅ A read-only day view composes `dayEventLayoutFeature` alone and pulls in no recurrence,
   dependency, resize or timeline code — verified against the built bundle, not by inspection.
-  Feature code shakes out (slice 5 measured it) and the availability validators left in slice 6.
-  One piece still rides along inside core: `getEventMap`'s own recurrence expansion
-  (`expandRecurringEvent`). It closes when that read is unified with `recurrenceModule`'s stage.
+  232.5 kB minified against 277.6 kB for `stockFeatures`; slice 8 has the greps.
 
 ### Slice 6 — resourceAvailabilityFeature ✅
 
@@ -369,14 +368,83 @@ Bundle check, day-only composition: 246.6 kB minified (63.7 kB gzip), down from 
 (`"outside-hours"`, `"no-availability"`) are gone. `MINUTES_IN_DAY` and the `resourceDetails` reads
 remain — a constant and core's message shaping.
 
+### Slice 7 — one recurrence expansion, gated ✅
+
+`CalendarCore.getEventMap` expanded recurring events itself, so a calendar composed without
+`eventRecurrenceFeature` still read occurrences back — writes were gated, reads were not. It now
+calls `this._kernel.project(viewport)` and lets the mounted projection stages do the work, which is
+what `recurrenceModule`'s `recurrence-expand` stage was always for. No feature composed, no
+expansion: `getEventsByDate` returns the master on its own start day and nothing on later
+occurrences.
+
+Two details made this a one-line-shaped change rather than a refactor. The kernel's viewport
+convention is an *inclusive* end timestamp (the stage does `nextDay(viewport.end)` itself), while
+core's window end is exclusive, so core subtracts a day when it builds the viewport. And
+`project()` clips to the viewport where the old inline loop kept every event — safe here because
+every stored event has been through `normalizeEvent`, so both sides of the comparison are full
+`YYYY-MM-DDTHH:mm:ss` strings that `new Date` parses the same way. A clipping-vs-not experiment
+made no test fail, which is the honest reason the kernel did **not** get a second no-clip
+projection method: nothing observable distinguishes them, since every caller looks up day keys
+inside the window it asked for.
+
+Bundle: unchanged at 246.7 kB / 63.7 kB gzip, because `expandRecurringEvent` is still reachable —
+`validateResize` → `_resolveResizeEvent` → `getRecurringOccurrence` → `expandRecurringEvent`. The
+duplication is gone and the read is gated; the code is still linked in.
+
+### Slice 8 — peers, and validateResize leaves core ✅
+
+`api` takes a third argument: `peers`, keyed by feature name. Resolution is lazy — core hands every
+feature a Proxy over the record of contributed apis, so a feature reads a peer when its method
+*runs*, not when it is built, and composition order stops mattering. No topological sort.
+
+Peers are typed by a type parameter the feature declares, not by looking the names up in
+`FeatureApiRegistry`: `CalendarFeature<..., TPeers>` and `ResizePeers` spells out `recurrence`
+(required, guaranteed by `requires`) and `availability?` / `dependency?` (optional, `undefined` when
+not composed). Typing them through the registry would have made `types.ts` → `registry.ts` → every
+feature → `types.ts` a cycle, and it would have hidden the optionality that matters most here.
+
+**`validateResize` moved into `eventResizeFeature`** — 446 lines, the largest single method in the
+package. Everything it reached for is now a peer call: availability (four methods), recurrence
+(`resolveOccurrence`, which is `_resolveResizeEvent` plus the recurrence primitives it needed), and
+dependency. It degrades rather than demanding: without `resourceAvailabilityFeature` nothing blocks
+on unavailable time, without `eventDependencyFeature` nothing blocks on a dependency shortfall.
+
+Two features grew to make that possible. `eventDependencyFeature` gained `getPredecessorShifts`,
+`getDependentShifts`, `getAffectedByDelta` and `findViolatedDependency` — the graph walks core was
+doing inline with `computeCascade` / `propagateTo*` / `requiredForwardShiftMs` — so `validateMove`
+now asks the dependency feature the same way it asks availability, and core imports neither
+validation module. `eventRecurrenceFeature` gained `resolveOccurrence`.
+
+**`CalendarHost` lost its two temporary members.** `validateResize` and `editRecurringEvent` were
+there only so `ResizeController` could reach them; the controller now takes a `ResizeHost` —
+`CalendarHost` plus those two — which the resize feature assembles from its own `validateResize` and
+`peers.recurrence.editRecurringEvent`. Nothing on the host exists for one feature's benefit now.
+
+**The registry had to split.** Peer plumbing rides the public surface (one contribution channel, not
+two), so `resolveOccurrence` and the four graph walks are composed api keys like any other. Proving
+third-party features work meant augmenting `FeatureApiRegistry` from a test — which broke the
+owner-table drift guard, because `satisfies Record<keyof FullFeatureApi, string>` then demands an
+entry for the third-party key. So `BuiltInFeatureApiRegistry` holds the seven shipped features and
+`FeatureApiRegistry extends` it as the augmentation point: `ComposedApi` reads the augmentable one,
+the drift guard reads the built-in one, and `_describeMissingFeatureApi` falls back to "a feature"
+for keys it does not own.
+
+A coverage gap surfaced while mutation-testing the move: blanking the availability peer's
+`getUnavailabilityDetails` failed no test, because nothing exercised a cross-day resize onto a day
+the resource is closed. The new test's message assertion had to be anchored
+(`/^Unavailable: Event at 23:00 /`) — a looser `toContain("23:00")` also passes when the day-span
+loop blocks instead, which is a different branch.
+
+**Definition of done reached.** A `dayEventLayoutFeature`-only bundle is 232.5 kB minified
+(59.8 kB gzip) against 277.6 kB (72.2 kB) for `stockFeatures`, and greps clean for
+`expandRecurringEvent`, `getRecurringOccurrence`, `checkAvailability`, `checkDaySpan`,
+`computeCascade`, `requiredForwardShiftMs`, `calculateResizedEvent` and `ResizeController` — the only
+match is the owner table's `"createResizeController"` string.
+
 ## Remaining work
 
 - **Route write-time availability through the kernel veto.** Needs `_write` to surface conflicts as
   `SaveEventResult` errors and a kernel `validate()` dry-run for pre-flight callers
   (`validateMove`, `validateResize`). Until then availability is enforced by explicit calls, not by
   the pipeline, and `commitAdd` / `commitUpdate` / resize commits skip it exactly as before.
-- `CalendarCore.getEventMap` duplicates recurrence expansion, so read expansion is ungated. This is
-  the last leak in the day-only bundle (`expandRecurringEvent`).
-- `validateResize` and `editRecurringEvent` are on `CalendarHost` only until the veto route lands;
-  they are the last host members a feature uses to reach a peer rather than the kernel.
 - The Solid adapter is written against the composed shape, not ported from the monolith.

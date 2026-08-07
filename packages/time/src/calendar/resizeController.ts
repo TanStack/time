@@ -11,7 +11,25 @@ import type {
   RecurrenceEditScope,
   ResizeError,
   Resource,
+  SaveEventResult,
+  ValidateResizeOptions,
+  ValidateResizeResult,
 } from "./types";
+
+export interface ResizeHost<
+  TResource extends Resource,
+  TEvent extends Event<TResource>,
+> extends CalendarHost<TResource, TEvent> {
+  validateResize: (options: ValidateResizeOptions) => ValidateResizeResult;
+  editRecurringEvent: (
+    eventId: string,
+    updates: Partial<Omit<TEvent, "id">>,
+    options: {
+      scope: RecurrenceEditScope;
+      occurrenceStart?: EventDateTimeInput;
+    },
+  ) => Promise<SaveEventResult>;
+}
 
 export interface ResizeState {
   isResizing: boolean;
@@ -77,7 +95,7 @@ export class ResizeController<
   TResource extends Resource,
   TEvent extends Event<TResource>,
 > {
-  private _host: CalendarHost<TResource, TEvent>;
+  private _host: ResizeHost<TResource, TEvent>;
   private _options: ResizeControllerOptions;
 
   private _state: ResizeState = INITIAL_RESIZE_STATE;
@@ -113,7 +131,7 @@ export class ResizeController<
   private _rafId: number | null = null;
 
   constructor(
-    host: CalendarHost<TResource, TEvent>,
+    host: ResizeHost<TResource, TEvent>,
     options: ResizeControllerOptions = {},
   ) {
     this._host = host;

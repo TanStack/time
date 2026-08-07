@@ -2,23 +2,18 @@ import { Temporal } from "@js-temporal/polyfill";
 import { getTimeClient } from "../client";
 import { bucketByDay } from "~/projection";
 import type { LayoutOptions } from "~/projection";
-import {
-  expandRecurringEvent,
-  masterIdOf,
-  getRecurringOccurrence,
-  normalizeRecurrenceRule,
-} from "~/recurrence";
+import { normalizeRecurrenceRule } from "~/recurrence";
 import { createKernel } from "~/kernel";
 import { FEATURE_API_OWNERS } from "./features";
 import type {
   AnyCalendarFeature,
   AvailabilityApi,
+  DependencyGraphApi,
   CalendarFeatureList,
   CalendarHost,
   ComposedApi,
   FeatureModuleCtx,
   FullFeatureApi,
-  UnavailabilityDetail,
 } from "./features";
 import type {
   Module,
@@ -30,38 +25,20 @@ import type {
 } from "~/kernel";
 import { groupDaysBy } from "./groupDaysBy";
 import { getTimeSlots } from "./getTimeSlots";
-import { calculateResizedEvent } from "./getResizeProps";
 import { DateCore } from "./date-core";
 import { generateDateRange } from "./generateDateRange";
 import type { DateCoreOptions, ParsedDateCoreOptions } from "./date-core";
-import type { UnavailableTimeRange } from "./getResizeProps";
 import type {
   AvailabilityConflict,
   Day,
   Event,
   EventDependency,
-  ResizeError,
   Resource,
   SaveEventResult,
   TimeSlot,
-  ValidateResizeOptions,
-  ValidateResizeResult,
 } from "./types";
 import type { CalendarStore } from "./types";
-import { toPlainDateString, toPlainDateTimeString } from "~/date/parse";
-import {
-  describeUnavailability,
-  formatMinutesToTime,
-  MINUTES_IN_DAY,
-  toUnavailabilityConflict,
-} from "~/validation/availability";
-import {
-  computeCascade,
-  propagateToDependents,
-  propagateToPredecessors,
-  requiredForwardShiftMs,
-} from "~/validation/dependency";
-import type { DependencyGraphEvent } from "~/validation/dependency";
+import { toPlainDateTimeString } from "~/date/parse";
 
 export type * from "./types";
 export * from "./date-core";
@@ -233,7 +210,7 @@ export class CalendarCore<
 
   private _describeMissingFeatureApi(key: string): string {
     const featureName =
-      FEATURE_API_OWNERS[key as keyof typeof FEATURE_API_OWNERS];
+      FEATURE_API_OWNERS[key as keyof typeof FEATURE_API_OWNERS] ?? "a feature";
     return `CalendarCore: "${key}" requires ${featureName}. Compose it via calendarFeatures([${featureName}, ...]).`;
   }
 
@@ -245,14 +222,6 @@ export class CalendarCore<
 
   private _bumpMapVersion() {
     this._mapVersion++;
-  }
-
-  private _getEventResourceIds(event: {
-    resources?: Array<TResource | string>;
-  }): Array<string> {
-    return (event.resources ?? []).map((r) =>
-      typeof r === "string" ? r : r.id,
-    );
   }
 
   constructor(options: CalendarCoreOptions<TFeatures, TResource, TEvent>) {
@@ -309,12 +278,19 @@ export class CalendarCore<
 
     const host = this._host();
     const api: Record<string, unknown> = {};
+    const byFeature: Record<string, object> = {};
+    const peers = new Proxy(byFeature, {
+      get: (target, key) => target[key as string],
+    });
+
     for (const feature of features) {
       const contributed = feature.api?.(
         host as unknown as CalendarHost<Resource, Event<Resource>>,
         this._kernel.api as never,
+        peers as never,
       );
       if (!contributed) continue;
+      byFeature[feature.name] = contributed;
       for (const [key, value] of Object.entries(contributed)) {
         if (key in api) {
           throw new Error(
@@ -366,6 +342,10 @@ export class CalendarCore<
     return this.hasFeature("availability") ? this._api : null;
   }
 
+  private get _dependency(): DependencyGraphApi<TResource, TEvent> | null {
+    return this.hasFeature("dependency") ? this._api : null;
+  }
+
   private _checkAvailability(
     event: TEvent,
     newStart: string,
@@ -381,49 +361,6 @@ export class CalendarCore<
         newResources,
         newConsumption,
       ) ?? null
-    );
-  }
-
-  private _unavailableMinutes(
-    date: string,
-    options?: { resourceIds?: Array<string> },
-  ): Array<UnavailableTimeRange> {
-    return this._availability?.getUnavailableMinuteRanges(date, options) ?? [];
-  }
-
-  private _unavailabilityDetails(
-    date: string,
-    startMinutes: number,
-    endMinutes: number,
-    options?: { resourceIds?: Array<string> },
-  ): Array<UnavailabilityDetail> {
-    return (
-      this._availability?.getUnavailabilityDetails(
-        date,
-        startMinutes,
-        endMinutes,
-        options,
-      ) ?? []
-    );
-  }
-
-  private _daySpanConflicts(
-    dayDate: string,
-    startMins: number,
-    endMins: number,
-    eventId: string,
-    resourceIds: Array<string>,
-    resizeEvent?: TEvent,
-  ): Array<AvailabilityConflict> {
-    return (
-      this._availability?.getDaySpanConflicts({
-        date: dayDate,
-        startMinutes: startMins,
-        endMinutes: endMins,
-        eventId,
-        resourceIds,
-        event: resizeEvent,
-      }) ?? []
     );
   }
 
@@ -446,14 +383,11 @@ export class CalendarCore<
       editEvent: (eventId, updates, options) =>
         this.editEvent(eventId, updates, options),
       removeEvent: (id) => this.removeEvent(id),
-      editRecurringEvent: (eventId, updates, options) =>
-        this._api.editRecurringEvent(eventId, updates, options),
       commitUpdate: (id, updates) => this.commitUpdate(id, updates),
       validateMove: (eventId, newStart, newEnd, resources, consumption) =>
         this.validateMove(eventId, newStart, newEnd, resources, consumption),
       validateEventDependencies: (event, dependsOn) =>
         this._api.validateEventDependencies(event, dependsOn),
-      validateResize: (options) => this.validateResize(options),
       validateEventPlacement: (event) =>
         this._availability?.validateEventPlacement(event) ?? {
           blocked: false,
@@ -614,20 +548,15 @@ export class CalendarCore<
     const cached = this._eventMapCache.get(cacheKey);
     if (cached) return cached;
 
-    const projected: Array<TEvent> = [];
-    for (const event of this._eventMap.values()) {
-      if (event.recurrence && windowStart && windowEnd) {
-        projected.push(
-          ...expandRecurringEvent<TResource, TEvent>(
-            event,
-            windowStart,
-            windowEnd,
-          ),
-        );
-        continue;
-      }
-      projected.push(event);
-    }
+    const projected =
+      windowStart && windowEnd
+        ? (this._kernel.project({
+            start: `${windowStart.slice(0, 10)}T00:00:00`,
+            end: `${Temporal.PlainDate.from(windowEnd.slice(0, 10))
+              .subtract({ days: 1 })
+              .toString({ calendarName: "never" })}T23:59:59`,
+          }) as Array<TEvent>)
+        : (this._kernel.getEvents() as Array<TEvent>);
 
     const map = bucketByDay<TEvent>(projected, this.options.timeZone);
 
@@ -936,97 +865,14 @@ export class CalendarCore<
     });
   }
 
-  private _dependencyGraphEvents(override?: {
-    id: string;
-    start: string;
-    end: string;
-  }): Array<DependencyGraphEvent> {
-    const events: Array<DependencyGraphEvent> = [];
-    for (const e of this._eventMap.values()) {
-      const moved = override?.id === e.id;
-      events.push({
-        id: e.id,
-        title: e.title,
-        start: moved ? override.start : toPlainDateTimeString(e.start),
-        end: moved ? override.end : toPlainDateTimeString(e.end),
-        dependsOn: e.dependsOn,
-      });
-    }
-    return events;
-  }
-
-  private getAffectedByDelta(
-    sourceId: string,
-    deltaMs: number,
-    visited: Set<string>,
-  ): Array<{ event: TEvent; newStart: string; newEnd: string }> {
-    const shifts = computeCascade({
-      sourceId,
-      deltaMs,
-      events: this._dependencyGraphEvents(),
-      timeZone: this.options.timeZone,
-      visited,
-    });
-
-    const affected: Array<{ event: TEvent; newStart: string; newEnd: string }> =
-      [];
-    for (const shift of shifts) {
-      const event = this._eventMap.get(shift.id);
-      if (!event) continue;
-      affected.push({
-        event,
-        newStart: shift.newStart,
-        newEnd: shift.newEnd,
-      });
-    }
-    return affected;
-  }
-
   getEvents(): Array<TEvent> {
     return [...this._eventsView()];
-  }
-
-  private _resolveMasterEvent(eventId: string): TEvent | undefined {
-    return (
-      this._eventMap.get(eventId) ?? this._eventMap.get(masterIdOf(eventId))
-    );
   }
 
   private _normalizeRecurrenceDateTimeInputs(
     rule: NonNullable<TEvent["recurrence"]>,
   ): NonNullable<TEvent["recurrence"]> {
     return normalizeRecurrenceRule(rule) as NonNullable<TEvent["recurrence"]>;
-  }
-
-  private _getRecurringOccurrence(
-    master: TEvent,
-    occurrenceStart: string,
-  ): TEvent | null {
-    return getRecurringOccurrence<TResource, TEvent>(master, occurrenceStart);
-  }
-
-  private _resolveResizeEvent(
-    eventId: string,
-    occurrenceStart?: string,
-    originalStart?: string,
-  ): TEvent | undefined {
-    const direct = this._eventMap.get(eventId);
-    const master = this._resolveMasterEvent(eventId);
-
-    if (master?.recurrence) {
-      const resolvedOccurrenceStart =
-        occurrenceStart ??
-        (direct ? toPlainDateTimeString(direct.start) : originalStart);
-      if (resolvedOccurrenceStart) {
-        return (
-          this._getRecurringOccurrence(master, resolvedOccurrenceStart) ??
-          direct ??
-          master
-        );
-      }
-    }
-
-    return direct;
   }
 
   validateMove(
@@ -1048,26 +894,17 @@ export class CalendarCore<
       Temporal.PlainDateTime.from(newEnd).toZonedDateTime(tz).epochMilliseconds;
 
     if (event.dependsOn?.length) {
-      const pulled = propagateToPredecessors({
-        sourceId: eventId,
-        events: this._dependencyGraphEvents({
-          id: eventId,
-          start: newStart,
-          end: newEnd,
-        }),
-        timeZone: tz,
-        visited: new Set([eventId]),
-      });
+      const pulled =
+        this._dependency?.getPredecessorShifts(eventId, newStart, newEnd) ?? [];
 
       for (const shift of pulled) {
-        const pred = this._eventMap.get(shift.id);
-        if (!pred) continue;
-
-        if (this._checkAvailability(pred, shift.newStart, shift.newEnd)) {
+        if (
+          this._checkAvailability(shift.event, shift.newStart, shift.newEnd)
+        ) {
           return {
             blocked: true,
-            blockedEventTitle: pred.title,
-            message: `"${pred.title}" would be pulled into unavailable time.`,
+            blockedEventTitle: shift.event.title,
+            message: `"${shift.event.title}" would be pulled into unavailable time.`,
           };
         }
       }
@@ -1100,11 +937,8 @@ export class CalendarCore<
     const startDeltaMs = newStartMs - oldStartMs;
 
     if (startDeltaMs !== 0) {
-      const affected = this.getAffectedByDelta(
-        eventId,
-        startDeltaMs,
-        new Set([eventId]),
-      );
+      const affected =
+        this._dependency?.getAffectedByDelta(eventId, startDeltaMs) ?? [];
       for (const {
         event: dep,
         newStart: depStart,
@@ -1127,26 +961,17 @@ export class CalendarCore<
     const endDeltaMs = newEndMs - oldEndMs;
 
     if (endDeltaMs > 0) {
-      const pushed = propagateToDependents({
-        sourceId: eventId,
-        events: this._dependencyGraphEvents({
-          id: eventId,
-          start: newStart,
-          end: newEnd,
-        }),
-        timeZone: tz,
-        visited: new Set([eventId]),
-      });
+      const pushed =
+        this._dependency?.getDependentShifts(eventId, newStart, newEnd) ?? [];
 
       for (const shift of pushed) {
-        const successor = this._eventMap.get(shift.id);
-        if (!successor) continue;
-
-        if (this._checkAvailability(successor, shift.newStart, shift.newEnd)) {
+        if (
+          this._checkAvailability(shift.event, shift.newStart, shift.newEnd)
+        ) {
           return {
             blocked: true,
-            blockedEventTitle: successor.title,
-            message: `"${successor.title}" would be pushed into unavailable time.`,
+            blockedEventTitle: shift.event.title,
+            message: `"${shift.event.title}" would be pushed into unavailable time.`,
           };
         }
       }
@@ -1319,452 +1144,6 @@ export class CalendarCore<
       start: removedEvent.start as string,
       end: removedEvent.end as string,
     });
-  }
-
-  validateResize(options: ValidateResizeOptions): ValidateResizeResult {
-    const {
-      eventId,
-      originalStart,
-      originalEnd,
-      edge,
-      totalDeltaMinutes,
-      targetDayDate,
-      originalDayDate,
-      constraints,
-    } = options;
-
-    const occurrenceStart =
-      options.occurrenceStart != null
-        ? toPlainDateTimeString(options.occurrenceStart)
-        : undefined;
-    const event = this._resolveResizeEvent(
-      eventId,
-      occurrenceStart,
-      originalStart,
-    );
-    const resourceIds = event ? this._getEventResourceIds(event) : undefined;
-
-    const unavailableRanges = this._unavailableMinutes(targetDayDate, {
-      resourceIds,
-    });
-
-    const originalStartDate = originalStart.split("T")[0] ?? "";
-    const originalEndDate = originalEnd.split("T")[0] ?? "";
-
-    const origStartHourMins =
-      ((originalStart.charCodeAt(11) - 48) * 10 +
-        (originalStart.charCodeAt(12) - 48)) *
-        60 +
-      (originalStart.charCodeAt(14) - 48) * 10 +
-      (originalStart.charCodeAt(15) - 48);
-    const origEndHourMins =
-      ((originalEnd.charCodeAt(11) - 48) * 10 +
-        (originalEnd.charCodeAt(12) - 48)) *
-        60 +
-      (originalEnd.charCodeAt(14) - 48) * 10 +
-      (originalEnd.charCodeAt(15) - 48);
-
-    const effectiveEdge =
-      edge === "left" ? "top" : edge === "right" ? "bottom" : edge;
-
-    let shouldBlockResize = false;
-    let blockReason: ResizeError["reason"] = "blocked";
-    let blockMessage = "Resize blocked";
-    const conflicts: Array<AvailabilityConflict> = [];
-
-    const snapToMinutes = constraints?.snapToMinutes ?? 1;
-    const snapMins = (minutes: number): number => {
-      if (snapToMinutes <= 1) return minutes;
-      return Math.round(minutes / snapToMinutes) * snapToMinutes;
-    };
-
-    if (effectiveEdge === "top" && targetDayDate < originalStartDate) {
-      const rawStartMinutes = origStartHourMins + totalDeltaMinutes;
-      const targetStartMinutes =
-        ((rawStartMinutes % MINUTES_IN_DAY) + MINUTES_IN_DAY) % MINUTES_IN_DAY;
-      const snappedTargetStartMinutes = snapMins(targetStartMinutes);
-      const currentStartMinutes = origStartHourMins;
-
-      if (resourceIds?.length) {
-        const unavailabilityDetails = this._unavailabilityDetails(
-          targetDayDate,
-          snappedTargetStartMinutes,
-          MINUTES_IN_DAY,
-          { resourceIds },
-        );
-
-        if (unavailabilityDetails.length > 0) {
-          shouldBlockResize = true;
-          blockReason = "unavailable-time";
-          blockMessage = `Unavailable: Event at ${formatMinutesToTime(snappedTargetStartMinutes)} conflicts with ${describeUnavailability(unavailabilityDetails)}`;
-          conflicts.push(
-            toUnavailabilityConflict({
-              date: targetDayDate,
-              startMinutes: snappedTargetStartMinutes,
-              endMinutes: MINUTES_IN_DAY,
-              details: unavailabilityDetails,
-            }),
-          );
-        }
-      }
-
-      if (!shouldBlockResize && resourceIds?.length) {
-        const sourceUnavailabilityDetails = this._unavailabilityDetails(
-          originalStartDate,
-          0,
-          currentStartMinutes,
-          { resourceIds },
-        );
-
-        if (sourceUnavailabilityDetails.length > 0) {
-          shouldBlockResize = true;
-          blockReason = "unavailable-time";
-          blockMessage = `Cannot resize: Would need to pass through unavailable time on ${originalStartDate} - ${describeUnavailability(sourceUnavailabilityDetails)}`;
-          conflicts.push(
-            toUnavailabilityConflict({
-              date: originalStartDate,
-              startMinutes: 0,
-              endMinutes: currentStartMinutes,
-              details: sourceUnavailabilityDetails,
-            }),
-          );
-        }
-      }
-    } else if (effectiveEdge === "bottom" && targetDayDate > originalEndDate) {
-      const rawEndMinutes = origEndHourMins + totalDeltaMinutes;
-      const targetEndMinutes =
-        ((rawEndMinutes % MINUTES_IN_DAY) + MINUTES_IN_DAY) % MINUTES_IN_DAY;
-      const snappedTargetEndMinutes = snapMins(targetEndMinutes);
-      const currentEndMinutes = origEndHourMins;
-
-      if (resourceIds?.length) {
-        const unavailabilityDetails = this._unavailabilityDetails(
-          targetDayDate,
-          0,
-          snappedTargetEndMinutes,
-          { resourceIds },
-        );
-
-        if (unavailabilityDetails.length > 0) {
-          shouldBlockResize = true;
-          blockReason = "unavailable-time";
-          blockMessage = `Unavailable: Event ending at ${formatMinutesToTime(snappedTargetEndMinutes)} conflicts with ${describeUnavailability(unavailabilityDetails)}`;
-          conflicts.push(
-            toUnavailabilityConflict({
-              date: targetDayDate,
-              startMinutes: 0,
-              endMinutes: snappedTargetEndMinutes,
-              details: unavailabilityDetails,
-            }),
-          );
-        }
-      }
-
-      if (!shouldBlockResize && resourceIds?.length) {
-        const sourceUnavailabilityDetails = this._unavailabilityDetails(
-          originalEndDate,
-          currentEndMinutes,
-          MINUTES_IN_DAY,
-          { resourceIds },
-        );
-
-        if (sourceUnavailabilityDetails.length > 0) {
-          shouldBlockResize = true;
-          blockReason = "unavailable-time";
-          blockMessage = `Cannot resize: Would need to pass through unavailable time on ${originalEndDate} - ${describeUnavailability(sourceUnavailabilityDetails)}`;
-          conflicts.push(
-            toUnavailabilityConflict({
-              date: originalEndDate,
-              startMinutes: currentEndMinutes,
-              endMinutes: MINUTES_IN_DAY,
-              details: sourceUnavailabilityDetails,
-            }),
-          );
-        }
-      }
-    }
-
-    if (
-      !shouldBlockResize &&
-      targetDayDate === originalStartDate &&
-      targetDayDate === originalEndDate
-    ) {
-      const rawStartMinutes =
-        origStartHourMins + (effectiveEdge === "top" ? totalDeltaMinutes : 0);
-      const rawEndMinutes =
-        origEndHourMins + (effectiveEdge === "bottom" ? totalDeltaMinutes : 0);
-
-      const snappedStartMinutes = snapMins(
-        ((rawStartMinutes % MINUTES_IN_DAY) + MINUTES_IN_DAY) % MINUTES_IN_DAY,
-      );
-      const snappedEndMinutes = snapMins(
-        ((rawEndMinutes % MINUTES_IN_DAY) + MINUTES_IN_DAY) % MINUTES_IN_DAY,
-      );
-
-      if (resourceIds?.length) {
-        const unavailabilityDetails = this._unavailabilityDetails(
-          targetDayDate,
-          snappedStartMinutes,
-          snappedEndMinutes,
-          { resourceIds },
-        );
-
-        if (unavailabilityDetails.length > 0) {
-          shouldBlockResize = true;
-          blockReason = "unavailable-time";
-          blockMessage = `Unavailable: Event at ${formatMinutesToTime(snappedStartMinutes)}-${formatMinutesToTime(snappedEndMinutes)} conflicts with ${describeUnavailability(unavailabilityDetails)}`;
-          conflicts.push(
-            toUnavailabilityConflict({
-              date: targetDayDate,
-              startMinutes: snappedStartMinutes,
-              endMinutes: snappedEndMinutes,
-              details: unavailabilityDetails,
-            }),
-          );
-        }
-      }
-
-      if (!shouldBlockResize && resourceIds?.length) {
-        const detailedConflicts = this._daySpanConflicts(
-          targetDayDate,
-          snappedStartMinutes,
-          snappedEndMinutes,
-          eventId,
-          resourceIds,
-          event,
-        );
-
-        const capacityConflicts = detailedConflicts.filter((c) =>
-          c.resourceDetails.some((d) => d.reason === "capacity"),
-        );
-
-        if (capacityConflicts.length > 0) {
-          shouldBlockResize = true;
-          blockReason = "unavailable-time";
-          const detailsText = describeUnavailability(
-            capacityConflicts[0]!.resourceDetails,
-          );
-          blockMessage = `Unavailable: Event at ${formatMinutesToTime(snappedStartMinutes)}-${formatMinutesToTime(snappedEndMinutes)} conflicts with ${detailsText}`;
-          conflicts.push(...capacityConflicts);
-        }
-      }
-    }
-
-    if (!shouldBlockResize && resourceIds?.length) {
-      const originalStartMs = new Date(originalStart).getTime();
-      const originalEndMs = new Date(originalEnd).getTime();
-      const snapMs = snapToMinutes * 60_000;
-      const snappedDeltaMs =
-        Math.round((totalDeltaMinutes * 60_000) / snapMs) * snapMs;
-
-      let checkFromMs: number | null = null;
-      let checkToMs: number | null = null;
-
-      if (effectiveEdge === "bottom") {
-        const newEndMs = originalEndMs + snappedDeltaMs;
-        if (newEndMs > originalEndMs) {
-          checkFromMs = originalEndMs;
-          checkToMs = newEndMs;
-        }
-      } else {
-        const newStartMs = originalStartMs + snappedDeltaMs;
-        if (newStartMs < originalStartMs) {
-          checkFromMs = newStartMs;
-          checkToMs = originalStartMs;
-        }
-      }
-
-      if (checkFromMs !== null && checkToMs !== null) {
-        const dayMs = 24 * 60 * 60 * 1_000;
-        const cursor = new Date(checkFromMs);
-        cursor.setHours(0, 0, 0, 0);
-
-        while (cursor.getTime() < checkToMs && !shouldBlockResize) {
-          const dayStr = toPlainDateString(cursor);
-          const dayStartMs = cursor.getTime();
-          const dayEndMs = dayStartMs + dayMs;
-
-          const overlapStartMs = Math.max(checkFromMs, dayStartMs);
-          const overlapEndMs = Math.min(checkToMs, dayEndMs);
-
-          if (overlapStartMs < overlapEndMs) {
-            const overlapStartMins = Math.floor(
-              (overlapStartMs - dayStartMs) / 60_000,
-            );
-            const overlapEndMins = Math.ceil(
-              (overlapEndMs - dayStartMs) / 60_000,
-            );
-
-            const dayConflicts = this._daySpanConflicts(
-              dayStr,
-              overlapStartMins,
-              overlapEndMins,
-              eventId,
-              resourceIds,
-              event,
-            );
-
-            if (dayConflicts.length > 0) {
-              shouldBlockResize = true;
-              blockReason = "unavailable-time";
-              const detailsText = describeUnavailability(
-                dayConflicts[0]!.resourceDetails,
-              );
-              blockMessage = `Unavailable: ${dayStr} ${formatMinutesToTime(overlapStartMins)}–${formatMinutesToTime(overlapEndMins)} conflicts with ${detailsText}`;
-              conflicts.push(...dayConflicts);
-            }
-          }
-
-          cursor.setTime(cursor.getTime() + dayMs);
-        }
-      }
-    }
-
-    const snapMs = (constraints?.snapToMinutes ?? 1) * 60_000;
-    const snappedDeltaMs =
-      Math.round((totalDeltaMinutes * 60_000) / snapMs) * snapMs;
-
-    if (!shouldBlockResize && effectiveEdge === "top") {
-      const event = this._eventMap.get(eventId);
-      if (event?.dependsOn?.length) {
-        const proposedStartMs =
-          Temporal.PlainDateTime.from(originalStart).toZonedDateTime(
-            this.options.timeZone,
-          ).epochMilliseconds + snappedDeltaMs;
-        const proposedEndMs = Temporal.PlainDateTime.from(
-          originalEnd,
-        ).toZonedDateTime(this.options.timeZone).epochMilliseconds;
-
-        for (const dep of event.dependsOn) {
-          const pred = this._eventMap.get(dep.id);
-          if (!pred) continue;
-
-          const predStartStr = toPlainDateTimeString(pred.start);
-          const predEndStr = toPlainDateTimeString(pred.end);
-          const predStartMs = Temporal.PlainDateTime.from(
-            predStartStr,
-          ).toZonedDateTime(this.options.timeZone).epochMilliseconds;
-          const predEndMs = Temporal.PlainDateTime.from(
-            predEndStr,
-          ).toZonedDateTime(this.options.timeZone).epochMilliseconds;
-
-          const shortfall = requiredForwardShiftMs(
-            dep.type,
-            predStartMs,
-            predEndMs,
-            proposedStartMs,
-            proposedEndMs,
-          );
-          if (shortfall > 0) {
-            shouldBlockResize = true;
-            blockReason = "blocked";
-            blockMessage = `"${event.title}" violates ${dep.type} dependency on "${pred.title}"`;
-            break;
-          }
-        }
-      }
-    }
-
-    if (
-      !shouldBlockResize &&
-      effectiveEdge === "bottom" &&
-      snappedDeltaMs > 0
-    ) {
-      const affected = this.getAffectedByDelta(
-        eventId,
-        snappedDeltaMs,
-        new Set([eventId]),
-      );
-
-      for (const { event: affectedEvent, newStart, newEnd } of affected) {
-        const alreadyConflicting = this._checkAvailability(
-          affectedEvent,
-          toPlainDateTimeString(affectedEvent.start),
-          toPlainDateTimeString(affectedEvent.end),
-        );
-        if (alreadyConflicting) continue;
-
-        const conflict = this._checkAvailability(
-          affectedEvent,
-          newStart,
-          newEnd,
-        );
-        if (conflict) {
-          shouldBlockResize = true;
-          blockReason = "unavailable-time";
-          blockMessage = `Blocked: "${affectedEvent.title}" would be pushed to unavailable time`;
-          conflicts.push(conflict);
-          break;
-        }
-      }
-    }
-
-    if (
-      !shouldBlockResize &&
-      resourceIds?.length &&
-      originalStartDate === originalEndDate
-    ) {
-      const selfEvent = event;
-      if (selfEvent) {
-        const proposedNewStart =
-          effectiveEdge === "top"
-            ? Temporal.PlainDateTime.from(originalStart)
-                .add({ milliseconds: snappedDeltaMs })
-                .toString({ smallestUnit: "second" })
-            : originalStart;
-        const proposedNewEnd =
-          effectiveEdge === "bottom"
-            ? Temporal.PlainDateTime.from(originalEnd)
-                .add({ milliseconds: snappedDeltaMs })
-                .toString({ smallestUnit: "second" })
-            : originalEnd;
-
-        const spanConflict = this._checkAvailability(
-          selfEvent,
-          proposedNewStart,
-          proposedNewEnd,
-        );
-        if (spanConflict) {
-          shouldBlockResize = true;
-          blockReason = "unavailable-time";
-          blockMessage = spanConflict.description;
-          const alreadyReported = conflicts.some(
-            (c) =>
-              c.date === spanConflict.date &&
-              c.conflictRange.start === spanConflict.conflictRange.start &&
-              c.conflictRange.end === spanConflict.conflictRange.end,
-          );
-          if (!alreadyReported) conflicts.push(spanConflict);
-        }
-      }
-    }
-
-    const effectiveDeltaMinutes = shouldBlockResize ? 0 : totalDeltaMinutes;
-
-    const result = calculateResizedEvent({
-      originalStart,
-      originalEnd,
-      edge,
-      deltaMinutes: effectiveDeltaMinutes,
-      timeZone: this.options.timeZone,
-      constraints: {
-        ...constraints,
-        unavailableRanges: shouldBlockResize ? [] : unavailableRanges,
-      },
-    });
-
-    return {
-      blocked: shouldBlockResize,
-      error: shouldBlockResize
-        ? {
-            reason: blockReason,
-            message: blockMessage,
-            conflicts,
-          }
-        : undefined,
-      result,
-      targetDayDate: shouldBlockResize ? originalDayDate : targetDayDate,
-    };
   }
 
   setResources(resources: Array<TResource> | null) {
