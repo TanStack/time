@@ -9,7 +9,7 @@ title: FEATURE_API_OWNERS
 const FEATURE_API_OWNERS: object;
 ```
 
-Defined in: [calendar/features/registry.ts:56](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L56)
+Defined in: [calendar/features/registry.ts:58](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L58)
 
 ## Type Declaration
 
@@ -23,6 +23,12 @@ readonly canRedo: "historyFeature" = "historyFeature";
 
 ```ts
 readonly canUndo: "historyFeature" = "historyFeature";
+```
+
+### checkEventAvailability
+
+```ts
+readonly checkEventAvailability: "resourceAvailabilityFeature" = "resourceAvailabilityFeature";
 ```
 
 ### createDependency
@@ -41,6 +47,12 @@ readonly createResizeController: "eventResizeFeature" = "eventResizeFeature";
 
 ```ts
 readonly editRecurringEvent: "eventRecurrenceFeature" = "eventRecurrenceFeature";
+```
+
+### getDaySpanConflicts
+
+```ts
+readonly getDaySpanConflicts: "resourceAvailabilityFeature" = "resourceAvailabilityFeature";
 ```
 
 ### getEventProps
@@ -71,6 +83,24 @@ readonly getMasterEvent: "eventRecurrenceFeature" = "eventRecurrenceFeature";
 
 ```ts
 readonly getTimelineLayout: "timelineFeature" = "timelineFeature";
+```
+
+### getUnavailabilityDetails
+
+```ts
+readonly getUnavailabilityDetails: "resourceAvailabilityFeature" = "resourceAvailabilityFeature";
+```
+
+### getUnavailableMinuteRanges
+
+```ts
+readonly getUnavailableMinuteRanges: "resourceAvailabilityFeature" = "resourceAvailabilityFeature";
+```
+
+### getUnavailableRanges
+
+```ts
+readonly getUnavailableRanges: "resourceAvailabilityFeature" = "resourceAvailabilityFeature";
 ```
 
 ### goToNextOccurrence
@@ -107,4 +137,10 @@ readonly undo: "historyFeature" = "historyFeature";
 
 ```ts
 readonly validateEventDependencies: "eventDependencyFeature" = "eventDependencyFeature";
+```
+
+### validateEventPlacement
+
+```ts
+readonly validateEventPlacement: "resourceAvailabilityFeature" = "resourceAvailabilityFeature";
 ```

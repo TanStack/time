@@ -25,7 +25,7 @@ Defined in: [calendar/features/types.ts:24](https://github.com/TanStack/time/blo
 commitUpdate: (id, updates) => void;
 ```
 
-Defined in: [calendar/features/types.ts:62](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L62)
+Defined in: [calendar/features/types.ts:63](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L63)
 
 #### Parameters
 
@@ -49,7 +49,7 @@ Defined in: [calendar/features/types.ts:62](https://github.com/TanStack/time/blo
 editEvent: (eventId, updates, options?) => Promise<SaveEventResult>;
 ```
 
-Defined in: [calendar/features/types.ts:47](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L47)
+Defined in: [calendar/features/types.ts:48](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L48)
 
 #### Parameters
 
@@ -79,7 +79,7 @@ Defined in: [calendar/features/types.ts:47](https://github.com/TanStack/time/blo
 editRecurringEvent: (eventId, updates, options) => Promise<SaveEventResult>;
 ```
 
-Defined in: [calendar/features/types.ts:53](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L53)
+Defined in: [calendar/features/types.ts:54](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L54)
 
 #### Parameters
 
@@ -117,7 +117,7 @@ Defined in: [calendar/features/types.ts:53](https://github.com/TanStack/time/blo
 fetchEventsForRange: (start, end) => Promise<void>;
 ```
 
-Defined in: [calendar/features/types.ts:46](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L46)
+Defined in: [calendar/features/types.ts:47](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L47)
 
 #### Parameters
 
@@ -209,6 +209,26 @@ Defined in: [calendar/features/types.ts:29](https://github.com/TanStack/time/blo
 
 ***
 
+### getEventsByDate()
+
+```ts
+getEventsByDate: (date) => TEvent[];
+```
+
+Defined in: [calendar/features/types.ts:41](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L41)
+
+#### Parameters
+
+##### date
+
+`string`
+
+#### Returns
+
+`TEvent`[]
+
+***
+
 ### getOptions()
 
 ```ts
@@ -261,7 +281,7 @@ Defined in: [calendar/features/types.ts:30](https://github.com/TanStack/time/blo
 goToSpecificPeriod: (isoDate) => void;
 ```
 
-Defined in: [calendar/features/types.ts:41](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L41)
+Defined in: [calendar/features/types.ts:42](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L42)
 
 #### Parameters
 
@@ -281,7 +301,7 @@ Defined in: [calendar/features/types.ts:41](https://github.com/TanStack/time/blo
 removeEvent: (id) => void;
 ```
 
-Defined in: [calendar/features/types.ts:52](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L52)
+Defined in: [calendar/features/types.ts:53](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L53)
 
 #### Parameters
 
@@ -301,7 +321,7 @@ Defined in: [calendar/features/types.ts:52](https://github.com/TanStack/time/blo
 validateEventDependencies: (event, dependsOn) => object;
 ```
 
-Defined in: [calendar/features/types.ts:70](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L70)
+Defined in: [calendar/features/types.ts:71](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L71)
 
 #### Parameters
 
@@ -351,7 +371,7 @@ valid: boolean;
 validateEventPlacement: (event) => object;
 ```
 
-Defined in: [calendar/features/types.ts:75](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L75)
+Defined in: [calendar/features/types.ts:76](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L76)
 
 #### Parameters
 
@@ -405,7 +425,7 @@ optional message: string;
 validateMove: (eventId, newStart, newEnd, newResources?, newConsumption?) => object;
 ```
 
-Defined in: [calendar/features/types.ts:63](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L63)
+Defined in: [calendar/features/types.ts:64](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L64)
 
 #### Parameters
 
@@ -459,7 +479,7 @@ optional message: string;
 validateResize: (options) => ValidateResizeResult;
 ```
 
-Defined in: [calendar/features/types.ts:74](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L74)
+Defined in: [calendar/features/types.ts:75](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L75)
 
 #### Parameters
 
@@ -479,7 +499,7 @@ Defined in: [calendar/features/types.ts:74](https://github.com/TanStack/time/blo
 write: (ops, reason) => InvertibleOp<TEvent>[];
 ```
 
-Defined in: [calendar/features/types.ts:42](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L42)
+Defined in: [calendar/features/types.ts:43](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L43)
 
 #### Parameters
 

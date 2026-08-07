@@ -5,7 +5,7 @@ title: CalendarFeature
 
 # Interface: CalendarFeature\<TResource, TEvent, TModuleApi, TApi, TName\>
 
-Defined in: [calendar/features/types.ts:89](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L89)
+Defined in: [calendar/features/types.ts:90](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L90)
 
 ## Type Parameters
 
@@ -37,7 +37,7 @@ Defined in: [calendar/features/types.ts:89](https://github.com/TanStack/time/blo
 optional api: (host, module) => TApi;
 ```
 
-Defined in: [calendar/features/types.ts:99](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L99)
+Defined in: [calendar/features/types.ts:100](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L100)
 
 #### Parameters
 
@@ -61,7 +61,7 @@ Defined in: [calendar/features/types.ts:99](https://github.com/TanStack/time/blo
 optional module: (ctx) => Module<TEvent & KernelEvent, TModuleApi>;
 ```
 
-Defined in: [calendar/features/types.ts:98](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L98)
+Defined in: [calendar/features/types.ts:99](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L99)
 
 #### Parameters
 
@@ -81,7 +81,7 @@ Defined in: [calendar/features/types.ts:98](https://github.com/TanStack/time/blo
 name: TName;
 ```
 
-Defined in: [calendar/features/types.ts:96](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L96)
+Defined in: [calendar/features/types.ts:97](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L97)
 
 ***
 
@@ -91,4 +91,4 @@ Defined in: [calendar/features/types.ts:96](https://github.com/TanStack/time/blo
 optional requires: readonly string[];
 ```
 
-Defined in: [calendar/features/types.ts:97](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L97)
+Defined in: [calendar/features/types.ts:98](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L98)
