@@ -6,6 +6,7 @@ import {
   dayEventLayoutFeature,
   eventRecurrenceFeature,
   historyFeature,
+  workingTimeFeature,
 } from "../features";
 import type { CalendarApi } from "../calendar";
 import type {
@@ -14,6 +15,7 @@ import type {
   StockFeatures,
 } from "../features";
 import type { Event, EventProps, Resource } from "../types";
+import type { WorkingTimeRange } from "~/workingTime";
 
 type TestEvent = Event<Resource>;
 
@@ -37,6 +39,21 @@ describe("CalendarApi is the intersection of what was composed", () => {
     expectTypeOf<Api>().not.toHaveProperty("canUndo");
     expectTypeOf<Api>().not.toHaveProperty("editRecurringEvent");
     expectTypeOf<Api>().not.toHaveProperty("getTimelineLayout");
+    expectTypeOf<Api>().not.toHaveProperty("getWorkingIntervals");
+  });
+
+  test("the working-time feature contributes the resolver surface", () => {
+    const features = calendarFeatures([workingTimeFeature]);
+    type Api = CalendarApi<typeof features, Resource, TestEvent>;
+
+    expectTypeOf<Api["getEffectiveCalendar"]>().returns.toEqualTypeOf<
+      string | undefined
+    >();
+    expectTypeOf<Api["getWorkingIntervals"]>().returns.toEqualTypeOf<
+      Array<WorkingTimeRange>
+    >();
+    expectTypeOf<Api["isWorkingTime"]>().returns.toEqualTypeOf<boolean>();
+    expectTypeOf<Api>().not.toHaveProperty("getUnavailableRanges");
   });
 
   test("core methods survive an empty feature list", () => {

@@ -12,11 +12,13 @@ import type {
 import type { ResizeFeatureApi } from "./resize";
 import type { TimelineApi } from "./timeline";
 import type { CalendarFeatureFactory, FeatureName } from "./types";
+import type { WorkingTimeApi } from "./workingTime";
 
 export interface BuiltInFeatureApiRegistry<
   TResource extends Resource,
   TEvent extends Event<TResource>,
 > {
+  workingTime: WorkingTimeApi<TResource>;
   availability: AvailabilityApi<TResource, TEvent>;
   history: HistoryApi;
   recurrence: RecurrenceNavigationApi &
@@ -92,6 +94,11 @@ export const FEATURE_API_OWNERS = {
   createResizeController: "eventResizeFeature",
   getEventSegmentInfo: "eventResizeFeature",
   validateResize: "eventResizeFeature",
+  getEffectiveCalendar: "workingTimeFeature",
+  getWorkingIntervals: "workingTimeFeature",
+  getWorkingMinutes: "workingTimeFeature",
+  getNonWorkingMinutes: "workingTimeFeature",
+  isWorkingTime: "workingTimeFeature",
   getUnavailableRanges: "resourceAvailabilityFeature",
   getUnavailableMinuteRanges: "resourceAvailabilityFeature",
   getUnavailabilityDetails: "resourceAvailabilityFeature",

@@ -252,16 +252,45 @@ week plus a dated shutdown), a resource calendar under it, and an event calendar
 asserting the resource's early start, the shutdown swallowing the whole day for everyone, and an
 after-hours event that places only when it names its override.
 
-### Slice 5 — `workingTimeFeature`
+### Slice 5 — `workingTimeFeature` ✅
 
-The resolver gets a public surface: `getWorkingIntervals(range, target)`, `getEffectiveCalendar`,
-`isWorkingTime`. `resourceAvailabilityFeature` declares `requires: ["workingTime"]` and reads it
-as a peer instead of resolving inline, which is the seam slice 8 of the previous plan built for.
+`workingTimeFeature` owns resolution; `resourceAvailabilityFeature` declares
+`requires: ["workingTime"]` and reads it through the peer proxy slice 8 of the previous plan built.
+1,095 tests.
 
-The split earns itself twice over: the ADR 0007 solver and the non-continuous time axis both need
-resolved working time and neither needs availability's capacity or conflict vocabulary. Registry
-entry, `stockFeatures`, `composedApi.test-d.ts` and a bundle check that a `dayEventLayoutFeature`-
-only composition still links none of it.
+The api is `getEffectiveCalendar`, `getWorkingIntervals(range, target)`, `getWorkingMinutes`,
+`getNonWorkingMinutes` and `isWorkingTime(range, target)`, all taking the same optional
+`{ resourceId?, resourceIds?, calendarId? }` target. One target type rather than five signatures is
+what keeps "which calendar governs this?" and "when does it work?" answerable about the same thing —
+a resource, a set of them, an event's override, or the project default when the target is omitted.
+
+**Multi-resource reads union, and that is deliberate.** A target naming several resources resolves
+each resource's chain independently and merges the results, because concatenating the chains into
+one layer stack would let one resource's non-working interval paint over another's working time.
+This is the same question `mergeUnavailableMinuteRanges` answers — *when does anybody work* — which
+is why availability's shading read now delegates to `getNonWorkingMinutes` and the minute cache
+moved here with it. The validation path keeps its own `multiResource` policy: "when can this event
+run" is a different question and stays in the pure core.
+
+`getLayeredWorkingTime(layers, range, calendars)` is the resolver primitive underneath, taking an
+array of independently-resolved layer stacks; `getWorkingTime` is now `[[calendarId]]` through it.
+`isWorkingTime` is defined on top rather than beside it — a range is working time when the clipped
+intervals come back as exactly one interval equal to the range, so a gap anywhere inside it answers
+false without a second traversal.
+
+**`stockFeatures` moved to its own module.** It imports every feature by construction, so leaving it
+next to `calendarFeatures` meant naming `calendarFeatures` pulled the whole feature set into the
+module graph and only a tree-shaker's willingness to drop an unused const kept it out of the bundle.
+Split apart, the property is structural instead of optimistic.
+
+That property is now pinned by `linking.test.ts`, which walks the import graph from `src/index.ts`
+resolving named imports through re-export-only barrels the way a bundler does, and asserts a
+`createCalendar` + `calendarFeatures` + `dayEventLayoutFeature` entry reaches the kernel, the
+projection and the layout feature but nothing under `src/workingTime/`,
+`src/validation/availability/`, or the two features. It is a link
+check, not a bundler run — it models module-granularity reachability, not intra-module DCE, and it
+needs no bundler in the test deps. Swapping `dayEventLayoutFeature` for `workingTimeFeature` in the
+same entry does reach `workingTime/resolve.ts`, which is what stops the check passing vacuously.
 
 ## Open questions
 
@@ -277,12 +306,12 @@ only composition still links none of it.
 
 ## Definition of done
 
-- No `Resource.availability` anywhere in the packages or the examples; a resource references a
+- ✅ No `Resource.availability` anywhere in the packages or the examples; a resource references a
   calendar by id and a shared calendar is declared once.
-- `getWorkingTime(calendarId, range, calendars)` is pure and serializable both ways — the
+- ✅ `getWorkingTime(calendarId, range, calendars)` is pure and serializable both ways — the
   purity test covers `src/workingTime/`, so it can run server-side or as a delegatable stage
   (ADR 0004/0006) without change.
 - ✅ A three-level hierarchy resolves correctly through the *public* surface: project shutdown,
   resource shift, event override, verified against a composed calendar rather than the resolver
   alone (`calendar.test.ts`, "resolves project, resource and event calendars together").
-- A `dayEventLayoutFeature`-only bundle links no working-time code.
+- ✅ A `dayEventLayoutFeature`-only bundle links no working-time code (`linking.test.ts`).

@@ -3,7 +3,6 @@ import { toUnavailableRanges } from "~/projection";
 import {
   checkDaySpan,
   getUnavailabilityDetails as computeUnavailabilityDetails,
-  mergeUnavailableMinuteRanges,
 } from "~/validation/availability";
 import type { KernelEvent } from "~/kernel";
 import type { AvailabilityModuleApi } from "~/kernel/modules";
@@ -11,11 +10,11 @@ import type {
   AvailabilityConflict,
   MinuteRange,
 } from "~/validation/availability";
-import type { WorkingCalendar } from "~/workingTime";
 import type { UnavailableRange } from "~/projection";
 import type { UnavailableTimeRange } from "../getResizeProps";
 import type { Event, Resource } from "../types";
 import type { CalendarFeature, CalendarHost } from "./types";
+import type { WorkingTimeApi } from "./workingTime";
 
 export interface UnavailabilityDetail {
   resourceId: string;
@@ -68,6 +67,10 @@ export interface AvailabilityApi<
   }) => { blocked: boolean; message?: string };
 }
 
+export interface AvailabilityPeers<TResource extends Resource> {
+  workingTime: WorkingTimeApi<TResource>;
+}
+
 export function resourceAvailabilityFeature<
   TResource extends Resource,
   TEvent extends Event<TResource>,
@@ -76,27 +79,9 @@ export function resourceAvailabilityFeature<
   TEvent,
   AvailabilityModuleApi,
   AvailabilityApi<TResource, TEvent>,
-  "availability"
+  "availability",
+  AvailabilityPeers<TResource>
 > {
-  const minuteCache = new Map<string, Array<MinuteRange>>();
-  let cachedFor: Array<TResource> | null = null;
-  let cachedForCalendars: Array<WorkingCalendar> | null | undefined = undefined;
-
-  const resourcesOf = (
-    host: CalendarHost<TResource, TEvent>,
-  ): Array<TResource> | null => {
-    const { resources, workingTime } = host.getOptions();
-    if (
-      resources !== cachedFor ||
-      workingTime.calendars !== cachedForCalendars
-    ) {
-      minuteCache.clear();
-      cachedFor = resources;
-      cachedForCalendars = workingTime.calendars;
-    }
-    return resources;
-  };
-
   const resourceIdsOf = (event: {
     resources?: Array<TResource | string>;
   }): Array<string> =>
@@ -104,35 +89,19 @@ export function resourceAvailabilityFeature<
 
   const mergedMinutes = (
     host: CalendarHost<TResource, TEvent>,
+    peers: AvailabilityPeers<TResource>,
     date: string,
     resourceIds?: Array<TResource["id"]>,
   ): Array<MinuteRange> | null => {
-    const allResources = resourcesOf(host);
+    const allResources = host.getOptions().resources;
     if (!allResources || allResources.length === 0) return null;
 
-    const ids = (
-      resourceIds
-        ? allResources
-            .filter((r) => resourceIds.includes(r.id))
-            .map((r) => r.id)
-        : allResources.map((r) => r.id)
-    ).slice();
+    const ids = allResources
+      .filter((r) => !resourceIds || resourceIds.includes(r.id))
+      .map((r) => r.id);
     if (ids.length === 0) return null;
 
-    const cacheKey = `${ids.slice().sort().join(",")}|${date}`;
-    const cached = minuteCache.get(cacheKey);
-    if (cached) return cached;
-
-    const merged = mergeUnavailableMinuteRanges(
-      allResources,
-      date,
-      host.getOptions().workingTime,
-      ids,
-    );
-    if (merged === null) return null;
-
-    minuteCache.set(cacheKey, merged);
-    return merged;
+    return peers.workingTime.getNonWorkingMinutes(date, { resourceIds: ids });
   };
 
   const details = (
@@ -180,20 +149,21 @@ export function resourceAvailabilityFeature<
 
   return {
     name: "availability",
+    requires: ["workingTime"],
     module: (ctx) =>
       availabilityModule<TEvent & KernelEvent>({
         resources: () => ctx.getResources(),
         workingTime: () => ctx.getWorkingTime(),
       }),
-    api: (host, module) => ({
+    api: (host, module, peers) => ({
       getUnavailableRanges: (date, options) => {
-        const merged = mergedMinutes(host, date, options?.resourceIds);
+        const merged = mergedMinutes(host, peers, date, options?.resourceIds);
         if (merged === null) return [];
 
         return toUnavailableRanges(merged);
       },
       getUnavailableMinuteRanges: (date, options) => {
-        const merged = mergedMinutes(host, date, options?.resourceIds);
+        const merged = mergedMinutes(host, peers, date, options?.resourceIds);
         if (!merged) return [];
 
         return merged.map((r) => ({

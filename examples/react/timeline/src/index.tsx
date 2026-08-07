@@ -12,6 +12,7 @@ import {
   eventResizeFeature,
   getTimeClient,
   historyFeature,
+  workingTimeFeature,
   resourceAvailabilityFeature,
   timelineFeature,
   toPlainDateString,
@@ -84,6 +85,7 @@ import "./index.css";
 
 const features = calendarFeatures([
   historyFeature,
+  workingTimeFeature,
   resourceAvailabilityFeature,
   eventRecurrenceFeature,
   eventDependencyFeature,

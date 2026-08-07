@@ -10,6 +10,7 @@ import {
   eventRecurrenceFeature,
   eventResizeFeature,
   historyFeature,
+  workingTimeFeature,
   resourceAvailabilityFeature,
 } from "@tanstack/time";
 import ReactDOM from "react-dom/client";
@@ -53,6 +54,7 @@ import "./index.css";
 
 const features = calendarFeatures([
   historyFeature,
+  workingTimeFeature,
   resourceAvailabilityFeature,
   eventRecurrenceFeature,
   eventResizeFeature,
@@ -183,6 +185,49 @@ function getSampleEvents(): Array<Event<Resource>> {
       start: dateTimeOnWeekday(4, 12, 0),
       end: dateTimeOnWeekday(4, 16, 30),
       resources: [sampleResources[1]],
+      consumption: [1],
+    },
+    // Overlap demo: switch between "Side by side" and "Expand" to see the difference.
+    // With "columns" every event gets an equal slice; with "expand" the early/late
+    // events widen into the empty column created by the short 17:30–18:00 events.
+    {
+      id: "expand-anchor",
+      title: "Expand Anchor (A:1)",
+      start: dateTimeOnWeekday(3, 16, 0),
+      end: dateTimeOnWeekday(3, 19, 0),
+      resources: [sampleResources[0]],
+      consumption: [1],
+    },
+    {
+      id: "expand-left",
+      title: "Expand Left (B:1)",
+      start: dateTimeOnWeekday(3, 16, 30),
+      end: dateTimeOnWeekday(3, 17, 30),
+      resources: [sampleResources[1]],
+      consumption: [1],
+    },
+    {
+      id: "expand-gap",
+      title: "Expand Gap (B:1)",
+      start: dateTimeOnWeekday(3, 17, 30),
+      end: dateTimeOnWeekday(3, 18, 0),
+      resources: [sampleResources[1]],
+      consumption: [1],
+    },
+    {
+      id: "expand-right",
+      title: "Expand Right (B:1)",
+      start: dateTimeOnWeekday(3, 18, 0),
+      end: dateTimeOnWeekday(3, 19, 0),
+      resources: [sampleResources[1]],
+      consumption: [1],
+    },
+    {
+      id: "expand-floater",
+      title: "Expand Floater (A:1)",
+      start: dateTimeOnWeekday(3, 17, 30),
+      end: dateTimeOnWeekday(3, 18, 0),
+      resources: [sampleResources[0]],
       consumption: [1],
     },
     {

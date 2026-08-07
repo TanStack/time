@@ -8,6 +8,7 @@ import {
   eventDependencyFeature,
   historyFeature,
   resourceAvailabilityFeature,
+  workingTimeFeature,
 } from "../features";
 import type {
   CalendarFeature,
@@ -226,7 +227,7 @@ describe("calendarFeatures composition", () => {
 
   test("availability blocks a write only when it is composed", async () => {
     const withAvailability = createTestCalendar(
-      calendarFeatures([resourceAvailabilityFeature]),
+      calendarFeatures([workingTimeFeature, resourceAvailabilityFeature]),
       [],
       [morningRoom],
     );
@@ -247,7 +248,7 @@ describe("calendarFeatures composition", () => {
 
   test("the availability veto stops a commit that skips validation", () => {
     const cal = createTestCalendar(
-      calendarFeatures([resourceAvailabilityFeature]),
+      calendarFeatures([workingTimeFeature, resourceAvailabilityFeature]),
       [],
       [morningRoom],
     );
@@ -289,7 +290,11 @@ describe("calendarFeatures composition", () => {
     ];
 
     const blocked = createTestCalendar(
-      calendarFeatures([resourceAvailabilityFeature, eventDependencyFeature]),
+      calendarFeatures([
+        workingTimeFeature,
+        resourceAvailabilityFeature,
+        eventDependencyFeature,
+      ]),
       dependentPair.map((event) => ({ ...event })),
       [morningRoom],
     );
@@ -300,7 +305,11 @@ describe("calendarFeatures composition", () => {
     expect(afterBlock.get("b")!.start).toBe(`${DAY}T10:00:00`);
 
     const allowed = createTestCalendar(
-      calendarFeatures([resourceAvailabilityFeature, eventDependencyFeature]),
+      calendarFeatures([
+        workingTimeFeature,
+        resourceAvailabilityFeature,
+        eventDependencyFeature,
+      ]),
       dependentPair.map((event) => ({ ...event })),
       [morningRoom],
     );
@@ -313,7 +322,7 @@ describe("calendarFeatures composition", () => {
 
   test("validateMove stops consulting availability when it is absent", () => {
     const withAvailability = createTestCalendar(
-      calendarFeatures([resourceAvailabilityFeature]),
+      calendarFeatures([workingTimeFeature, resourceAvailabilityFeature]),
       [{ ...eveningEvent, start: `${DAY}T09:00:00`, end: `${DAY}T10:00:00` }],
       [morningRoom],
     );
@@ -399,6 +408,7 @@ describe("calendarFeatures composition", () => {
     const withAvailability = createTestCalendar(
       calendarFeatures([
         eventRecurrenceFeature,
+        workingTimeFeature,
         resourceAvailabilityFeature,
         eventResizeFeature,
       ]),
@@ -421,6 +431,7 @@ describe("calendarFeatures composition", () => {
     const cal = createTestCalendar(
       calendarFeatures([
         eventRecurrenceFeature,
+        workingTimeFeature,
         resourceAvailabilityFeature,
         eventResizeFeature,
       ]),

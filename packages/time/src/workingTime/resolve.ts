@@ -2,6 +2,7 @@ import { Temporal } from "@js-temporal/polyfill";
 import {
   formatMinutesToTime,
   getWeekday,
+  mergeMinuteRanges,
   MINUTES_IN_DAY,
   parseHmToMinutes,
   type MinuteRange,
@@ -157,8 +158,15 @@ export function getWorkingTime(
   range: WorkingTimeRange,
   calendars: Array<WorkingCalendar> | null | undefined,
 ): Array<WorkingTimeRange> {
-  const chain = resolveCalendarChain(calendarId, calendars);
-  if (chain.length === 0) return [];
+  return getLayeredWorkingTime([[calendarId]], range, calendars);
+}
+
+export function getLayeredWorkingTime(
+  layers: Array<Array<string | undefined>>,
+  range: WorkingTimeRange,
+  calendars: Array<WorkingCalendar> | null | undefined,
+): Array<WorkingTimeRange> {
+  if (!hasAnyWorkingCalendar(layers.flat(), calendars)) return [];
 
   const startDay = dayOf(range.start);
   const endDay = dayOf(range.end);
@@ -182,7 +190,13 @@ export function getWorkingTime(
     const upperBound = isLast ? endMinutes : MINUTES_IN_DAY;
 
     if (upperBound > lowerBound) {
-      for (const span of resolveDayMinutes(calendarId, day, calendars)) {
+      const dayMinutes = mergeMinuteRanges(
+        layers.flatMap((stack) =>
+          resolveLayeredDayMinutes(stack, day, calendars),
+        ),
+      );
+
+      for (const span of dayMinutes) {
         const from = Math.max(span.startMinutes, lowerBound);
         const to = Math.min(span.endMinutes, upperBound);
         if (to <= from) continue;
