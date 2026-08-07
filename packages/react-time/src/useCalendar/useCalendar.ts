@@ -7,19 +7,17 @@ import {
   useSyncExternalStore,
 } from "react";
 import { useStore } from "@tanstack/react-store";
-import { CalendarCore } from "@tanstack/time";
+import { createCalendar } from "@tanstack/time";
 import { inertResizeController } from "./inertResizeController";
 import type {
-  AllCalendarFeatures,
   CalendarApi,
   CalendarCoreOptions,
   CalendarFeatureList,
   FeatureName,
-  DependencyType,
+  FullFeatureApi,
   RecurrenceEditScope,
   Event,
   EventDateTimeInput,
-  EventDependency,
   ResizeController,
   ResizeControllerOptions,
   ResizeEdge,
@@ -45,7 +43,7 @@ interface DayColumnProps {
 }
 
 export interface UseCalendarOptions<
-  TFeatures extends CalendarFeatureList = AllCalendarFeatures,
+  TFeatures extends CalendarFeatureList,
   TResource extends Resource = Resource,
   TEvent extends Event<TResource> = Event<TResource>,
 > extends CalendarCoreOptions<TFeatures, TResource, TEvent> {
@@ -84,8 +82,8 @@ export const useCalendar = <
 ): UseCalendarResult<TFeatures, TResource, TEvent> => {
   const { resize, ...calendarOptions } = options;
 
-  const [calendarCore] = useState(
-    () => new CalendarCore<TFeatures, TResource, TEvent>(calendarOptions),
+  const [calendarCore] = useState(() =>
+    createCalendar<TFeatures, TResource, TEvent>(calendarOptions),
   );
   const state = useStore(calendarCore.store);
   const isPending = state.isPending;
@@ -94,10 +92,13 @@ export const useCalendar = <
     calendarCore.ensureRangeLoaded();
   }, [calendarCore, state.currentPeriod, state.viewMode, state.activeDate]);
 
-  const [resizeController] = useState<ResizeController<TResource, TEvent>>(() =>
-    calendarCore.hasFeature("resize")
-      ? calendarCore.createResizeController(resize)
-      : inertResizeController<TResource, TEvent>(),
+  const [resizeController] = useState<ResizeController<TResource, TEvent>>(
+    () =>
+      calendarCore.hasFeature("resize")
+        ? (
+            calendarCore as unknown as FullFeatureApi<TResource, TEvent>
+          ).createResizeController(resize)
+        : inertResizeController<TResource, TEvent>(),
   );
 
   useEffect(() => {
@@ -208,11 +209,6 @@ export const useCalendar = <
     [calendarCore],
   );
 
-  const getEventProps = useCallback<typeof calendarCore.getEventProps>(
-    (id, layoutOptions) => calendarCore.getEventProps(id, layoutOptions),
-    [calendarCore],
-  );
-
   const groupDaysBy = useCallback<typeof calendarCore.groupDaysBy>(
     (props) => calendarCore.groupDaysBy(props),
     [calendarCore],
@@ -257,21 +253,6 @@ export const useCalendar = <
     [calendarCore],
   );
 
-  const editRecurringEvent = useCallback<
-    typeof calendarCore.editRecurringEvent
-  >(
-    (eventId, updates, editOptions) =>
-      calendarCore.editRecurringEvent(eventId, updates, editOptions),
-    [calendarCore],
-  );
-
-  const removeRecurringEvent = useCallback<
-    typeof calendarCore.removeRecurringEvent
-  >(
-    (eventId, removeOptions) =>
-      calendarCore.removeRecurringEvent(eventId, removeOptions),
-    [calendarCore],
-  );
   const removeEvent = useCallback<typeof calendarCore.removeEvent>(
     (id) => calendarCore.removeEvent(id),
     [calendarCore],
@@ -287,15 +268,6 @@ export const useCalendar = <
     [calendarCore],
   );
 
-  const getEventsByResource = useCallback<
-    typeof calendarCore.getEventsByResource
-  >(() => calendarCore.getEventsByResource(), [calendarCore]);
-
-  const getTimelineLayout = useCallback<typeof calendarCore.getTimelineLayout>(
-    () => calendarCore.getTimelineLayout(),
-    [calendarCore],
-  );
-
   const getEvents = useCallback<typeof calendarCore.getEvents>(
     () => calendarCore.getEvents(),
     [calendarCore],
@@ -306,44 +278,6 @@ export const useCalendar = <
       calendarCore.validateMove(eventId, newStart, newEnd, newResources),
     [calendarCore],
   );
-
-  const validateEventDependencies = useCallback(
-    (
-      event: { id?: string; title: string; start: string; end: string },
-      dependsOn: Array<EventDependency>,
-    ) => calendarCore.validateEventDependencies(event, dependsOn),
-    [calendarCore],
-  );
-
-  const createDependency = useCallback(
-    (sourceId: string, targetId: string, type?: DependencyType) =>
-      calendarCore.createDependency(sourceId, targetId, type),
-    [calendarCore],
-  );
-
-  const goToNextOccurrence = useCallback(
-    (eventId: string, fromDate?: EventDateTimeInput) => {
-      calendarCore.goToNextOccurrence(eventId, fromDate);
-    },
-    [calendarCore],
-  );
-
-  const goToPreviousOccurrence = useCallback(
-    (eventId: string, fromDate?: EventDateTimeInput) => {
-      calendarCore.goToPreviousOccurrence(eventId, fromDate);
-    },
-    [calendarCore],
-  );
-
-  const getMasterEvent = useCallback<typeof calendarCore.getMasterEvent>(
-    (event) => calendarCore.getMasterEvent(event),
-    [calendarCore],
-  );
-
-  const undo = useCallback(() => calendarCore.undo(), [calendarCore]);
-  const redo = useCallback(() => calendarCore.redo(), [calendarCore]);
-  const canUndo = useCallback(() => calendarCore.canUndo(), [calendarCore]);
-  const canRedo = useCallback(() => calendarCore.canRedo(), [calendarCore]);
 
   const fetchEventsForRange = useCallback<
     typeof calendarCore.fetchEventsForRange
@@ -368,10 +302,6 @@ export const useCalendar = <
     [calendarCore],
   );
 
-  const getEventSegmentInfo = useCallback<
-    typeof calendarCore.getEventSegmentInfo
-  >((event) => calendarCore.getEventSegmentInfo(event), [calendarCore]);
-
   const daysKey = `${state.currentPeriod}|${state.activeDate}|${state.viewMode.value}|${state.viewMode.unit}|${state.eventsVersion}`;
 
   const days = useMemo(() => {
@@ -395,6 +325,7 @@ export const useCalendar = <
   );
 
   return {
+    ...(calendarCore.featureApi as object),
     activeDate: state.activeDate,
     currentPeriod: state.currentPeriod,
     viewMode: state.viewMode,
@@ -411,36 +342,21 @@ export const useCalendar = <
     canGoPreviousPeriod,
     canGoNextPeriod,
     changeViewMode,
-    getEventProps,
     addEvent,
     editEvent,
-    editRecurringEvent,
     removeEvent,
-    removeRecurringEvent,
     isPending,
     groupDaysBy,
     resizeState,
     getResizeHandleProps,
     getDayColumnProps,
     getUnavailableRanges,
-    getEventsByResource,
-    getTimelineLayout,
     getEvents,
     validateMove,
-    validateEventDependencies,
-    createDependency,
     fetchEventsForRange,
     validateEventPlacement,
     formatPeriodLabel,
     formatCurrentPeriod,
-    getEventSegmentInfo,
-    undo,
-    redo,
-    canUndo,
-    canRedo,
-    goToNextOccurrence,
-    goToPreviousOccurrence,
-    getMasterEvent,
     setResources,
     setEvents,
   } as unknown as UseCalendarResult<TFeatures, TResource, TEvent>;

@@ -250,12 +250,57 @@ Not done here: `requires` is still runtime-only. The timeline example composes
 `eventRecurrenceFeature` solely because `eventResizeFeature` requires it — nothing in the type
 system says so, and the constructor throw is what would tell you.
 
-### Slice 5 — remove the preset
+### Slice 5 — remove the preset ✅
 
-One release later: delete `allCalendarFeatures` and the delegating shims left by slice 2. Removing
-the shims is what finally gates a directly constructed `CalendarCore` — until then the class keeps
-every delegate method, so only the adapter surface is gated. The core-shadow collision check lands
-with them.
+The implicit preset is gone, and with it the fifteen delegating shims. `TFeatures` has no default
+on `CalendarCoreOptions`, `CalendarCore` or `UseCalendarOptions`, so there is no way to get a
+module set you did not ask for.
+
+`stockFeatures` replaces `allCalendarFeatures` as an *explicit* opt-in — `features: stockFeatures`
+composes all six in one identifier, the way Table v8 shipped everything, and pays the bundle for
+it. The difference from the old preset is that it is never a default: nothing pulls it in unless
+the app names it. `composedApi.test-d.ts` asserts
+`ComposedApi<StockFeatures, ...>` equals `FullFeatureApi<...>`, so a feature added to the registry
+but forgotten in `stockFeatures` fails the suite.
+
+Composed api is mounted on the instance instead of forwarded through hand-written methods:
+`_seedKernel` merges the feature apis with `Object.assign`, and every key in the owner table that
+was *not* composed gets a getter that throws the "compose `historyFeature`" message. One
+mechanism replaces fifteen delegates plus the `guardApi` proxy, which is deleted. Reading an
+absent method now throws synchronously — `editRecurringEvent` used to return a rejected promise,
+because the throw happened inside an `async` delegate.
+
+The core-shadow check lands as promised: a feature contributing a key that already exists on
+`CalendarCore.prototype` is rejected at construction, alongside the existing feature-vs-feature
+collision check.
+
+`createCalendar()` is what makes the gate usable without a cast. `new CalendarCore(...)` is typed
+core-only — a class cannot type members that depend on its own type argument's contents — so the
+factory returns `Calendar<TFeatures, TResource, TEvent>` = the class intersected with
+`ComposedApi<...>`. Tests and `useCalendar` both construct through it.
+
+Three api methods moved off the kernel module api and onto their feature: `canUndo` / `canRedo`
+(history), `getMasterEvent` (recurrence), `validateEventDependencies` (dependency). Before this,
+`CalendarCore` reached into `this._kernel.api` for them, which meant the public surface was
+assembled from two places and the mounted object would have carried `undoStack` / `clearHistory`
+too. Features now contribute every public method themselves, and `_kernel.api` is internal.
+
+`FEATURE_API_OWNERS` is a hand-written `key → feature name` table, not derived by instantiating
+every feature. Deriving it was what made the old build step import all six features, which defeats
+the whole point — a `dayEventLayoutFeature`-only app would still pull in resize and timeline code.
+It is a string map, so it shakes to nothing. `composedApi.test-d.ts` pins
+`keyof typeof FEATURE_API_OWNERS` against `keyof FullFeatureApi<...>` so the table cannot drift
+from the registry.
+
+`useCalendar` dropped fifteen `useCallback` wrappers and spreads `calendarCore.featureApi`
+instead. The wrappers existed to re-expose class methods; feature api functions are created once
+per instance, so their identity is already stable.
+
+Bundle check (rolldown, minified, `packages/time/dist`): composing `dayEventLayoutFeature` alone
+gives 253.7 kB (65.5 kB gzip) against 277.0 kB (71.9 kB gzip) for all six. `undoModule`,
+`ResizeController`, `validateDependencies` and the timeline layout code are absent from the
+day-only bundle; the only mention of the other features is the owner table's strings. The bulk of
+both numbers is the Temporal polyfill.
 
 ## Open questions
 
@@ -273,8 +318,25 @@ with them.
 
 ## Definition of done
 
-- `features` is required; no implicit module set anywhere in the packages or examples.
-- Every method in the table above is reachable only when its feature is composed, and fails to
-  typecheck otherwise.
-- A read-only day view composes `dayEventLayoutFeature` alone and pulls in no recurrence,
+- ✅ `features` is required; no implicit module set anywhere in the packages or examples.
+- ✅ Every method in the table above is reachable only when its feature is composed, and fails to
+  typecheck otherwise — through `createCalendar()` / `useCalendar()`. A directly constructed
+  `CalendarCore` is typed core-only, so the composed methods are present at runtime but invisible
+  to the type checker.
+- ⚠️ A read-only day view composes `dayEventLayoutFeature` alone and pulls in no recurrence,
   dependency, resize or timeline code — verified against the built bundle, not by inspection.
+  Feature code does shake out (slice 5 measured it), but two pieces still ride along inside core:
+  `getEventMap`'s own recurrence expansion (`expandRecurringEvent`) and the availability
+  validators (`checkAvailability`). Both are core methods, not features, so this closes when
+  availability moves out and the read expansion is unified with `recurrenceModule`'s stage.
+
+## Remaining work
+
+- `resourceAvailabilityFeature` is still unmade: `getUnavailableRanges`,
+  `getUnavailabilityDetails`, `validateEventPlacement` and `validateResize` stay on core because
+  `availabilityModule` bundles the veto stage with the read helpers. Splitting the veto out is the
+  precondition.
+- `CalendarCore.getEventMap` duplicates recurrence expansion, so read expansion is ungated.
+- `validateResize` and `editRecurringEvent` are on `CalendarHost` only until those two land; they
+  are the last host members a feature uses to reach a peer rather than the kernel.
+- The Solid adapter is written against the composed shape, not ported from the monolith.

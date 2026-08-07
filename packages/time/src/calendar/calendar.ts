@@ -9,15 +9,14 @@ import {
   normalizeRecurrenceRule,
 } from "~/recurrence";
 import { createKernel } from "~/kernel";
-import { guardApi } from "~/kernel/apiGuard";
-import { allCalendarFeatures } from "./features";
+import { FEATURE_API_OWNERS } from "./features";
 import type {
-  AllCalendarFeatures,
   AnyCalendarFeature,
   CalendarFeatureList,
   CalendarHost,
   ComposedApi,
   FeatureModuleCtx,
+  FullFeatureApi,
 } from "./features";
 import type {
   Module,
@@ -32,23 +31,17 @@ import { getTimeSlots } from "./getTimeSlots";
 import { calculateResizedEvent } from "./getResizeProps";
 import { DateCore } from "./date-core";
 import { generateDateRange } from "./generateDateRange";
-import { ResizeController } from "./resizeController";
 import type { DateCoreOptions, ParsedDateCoreOptions } from "./date-core";
-import type { ResizeControllerOptions } from "./resizeController";
-import type { SegmentInfo, UnavailableTimeRange } from "./getResizeProps";
+import type { UnavailableTimeRange } from "./getResizeProps";
 import type {
   AvailabilityConflict,
   Day,
-  DependencyType,
   Event,
-  EventDateTimeInput,
   EventDependency,
-  RecurrenceEditScope,
   ResizeError,
   Resource,
   SaveEventResult,
   TimeSlot,
-  TimelineLayout,
   UnavailableRange,
   ValidateResizeOptions,
   ValidateResizeResult,
@@ -83,7 +76,7 @@ export * from "./date-core";
 type WritableEvent<TEvent> = TEvent & KernelEvent;
 
 export interface CalendarCoreOptions<
-  TFeatures extends CalendarFeatureList = AllCalendarFeatures,
+  TFeatures extends CalendarFeatureList,
   TResource extends Resource = Resource,
   TEvent extends Event<TResource> = Event<TResource>,
 > extends DateCoreOptions {
@@ -183,34 +176,6 @@ interface CalendarActions<
   setEvents: (events: Array<TEvent> | null) => void;
 }
 
-function buildFeatureApiOwners(): Map<string, string> {
-  const owners = new Map<string, string>();
-  for (const factory of allCalendarFeatures) {
-    const feature = factory();
-    const label = factory.name || feature.name;
-
-    if (feature.module) {
-      const module = feature.module({ timeZone: "UTC" });
-      const api = module.api?.({} as never);
-      if (api) {
-        for (const key of Object.keys(api)) {
-          owners.set(key, label);
-        }
-      }
-    }
-
-    const hostApi = feature.api?.({} as never, {} as never);
-    if (hostApi) {
-      for (const key of Object.keys(hostApi)) {
-        owners.set(key, label);
-      }
-    }
-  }
-  return owners;
-}
-
-const FEATURE_API_OWNERS = buildFeatureApiOwners();
-
 interface CalendarState<
   TResource extends Resource,
   TEvent extends Event<TResource>,
@@ -232,6 +197,13 @@ export type CalendarApi<
   CalendarState<TResource, TEvent> &
   ComposedApi<TFeatures, TResource, TEvent>;
 
+export type Calendar<
+  TFeatures extends CalendarFeatureList,
+  TResource extends Resource = Resource,
+  TEvent extends Event<TResource> = Event<TResource>,
+> = CalendarCore<TFeatures, TResource, TEvent> &
+  ComposedApi<TFeatures, TResource, TEvent>;
+
 type ParsedCalendarCoreOptions<
   TFeatures extends CalendarFeatureList,
   TResource extends Resource,
@@ -248,7 +220,7 @@ type ParsedCalendarCoreOptions<
 };
 
 export class CalendarCore<
-    TFeatures extends CalendarFeatureList = AllCalendarFeatures,
+    TFeatures extends CalendarFeatureList,
     TResource extends Resource = Resource,
     TEvent extends Event<TResource> = Event<TResource>,
   >
@@ -265,22 +237,12 @@ export class CalendarCore<
   private _kernel!: Kernel<WritableEvent<TEvent>, unknown>;
   private _features!: ComposedApi<TFeatures, TResource, TEvent>;
 
-  private get _api(): ComposedApi<AllCalendarFeatures, TResource, TEvent> {
-    return guardApi(
-      this._features as unknown as Record<string, unknown>,
-      (key) => this._describeMissingFeatureApi(key),
-    ) as never;
+  private get _api(): FullFeatureApi<TResource, TEvent> {
+    return this._features as unknown as FullFeatureApi<TResource, TEvent>;
   }
 
-  private get _moduleApi(): ComposedApi<
-    AllCalendarFeatures,
-    TResource,
-    TEvent
-  > {
-    return guardApi(
-      this._kernel.api as unknown as Record<string, unknown>,
-      (key) => this._describeMissingFeatureApi(key),
-    ) as never;
+  get featureApi(): ComposedApi<TFeatures, TResource, TEvent> {
+    return this._features;
   }
 
   hasFeature(name: string): boolean {
@@ -290,7 +252,8 @@ export class CalendarCore<
   private _featureNames = new Set<string>();
 
   private _describeMissingFeatureApi(key: string): string {
-    const featureName = FEATURE_API_OWNERS.get(key) ?? "a feature";
+    const featureName =
+      FEATURE_API_OWNERS[key as keyof typeof FEATURE_API_OWNERS];
     return `CalendarCore: "${key}" requires ${featureName}. Compose it via calendarFeatures([${featureName}, ...]).`;
   }
 
@@ -333,8 +296,7 @@ export class CalendarCore<
     Object.assign(this.options, {
       resources: options.resources || null,
       fetchEvents: options.fetchEvents,
-      features:
-        options.features ?? (allCalendarFeatures as unknown as TFeatures),
+      features: options.features,
     });
 
     const seed = options.events?.map((e) => this.normalizeEvent(e)) ?? [];
@@ -395,10 +357,31 @@ export class CalendarCore<
             `CalendarCore: feature "${feature.name}" contributes api "${key}", which another composed feature already contributes. Compose only one of them.`,
           );
         }
+        if (key in CalendarCore.prototype) {
+          throw new Error(
+            `CalendarCore: feature "${feature.name}" contributes api "${key}", which shadows a core method. Rename it.`,
+          );
+        }
         api[key] = value;
       }
     }
     this._features = api as ComposedApi<TFeatures, TResource, TEvent>;
+    this._mountFeatureApi(api);
+  }
+
+  private _mountFeatureApi(api: Record<string, unknown>) {
+    Object.assign(this, api);
+
+    for (const key of Object.keys(FEATURE_API_OWNERS)) {
+      if (key in api) continue;
+
+      Object.defineProperty(this, key, {
+        get: () => {
+          throw new Error(this._describeMissingFeatureApi(key));
+        },
+        configurable: true,
+      });
+    }
   }
 
   private _assertFeatureRequires(
@@ -434,12 +417,12 @@ export class CalendarCore<
         this.editEvent(eventId, updates, options),
       removeEvent: (id) => this.removeEvent(id),
       editRecurringEvent: (eventId, updates, options) =>
-        this.editRecurringEvent(eventId, updates, options),
+        this._api.editRecurringEvent(eventId, updates, options),
       commitUpdate: (id, updates) => this.commitUpdate(id, updates),
       validateMove: (eventId, newStart, newEnd, resources, consumption) =>
         this.validateMove(eventId, newStart, newEnd, resources, consumption),
       validateEventDependencies: (event, dependsOn) =>
-        this.validateEventDependencies(event, dependsOn),
+        this._api.validateEventDependencies(event, dependsOn),
       validateResize: (options) => this.validateResize(options),
       validateEventPlacement: (event) => this.validateEventPlacement(event),
     };
@@ -780,14 +763,6 @@ export class CalendarCore<
     });
   }
 
-  getEventSegmentInfo(event: TEvent): SegmentInfo {
-    return this._api.getEventSegmentInfo(event);
-  }
-
-  getEventProps(event: TEvent, layoutOptions?: LayoutOptions) {
-    return this._api.getEventProps(event, layoutOptions);
-  }
-
   groupDaysBy({
     days,
     unit,
@@ -859,22 +834,6 @@ export class CalendarCore<
       ...prev,
       eventsVersion: prev.eventsVersion + 1,
     }));
-  }
-
-  canUndo() {
-    return this._moduleApi.canUndo();
-  }
-
-  canRedo() {
-    return this._moduleApi.canRedo();
-  }
-
-  undo() {
-    this._api.undo();
-  }
-
-  redo() {
-    this._api.redo();
   }
 
   commitAdd(event: TEvent) {
@@ -1034,12 +993,6 @@ export class CalendarCore<
     return conflict ?? null;
   }
 
-  getMasterEvent(event: TEvent): TEvent {
-    return this._moduleApi.getMasterEvent(
-      event as WritableEvent<TEvent>,
-    ) as TEvent;
-  }
-
   getEvents(): Array<TEvent> {
     return [...this._eventsView()];
   }
@@ -1085,20 +1038,6 @@ export class CalendarCore<
     }
 
     return direct;
-  }
-
-  goToNextOccurrence(eventId: string, fromDate?: EventDateTimeInput) {
-    this._api.goToNextOccurrence(eventId, fromDate);
-  }
-
-  goToPreviousOccurrence(eventId: string, fromDate?: EventDateTimeInput) {
-    this._api.goToPreviousOccurrence(eventId, fromDate);
-  }
-
-  createResizeController(
-    options: ResizeControllerOptions = {},
-  ): ResizeController<TResource, TEvent> {
-    return this._api.createResizeController(options);
   }
 
   validateMove(
@@ -1229,13 +1168,6 @@ export class CalendarCore<
     return { blocked: false };
   }
 
-  validateEventDependencies(
-    event: { id?: string; title: string; start: string; end: string },
-    dependsOn: Array<EventDependency>,
-  ): { valid: boolean; error?: ResizeError } {
-    return this._moduleApi.validateEventDependencies(event, dependsOn);
-  }
-
   validateEventPlacement(event: {
     id?: string;
     title: string;
@@ -1294,7 +1226,7 @@ export class CalendarCore<
     await this.fetchEventsForRange(startDateStr, endDateStr);
 
     if (dependsOn && dependsOn.length > 0) {
-      const depValidation = this.validateEventDependencies(
+      const depValidation = this._api.validateEventDependencies(
         { id: event.id, title: event.title, start: startStr, end: endStr },
         dependsOn,
       );
@@ -1377,7 +1309,7 @@ export class CalendarCore<
     await this.fetchEventsForRange(rangeStart, rangeEnd);
 
     if (dependsOn && dependsOn.length > 0) {
-      const depValidation = this.validateEventDependencies(
+      const depValidation = this._api.validateEventDependencies(
         {
           id: eventId,
           title: (updates.title as string | undefined) ?? existingEvent.title,
@@ -1427,36 +1359,6 @@ export class CalendarCore<
 
     this.commitUpdate(eventId, updates);
     return { success: true };
-  }
-
-  async editRecurringEvent(
-    eventId: string,
-    updates: Partial<Omit<TEvent, "id">>,
-    options: {
-      scope: RecurrenceEditScope;
-      occurrenceStart?: EventDateTimeInput;
-      dependsOn?: Array<EventDependency>;
-    },
-  ): Promise<SaveEventResult> {
-    return this._api.editRecurringEvent(eventId, updates, options);
-  }
-
-  removeRecurringEvent(
-    eventId: string,
-    options: {
-      scope: RecurrenceEditScope;
-      occurrenceStart?: EventDateTimeInput;
-    },
-  ) {
-    this._api.removeRecurringEvent(eventId, options);
-  }
-
-  createDependency(
-    sourceId: string,
-    targetId: string,
-    type: DependencyType = "FS",
-  ): { blocked: boolean; error?: ResizeError } {
-    return this._api.createDependency(sourceId, targetId, type);
   }
 
   removeEvent(id: Event["id"]) {
@@ -1544,14 +1446,6 @@ export class CalendarCore<
       startMinutes,
       endMinutes,
     );
-  }
-
-  getEventsByResource(): Map<TResource["id"], Array<TEvent>> {
-    return this._api.getEventsByResource();
-  }
-
-  getTimelineLayout(): TimelineLayout<TResource, TEvent> {
-    return this._api.getTimelineLayout();
   }
 
   private getUnavailableMinuteRanges(
@@ -2067,4 +1961,18 @@ export class CalendarCore<
     this._seedKernel(next);
     next.forEach((e) => this._indexAddEvent(e));
   }
+}
+
+export function createCalendar<
+  const TFeatures extends CalendarFeatureList,
+  TResource extends Resource = Resource,
+  TEvent extends Event<TResource> = Event<TResource>,
+>(
+  options: CalendarCoreOptions<TFeatures, TResource, TEvent>,
+): Calendar<TFeatures, TResource, TEvent> {
+  return new CalendarCore<TFeatures, TResource, TEvent>(options) as Calendar<
+    TFeatures,
+    TResource,
+    TEvent
+  >;
 }

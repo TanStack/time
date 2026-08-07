@@ -8,6 +8,8 @@ import type { CalendarFeature } from "./types";
 export interface HistoryApi {
   undo: () => void;
   redo: () => void;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
 }
 
 export function historyFeature<
@@ -67,6 +69,8 @@ export function historyFeature<
         const applied = host.write([redoIntent()], "history/redo");
         getTimeClient().emit("event:redo", diff(applied));
       },
+      canUndo: () => module.canUndo(),
+      canRedo: () => module.canRedo(),
     }),
   };
 }

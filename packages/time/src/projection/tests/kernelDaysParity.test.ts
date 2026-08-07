@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { CalendarCore } from "~/calendar/calendar";
-import { allCalendarFeatures } from "~/calendar/features";
+import { createCalendar } from "~/calendar/calendar";
+import { stockFeatures } from "~/calendar/features";
 import { Kernel } from "~/kernel";
 import { recurrenceModule } from "~/kernel/modules";
 import { buildDays } from "../index";
-import type { AllCalendarFeatures } from "~/calendar/features";
 import type { Event, Resource } from "~/calendar/types";
 import type { KernelEvent } from "~/kernel";
 
@@ -67,8 +66,8 @@ const fingerprint = (list: Array<{ id: string; start: unknown }>) =>
 
 describe("days parity: CalendarCore vs kernel projection", () => {
   it("produces the same per-day timed and all-day events", () => {
-    const cal = new CalendarCore<AllCalendarFeatures, Resource, Event>({
-      features: allCalendarFeatures,
+    const cal = createCalendar<typeof stockFeatures, Resource, Event>({
+      features: stockFeatures,
       viewMode: { value: 1, unit: "week" },
       timeZone: UTC,
       events: events.map((e) => ({ ...e })),
@@ -112,8 +111,8 @@ describe("days parity: CalendarCore vs kernel projection", () => {
   });
 
   it("splits the multi-day event across the same days in both paths", () => {
-    const cal = new CalendarCore<AllCalendarFeatures, Resource, Event>({
-      features: allCalendarFeatures,
+    const cal = createCalendar<typeof stockFeatures, Resource, Event>({
+      features: stockFeatures,
       viewMode: { value: 1, unit: "week" },
       timeZone: UTC,
       events: events.map((e) => ({ ...e })),

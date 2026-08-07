@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
-import { CalendarCore } from "../calendar";
-import { allCalendarFeatures } from "../features";
-import type { AllCalendarFeatures } from "../features";
+import { createCalendar } from "../calendar";
+import { stockFeatures } from "../features";
+import type { StockFeatures } from "../features";
 import { ResizeController } from "../resizeController";
 import type { CalendarHost } from "../features";
 import type { Event, Resource, ValidateResizeOptions } from "../types";
@@ -216,17 +216,17 @@ describe("ResizeController against the calendar host", () => {
 });
 
 describe("eventResizeFeature api", () => {
-  function createCalendar(events: Array<TestEvent>) {
-    return new CalendarCore<AllCalendarFeatures, TestResource, TestEvent>({
+  function createTestCalendar(events: Array<TestEvent>) {
+    return createCalendar<StockFeatures, TestResource, TestEvent>({
       viewMode: { value: 1, unit: "week" },
       timeZone: "UTC",
-      features: allCalendarFeatures,
+      features: stockFeatures,
       events,
     });
   }
 
   test("createResizeController hands the controller a working host", async () => {
-    const cal = createCalendar([
+    const cal = createTestCalendar([
       { id: "e1", title: "E", start: START, end: END },
     ]);
     const controller = cal.createResizeController({ containerHeight: 1440 });
@@ -247,7 +247,7 @@ describe("eventResizeFeature api", () => {
   });
 
   test("getEventSegmentInfo reports the original bounds of a split event", () => {
-    const cal = createCalendar([]);
+    const cal = createTestCalendar([]);
 
     const plain = cal.getEventSegmentInfo({
       id: "e1",

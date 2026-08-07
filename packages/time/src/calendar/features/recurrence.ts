@@ -74,6 +74,13 @@ export interface RecurrenceEditApi<
   ) => void;
 }
 
+export interface RecurrenceReadApi<
+  TResource extends Resource,
+  TEvent extends Event<TResource>,
+> {
+  getMasterEvent: (event: TEvent) => TEvent;
+}
+
 export function eventRecurrenceFeature<
   TResource extends Resource,
   TEvent extends Event<TResource>,
@@ -81,7 +88,9 @@ export function eventRecurrenceFeature<
   TResource,
   TEvent,
   RecurrenceApi<TEvent & KernelEvent>,
-  RecurrenceNavigationApi & RecurrenceEditApi<TResource, TEvent>,
+  RecurrenceNavigationApi &
+    RecurrenceEditApi<TResource, TEvent> &
+    RecurrenceReadApi<TResource, TEvent>,
   "recurrence"
 > {
   const resolveMaster = (
@@ -174,7 +183,9 @@ export function eventRecurrenceFeature<
   return {
     name: "recurrence",
     module: () => recurrenceModule<TEvent & KernelEvent>(),
-    api: (host) => ({
+    api: (host, module) => ({
+      getMasterEvent: (event) =>
+        module.getMasterEvent(event as TEvent & KernelEvent) as TEvent,
       goToNextOccurrence: (eventId, fromDate) => {
         const master = resolveMaster(host, eventId);
         if (!master) return;

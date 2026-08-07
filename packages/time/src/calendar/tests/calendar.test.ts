@@ -1,8 +1,9 @@
 import { Temporal } from "@js-temporal/polyfill";
 import { assert, beforeEach, describe, expect, test, vi } from "vitest";
-import { CalendarCore } from "../calendar";
-import { allCalendarFeatures } from "../features";
-import type { AllCalendarFeatures } from "../features";
+import { createCalendar } from "../calendar";
+import { stockFeatures } from "../features";
+import type { Calendar } from "../calendar";
+import type { StockFeatures } from "../features";
 import { calculateSegmentResizePreview } from "../getResizeProps";
 import type { Event, Resource } from "../types";
 
@@ -14,17 +15,17 @@ vi.mock("../../client", () => ({
 type TestResource = Resource;
 type TestEvent = Event<TestResource>;
 
-function createCalendar(
+type TestCalendar = Calendar<StockFeatures, TestResource, TestEvent>;
+
+function createTestCalendar(
   overrides: Partial<
-    ConstructorParameters<
-      typeof CalendarCore<AllCalendarFeatures, TestResource, TestEvent>
-    >[0]
+    Parameters<typeof createCalendar<StockFeatures, TestResource, TestEvent>>[0]
   > = {},
-) {
-  return new CalendarCore<AllCalendarFeatures, TestResource, TestEvent>({
+): TestCalendar {
+  return createCalendar<StockFeatures, TestResource, TestEvent>({
     viewMode: { value: 1, unit: "week" },
     timeZone: "UTC",
-    features: allCalendarFeatures,
+    features: stockFeatures,
     ...overrides,
   });
 }
@@ -60,9 +61,7 @@ const noAvailabilityResource: TestResource = {
   label: "No Availability Room",
 };
 
-function layoutPosition(
-  cal: CalendarCore<AllCalendarFeatures, TestResource, TestEvent>,
-): number | null {
+function layoutPosition(cal: TestCalendar): number | null {
   return cal.getTimelineLayout().currentTimePosition;
 }
 
@@ -86,7 +85,7 @@ describe("CalendarCore", () => {
         },
       ];
 
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         events,
         resources: [weekdayResource],
       });
@@ -105,7 +104,7 @@ describe("CalendarCore", () => {
         },
       ];
 
-      const cal = createCalendar({ events });
+      const cal = createTestCalendar({ events });
       const e = cal.getEvents()[0]!;
       expect(e.start).toBe(`${DATE_MON}T00:00:00`);
       expect(e.end).toBe(`${DATE_TUE}T00:00:00`);
@@ -121,7 +120,7 @@ describe("CalendarCore", () => {
         },
       ];
 
-      const cal = createCalendar({ events });
+      const cal = createTestCalendar({ events });
       const e = cal.getEvents()[0]!;
       expect(e.start).toBe(`${DATE_MON}T09:00:00`);
       expect(e.end).toBe(`${DATE_MON}T10:00:00`);
@@ -140,7 +139,7 @@ describe("CalendarCore", () => {
         },
       ];
 
-      const cal = createCalendar({ events });
+      const cal = createTestCalendar({ events });
       const e = cal.getEvents()[0]!;
       expect(e.start).toBe("2024-03-18T09:00:00");
       expect(e.end).toBe("2024-03-18T10:00:00");
@@ -164,14 +163,14 @@ describe("CalendarCore", () => {
         },
       ];
 
-      const cal = createCalendar({ events });
+      const cal = createTestCalendar({ events });
       const monEvents = cal.getEventsByDate(DATE_MON);
       expect(monEvents).toHaveLength(1);
       expect(monEvents[0]!.id).toBe("e1");
     });
 
     test("returns empty array for date without events", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         events: [
           {
             id: "e1",
@@ -195,7 +194,7 @@ describe("CalendarCore", () => {
         },
       ];
 
-      const cal = createCalendar({ events });
+      const cal = createTestCalendar({ events });
       const monEvents = cal.getEventsByDate(DATE_MON);
       const tueEvents = cal.getEventsByDate(DATE_TUE);
 
@@ -206,14 +205,14 @@ describe("CalendarCore", () => {
     });
 
     test("returns empty when no events configured", () => {
-      const cal = createCalendar({ events: [] });
+      const cal = createTestCalendar({ events: [] });
       expect(cal.getEventsByDate(DATE_MON)).toHaveLength(0);
     });
   });
 
   describe("commitAdd", () => {
     test("adds an event to an empty calendar", () => {
-      const cal = createCalendar();
+      const cal = createTestCalendar();
       const event: TestEvent = {
         id: "e1",
         title: "New Event",
@@ -227,7 +226,7 @@ describe("CalendarCore", () => {
     });
 
     test("adds an event to existing events", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         events: [
           {
             id: "e1",
@@ -249,7 +248,7 @@ describe("CalendarCore", () => {
     });
 
     test("normalizes date-only start/end when adding event", () => {
-      const cal = createCalendar();
+      const cal = createTestCalendar();
       cal.commitAdd({
         id: "e1",
         title: "Event",
@@ -263,7 +262,7 @@ describe("CalendarCore", () => {
     });
 
     test("normalizes Date objects when adding event", () => {
-      const cal = createCalendar();
+      const cal = createTestCalendar();
       cal.commitAdd({
         id: "e1",
         title: "Event",
@@ -279,7 +278,7 @@ describe("CalendarCore", () => {
 
   describe("commitUpdate", () => {
     test("updates an existing event", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         events: [
           {
             id: "e1",
@@ -295,7 +294,7 @@ describe("CalendarCore", () => {
     });
 
     test("updates start/end times", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         events: [
           {
             id: "e1",
@@ -317,7 +316,7 @@ describe("CalendarCore", () => {
     });
 
     test("normalizes date-only start/end when updating event", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         events: [
           {
             id: "e1",
@@ -339,7 +338,7 @@ describe("CalendarCore", () => {
     });
 
     test("normalizes Date objects when updating event", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         events: [
           {
             id: "e1",
@@ -361,7 +360,7 @@ describe("CalendarCore", () => {
     });
 
     test("does nothing when event not found", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         events: [
           {
             id: "e1",
@@ -378,7 +377,7 @@ describe("CalendarCore", () => {
     });
 
     test("does nothing when events is null", () => {
-      const cal = createCalendar();
+      const cal = createTestCalendar();
       cal.commitUpdate("e1", { title: "Updated" });
       expect(cal.getEvents()).toHaveLength(0);
     });
@@ -386,7 +385,7 @@ describe("CalendarCore", () => {
 
   describe("removeEvent", () => {
     test("removes an existing event", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         events: [
           {
             id: "e1",
@@ -409,7 +408,7 @@ describe("CalendarCore", () => {
     });
 
     test("does nothing when event not found", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         events: [
           {
             id: "e1",
@@ -425,14 +424,14 @@ describe("CalendarCore", () => {
     });
 
     test("does nothing when events is null", () => {
-      const cal = createCalendar();
+      const cal = createTestCalendar();
       expect(() => cal.removeEvent("e1")).not.toThrow();
     });
   });
 
   describe("getUnavailableRanges", () => {
     test("returns empty when no resources", () => {
-      const cal = createCalendar({ resources: [] });
+      const cal = createTestCalendar({ resources: [] });
       expect(cal.getUnavailableRanges(DATE_MON)).toHaveLength(0);
     });
 
@@ -445,7 +444,7 @@ describe("CalendarCore", () => {
         ],
       };
 
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         resources: [weekendOnlyResource],
       });
 
@@ -463,7 +462,7 @@ describe("CalendarCore", () => {
     });
 
     test("returns unavailable ranges before and after availability window", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         resources: [weekdayResource],
       });
 
@@ -484,7 +483,7 @@ describe("CalendarCore", () => {
     });
 
     test("merges overlapping availability from multiple resources", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         resources: [weekdayResource, afternoonResource],
       });
 
@@ -494,7 +493,7 @@ describe("CalendarCore", () => {
     });
 
     test("filters by resourceIds when provided", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         resources: [weekdayResource, afternoonResource],
       });
 
@@ -506,7 +505,7 @@ describe("CalendarCore", () => {
     });
 
     test("returns no unavailable ranges for all-day resource", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         resources: [allDayResource],
       });
 
@@ -518,7 +517,7 @@ describe("CalendarCore", () => {
     });
 
     test("returns full day when resource has no availability config", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         resources: [noAvailabilityResource],
       });
 
@@ -531,7 +530,7 @@ describe("CalendarCore", () => {
     });
 
     test("emits fractions and percentage styles, never pixels", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         resources: [weekdayResource],
       });
 
@@ -552,12 +551,12 @@ describe("CalendarCore", () => {
 
   describe("getUnavailabilityDetails", () => {
     test("returns empty when no resources", () => {
-      const cal = createCalendar({ resources: [] });
+      const cal = createTestCalendar({ resources: [] });
       expect(cal.getUnavailabilityDetails(DATE_MON, 0, 1440)).toHaveLength(0);
     });
 
     test("returns no-availability for resource without availability config", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         resources: [noAvailabilityResource],
       });
 
@@ -579,7 +578,7 @@ describe("CalendarCore", () => {
         ],
       };
 
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         resources: [weekendResource],
       });
 
@@ -593,7 +592,7 @@ describe("CalendarCore", () => {
     });
 
     test("returns outside-hours when time range exceeds availability window", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         resources: [weekdayResource],
       });
 
@@ -607,7 +606,7 @@ describe("CalendarCore", () => {
     });
 
     test("returns empty when time range is within availability", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         resources: [weekdayResource],
       });
 
@@ -619,7 +618,7 @@ describe("CalendarCore", () => {
     });
 
     test("checks multiple resources independently", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         resources: [weekdayResource, noAvailabilityResource],
       });
 
@@ -632,7 +631,7 @@ describe("CalendarCore", () => {
     });
 
     test("uses all resources when resourceIds not specified", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         resources: [weekdayResource, noAvailabilityResource],
       });
 
@@ -649,7 +648,7 @@ describe("CalendarCore", () => {
 
     describe("same-day resize within availability", () => {
       test("allows extending bottom edge within available time", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -677,7 +676,7 @@ describe("CalendarCore", () => {
       });
 
       test("allows shrinking top edge within available time", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -707,7 +706,7 @@ describe("CalendarCore", () => {
 
     describe("same-day resize blocked by availability", () => {
       test("blocks extending bottom edge into unavailable time", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -735,7 +734,7 @@ describe("CalendarCore", () => {
       });
 
       test("blocks extending top edge into unavailable time", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -774,7 +773,7 @@ describe("CalendarCore", () => {
           ],
         };
 
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -818,7 +817,7 @@ describe("CalendarCore", () => {
           ],
         };
 
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -870,7 +869,7 @@ describe("CalendarCore", () => {
           ],
         };
 
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -918,7 +917,7 @@ describe("CalendarCore", () => {
           ],
         };
 
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -962,7 +961,7 @@ describe("CalendarCore", () => {
 
     describe("event without resources", () => {
       test("allows resize freely when event has no resources", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -991,7 +990,7 @@ describe("CalendarCore", () => {
 
     describe("zero delta", () => {
       test("returns original times when delta is zero", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -1023,7 +1022,7 @@ describe("CalendarCore", () => {
 
     describe("blocked resize returns original day date", () => {
       test("targetDayDate falls back to originalDayDate when blocked", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -1053,7 +1052,7 @@ describe("CalendarCore", () => {
 
     describe("cross-day resize (top edge to earlier day)", () => {
       test("blocks when target day has unavailable time at the target range", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -1081,7 +1080,7 @@ describe("CalendarCore", () => {
       });
 
       test("blocks when source day has unavailable time before event start", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -1111,7 +1110,7 @@ describe("CalendarCore", () => {
 
     describe("cross-day resize (bottom edge to later day)", () => {
       test("blocks when target day has unavailable time at the target range", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -1139,7 +1138,7 @@ describe("CalendarCore", () => {
       });
 
       test("blocks when source day has unavailable time after event end", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -1169,7 +1168,7 @@ describe("CalendarCore", () => {
 
     describe("result shape", () => {
       test("returns valid result structure when not blocked", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -1201,7 +1200,7 @@ describe("CalendarCore", () => {
       });
 
       test("returns valid error structure when blocked", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -1232,7 +1231,7 @@ describe("CalendarCore", () => {
 
     describe("multiple resources on one event", () => {
       test("blocks when any resource is unavailable for the new range", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -1260,7 +1259,7 @@ describe("CalendarCore", () => {
       });
 
       test("allows when all resources are available for the new range", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -1290,7 +1289,7 @@ describe("CalendarCore", () => {
 
     describe("no constraints provided", () => {
       test("works with default snap of 1 minute", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -1320,14 +1319,14 @@ describe("CalendarCore", () => {
 
   describe("boundary types (ADR 0002)", () => {
     test("keeps the store's dates as ISO strings", () => {
-      const cal = createCalendar();
+      const cal = createTestCalendar();
 
       expect(cal.store.state.activeDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       expect(cal.store.state.currentPeriod).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
 
     test("navigates by ISO string, without a calendar annotation", () => {
-      const cal = createCalendar();
+      const cal = createTestCalendar();
 
       cal.goToSpecificPeriod("2024-03-18");
 
@@ -1336,7 +1335,7 @@ describe("CalendarCore", () => {
     });
 
     test("moves whole periods while staying an ISO string", () => {
-      const cal = createCalendar({ viewMode: { value: 1, unit: "week" } });
+      const cal = createTestCalendar({ viewMode: { value: 1, unit: "week" } });
 
       cal.goToSpecificPeriod("2024-03-18");
       cal.goToNextPeriod();
@@ -1347,7 +1346,7 @@ describe("CalendarCore", () => {
     });
 
     test("exposes days by ISO date only", () => {
-      const cal = createCalendar();
+      const cal = createTestCalendar();
       cal.goToSpecificPeriod(DATE_MON);
 
       const [day] = cal.getDaysWithEvents();
@@ -1357,7 +1356,7 @@ describe("CalendarCore", () => {
     });
 
     test("keeps filler days from groupDaysBy on the same shape", () => {
-      const cal = createCalendar({ viewMode: { value: 1, unit: "month" } });
+      const cal = createTestCalendar({ viewMode: { value: 1, unit: "month" } });
       cal.goToSpecificPeriod("2024-03-18");
 
       const weeks = cal.groupDaysBy({
@@ -1374,18 +1373,18 @@ describe("CalendarCore", () => {
 
   describe("navigation", () => {
     test("changeViewMode updates the visible mode", () => {
-      const cal = createCalendar();
+      const cal = createTestCalendar();
       cal.changeViewMode({ value: 2, unit: "week" });
       expect(cal.getDaysWithEvents().length).toBeGreaterThan(0);
     });
 
     test("goToSpecificPeriod accepts an ISO date string", () => {
-      const cal = createCalendar();
+      const cal = createTestCalendar();
       expect(() => cal.goToSpecificPeriod("2024-06-01")).not.toThrow();
     });
 
     test("goToNextPeriod and goToPreviousPeriod do not throw", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         viewMode: { value: 1, unit: "week" },
       });
       expect(() => cal.goToNextPeriod()).not.toThrow();
@@ -1393,12 +1392,12 @@ describe("CalendarCore", () => {
     });
 
     test("canGoPreviousPeriod returns true without range", () => {
-      const cal = createCalendar();
+      const cal = createTestCalendar();
       expect(cal.canGoPreviousPeriod()).toBe(true);
     });
 
     test("canGoNextPeriod returns true without range", () => {
-      const cal = createCalendar();
+      const cal = createTestCalendar();
       expect(cal.canGoNextPeriod()).toBe(true);
     });
 
@@ -1419,42 +1418,42 @@ describe("CalendarCore", () => {
       };
 
       test("goToNextOccurrence navigates to next weekly occurrence", () => {
-        const cal = createCalendar({ events: [recurringEvent] });
+        const cal = createTestCalendar({ events: [recurringEvent] });
         cal.goToSpecificPeriod("2025-06-02");
         cal.goToNextOccurrence("rec");
         expect(cal.store.state.activeDate).toBe("2025-06-09");
       });
 
       test("goToNextOccurrence is no-op for non-recurring event", () => {
-        const cal = createCalendar({ events: [nonRecurringEvent] });
+        const cal = createTestCalendar({ events: [nonRecurringEvent] });
         cal.goToSpecificPeriod("2025-06-02");
         cal.goToNextOccurrence("plain");
         expect(cal.store.state.activeDate).toBe("2025-06-02");
       });
 
       test("goToNextOccurrence accepts occurrence id and resolves master", () => {
-        const cal = createCalendar({ events: [recurringEvent] });
+        const cal = createTestCalendar({ events: [recurringEvent] });
         cal.goToSpecificPeriod("2025-06-02");
         cal.goToNextOccurrence("rec_1");
         expect(cal.store.state.activeDate).toBe("2025-06-09");
       });
 
       test("goToPreviousOccurrence navigates to previous weekly occurrence", () => {
-        const cal = createCalendar({ events: [recurringEvent] });
+        const cal = createTestCalendar({ events: [recurringEvent] });
         cal.goToSpecificPeriod("2025-06-16");
         cal.goToPreviousOccurrence("rec");
         expect(cal.store.state.activeDate).toBe("2025-06-09");
       });
 
       test("goToPreviousOccurrence is no-op when already at master start", () => {
-        const cal = createCalendar({ events: [recurringEvent] });
+        const cal = createTestCalendar({ events: [recurringEvent] });
         cal.goToSpecificPeriod("2025-06-02");
         cal.goToPreviousOccurrence("rec");
         expect(cal.store.state.activeDate).toBe("2025-06-02");
       });
 
       test("goToPreviousOccurrence from occurrence id resolves master", () => {
-        const cal = createCalendar({ events: [recurringEvent] });
+        const cal = createTestCalendar({ events: [recurringEvent] });
         cal.goToSpecificPeriod("2025-06-09");
         cal.goToPreviousOccurrence("rec_1");
         expect(cal.store.state.activeDate).toBe("2025-06-02");
@@ -1464,13 +1463,13 @@ describe("CalendarCore", () => {
 
   describe("getDaysNames", () => {
     test("returns 7 day names", () => {
-      const cal = createCalendar({ locale: "en-US" });
+      const cal = createTestCalendar({ locale: "en-US" });
       const names = cal.getDaysNames();
       expect(names).toHaveLength(7);
     });
 
     test("returns long day names", () => {
-      const cal = createCalendar({ locale: "en-US" });
+      const cal = createTestCalendar({ locale: "en-US" });
       const names = cal.getDaysNames("long");
       expect(names).toContain("Sunday");
     });
@@ -1478,7 +1477,7 @@ describe("CalendarCore", () => {
 
   describe("getTimeSlots", () => {
     test("returns time slots for the day", () => {
-      const cal = createCalendar();
+      const cal = createTestCalendar();
       const slots = cal.getTimeSlots();
       expect(slots).toBeDefined();
       expect(Array.isArray(slots)).toBe(true);
@@ -1487,7 +1486,7 @@ describe("CalendarCore", () => {
 
   describe("getDaysWithEvents", () => {
     test("returns days array with events mapped to dates", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         viewMode: { value: 1, unit: "week" },
         events: [
           {
@@ -1508,7 +1507,7 @@ describe("CalendarCore", () => {
     });
 
     test("marks today correctly", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         viewMode: { value: 1, unit: "week" },
       });
 
@@ -1525,7 +1524,7 @@ describe("CalendarCore", () => {
     };
 
     test("blocks extending right edge of multi-day event into unavailable hours", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         events: [
           {
             id: "e1",
@@ -1553,7 +1552,7 @@ describe("CalendarCore", () => {
     });
 
     test("allows extending right edge of multi-day event within available hours", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         events: [
           {
             id: "e1",
@@ -1581,7 +1580,7 @@ describe("CalendarCore", () => {
     });
 
     test("blocks extending left edge of multi-day event into unavailable hours", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         events: [
           {
             id: "e1",
@@ -1609,7 +1608,7 @@ describe("CalendarCore", () => {
     });
 
     test("blocks large delta on single-day event that crosses midnight into next unavailable day", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         events: [
           {
             id: "e1",
@@ -1637,7 +1636,7 @@ describe("CalendarCore", () => {
     });
 
     test("shrinking is always allowed regardless of availability", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         events: [
           {
             id: "e1",
@@ -1676,7 +1675,7 @@ describe("CalendarCore", () => {
         },
       ];
 
-      const cal = createCalendar({ events });
+      const cal = createTestCalendar({ events });
       const out = cal.getEvents();
 
       expect(out).toHaveLength(1);
@@ -1684,14 +1683,14 @@ describe("CalendarCore", () => {
     });
 
     test("returns empty array when no events configured", () => {
-      const cal = createCalendar({ events: [] });
+      const cal = createTestCalendar({ events: [] });
       expect(cal.getEvents()).toHaveLength(0);
     });
   });
 
   describe("commitUpdate - dependsOn cascade (propagateEndDelta)", () => {
     test("shifts dependent forward when predecessor end extends past dependent start", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         timeZone: "UTC",
         events: [
           {
@@ -1721,7 +1720,7 @@ describe("CalendarCore", () => {
     });
 
     test("does not shift dependent when predecessor end still ends before dependent start", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         timeZone: "UTC",
         events: [
           {
@@ -1750,7 +1749,7 @@ describe("CalendarCore", () => {
     });
 
     test("propagates through a chain A → B → C", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         timeZone: "UTC",
         events: [
           {
@@ -1789,7 +1788,7 @@ describe("CalendarCore", () => {
     });
 
     test("pulls a predecessor back when the dependent moves earlier", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         timeZone: "UTC",
         events: [
           {
@@ -1822,7 +1821,7 @@ describe("CalendarCore", () => {
     });
 
     test("pulls a whole predecessor chain back", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         timeZone: "UTC",
         events: [
           {
@@ -1863,7 +1862,7 @@ describe("CalendarCore", () => {
     });
 
     test("shifts multiple dependents of the same predecessor", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         timeZone: "UTC",
         events: [
           {
@@ -1902,7 +1901,7 @@ describe("CalendarCore", () => {
     });
 
     test("does not cascade when only start changes (end unchanged)", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         timeZone: "UTC",
         events: [
           {
@@ -1933,7 +1932,7 @@ describe("CalendarCore", () => {
 
   describe("validateMove", () => {
     test("returns blocked:false for unknown event id", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         events: [
           {
             id: "e1",
@@ -1955,7 +1954,7 @@ describe("CalendarCore", () => {
     });
 
     test("allows move fully inside availability", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         timeZone: "UTC",
         events: [
           {
@@ -1978,7 +1977,7 @@ describe("CalendarCore", () => {
     });
 
     test("blocks when the moved range overlaps unavailable hours", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         timeZone: "UTC",
         events: [
           {
@@ -2001,7 +2000,7 @@ describe("CalendarCore", () => {
     });
 
     test("allows move when event has no resources (no availability to violate)", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         timeZone: "UTC",
         events: [
           {
@@ -2022,7 +2021,7 @@ describe("CalendarCore", () => {
     });
 
     test("blocks when extending end pushes a dependent into unavailable time", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         timeZone: "UTC",
         events: [
           {
@@ -2053,7 +2052,7 @@ describe("CalendarCore", () => {
     });
 
     test("blocks transitive dependent when cascade would violate availability", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         timeZone: "UTC",
         events: [
           {
@@ -2092,7 +2091,7 @@ describe("CalendarCore", () => {
     });
 
     test("does not run downstream availability check when new end is not extended", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         timeZone: "UTC",
         events: [
           {
@@ -2123,7 +2122,7 @@ describe("CalendarCore", () => {
     });
 
     test("treats split multi-day segment rows as non-targets (no _originalStart match)", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         timeZone: "UTC",
         events: [
           {
@@ -2154,7 +2153,7 @@ describe("CalendarCore", () => {
     };
 
     test("blocks moving dependent start before predecessor end (edge left → top)", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         timeZone: "UTC",
         events: [
           {
@@ -2192,7 +2191,7 @@ describe("CalendarCore", () => {
     });
 
     test("blocks extending predecessor when dependent would enter unavailable time", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         timeZone: "UTC",
         events: [
           {
@@ -2229,7 +2228,7 @@ describe("CalendarCore", () => {
     });
 
     test("allows extending predecessor when dependent stays inside availability", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         timeZone: "UTC",
         events: [
           {
@@ -2266,7 +2265,7 @@ describe("CalendarCore", () => {
     });
 
     test("blocks when transitive dependent would leave availability", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         timeZone: "UTC",
         events: [
           {
@@ -2311,7 +2310,7 @@ describe("CalendarCore", () => {
     });
 
     test("skips cascade availability check when dependent is already outside hours", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         timeZone: "UTC",
         events: [
           {
@@ -2348,7 +2347,7 @@ describe("CalendarCore", () => {
     });
 
     test("same cascade rule applies with edge bottom (vertical resize)", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         timeZone: "UTC",
         events: [
           {
@@ -2387,7 +2386,7 @@ describe("CalendarCore", () => {
 
   describe("groupDaysBy", () => {
     test("groups days into weeks", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         viewMode: { value: 2, unit: "week" },
       });
 
@@ -2411,7 +2410,7 @@ describe("CalendarCore", () => {
 
     describe("validateEventPlacement", () => {
       test("blocks placement when consumption + existing usage exceeds capacity", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -2437,7 +2436,7 @@ describe("CalendarCore", () => {
       });
 
       test("allows placement when consumption + existing usage equals capacity", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -2463,7 +2462,7 @@ describe("CalendarCore", () => {
       });
 
       test("allows placement at capacity when ranges do not overlap", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -2489,7 +2488,7 @@ describe("CalendarCore", () => {
       });
 
       test("treats missing consumption as 1", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -2514,7 +2513,7 @@ describe("CalendarCore", () => {
       });
 
       test("blocks when single new event consumption alone exceeds capacity", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [],
           resources: [capResource],
         });
@@ -2531,7 +2530,7 @@ describe("CalendarCore", () => {
       });
 
       test("allows placement when resource has no capacity configured", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -2566,7 +2565,7 @@ describe("CalendarCore", () => {
           ],
         };
 
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -2601,7 +2600,7 @@ describe("CalendarCore", () => {
       });
 
       test("checks capacity per day for multi-day events", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -2627,7 +2626,7 @@ describe("CalendarCore", () => {
       });
 
       test("does not double-count split multi-day segments", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -2655,7 +2654,7 @@ describe("CalendarCore", () => {
 
     describe("validateMove with capacity", () => {
       test("blocks move when destination overlap exceeds capacity", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -2687,7 +2686,7 @@ describe("CalendarCore", () => {
       });
 
       test("allows move when self consumption would still fit", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -2719,7 +2718,7 @@ describe("CalendarCore", () => {
       });
 
       test("uses passed-in newConsumption over event.consumption", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -2755,7 +2754,7 @@ describe("CalendarCore", () => {
 
     describe("validateEventPlacement - additional", () => {
       test("skips own id when validating an existing event", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -2793,7 +2792,7 @@ describe("CalendarCore", () => {
       const PRED_END = `${DATE_MON}T12:00:00`;
 
       function withPredecessor() {
-        return createCalendar({
+        return createTestCalendar({
           events: [
             {
               id: "p",
@@ -2984,7 +2983,7 @@ describe("CalendarCore", () => {
 
       describe("shape and edge cases", () => {
         test("returns valid:true when there are no events in the calendar", () => {
-          const cal = createCalendar();
+          const cal = createTestCalendar();
           const result = cal.validateEventDependencies(
             {
               title: "S",
@@ -3010,7 +3009,7 @@ describe("CalendarCore", () => {
         });
 
         test("reports the first failing dependency when multiple are violated", () => {
-          const cal = createCalendar({
+          const cal = createTestCalendar({
             events: [
               {
                 id: "p1",
@@ -3066,7 +3065,7 @@ describe("CalendarCore", () => {
 
     describe("validateMove - predecessor cascade per type", () => {
       test("FS: moving successor earlier pulls predecessor back into unavailable hours → blocked", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3098,7 +3097,7 @@ describe("CalendarCore", () => {
       });
 
       test("SS: moving successor before predecessor.start pulls predecessor back", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3129,7 +3128,7 @@ describe("CalendarCore", () => {
       });
 
       test("FF: shrinking successor.end below predecessor.end pulls predecessor back", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3167,7 +3166,7 @@ describe("CalendarCore", () => {
       });
 
       test("SF: shrinking successor.end below predecessor.start pulls predecessor back", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3198,7 +3197,7 @@ describe("CalendarCore", () => {
       });
 
       test("FS: moving successor later (constraint already satisfied) does not touch predecessor", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3230,7 +3229,7 @@ describe("CalendarCore", () => {
 
     describe("createDependency", () => {
       test("FS: reschedules target forward when target.start < source.end", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3261,7 +3260,7 @@ describe("CalendarCore", () => {
       });
 
       test("SS: reschedules target forward when target.start < source.start", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3291,7 +3290,7 @@ describe("CalendarCore", () => {
       });
 
       test("FF: reschedules target forward when target.end < source.end", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3321,7 +3320,7 @@ describe("CalendarCore", () => {
       });
 
       test("SF: reschedules target forward when target.end < source.start", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3351,7 +3350,7 @@ describe("CalendarCore", () => {
       });
 
       test("does not reschedule when constraint is already satisfied", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3381,7 +3380,7 @@ describe("CalendarCore", () => {
       });
 
       test("default type is FS when no type is specified", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3408,7 +3407,7 @@ describe("CalendarCore", () => {
       });
 
       test("does nothing when source or target is missing", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3428,7 +3427,7 @@ describe("CalendarCore", () => {
       });
 
       test("is idempotent - adding the same (sourceId, type) pair twice is a no-op", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3456,7 +3455,7 @@ describe("CalendarCore", () => {
       });
 
       test("allows the same source to be linked to the same target with different types", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3487,7 +3486,7 @@ describe("CalendarCore", () => {
       });
 
       test("blocks creation when reschedule would land target in unavailable time", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3522,7 +3521,7 @@ describe("CalendarCore", () => {
       });
 
       test("blocks circular dependency: A->B, B->C, try C->A", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "a",
@@ -3558,7 +3557,7 @@ describe("CalendarCore", () => {
       });
 
       test("blocks self-dependency", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "a",
@@ -3578,7 +3577,7 @@ describe("CalendarCore", () => {
       });
 
       test("allows non-circular chain: A->B, B->C, C->D", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "a",
@@ -3621,7 +3620,7 @@ describe("CalendarCore", () => {
 
     describe("commitUpdate forward cascade per type", () => {
       test("FS: shifts successor when predecessor.end extends past successor.start", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3651,7 +3650,7 @@ describe("CalendarCore", () => {
       });
 
       test("SS: shifts successor when predecessor.start moves later past successor.start", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3684,7 +3683,7 @@ describe("CalendarCore", () => {
       });
 
       test("FF: shifts successor when predecessor.end moves past successor.end", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3714,7 +3713,7 @@ describe("CalendarCore", () => {
       });
 
       test("SF: shifts successor when predecessor.start moves past successor.end", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3747,7 +3746,7 @@ describe("CalendarCore", () => {
       });
 
       test("does not shift when constraint stays satisfied", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3776,7 +3775,7 @@ describe("CalendarCore", () => {
       });
 
       test("mixed-type chain propagates correctly: A -SS→ B -FS→ C", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "a",
@@ -3820,7 +3819,7 @@ describe("CalendarCore", () => {
       });
 
       test("shifts only the dependents of the changed predecessor - unrelated events stay put", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3858,7 +3857,7 @@ describe("CalendarCore", () => {
 
     describe("commitUpdate backward cascade per type", () => {
       test("FS: pulls predecessor back when successor.start moves before predecessor.end", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3891,7 +3890,7 @@ describe("CalendarCore", () => {
       });
 
       test("SS: pulls predecessor back when successor.start moves before predecessor.start", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3930,7 +3929,7 @@ describe("CalendarCore", () => {
       };
 
       test("FS: blocked when shrinking start before predecessor.end", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -3968,7 +3967,7 @@ describe("CalendarCore", () => {
       });
 
       test("SS: blocked when shrinking start before predecessor.start", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -4005,7 +4004,7 @@ describe("CalendarCore", () => {
       });
 
       test("FF: not blocked by top-edge resize because end stays unchanged", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -4043,7 +4042,7 @@ describe("CalendarCore", () => {
 
     describe("addEvent", () => {
       test("successfully adds an event and returns { success: true }", async () => {
-        const cal = createCalendar({ resources: [weekdayResource] });
+        const cal = createTestCalendar({ resources: [weekdayResource] });
 
         const result = await cal.addEvent({
           id: "e1",
@@ -4059,7 +4058,7 @@ describe("CalendarCore", () => {
       });
 
       test("returns failure when placement violates resource availability", async () => {
-        const cal = createCalendar({ resources: [weekdayResource] });
+        const cal = createTestCalendar({ resources: [weekdayResource] });
 
         const result = await cal.addEvent({
           id: "e1",
@@ -4080,7 +4079,7 @@ describe("CalendarCore", () => {
       });
 
       test("returns failure when dependency constraint is violated", async () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -4109,7 +4108,7 @@ describe("CalendarCore", () => {
 
       test("triggers fetchEvents for the event date range before validating", async () => {
         const fetchEvents = vi.fn().mockResolvedValue([]);
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           resources: [weekdayResource],
           fetchEvents,
         });
@@ -4129,7 +4128,7 @@ describe("CalendarCore", () => {
       });
 
       test("does not fetch when fetchEvents is not configured", async () => {
-        const cal = createCalendar({ resources: [weekdayResource] });
+        const cal = createTestCalendar({ resources: [weekdayResource] });
 
         const result = await cal.addEvent({
           id: "e1",
@@ -4145,7 +4144,7 @@ describe("CalendarCore", () => {
 
     describe("editEvent", () => {
       test("successfully updates an event", async () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           resources: [weekdayResource],
           events: [
             {
@@ -4165,7 +4164,7 @@ describe("CalendarCore", () => {
       });
 
       test("returns failure for unknown event id", async () => {
-        const cal = createCalendar();
+        const cal = createTestCalendar();
 
         const result = await cal.editEvent("nonexistent", { title: "X" });
 
@@ -4175,7 +4174,7 @@ describe("CalendarCore", () => {
       });
 
       test("skips move validation when start/end/resources/consumption are unchanged", async () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           resources: [weekdayResource],
           events: [
             {
@@ -4194,7 +4193,7 @@ describe("CalendarCore", () => {
       });
 
       test("returns failure when new position violates availability", async () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           resources: [weekdayResource],
           events: [
             {
@@ -4222,7 +4221,7 @@ describe("CalendarCore", () => {
 
       test("fetchEvents range covers both old and new positions", async () => {
         const fetchEvents = vi.fn().mockResolvedValue([]);
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           resources: [allDayResource],
           fetchEvents,
           events: [
@@ -4250,7 +4249,7 @@ describe("CalendarCore", () => {
       });
 
       test("validates dependency constraint when dependsOn is provided", async () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -4280,7 +4279,7 @@ describe("CalendarCore", () => {
 
     describe("fetchEventsForRange", () => {
       test("resolves immediately and is a no-op when fetchEvents is not configured", async () => {
-        const cal = createCalendar();
+        const cal = createTestCalendar();
         await expect(
           cal.fetchEventsForRange(DATE_MON, DATE_TUE),
         ).resolves.toBeUndefined();
@@ -4297,7 +4296,7 @@ describe("CalendarCore", () => {
           },
         ];
         const fetchEvents = vi.fn().mockResolvedValue(fetched);
-        const cal = createCalendar({ fetchEvents });
+        const cal = createTestCalendar({ fetchEvents });
 
         await cal.fetchEventsForRange(DATE_MON, DATE_TUE);
 
@@ -4311,7 +4310,7 @@ describe("CalendarCore", () => {
 
       test("does not refetch a range that is already loaded", async () => {
         const fetchEvents = vi.fn().mockResolvedValue([]);
-        const cal = createCalendar({ fetchEvents });
+        const cal = createTestCalendar({ fetchEvents });
 
         await cal.fetchEventsForRange(DATE_MON, DATE_TUE);
         await cal.fetchEventsForRange(DATE_MON, DATE_TUE);
@@ -4321,7 +4320,7 @@ describe("CalendarCore", () => {
 
       test("does not refetch a sub-range of an already loaded range", async () => {
         const fetchEvents = vi.fn().mockResolvedValue([]);
-        const cal = createCalendar({ fetchEvents });
+        const cal = createTestCalendar({ fetchEvents });
 
         await cal.fetchEventsForRange(DATE_MON, "2024-03-25");
         await cal.fetchEventsForRange(DATE_TUE, DATE_WED);
@@ -4338,7 +4337,7 @@ describe("CalendarCore", () => {
             end: `${DATE_MON}T10:00:00`,
           },
         ]);
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           fetchEvents,
           events: [
             {
@@ -4360,7 +4359,7 @@ describe("CalendarCore", () => {
           .fn()
           .mockRejectedValueOnce(new Error("network"))
           .mockResolvedValueOnce([]);
-        const cal = createCalendar({ fetchEvents });
+        const cal = createTestCalendar({ fetchEvents });
 
         await cal.fetchEventsForRange(DATE_MON, DATE_TUE);
         expect(cal.getLoadedRanges()).toHaveLength(0);
@@ -4372,7 +4371,7 @@ describe("CalendarCore", () => {
 
       test("getLoadedRanges merges overlapping ranges", async () => {
         const fetchEvents = vi.fn().mockResolvedValue([]);
-        const cal = createCalendar({ fetchEvents });
+        const cal = createTestCalendar({ fetchEvents });
 
         await cal.fetchEventsForRange("2024-03-01", "2024-03-10");
         await cal.fetchEventsForRange("2024-03-05", "2024-03-15");
@@ -4385,7 +4384,7 @@ describe("CalendarCore", () => {
 
       test("getLoadedRanges keeps disjoint ranges separate", async () => {
         const fetchEvents = vi.fn().mockResolvedValue([]);
-        const cal = createCalendar({ fetchEvents });
+        const cal = createTestCalendar({ fetchEvents });
 
         await cal.fetchEventsForRange("2024-03-01", "2024-03-05");
         await cal.fetchEventsForRange("2024-03-10", "2024-03-15");
@@ -4402,7 +4401,7 @@ describe("CalendarCore", () => {
             end: `${DATE_MON}T10:00:00`,
           },
         ]);
-        const cal = createCalendar({ fetchEvents });
+        const cal = createTestCalendar({ fetchEvents });
 
         await cal.fetchEventsForRange(DATE_MON, DATE_TUE);
 
@@ -4416,7 +4415,7 @@ describe("CalendarCore", () => {
 
       test("does not emit events:set when fetch returns nothing new", async () => {
         const fetchEvents = vi.fn().mockResolvedValue([]);
-        const cal = createCalendar({ fetchEvents });
+        const cal = createTestCalendar({ fetchEvents });
 
         await cal.fetchEventsForRange(DATE_MON, DATE_TUE);
 
@@ -4429,7 +4428,7 @@ describe("CalendarCore", () => {
 
     describe("event emissions", () => {
       test("commitAdd emits event:added", () => {
-        const cal = createCalendar();
+        const cal = createTestCalendar();
         cal.commitAdd({
           id: "e1",
           title: "New",
@@ -4450,7 +4449,7 @@ describe("CalendarCore", () => {
       });
 
       test("commitUpdate emits event:updated with the patch", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -4473,7 +4472,7 @@ describe("CalendarCore", () => {
       });
 
       test("removeEvent emits event:removed", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -4496,7 +4495,7 @@ describe("CalendarCore", () => {
       });
 
       test("removeEvent does not emit when id does not exist", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -4517,7 +4516,7 @@ describe("CalendarCore", () => {
       });
 
       test("commitUpdate cascade emits event:updated for shifted dependents", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -4551,7 +4550,7 @@ describe("CalendarCore", () => {
 
     describe("getTimelineLayout", () => {
       test("returns one row per resource", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           resources: [weekdayResource, afternoonResource, allDayResource],
         });
 
@@ -4565,7 +4564,7 @@ describe("CalendarCore", () => {
       });
 
       test("row has empty events when resource has none", () => {
-        const cal = createCalendar({ resources: [weekdayResource] });
+        const cal = createTestCalendar({ resources: [weekdayResource] });
 
         const layout = cal.getTimelineLayout();
         expect(layout.rows[0]!.events).toHaveLength(0);
@@ -4573,7 +4572,7 @@ describe("CalendarCore", () => {
       });
 
       test("places non-overlapping events on the same lane", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "week" },
           resources: [allDayResource],
           events: [
@@ -4603,7 +4602,7 @@ describe("CalendarCore", () => {
       });
 
       test("assigns overlapping events to separate lanes", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "week" },
           resources: [allDayResource],
           events: [
@@ -4634,7 +4633,7 @@ describe("CalendarCore", () => {
       });
 
       test("exposes fractions consistent with the percentage positions", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "week" },
           resources: [allDayResource],
           events: [
@@ -4660,7 +4659,7 @@ describe("CalendarCore", () => {
       });
 
       test("currentTimePosition is null when today is not in the visible range", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "week" },
           resources: [allDayResource],
         });
@@ -4671,7 +4670,7 @@ describe("CalendarCore", () => {
       });
 
       test("events fully outside the visible range are filtered out (zero width)", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "week" },
           resources: [allDayResource],
           events: [
@@ -4691,7 +4690,7 @@ describe("CalendarCore", () => {
       });
 
       test("currentTimePosition is a percentage of the visible range", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "day" },
           resources: [allDayResource],
         });
@@ -4706,7 +4705,7 @@ describe("CalendarCore", () => {
 
     describe("getEventsByResource", () => {
       test("buckets an event that references a resource by id", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "week" },
           resources: [allDayResource, afternoonResource],
           events: [
@@ -4727,7 +4726,7 @@ describe("CalendarCore", () => {
       });
 
       test("returns one entry per configured resource", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           resources: [weekdayResource, afternoonResource],
         });
 
@@ -4737,7 +4736,7 @@ describe("CalendarCore", () => {
       });
 
       test("groups events by their assigned resources", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "week" },
           resources: [allDayResource, afternoonResource],
           events: [
@@ -4765,7 +4764,7 @@ describe("CalendarCore", () => {
       });
 
       test("merges multi-day segments back to a single full-span event", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "week" },
           resources: [allDayResource],
           events: [
@@ -4789,7 +4788,7 @@ describe("CalendarCore", () => {
       });
 
       test("event attached to multiple resources appears in each resource bucket", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "week" },
           resources: [allDayResource, afternoonResource],
           events: [
@@ -4812,7 +4811,7 @@ describe("CalendarCore", () => {
 
     describe("formatPeriodLabel", () => {
       test("returns a non-empty string for a normal week view", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "week" },
           locale: "en-US",
         });
@@ -4824,7 +4823,7 @@ describe("CalendarCore", () => {
       });
 
       test("uses an em-dash range separator when spanning multiple days", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "week" },
           locale: "en-US",
         });
@@ -4835,7 +4834,7 @@ describe("CalendarCore", () => {
       });
 
       test("accepts a locale override", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "week" },
           locale: "en-US",
         });
@@ -4855,7 +4854,7 @@ describe("CalendarCore", () => {
           start: `${DATE_MON}T09:00:00`,
           end: `${DATE_MON}T10:00:00`,
         };
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "week" },
           events: [event],
         });
@@ -4868,7 +4867,7 @@ describe("CalendarCore", () => {
       });
 
       test("exposes the logical layout alongside the style", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "week" },
           events: [
             {
@@ -4899,7 +4898,7 @@ describe("CalendarCore", () => {
       });
 
       test("columns a chained overlap by cluster, not by pairwise count", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "week" },
           events: [
             {
@@ -4939,7 +4938,7 @@ describe("CalendarCore", () => {
       });
 
       test("agrees on geometry for days rendered outside the current viewport", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "week" },
           events: [
             {
@@ -4987,7 +4986,7 @@ describe("CalendarCore", () => {
       });
 
       test("does not let all-day events take a column in the timed grid", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "week" },
           events: [
             {
@@ -5037,7 +5036,7 @@ describe("CalendarCore", () => {
       });
 
       test("lays all-day events out against each other, not against timed ones", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "week" },
           events: [
             {
@@ -5066,7 +5065,7 @@ describe("CalendarCore", () => {
       });
 
       test("honours the constructor layout strategy", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "week" },
           layout: { strategy: "cascade", cascadeOffset: 0.25 },
           events: [
@@ -5106,7 +5105,7 @@ describe("CalendarCore", () => {
       });
 
       test("lets a call override the configured layout strategy", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "week" },
           layout: { strategy: "cascade" },
           events: [
@@ -5139,7 +5138,7 @@ describe("CalendarCore", () => {
       });
 
       test("keeps an event outside the busy cluster at full width", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "week" },
           events: [
             {
@@ -5172,7 +5171,7 @@ describe("CalendarCore", () => {
       });
 
       test("detects overlap with a sibling event", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "week" },
           events: [
             {
@@ -5198,7 +5197,7 @@ describe("CalendarCore", () => {
       });
 
       test("renders an event at its true height (no min-height floor)", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           viewMode: { value: 1, unit: "week" },
           events: [
             {
@@ -5262,7 +5261,7 @@ describe("CalendarCore", () => {
 
     describe("commitUpdate backward cascade - FF and SF", () => {
       test("FF: pulls predecessor back when successor.end moves before predecessor.end", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -5294,7 +5293,7 @@ describe("CalendarCore", () => {
       });
 
       test("SF: pulls predecessor back when successor.end moves before predecessor.start", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -5328,7 +5327,7 @@ describe("CalendarCore", () => {
 
     describe("validateMove backward cascade - allowed when target available", () => {
       test("FS: allows move when predecessor pull-back stays within availability", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -5364,7 +5363,7 @@ describe("CalendarCore", () => {
       };
 
       test("blocks bottom-edge extension when dependent would be pushed into unavailable hours", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -5400,7 +5399,7 @@ describe("CalendarCore", () => {
       });
 
       test("allows bottom-edge extension when dependent still fits inside availability", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -5447,7 +5446,7 @@ describe("CalendarCore", () => {
           ],
         };
 
-        const cal = createCalendar({ resources: [zeroCapResource] });
+        const cal = createTestCalendar({ resources: [zeroCapResource] });
 
         const result = cal.validateEventPlacement({
           title: "Anything",
@@ -5469,7 +5468,7 @@ describe("CalendarCore", () => {
           ],
         };
 
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           resources: [capResource],
           events: [
             {
@@ -5494,7 +5493,7 @@ describe("CalendarCore", () => {
 
     describe("partial datetime normalization in commit*", () => {
       test('commitAdd normalizes "YYYY-MM-DDTHH" form', () => {
-        const cal = createCalendar();
+        const cal = createTestCalendar();
         cal.commitAdd({
           id: "e1",
           title: "E",
@@ -5508,7 +5507,7 @@ describe("CalendarCore", () => {
       });
 
       test('commitUpdate normalizes "YYYY-MM-DDTHH" form', () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -5532,7 +5531,7 @@ describe("CalendarCore", () => {
 
     describe("createDependency - shape and idempotency edges", () => {
       test("emits a single event:updated when dependency is added without reschedule", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -5563,7 +5562,7 @@ describe("CalendarCore", () => {
       });
 
       test("does not modify target when reschedule attempt is blocked", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "p",
@@ -5601,13 +5600,13 @@ describe("CalendarCore", () => {
 
     describe("canUndo / canRedo", () => {
       test("initially both return false", () => {
-        const cal = createCalendar();
+        const cal = createTestCalendar();
         expect(cal.canUndo()).toBe(false);
         expect(cal.canRedo()).toBe(false);
       });
 
       test("canUndo returns true after commitAdd", () => {
-        const cal = createCalendar();
+        const cal = createTestCalendar();
         cal.commitAdd({
           id: "e1",
           title: "E1",
@@ -5621,7 +5620,7 @@ describe("CalendarCore", () => {
 
     describe("undo", () => {
       test("undo after commitAdd removes the event", () => {
-        const cal = createCalendar();
+        const cal = createTestCalendar();
         cal.commitAdd({
           id: "e1",
           title: "E1",
@@ -5634,7 +5633,7 @@ describe("CalendarCore", () => {
       });
 
       test("undo after commitUpdate restores original event", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -5651,7 +5650,7 @@ describe("CalendarCore", () => {
       });
 
       test("undo after removeEvent brings back the event", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -5669,7 +5668,7 @@ describe("CalendarCore", () => {
       });
 
       test("undo is a no-op when stack is empty", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -5684,7 +5683,7 @@ describe("CalendarCore", () => {
       });
 
       test("multiple undos restore in reverse order", () => {
-        const cal = createCalendar();
+        const cal = createTestCalendar();
         cal.commitAdd({
           id: "e1",
           title: "E1",
@@ -5707,7 +5706,7 @@ describe("CalendarCore", () => {
 
     describe("redo", () => {
       test("redo after undo reapplies commitAdd", () => {
-        const cal = createCalendar();
+        const cal = createTestCalendar();
         cal.commitAdd({
           id: "e1",
           title: "E1",
@@ -5722,7 +5721,7 @@ describe("CalendarCore", () => {
       });
 
       test("redo after undo reapplies commitUpdate", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           events: [
             {
               id: "e1",
@@ -5740,7 +5739,7 @@ describe("CalendarCore", () => {
       });
 
       test("new action after undo clears redo stack", () => {
-        const cal = createCalendar();
+        const cal = createTestCalendar();
         cal.commitAdd({
           id: "e1",
           title: "E1",
@@ -5759,7 +5758,7 @@ describe("CalendarCore", () => {
       });
 
       test("redo is a no-op when stack is empty", () => {
-        const cal = createCalendar();
+        const cal = createTestCalendar();
         cal.commitAdd({
           id: "e1",
           title: "E1",
@@ -5771,7 +5770,7 @@ describe("CalendarCore", () => {
       });
 
       test("canRedo returns false after redo exhausts the stack", () => {
-        const cal = createCalendar();
+        const cal = createTestCalendar();
         cal.commitAdd({
           id: "e1",
           title: "E1",
@@ -5786,7 +5785,7 @@ describe("CalendarCore", () => {
 
     describe("command diffs", () => {
       const cascadingCalendar = () =>
-        createCalendar({
+        createTestCalendar({
           timeZone: "UTC",
           events: [
             {
@@ -5834,7 +5833,7 @@ describe("CalendarCore", () => {
       });
 
       test("keeps createDependency's reschedule in a single entry", () => {
-        const cal = createCalendar({
+        const cal = createTestCalendar({
           timeZone: "UTC",
           events: [
             {
@@ -5882,7 +5881,7 @@ describe("CalendarCore", () => {
       });
 
       test("stays silent when there is nothing to undo or redo", () => {
-        const cal = createCalendar();
+        const cal = createTestCalendar();
         emitSpy.mockClear();
 
         cal.undo();
@@ -5894,7 +5893,7 @@ describe("CalendarCore", () => {
       });
 
       test("drops history when the event list is replaced", () => {
-        const cal = createCalendar();
+        const cal = createTestCalendar();
         cal.commitAdd({
           id: "e1",
           title: "E1",
@@ -5913,7 +5912,7 @@ describe("CalendarCore", () => {
 
   describe("setResources", () => {
     test("replaces resources and invalidates availability caches", () => {
-      const cal = createCalendar({ resources: [weekdayResource] });
+      const cal = createTestCalendar({ resources: [weekdayResource] });
       const ranges1 = cal.getUnavailableRanges(DATE_MON, {
         resourceIds: [weekdayResource.id],
       });
@@ -5926,7 +5925,7 @@ describe("CalendarCore", () => {
     });
 
     test("accepts null to clear resources", () => {
-      const cal = createCalendar({ resources: [weekdayResource] });
+      const cal = createTestCalendar({ resources: [weekdayResource] });
       cal.setResources(null);
       const ranges = cal.getUnavailableRanges(DATE_MON, {
         resourceIds: [weekdayResource.id],
@@ -5937,7 +5936,7 @@ describe("CalendarCore", () => {
 
   describe("event storage", () => {
     const seed = () =>
-      createCalendar({
+      createTestCalendar({
         events: [
           {
             id: "e1",
@@ -6007,7 +6006,7 @@ describe("CalendarCore", () => {
           { weekdays: [1, 2, 3, 4, 5], startTime: "09:00", endTime: "17:00" },
         ],
       };
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         resources: [res],
         events: [
           {
@@ -6034,7 +6033,7 @@ describe("CalendarCore", () => {
     });
 
     test("reindexes after setEvents", () => {
-      const cal = createCalendar({ events: [] as any, resources: [] });
+      const cal = createTestCalendar({ events: [] as any, resources: [] });
       cal.setEvents([
         {
           id: "x",
@@ -6058,7 +6057,7 @@ describe("CalendarCore", () => {
     };
 
     test("expands recurring master occurrence and later occurrences", () => {
-      const cal = createCalendar({ events: [recurringEvent] });
+      const cal = createTestCalendar({ events: [recurringEvent] });
       expect(cal.getEventsByDate("2025-06-02").map((e) => e.id)).toEqual([
         "rec-ex",
       ]);
@@ -6068,7 +6067,7 @@ describe("CalendarCore", () => {
     });
 
     test("EXDATE skips a specific occurrence", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         events: [
           {
             ...recurringEvent,
@@ -6086,7 +6085,7 @@ describe("CalendarCore", () => {
     });
 
     test("override moves one occurrence while others keep original time", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         events: [
           {
             ...recurringEvent,
@@ -6115,7 +6114,7 @@ describe("CalendarCore", () => {
     });
 
     test("override and EXDATE can target original master occurrence", () => {
-      const movedCal = createCalendar({
+      const movedCal = createTestCalendar({
         events: [
           {
             ...recurringEvent,
@@ -6136,7 +6135,7 @@ describe("CalendarCore", () => {
         "2025-06-02T15:00:00",
       );
 
-      const skippedCal = createCalendar({
+      const skippedCal = createTestCalendar({
         events: [
           {
             ...recurringEvent,
@@ -6152,7 +6151,7 @@ describe("CalendarCore", () => {
     });
 
     test("COUNT is based on total occurrences, not viewport emissions", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         events: [
           {
             ...recurringEvent,
@@ -6167,7 +6166,7 @@ describe("CalendarCore", () => {
     });
 
     test("UNTIL remains exclusive", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         events: [
           {
             ...recurringEvent,
@@ -6182,7 +6181,7 @@ describe("CalendarCore", () => {
     });
 
     test("editRecurringEvent with scope this creates an override", async () => {
-      const cal = createCalendar({ events: [recurringEvent] });
+      const cal = createTestCalendar({ events: [recurringEvent] });
 
       const result = await cal.editRecurringEvent(
         "rec-ex_1",
@@ -6206,7 +6205,7 @@ describe("CalendarCore", () => {
     });
 
     test("removeRecurringEvent with scope this creates EXDATE", () => {
-      const cal = createCalendar({ events: [recurringEvent] });
+      const cal = createTestCalendar({ events: [recurringEvent] });
 
       cal.removeRecurringEvent("rec-ex_1", {
         scope: "this",
@@ -6233,7 +6232,7 @@ describe("CalendarCore", () => {
           },
         ],
       };
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         resources: [room],
         events: [
           {
@@ -6271,7 +6270,7 @@ describe("CalendarCore", () => {
     });
 
     test("editRecurringEvent with scope thisAndFollowing splits the series", async () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         events: [
           {
             ...recurringEvent,
@@ -6301,7 +6300,7 @@ describe("CalendarCore", () => {
     });
 
     test("scope all updates or removes master event", async () => {
-      const editCal = createCalendar({ events: [recurringEvent] });
+      const editCal = createTestCalendar({ events: [recurringEvent] });
       const editResult = await editCal.editRecurringEvent(
         "rec-ex_1",
         { title: "All Updated" },
@@ -6310,13 +6309,13 @@ describe("CalendarCore", () => {
       expect(editResult.success).toBe(true);
       expect(editCal.getEvents()[0]!.title).toBe("All Updated");
 
-      const removeCal = createCalendar({ events: [recurringEvent] });
+      const removeCal = createTestCalendar({ events: [recurringEvent] });
       removeCal.removeRecurringEvent("rec-ex_1", { scope: "all" });
       expect(removeCal.getEvents()).toHaveLength(0);
     });
 
     test("editRecurringEvent rejects an occurrenceStart outside the series", async () => {
-      const cal = createCalendar({ events: [recurringEvent] });
+      const cal = createTestCalendar({ events: [recurringEvent] });
 
       const result = await cal.editRecurringEvent(
         "rec-ex_1",
@@ -6332,7 +6331,7 @@ describe("CalendarCore", () => {
     });
 
     test("editRecurringEvent with scope thisAndFollowing at the master start edits in place", async () => {
-      const cal = createCalendar({ events: [recurringEvent] });
+      const cal = createTestCalendar({ events: [recurringEvent] });
 
       const result = await cal.editRecurringEvent(
         "rec-ex",
@@ -6361,7 +6360,7 @@ describe("CalendarCore", () => {
           },
         ],
       };
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         resources: [dayShiftRoom],
         events: [{ ...recurringEvent, resources: [dayShiftRoom] }],
       });
@@ -6381,7 +6380,7 @@ describe("CalendarCore", () => {
     });
 
     test("editRecurringEvent rejects an occurrence that violates a dependency", async () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         events: [
           {
             id: "rec-pred",
@@ -6411,7 +6410,7 @@ describe("CalendarCore", () => {
 
     test("editRecurringEvent loads the range spanning both positions", async () => {
       const requested: Array<{ start: string; end: string }> = [];
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         events: [recurringEvent],
         fetchEvents: async (range) => {
           requested.push(range);
@@ -6440,7 +6439,7 @@ describe("CalendarCore", () => {
     };
 
     test("renders a recurring occurrence that violates resource availability", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         resources: [mondayOnlyResource],
         events: [
           {
@@ -6461,7 +6460,7 @@ describe("CalendarCore", () => {
     });
 
     test("treats recurring and non-recurring violations identically", () => {
-      const recurring = createCalendar({
+      const recurring = createTestCalendar({
         resources: [mondayOnlyResource],
         events: [
           {
@@ -6476,7 +6475,7 @@ describe("CalendarCore", () => {
       });
       recurring.goToSpecificPeriod("2025-06-03");
 
-      const plain = createCalendar({
+      const plain = createTestCalendar({
         resources: [mondayOnlyResource],
         events: [
           {
@@ -6496,7 +6495,7 @@ describe("CalendarCore", () => {
     });
 
     test("still reports the violation through validation", () => {
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         resources: [mondayOnlyResource],
         events: [
           {
@@ -6524,7 +6523,7 @@ describe("CalendarCore", () => {
   describe("isPending", () => {
     test("stays true until every in-flight fetch settles", async () => {
       const resolvers: Array<() => void> = [];
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         fetchEvents: () =>
           new Promise<Array<TestEvent>>((resolve) => {
             resolvers.push(() => resolve([]));
@@ -6546,7 +6545,7 @@ describe("CalendarCore", () => {
 
     test("clears when a fetch rejects while another is in flight", async () => {
       const settlers: Array<{ resolve: () => void; reject: () => void }> = [];
-      const cal = createCalendar({
+      const cal = createTestCalendar({
         fetchEvents: () =>
           new Promise<Array<TestEvent>>((resolve, reject) => {
             settlers.push({

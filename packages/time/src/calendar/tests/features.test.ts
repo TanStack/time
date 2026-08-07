@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { CalendarCore } from "../calendar";
+import { createCalendar } from "../calendar";
 import {
   calendarFeatures,
   dayEventLayoutFeature,
@@ -7,11 +7,18 @@ import {
   eventResizeFeature,
   historyFeature,
 } from "../features";
-import type { CalendarFeature, CalendarFeatureList } from "../features";
+import type {
+  CalendarFeature,
+  CalendarFeatureList,
+  FullFeatureApi,
+} from "../features";
 import type { Event, Resource } from "../types";
 
 type TestResource = Resource;
 type TestEvent = Event<TestResource>;
+
+const uncomposed = (cal: object): FullFeatureApi<TestResource, TestEvent> =>
+  cal as FullFeatureApi<TestResource, TestEvent>;
 
 const DAY = "2025-06-02";
 
@@ -23,11 +30,11 @@ const recurringEvent: TestEvent = {
   recurrence: { frequency: "weekly", interval: 1 },
 };
 
-function createCalendar<TFeatures extends CalendarFeatureList>(
+function createTestCalendar<TFeatures extends CalendarFeatureList>(
   features: TFeatures,
   events: Array<TestEvent> = [],
 ) {
-  return new CalendarCore<TFeatures, TestResource, TestEvent>({
+  return createCalendar<TFeatures, TestResource, TestEvent>({
     viewMode: { value: 1, unit: "week" },
     timeZone: "UTC",
     events,
@@ -37,7 +44,7 @@ function createCalendar<TFeatures extends CalendarFeatureList>(
 
 describe("calendarFeatures composition", () => {
   test("composes only the features it is given", () => {
-    const cal = createCalendar(calendarFeatures([dayEventLayoutFeature]), [
+    const cal = createTestCalendar(calendarFeatures([dayEventLayoutFeature]), [
       {
         id: "e1",
         title: "E",
@@ -52,18 +59,18 @@ describe("calendarFeatures composition", () => {
   });
 
   test("a method whose feature is absent is not callable", () => {
-    const cal = createCalendar(calendarFeatures([dayEventLayoutFeature]));
+    const cal = createTestCalendar(calendarFeatures([dayEventLayoutFeature]));
 
-    expect(() => cal.undo()).toThrow(
+    expect(() => uncomposed(cal).undo()).toThrow(
       'CalendarCore: "undo" requires historyFeature. Compose it via calendarFeatures([historyFeature, ...]).',
     );
-    expect(() => cal.canUndo()).toThrow(
+    expect(() => uncomposed(cal).canUndo()).toThrow(
       'CalendarCore: "canUndo" requires historyFeature. Compose it via calendarFeatures([historyFeature, ...]).',
     );
   });
 
   test("history alone still undoes a write", () => {
-    const cal = createCalendar(calendarFeatures([historyFeature]));
+    const cal = createTestCalendar(calendarFeatures([historyFeature]));
 
     cal.commitAdd({
       id: "e1",
@@ -78,7 +85,7 @@ describe("calendarFeatures composition", () => {
   });
 
   test("a feature's kernel module is mounted with it", async () => {
-    const cal = createCalendar(calendarFeatures([eventRecurrenceFeature]), [
+    const cal = createTestCalendar(calendarFeatures([eventRecurrenceFeature]), [
       recurringEvent,
     ]);
     cal.goToSpecificPeriod(DAY);
@@ -93,28 +100,30 @@ describe("calendarFeatures composition", () => {
     expect(cal.getEvents()[0]!.recurrence?.overrides).toHaveLength(1);
   });
 
-  test("occurrence edits are unreachable without the recurrence feature", async () => {
-    const cal = createCalendar(calendarFeatures([dayEventLayoutFeature]), [
+  test("occurrence edits are unreachable without the recurrence feature", () => {
+    const cal = createTestCalendar(calendarFeatures([dayEventLayoutFeature]), [
       recurringEvent,
     ]);
 
-    await expect(
-      cal.editRecurringEvent("rec_1", {}, { scope: "this" }),
-    ).rejects.toThrow(
+    expect(() =>
+      uncomposed(cal).editRecurringEvent("rec_1", {}, { scope: "this" }),
+    ).toThrow(
       'CalendarCore: "editRecurringEvent" requires eventRecurrenceFeature. Compose it via calendarFeatures([eventRecurrenceFeature, ...]).',
     );
-    expect(() => cal.removeRecurringEvent("rec_1", { scope: "all" })).toThrow(
+    expect(() =>
+      uncomposed(cal).removeRecurringEvent("rec_1", { scope: "all" }),
+    ).toThrow(
       'CalendarCore: "removeRecurringEvent" requires eventRecurrenceFeature. Compose it via calendarFeatures([eventRecurrenceFeature, ...]).',
     );
   });
 
   test("throws when a composed feature's required peer is missing", () => {
     expect(() =>
-      createCalendar(calendarFeatures([eventResizeFeature])),
+      createTestCalendar(calendarFeatures([eventResizeFeature])),
     ).toThrow(/"resize" requires "recurrence"/);
 
     expect(() =>
-      createCalendar(
+      createTestCalendar(
         calendarFeatures([eventResizeFeature, eventRecurrenceFeature]),
       ),
     ).not.toThrow();
@@ -137,7 +146,26 @@ describe("calendarFeatures composition", () => {
     });
 
     expect(() =>
-      createCalendar(calendarFeatures([dayEventLayoutFeature, shadowFeature])),
+      createTestCalendar(
+        calendarFeatures([dayEventLayoutFeature, shadowFeature]),
+      ),
     ).toThrow(/contributes api "getEventProps"/);
+  });
+
+  test("throws when a feature shadows a core method", () => {
+    const coreShadowFeature = (): CalendarFeature<
+      TestResource,
+      TestEvent,
+      object,
+      { getEvents: () => Array<TestEvent> },
+      "coreShadow"
+    > => ({
+      name: "coreShadow",
+      api: () => ({ getEvents: () => [] }),
+    });
+
+    expect(() =>
+      createTestCalendar(calendarFeatures([coreShadowFeature])),
+    ).toThrow(/contributes api "getEvents", which shadows a core method/);
   });
 });

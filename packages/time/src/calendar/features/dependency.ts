@@ -22,7 +22,7 @@ export function eventDependencyFeature<
   TResource,
   TEvent,
   DependencyApi,
-  DependencyCreationApi,
+  DependencyCreationApi & DependencyApi,
   "dependency"
 > {
   const graphOf = (
@@ -39,7 +39,9 @@ export function eventDependencyFeature<
     name: "dependency",
     module: (ctx) =>
       dependencyModule<TEvent & KernelEvent>({ timeZone: ctx.timeZone }),
-    api: (host) => ({
+    api: (host, module) => ({
+      validateEventDependencies: (event, dependsOn) =>
+        module.validateEventDependencies(event, dependsOn),
       createDependency: (sourceId, targetId, type = "FS") => {
         const sourceEvent = host.getEvent(sourceId);
         const targetEvent = host.getEvent(targetId);

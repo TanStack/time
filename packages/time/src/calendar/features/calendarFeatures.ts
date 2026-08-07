@@ -14,7 +14,7 @@ export function calendarFeatures<const TFeatures extends CalendarFeatureList>(
   return features;
 }
 
-export const allCalendarFeatures = [
+export const stockFeatures = [
   historyFeature,
   eventRecurrenceFeature,
   eventDependencyFeature,
@@ -23,4 +23,4 @@ export const allCalendarFeatures = [
   timelineFeature,
 ] as const;
 
-export type AllCalendarFeatures = typeof allCalendarFeatures;
+export type StockFeatures = typeof stockFeatures;

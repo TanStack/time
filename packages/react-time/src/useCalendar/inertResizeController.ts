@@ -1,4 +1,9 @@
-import type { Event, ResizeController, ResizeState, Resource } from "@tanstack/time";
+import type {
+  Event,
+  ResizeController,
+  ResizeState,
+  Resource,
+} from "@tanstack/time";
 
 const INERT_STATE: ResizeState = {
   isResizing: false,

@@ -1,12 +1,14 @@
 import { describe, expectTypeOf, test } from "vitest";
-import { CalendarCore } from "../calendar";
+import { createCalendar } from "../calendar";
 import {
   calendarFeatures,
+  FEATURE_API_OWNERS,
   dayEventLayoutFeature,
   eventRecurrenceFeature,
   historyFeature,
 } from "../features";
 import type { CalendarApi } from "../calendar";
+import type { ComposedApi, FullFeatureApi, StockFeatures } from "../features";
 import type { Event, EventProps, Resource } from "../types";
 
 type TestEvent = Event<Resource>;
@@ -46,12 +48,24 @@ describe("CalendarApi is the intersection of what was composed", () => {
       colour: string;
     }
     const features = calendarFeatures([eventRecurrenceFeature]);
-    const cal = new CalendarCore<typeof features, Resource, CustomEvent>({
+    const cal = createCalendar<typeof features, Resource, CustomEvent>({
       viewMode: { value: 1, unit: "week" },
       timeZone: "UTC",
       features,
     });
 
     expectTypeOf(cal.getMasterEvent).parameter(0).toEqualTypeOf<CustomEvent>();
+  });
+
+  test("stockFeatures composes every registered feature", () => {
+    expectTypeOf<
+      ComposedApi<StockFeatures, Resource, TestEvent>
+    >().toEqualTypeOf<FullFeatureApi<Resource, TestEvent>>();
+  });
+
+  test("the feature owner table covers every registered api key", () => {
+    expectTypeOf<keyof typeof FEATURE_API_OWNERS>().toEqualTypeOf<
+      keyof FullFeatureApi<Resource, TestEvent>
+    >();
   });
 });
