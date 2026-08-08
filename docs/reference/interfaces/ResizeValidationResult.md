@@ -5,7 +5,7 @@ title: ResizeValidationResult
 
 # Interface: ResizeValidationResult
 
-Defined in: [calendar/types.ts:193](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L193)
+Defined in: [calendar/types.ts:195](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L195)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/types.ts:193](https://github.com/TanStack/time/blob/main/p
 optional error: ResizeError;
 ```
 
-Defined in: [calendar/types.ts:195](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L195)
+Defined in: [calendar/types.ts:197](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L197)
 
 ***
 
@@ -25,4 +25,4 @@ Defined in: [calendar/types.ts:195](https://github.com/TanStack/time/blob/main/p
 valid: boolean;
 ```
 
-Defined in: [calendar/types.ts:194](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L194)
+Defined in: [calendar/types.ts:196](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L196)
