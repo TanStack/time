@@ -5,7 +5,7 @@ title: DependencyGraphApi
 
 # Interface: DependencyGraphApi\<TResource, TEvent\>
 
-Defined in: [calendar/features/dependency.ts:30](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L30)
+Defined in: [calendar/features/dependency.ts:31](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L31)
 
 ## Type Parameters
 
@@ -30,7 +30,7 @@ findViolatedDependency: (event, proposedStartMs, proposedEndMs) =>
   | null;
 ```
 
-Defined in: [calendar/features/dependency.ts:48](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L48)
+Defined in: [calendar/features/dependency.ts:49](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L49)
 
 #### Parameters
 
@@ -62,7 +62,7 @@ Defined in: [calendar/features/dependency.ts:48](https://github.com/TanStack/tim
 getAffectedByDelta: (eventId, deltaMs) => DependencyShift<TEvent>[];
 ```
 
-Defined in: [calendar/features/dependency.ts:44](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L44)
+Defined in: [calendar/features/dependency.ts:45](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L45)
 
 #### Parameters
 
@@ -86,7 +86,7 @@ Defined in: [calendar/features/dependency.ts:44](https://github.com/TanStack/tim
 getDependentShifts: (eventId, newStart, newEnd) => DependencyShift<TEvent>[];
 ```
 
-Defined in: [calendar/features/dependency.ts:39](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L39)
+Defined in: [calendar/features/dependency.ts:40](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L40)
 
 #### Parameters
 
@@ -114,7 +114,7 @@ Defined in: [calendar/features/dependency.ts:39](https://github.com/TanStack/tim
 getPredecessorShifts: (eventId, newStart, newEnd) => DependencyShift<TEvent>[];
 ```
 
-Defined in: [calendar/features/dependency.ts:34](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L34)
+Defined in: [calendar/features/dependency.ts:35](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L35)
 
 #### Parameters
 

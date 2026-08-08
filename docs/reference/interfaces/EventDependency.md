@@ -19,6 +19,16 @@ Defined in: [calendar/types.ts:12](https://github.com/TanStack/time/blob/main/pa
 
 ***
 
+### lag?
+
+```ts
+optional lag: number;
+```
+
+Defined in: [calendar/types.ts:15](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L15)
+
+***
+
 ### type
 
 ```ts

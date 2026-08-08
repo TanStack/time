@@ -9,7 +9,7 @@ title: eventDependencyFeature
 function eventDependencyFeature<TResource, TEvent>(): CalendarFeature<TResource, TEvent, DependencyApi, DependencyCreationApi & DependencyApi & DependencyGraphApi<TResource, TEvent>, "dependency">;
 ```
 
-Defined in: [calendar/features/dependency.ts:63](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L63)
+Defined in: [calendar/features/dependency.ts:65](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L65)
 
 ## Type Parameters
 
