@@ -12,7 +12,7 @@ function getWorkingTime(
    calendars): WorkingTimeRange[];
 ```
 
-Defined in: [workingTime/resolve.ts:155](https://github.com/TanStack/time/blob/main/packages/time/src/workingTime/resolve.ts#L155)
+Defined in: [workingTime/resolve.ts:156](https://github.com/TanStack/time/blob/main/packages/time/src/workingTime/resolve.ts#L156)
 
 ## Parameters
 

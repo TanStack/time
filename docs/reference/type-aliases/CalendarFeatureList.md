@@ -9,4 +9,4 @@ title: CalendarFeatureList
 type CalendarFeatureList = ReadonlyArray<CalendarFeatureFactory>;
 ```
 
-Defined in: [calendar/features/calendarFeatures.ts:10](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/calendarFeatures.ts#L10)
+Defined in: [calendar/features/calendarFeatures.ts:3](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/calendarFeatures.ts#L3)

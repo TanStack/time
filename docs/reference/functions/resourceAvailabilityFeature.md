@@ -6,10 +6,10 @@ title: resourceAvailabilityFeature
 # Function: resourceAvailabilityFeature()
 
 ```ts
-function resourceAvailabilityFeature<TResource, TEvent>(): CalendarFeature<TResource, TEvent, AvailabilityModuleApi, AvailabilityApi<TResource, TEvent>, "availability">;
+function resourceAvailabilityFeature<TResource, TEvent>(): CalendarFeature<TResource, TEvent, AvailabilityModuleApi, AvailabilityApi<TResource, TEvent>, "availability", AvailabilityPeers<TResource>>;
 ```
 
-Defined in: [calendar/features/availability.ts:71](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L71)
+Defined in: [calendar/features/availability.ts:74](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L74)
 
 ## Type Parameters
 
@@ -23,4 +23,4 @@ Defined in: [calendar/features/availability.ts:71](https://github.com/TanStack/t
 
 ## Returns
 
-[`CalendarFeature`](../interfaces/CalendarFeature.md)\<`TResource`, `TEvent`, `AvailabilityModuleApi`, [`AvailabilityApi`](../interfaces/AvailabilityApi.md)\<`TResource`, `TEvent`\>, `"availability"`\>
+[`CalendarFeature`](../interfaces/CalendarFeature.md)\<`TResource`, `TEvent`, `AvailabilityModuleApi`, [`AvailabilityApi`](../interfaces/AvailabilityApi.md)\<`TResource`, `TEvent`\>, `"availability"`, [`AvailabilityPeers`](../interfaces/AvailabilityPeers.md)\<`TResource`\>\>

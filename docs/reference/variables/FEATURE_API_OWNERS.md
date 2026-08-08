@@ -9,7 +9,7 @@ title: FEATURE_API_OWNERS
 const FEATURE_API_OWNERS: object;
 ```
 
-Defined in: [calendar/features/registry.ts:75](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L75)
+Defined in: [calendar/features/registry.ts:77](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L77)
 
 ## Type Declaration
 
@@ -73,6 +73,12 @@ readonly getDaySpanConflicts: "resourceAvailabilityFeature" = "resourceAvailabil
 readonly getDependentShifts: "eventDependencyFeature" = "eventDependencyFeature";
 ```
 
+### getEffectiveCalendar
+
+```ts
+readonly getEffectiveCalendar: "workingTimeFeature" = "workingTimeFeature";
+```
+
 ### getEventProps
 
 ```ts
@@ -95,6 +101,12 @@ readonly getEventSegmentInfo: "eventResizeFeature" = "eventResizeFeature";
 
 ```ts
 readonly getMasterEvent: "eventRecurrenceFeature" = "eventRecurrenceFeature";
+```
+
+### getNonWorkingMinutes
+
+```ts
+readonly getNonWorkingMinutes: "workingTimeFeature" = "workingTimeFeature";
 ```
 
 ### getPredecessorShifts
@@ -127,6 +139,18 @@ readonly getUnavailableMinuteRanges: "resourceAvailabilityFeature" = "resourceAv
 readonly getUnavailableRanges: "resourceAvailabilityFeature" = "resourceAvailabilityFeature";
 ```
 
+### getWorkingIntervals
+
+```ts
+readonly getWorkingIntervals: "workingTimeFeature" = "workingTimeFeature";
+```
+
+### getWorkingMinutes
+
+```ts
+readonly getWorkingMinutes: "workingTimeFeature" = "workingTimeFeature";
+```
+
 ### goToNextOccurrence
 
 ```ts
@@ -137,6 +161,12 @@ readonly goToNextOccurrence: "eventRecurrenceFeature" = "eventRecurrenceFeature"
 
 ```ts
 readonly goToPreviousOccurrence: "eventRecurrenceFeature" = "eventRecurrenceFeature";
+```
+
+### isWorkingTime
+
+```ts
+readonly isWorkingTime: "workingTimeFeature" = "workingTimeFeature";
 ```
 
 ### redo
