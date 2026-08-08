@@ -61,6 +61,12 @@ readonly findViolatedDependency: "eventDependencyFeature" = "eventDependencyFeat
 readonly getAffectedByDelta: "eventDependencyFeature" = "eventDependencyFeature";
 ```
 
+### getAnchorConflicts
+
+```ts
+readonly getAnchorConflicts: "eventDependencyFeature" = "eventDependencyFeature";
+```
+
 ### getDaySpanConflicts
 
 ```ts

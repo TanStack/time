@@ -5,7 +5,7 @@ title: DependencyShift
 
 # Interface: DependencyShift\<TEvent\>
 
-Defined in: [calendar/features/dependency.ts:25](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L25)
+Defined in: [calendar/features/dependency.ts:29](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L29)
 
 ## Type Parameters
 
@@ -21,7 +21,7 @@ Defined in: [calendar/features/dependency.ts:25](https://github.com/TanStack/tim
 event: TEvent;
 ```
 
-Defined in: [calendar/features/dependency.ts:26](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L26)
+Defined in: [calendar/features/dependency.ts:30](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L30)
 
 ***
 
@@ -31,7 +31,7 @@ Defined in: [calendar/features/dependency.ts:26](https://github.com/TanStack/tim
 newEnd: string;
 ```
 
-Defined in: [calendar/features/dependency.ts:28](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L28)
+Defined in: [calendar/features/dependency.ts:32](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L32)
 
 ***
 
@@ -41,4 +41,4 @@ Defined in: [calendar/features/dependency.ts:28](https://github.com/TanStack/tim
 newStart: string;
 ```
 
-Defined in: [calendar/features/dependency.ts:27](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L27)
+Defined in: [calendar/features/dependency.ts:31](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dependency.ts#L31)

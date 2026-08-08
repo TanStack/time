@@ -16,4 +16,4 @@ type SaveEventResult =
 };
 ```
 
-Defined in: [calendar/types.ts:200](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L200)
+Defined in: [calendar/types.ts:202](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L202)
