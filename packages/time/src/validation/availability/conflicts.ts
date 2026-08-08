@@ -4,7 +4,7 @@ import type {
   AvailabilityUnavailabilityReason,
 } from "./checkAvailability";
 
-export interface UnavailabilityConflictInput {
+interface UnavailabilityConflictInput {
   date: string;
   startMinutes: number;
   endMinutes: number;

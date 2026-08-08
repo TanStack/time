@@ -8,10 +8,10 @@ import type {
   WriteOp,
 } from "../types";
 
-export const UNDO_INTENT = "history/undo";
-export const REDO_INTENT = "history/redo";
+const UNDO_INTENT = "history/undo";
+const REDO_INTENT = "history/redo";
 
-export interface UndoModuleOptions {
+interface UndoModuleOptions {
   limit?: number;
   priority?: number;
 }

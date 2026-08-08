@@ -37,6 +37,10 @@
       "require": "./dist/index.cjs",
       "import": "./dist/index.js"
     },
+    "./production": {
+      "require": "./dist/production.cjs",
+      "import": "./dist/production.js"
+    },
     "./package.json": "./package.json"
   },
   "sideEffects": false,
@@ -55,6 +59,7 @@
     "solid-js": "^1.9.10"
   },
   "devDependencies": {
+    "@tanstack/devtools": "^0.11.0",
     "rolldown-plugin-solid": "^0.2.1"
   }
 }

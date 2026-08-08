@@ -10,9 +10,9 @@ import type {
 import type { ResizeEdge } from "~/calendar/getResizeProps";
 import type { IntentOp, KernelEvent, Module, WriteOp } from "../types";
 
-export const RESIZE_INTENT = "resize/apply";
+const RESIZE_INTENT = "resize/apply";
 
-export interface ResizePayload {
+interface ResizePayload {
   eventId: string;
   edge: ResizeEdge;
   deltaMinutes: number;

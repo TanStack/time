@@ -1,4 +1,4 @@
-export interface LocaleFormatterOptions {
+interface LocaleFormatterOptions {
   localeMatcher?: "lookup" | "best fit";
   calendar?: string;
   numberingSystem?: string;

@@ -1,7 +1,7 @@
 import { validateDate } from "../../date/validateDate";
 import { parse as parser } from "../../date/parse";
 
-export interface BuildFinalFormatterOptions {
+interface BuildFinalFormatterOptions {
   formatter: Intl.DateTimeFormat;
   formatterName: string;
   parse?: (value: string | number | Date) => Date | undefined;

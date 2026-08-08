@@ -35,7 +35,7 @@ function toPlainDate(
   return Temporal.PlainDate.from(input).withCalendar(calendar);
 }
 
-export interface ParseDateRangeOptions {
+interface ParseDateRangeOptions {
   range?: DateRange;
   calendar: Temporal.CalendarLike;
 }
@@ -54,7 +54,7 @@ export function parseDateRange({
   };
 }
 
-export interface IsDateInRangeOptions {
+interface IsDateInRangeOptions {
   date: Temporal.PlainDate;
   range: ParsedDateRange;
 }
@@ -73,7 +73,7 @@ export function isDateInRange({ date, range }: IsDateInRangeOptions): boolean {
   return true;
 }
 
-export interface ConstrainDateToRangeOptions {
+interface ConstrainDateToRangeOptions {
   date: Temporal.PlainDate;
   range: ParsedDateRange;
 }

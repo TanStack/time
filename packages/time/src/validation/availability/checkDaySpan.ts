@@ -8,7 +8,7 @@ import type {
 } from "./checkAvailability";
 import type { MinuteRange, WorkingTimeConfig } from "./time";
 
-export interface DaySpanEvent {
+interface DaySpanEvent {
   id: string;
   startMinutes: number;
   endMinutes: number;
@@ -16,7 +16,7 @@ export interface DaySpanEvent {
   consumption?: Array<number>;
 }
 
-export interface CheckDaySpanInput {
+interface CheckDaySpanInput {
   date: string;
   startMinutes: number;
   endMinutes: number;

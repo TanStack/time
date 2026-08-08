@@ -53,13 +53,13 @@
     "@tanstack/typedoc-config": "0.3.3",
     "@testing-library/jest-dom": "^6.9.1",
     "@types/node": "^25.0.7",
-    "oxlint": "^0.16.0",
     "happy-dom": "^20.1.0",
     "knip": "^5.80.2",
     "markdown-link-extractor": "^4.0.3",
     "nx": "^22.3.3",
-    "premove": "^4.0.0",
     "oxfmt": "^0.4.0",
+    "oxlint": "^0.16.0",
+    "premove": "^4.0.0",
     "publint": "^0.3.16",
     "sherif": "^1.9.0",
     "tinyglobby": "^0.2.15",
@@ -67,8 +67,5 @@
     "typescript": "5.9.3",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.0.17"
-  },
-  "dependencies": {
-    "@js-temporal/polyfill": "^0.5.1"
   }
 }

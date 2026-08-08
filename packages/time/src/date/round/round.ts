@@ -12,7 +12,7 @@ export type RoundUnit =
   | "microsecond"
   | "nanosecond";
 
-export type RoundingMode = Temporal.RoundingMode;
+type RoundingMode = Temporal.RoundingMode;
 
 export interface RoundOptions extends DateOperationOptions {
   unit: RoundUnit;

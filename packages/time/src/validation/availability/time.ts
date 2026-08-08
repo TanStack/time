@@ -8,7 +8,6 @@ import {
 
 export {
   formatMinutesToTime,
-  getWeekday,
   invertMinuteRanges,
   mergeMinuteRanges,
   MINUTES_IN_DAY,
@@ -22,7 +21,7 @@ export interface WorkingTimeConfig {
   multiResource?: "intersection" | "union";
 }
 
-export interface CalendarReference {
+interface CalendarReference {
   calendarId?: string;
 }
 

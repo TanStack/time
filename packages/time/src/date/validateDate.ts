@@ -1,7 +1,7 @@
 import { isValidDate } from "./isValidDate";
 import { parse as parser } from "./parse";
 
-export interface ValidateDateOptions {
+interface ValidateDateOptions {
   date: string | number | Date;
   parse?: (value: string | number | Date) => Date | undefined;
   errorMessage?: string;

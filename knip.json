@@ -2,15 +2,15 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "ignoreDependencies": [
     "@faker-js/faker",
-    "@tanstack/store",
-    "@tanstack/time",
-    "@tanstack/time-devtools",
-    "@tanstack/react-store",
-    "@tanstack/solid-store",
+    "@tanstack/devtools",
     "@testing-library/jest-dom",
-    "@testing-library/react",
-    "@types/react",
-    "react"
+    "@testing-library/react"
   ],
-  "ignoreWorkspaces": ["examples/**"]
+  "ignoreWorkspaces": ["examples/**"],
+  "ignoreExportsUsedInFile": true,
+  "workspaces": {
+    "packages/time": {
+      "entry": ["src/**/*.test-d.ts"]
+    }
+  }
 }

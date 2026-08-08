@@ -10,11 +10,6 @@ export type InvertibleOp<E extends Identified> =
   | { kind: "update"; id: string; before: E; after: E }
   | { kind: "remove"; id: string; event: E };
 
-export interface HistoryBatch<E extends Identified> {
-  reason: string;
-  ops: Array<InvertibleOp<E>>;
-}
-
 export function invertWriteOp<E extends Identified>(
   op: InvertibleOp<E>,
 ): InvertibleOp<E> {

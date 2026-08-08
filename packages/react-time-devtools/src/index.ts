@@ -1,12 +1,13 @@
 "use client";
 
-import type { createSolidPanel } from "@tanstack/devtools-utils/solid";
 import * as Devtools from "./TimeDevtools";
 import * as plugin from "./plugin";
+import type { JSX } from "react";
+import type { TimeDevtoolsReactInit } from "./TimeDevtools";
 
-type SolidPanelComponent = ReturnType<typeof createSolidPanel>[0];
+type ReactPanelComponent = (props: TimeDevtoolsReactInit) => JSX.Element | null;
 
-export const TimeDevtoolsPanel: SolidPanelComponent =
+export const TimeDevtoolsPanel: ReactPanelComponent =
   process.env.NODE_ENV !== "development"
     ? Devtools.TimeDevtoolsPanelNoOp
     : Devtools.TimeDevtoolsPanel;

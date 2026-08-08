@@ -61,7 +61,7 @@ export interface KernelOptions<E extends KernelEvent> {
   config?: KernelConfig;
 }
 
-export interface CreateKernelOptions<
+interface CreateKernelOptions<
   TEvents extends KernelEvent,
   TModules extends Record<string, Module<TEvents, unknown>>,
 > {

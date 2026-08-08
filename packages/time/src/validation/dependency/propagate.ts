@@ -8,14 +8,14 @@ import type { DependencyType } from "./shift";
 import type { CascadeShift } from "./computeCascade";
 import type { DependencyGraphEvent } from "./validateDependencies";
 
-export interface PropagateInput {
+interface PropagateInput {
   sourceId: string;
   events: Array<DependencyGraphEvent>;
   timeZone: Temporal.TimeZoneLike;
   visited?: Set<string>;
 }
 
-export interface Span {
+interface Span {
   start: string;
   end: string;
 }
@@ -47,7 +47,7 @@ function positionsOf(events: Array<DependencyGraphEvent>): Map<string, Span> {
   return new Map(events.map((e) => [e.id, { start: e.start, end: e.end }]));
 }
 
-export interface LinkShiftInput {
+interface LinkShiftInput {
   type: DependencyType;
   predecessor: Span;
   successor: Span;

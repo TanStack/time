@@ -4,7 +4,7 @@ import type { DevtoolsPanelProps } from "@tanstack/devtools-utils/react";
 
 export interface TimeDevtoolsReactInit extends DevtoolsPanelProps {}
 
-function TimeDevtoolsPanel(props: TimeDevtoolsReactInit) {
+function TimeDevtoolsPanel({ theme, devtoolsOpen }: TimeDevtoolsReactInit) {
   const containerRef = useRef<HTMLDivElement>(null);
   const devtoolsRef = useRef<InstanceType<typeof TimeDevtoolsCore> | null>(
     null,
@@ -14,7 +14,7 @@ function TimeDevtoolsPanel(props: TimeDevtoolsReactInit) {
     if (containerRef.current && !devtoolsRef.current) {
       const devtools = new TimeDevtoolsCore();
       devtoolsRef.current = devtools;
-      devtools.mount(containerRef.current, props.theme ?? "dark");
+      devtools.mount(containerRef.current, { theme, devtoolsOpen });
     }
 
     return () => {
@@ -23,7 +23,7 @@ function TimeDevtoolsPanel(props: TimeDevtoolsReactInit) {
         devtoolsRef.current = null;
       }
     };
-  }, [props.theme]);
+  }, [theme, devtoolsOpen]);
 
   return <div ref={containerRef} style={{ height: "100%" }} />;
 }

@@ -50,7 +50,7 @@ export interface UseCalendarOptions<
   resize?: ResizeOptions;
 }
 
-export interface ResizeHookApi {
+interface ResizeHookApi {
   resizeState: ResizeState;
   getResizeHandleProps: (
     eventId: string,
@@ -65,7 +65,7 @@ export interface ResizeHookApi {
 type ComposedResizeHookApi<TFeatures extends CalendarFeatureList> =
   "resize" extends FeatureName<TFeatures[number]> ? ResizeHookApi : object;
 
-export type UseCalendarResult<
+type UseCalendarResult<
   TFeatures extends CalendarFeatureList,
   TResource extends Resource,
   TEvent extends Event<TResource>,

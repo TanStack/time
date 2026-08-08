@@ -2,7 +2,7 @@ import { defineConfig } from "tsdown";
 import solid from "rolldown-plugin-solid";
 
 export default defineConfig({
-  entry: ["./src/index.ts"],
+  entry: ["./src/index.ts", "./src/production.ts"],
   format: ["esm", "cjs"],
   unbundle: true,
   dts: true,
