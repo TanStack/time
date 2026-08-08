@@ -319,6 +319,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       end: weekdayAt(3, 15, 0),
       resources: [resourceQA],
       dependsOn: [{ id: "3", type: "FF" }],
+      manuallyScheduled: true,
     },
     {
       id: "6",
@@ -378,6 +379,7 @@ interface EventFormData {
   endTime: string;
   resourceId: string;
   consumption: number;
+  manuallyScheduled: boolean;
   dependsOn: Array<{ id: string; type: DependencyType; lag?: number }>;
 }
 
@@ -389,6 +391,7 @@ const emptyFormData: EventFormData = {
   endTime: "10:00",
   resourceId: resourceDesign.id,
   consumption: 1,
+  manuallyScheduled: false,
   dependsOn: [],
 };
 
@@ -587,6 +590,23 @@ function EventModal({
                 required
               />
             </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              id="manuallyScheduled"
+              type="checkbox"
+              className="size-4"
+              checked={formData.manuallyScheduled}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  manuallyScheduled: e.target.checked,
+                })
+              }
+            />
+            <Label htmlFor="manuallyScheduled">
+              Manually scheduled (dependencies never move it)
+            </Label>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -1287,6 +1307,14 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
             ↳{depCount}
           </span>
         )}
+        {event.manuallyScheduled && (
+          <span
+            className="shrink-0 text-[10px] leading-none rounded bg-sky-500/40 border border-sky-300/60 px-1 py-0.5 font-semibold"
+            title="Manually scheduled — dependencies never move it"
+          >
+            📌
+          </span>
+        )}
         {event.consumption && event.consumption.length > 0 && (
           <span
             className="shrink-0 text-[10px] leading-none rounded bg-black/30 px-1 py-0.5 font-semibold"
@@ -1711,6 +1739,7 @@ function TimelineDemo() {
         endTime: toPlainTimeString(event.end),
         resourceId: event.resources?.[0]?.id ?? resourceDesign.id,
         consumption: event.consumption?.[0] ?? 1,
+        manuallyScheduled: event.manuallyScheduled ?? false,
         dependsOn: event.dependsOn ?? [],
       },
     });
@@ -1737,6 +1766,7 @@ function TimelineDemo() {
                 end,
                 resources,
                 consumption: [data.consumption],
+                manuallyScheduled: data.manuallyScheduled,
                 dependsOn: data.dependsOn,
               },
               { dependsOn: data.dependsOn },
@@ -1749,6 +1779,7 @@ function TimelineDemo() {
                 end,
                 resources,
                 consumption: [data.consumption],
+                manuallyScheduled: data.manuallyScheduled,
                 dependsOn: data.dependsOn,
               },
               { dependsOn: data.dependsOn },
