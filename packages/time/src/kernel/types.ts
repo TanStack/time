@@ -91,7 +91,9 @@ export type WriteTransformStageName =
   | "schedule"
   | "emit";
 
-export type WriteValidateStageName = "availability-validate";
+export type WriteValidateStageName =
+  | "availability-validate"
+  | "dependency-validate";
 
 export type ProjectionModuleStageName = Exclude<
   ProjectionStageName,
@@ -113,8 +115,10 @@ export const WRITE_TRANSFORM_ORDER: ReadonlyArray<WriteTransformStageName> = [
 
 export const WRITE_EMIT_STAGE: WriteTransformStageName = "emit";
 
-export const WRITE_VALIDATE_STAGE: WriteValidateStageName =
-  "availability-validate";
+export const WRITE_VALIDATE_ORDER: ReadonlyArray<WriteValidateStageName> = [
+  "availability-validate",
+  "dependency-validate",
+];
 
 export type Contribution<E extends KernelEvent> =
   | {

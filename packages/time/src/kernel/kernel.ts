@@ -5,7 +5,7 @@ import {
   PROJECTION_ORDER,
   WRITE_EMIT_STAGE,
   WRITE_TRANSFORM_ORDER,
-  WRITE_VALIDATE_STAGE,
+  WRITE_VALIDATE_ORDER,
 } from "./types";
 import type {
   ComposedApi,
@@ -187,9 +187,11 @@ export class Kernel<E extends KernelEvent, TApi = Record<string, unknown>> {
     }
 
     if (!batch.replay) {
-      const conflicts = this.registry
-        .validateStages(WRITE_VALIDATE_STAGE)
-        .flatMap((run) => run(batch, ctx));
+      const conflicts = WRITE_VALIDATE_ORDER.flatMap((stageName) =>
+        this.registry
+          .validateStages(stageName)
+          .flatMap((run) => run(batch, ctx)),
+      );
       if (conflicts.length > 0) {
         return { status: "rejected", conflicts };
       }

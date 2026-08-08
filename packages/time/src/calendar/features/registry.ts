@@ -91,6 +91,7 @@ export const FEATURE_API_OWNERS = {
   getDependentShifts: "eventDependencyFeature",
   getAffectedByDelta: "eventDependencyFeature",
   findViolatedDependency: "eventDependencyFeature",
+  getAnchorConflicts: "eventDependencyFeature",
   createResizeController: "eventResizeFeature",
   getEventSegmentInfo: "eventResizeFeature",
   validateResize: "eventResizeFeature",

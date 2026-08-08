@@ -58,6 +58,10 @@ export function computeCascade(input: CascadeInput): Array<CascadeShift> {
       if (visited.has(sId)) continue;
       const s = byId.get(sId);
       if (!s) continue;
+      if (s.manuallyScheduled) {
+        visited.add(sId);
+        continue;
+      }
 
       const link = s.dependsOn?.find((d) => d.id === currentId);
       if (!link) continue;

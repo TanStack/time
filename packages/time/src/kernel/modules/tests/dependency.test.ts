@@ -8,6 +8,7 @@ import type { DependencyLink } from "~/validation/dependency";
 interface CalEvent extends KernelEvent {
   title: string;
   dependsOn?: Array<DependencyLink>;
+  manuallyScheduled?: boolean;
 }
 
 const options: DependencyModuleOptions = { timeZone: "UTC" };
@@ -104,6 +105,109 @@ describe("dependencyModule", () => {
     });
 
     expect(kernel.getEvent("b")!.start).toBe("2026-01-05T10:00:00");
+  });
+
+  it("rejects a move an anchored dependent cannot follow", () => {
+    const kernel = seed();
+    kernel.write({
+      kind: "update",
+      id: "b",
+      before: kernel.getEvent("b")!,
+      after: { ...kernel.getEvent("b")!, manuallyScheduled: true },
+    });
+
+    const result = kernel.write({
+      kind: "update",
+      id: "a",
+      before: kernel.getEvent("a")!,
+      after: {
+        ...kernel.getEvent("a")!,
+        start: "2026-01-05T10:00:00",
+        end: "2026-01-05T11:00:00",
+      },
+    });
+
+    expect(result.status).toBe("rejected");
+    if (result.status !== "rejected") return;
+    expect(result.conflicts[0]).toMatchObject({
+      code: "dependency/manually-scheduled",
+      eventIds: ["b", "a"],
+    });
+    expect(kernel.getEvent("a")!.start).toBe("2026-01-05T09:00:00");
+    expect(kernel.getEvent("b")!.start).toBe("2026-01-05T10:00:00");
+  });
+
+  it("commits a move an anchored dependent still has slack for", () => {
+    const kernel = seed();
+    kernel.write({
+      kind: "update",
+      id: "b",
+      before: kernel.getEvent("b")!,
+      after: { ...kernel.getEvent("b")!, manuallyScheduled: true },
+    });
+
+    const result = kernel.write({
+      kind: "update",
+      id: "a",
+      before: kernel.getEvent("a")!,
+      after: {
+        ...kernel.getEvent("a")!,
+        start: "2026-01-05T08:00:00",
+        end: "2026-01-05T09:00:00",
+      },
+    });
+
+    expect(result.status).toBe("committed");
+    expect(kernel.getEvent("b")!.start).toBe("2026-01-05T10:00:00");
+  });
+
+  it("rejects pulling an anchored predecessor back", () => {
+    const kernel = seed();
+    kernel.write({
+      kind: "update",
+      id: "a",
+      before: kernel.getEvent("a")!,
+      after: { ...kernel.getEvent("a")!, manuallyScheduled: true },
+    });
+
+    const result = kernel.write({
+      kind: "update",
+      id: "b",
+      before: kernel.getEvent("b")!,
+      after: {
+        ...kernel.getEvent("b")!,
+        start: "2026-01-05T09:00:00",
+        end: "2026-01-05T10:00:00",
+      },
+    });
+
+    expect(result.status).toBe("rejected");
+    expect(kernel.getEvent("a")!.start).toBe("2026-01-05T09:00:00");
+  });
+
+  it("moves an anchor when the write targets it directly", () => {
+    const kernel = seed();
+    kernel.write({
+      kind: "update",
+      id: "a",
+      before: kernel.getEvent("a")!,
+      after: { ...kernel.getEvent("a")!, manuallyScheduled: true },
+    });
+
+    const result = kernel.write({
+      kind: "update",
+      id: "a",
+      before: kernel.getEvent("a")!,
+      after: {
+        ...kernel.getEvent("a")!,
+        start: "2026-01-05T10:00:00",
+        end: "2026-01-05T11:00:00",
+      },
+    });
+
+    expect(result.status).toBe("committed");
+    expect(kernel.getEvent("a")!.start).toBe("2026-01-05T10:00:00");
+    expect(kernel.getEvent("b")!.start).toBe("2026-01-05T11:00:00");
   });
 
   it("leaves dependents untouched when no constraint is violated", () => {

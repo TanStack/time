@@ -3827,6 +3827,165 @@ describe("CalendarCore", () => {
       });
     });
 
+    describe("manuallyScheduled", () => {
+      const anchoredPair = () =>
+        createTestCalendar({
+          events: [
+            {
+              id: "p",
+              title: "P",
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: "s",
+              title: "S",
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+              dependsOn: [{ id: "p", type: "FS" }],
+              manuallyScheduled: true,
+            },
+          ],
+          resources: [allDayResource],
+        });
+
+      test("an anchored dependent stays put and blocks the move", async () => {
+        const cal = anchoredPair();
+
+        const result = await cal.editEvent("p", {
+          start: `${DATE_MON}T11:00:00`,
+          end: `${DATE_MON}T12:00:00`,
+        });
+
+        assert(!result.success);
+        expect(result.error.message).toContain("manually scheduled");
+
+        const events = cal.getEvents();
+        expect(events.find((e) => e.id === "p")!.start).toBe(
+          `${DATE_MON}T10:00:00`,
+        );
+        expect(events.find((e) => e.id === "s")!.start).toBe(
+          `${DATE_MON}T11:00:00`,
+        );
+      });
+
+      test("a move the anchor still has slack for is allowed", async () => {
+        const cal = anchoredPair();
+
+        const result = await cal.editEvent("p", {
+          start: `${DATE_MON}T09:00:00`,
+          end: `${DATE_MON}T10:00:00`,
+        });
+
+        assert(result.success);
+        expect(cal.getEvents().find((e) => e.id === "s")!.start).toBe(
+          `${DATE_MON}T11:00:00`,
+        );
+      });
+
+      test("validateMove reports the anchor that cannot follow", () => {
+        expect(
+          anchoredPair().validateMove(
+            "p",
+            `${DATE_MON}T11:00:00`,
+            `${DATE_MON}T12:00:00`,
+          ),
+        ).toMatchObject({ blocked: true, blockedEventTitle: "S" });
+      });
+
+      test("the anchor itself can still be moved, and pushes its dependents", () => {
+        const cal = createTestCalendar({
+          events: [
+            {
+              id: "p",
+              title: "P",
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: [allDayResource],
+              manuallyScheduled: true,
+            },
+            {
+              id: "s",
+              title: "S",
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+              dependsOn: [{ id: "p", type: "FS" }],
+            },
+          ],
+          resources: [allDayResource],
+        });
+
+        cal.commitUpdate("p", { end: `${DATE_MON}T12:30:00` });
+
+        expect(cal.getEvents().find((e) => e.id === "s")!.start).toBe(
+          `${DATE_MON}T12:30:00`,
+        );
+      });
+
+      test("createDependency refuses to reschedule an anchored target", () => {
+        const cal = createTestCalendar({
+          events: [
+            {
+              id: "p",
+              title: "P",
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: "s",
+              title: "S",
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T13:00:00`,
+              resources: [allDayResource],
+              manuallyScheduled: true,
+            },
+          ],
+          resources: [allDayResource],
+        });
+
+        const result = cal.createDependency("p", "s", "FS");
+
+        assert(result.blocked);
+        expect(result.error?.message).toContain("manually scheduled");
+
+        const s = cal.getEvents().find((e) => e.id === "s")!;
+        expect(s.start).toBe(`${DATE_MON}T11:00:00`);
+        expect(s.dependsOn ?? []).toEqual([]);
+      });
+
+      test("createDependency links an anchored target that needs no move", () => {
+        const cal = createTestCalendar({
+          events: [
+            {
+              id: "p",
+              title: "P",
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: "s",
+              title: "S",
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+              manuallyScheduled: true,
+            },
+          ],
+          resources: [allDayResource],
+        });
+
+        expect(cal.createDependency("p", "s", "FS").blocked).toBe(false);
+        expect(cal.getEvents().find((e) => e.id === "s")!.dependsOn).toEqual([
+          { id: "p", type: "FS" },
+        ]);
+      });
+    });
+
     describe("commitUpdate forward cascade per type", () => {
       test("FS: shifts successor when predecessor.end extends past successor.start", () => {
         const cal = createTestCalendar({

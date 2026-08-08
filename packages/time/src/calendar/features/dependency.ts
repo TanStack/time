@@ -3,6 +3,7 @@ import { toPlainDateTimeString } from "~/date/parse";
 import { dependencyModule } from "~/kernel/modules";
 import {
   computeCascade,
+  findAnchoredViolations,
   hasDependencyPath,
   lagMs,
   propagateToDependents,
@@ -12,7 +13,10 @@ import {
 } from "~/validation/dependency";
 import type { KernelEvent } from "~/kernel";
 import type { DependencyApi } from "~/kernel/modules";
-import type { DependencyGraphEvent } from "~/validation/dependency";
+import type {
+  DependencyConflict,
+  DependencyGraphEvent,
+} from "~/validation/dependency";
 import type {
   DependencyType,
   Event,
@@ -51,6 +55,11 @@ export interface DependencyGraphApi<
     proposedStartMs: number,
     proposedEndMs: number,
   ) => { dependency: EventDependency; predecessor: TEvent } | null;
+  getAnchorConflicts: (
+    eventId: string,
+    newStart: string,
+    newEnd: string,
+  ) => Array<DependencyConflict>;
 }
 
 export interface DependencyCreationApi {
@@ -108,7 +117,22 @@ export function eventDependencyFeature<
           ? override.end
           : toPlainDateTimeString(event.end),
       dependsOn: event.dependsOn,
+      manuallyScheduled: event.manuallyScheduled,
     }));
+
+  const applyShifts = (
+    graph: Array<DependencyGraphEvent>,
+    shifts: Array<{ id: string; newStart: string; newEnd: string }>,
+  ): Array<DependencyGraphEvent> => {
+    if (shifts.length === 0) return graph;
+    const byId = new Map(shifts.map((shift) => [shift.id, shift]));
+    return graph.map((event) => {
+      const shift = byId.get(event.id);
+      return shift
+        ? { ...event, start: shift.newStart, end: shift.newEnd }
+        : event;
+    });
+  };
 
   return {
     name: "dependency",
@@ -156,6 +180,37 @@ export function eventDependencyFeature<
             visited: new Set([eventId]),
           }),
         ),
+      getAnchorConflicts: (eventId, newStart, newEnd) => {
+        const timeZone = host.getOptions().timeZone;
+        const moved = graphOf(host, {
+          id: eventId,
+          start: newStart,
+          end: newEnd,
+        });
+        const visited = new Set([eventId]);
+        const shifts = [
+          ...propagateToPredecessors({
+            sourceId: eventId,
+            events: moved,
+            timeZone,
+            visited,
+          }),
+        ];
+        shifts.push(
+          ...propagateToDependents({
+            sourceId: eventId,
+            events: applyShifts(moved, shifts),
+            timeZone,
+            visited,
+          }),
+        );
+
+        return findAnchoredViolations({
+          events: applyShifts(moved, shifts),
+          changedIds: [eventId, ...shifts.map((shift) => shift.id)],
+          timeZone,
+        });
+      },
       findViolatedDependency: (event, proposedStartMs, proposedEndMs) => {
         for (const dependency of event.dependsOn ?? []) {
           const predecessor = host.getEvent(dependency.id);
@@ -225,6 +280,22 @@ export function eventDependencyFeature<
           timeZone: host.getOptions().timeZone,
           lag,
         });
+
+        if (rescheduled && targetEvent.manuallyScheduled) {
+          return {
+            blocked: true,
+            error: {
+              eventId: targetId,
+              eventTitle: targetEvent.title,
+              reason: "blocked" as const,
+              message: `Cannot connect (${type}): "${targetEvent.title}" is manually scheduled and would have to move.`,
+              originalStart: targetStartStr,
+              originalEnd: targetEndStr,
+              attemptedStart: rescheduled.start,
+              attemptedEnd: rescheduled.end,
+            },
+          };
+        }
 
         if (rescheduled) {
           const validation = host.validateMove(

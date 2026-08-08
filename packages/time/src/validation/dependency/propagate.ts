@@ -93,6 +93,10 @@ export function propagateToPredecessors(
 
       const predSpan = positions.get(dep.id);
       if (!predSpan) continue;
+      if (byId.get(dep.id)?.manuallyScheduled) {
+        visited.add(dep.id);
+        continue;
+      }
 
       const predMs = toMs(predSpan, timeZone);
       const pullBackMs = requiredBackwardShiftMs(
@@ -149,6 +153,10 @@ export function propagateToDependents(
       const successor = byId.get(successorId);
       const successorSpan = positions.get(successorId);
       if (!successor || !successorSpan) continue;
+      if (successor.manuallyScheduled) {
+        visited.add(successorId);
+        continue;
+      }
 
       const link = successor.dependsOn?.find((d) => d.id === currentId);
       if (!link) continue;

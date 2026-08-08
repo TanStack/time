@@ -1,18 +1,21 @@
 import { Temporal } from "@js-temporal/polyfill";
 import { toPlainDateTimeString } from "~/date/parse";
 import {
+  findAnchoredViolations,
   propagateToDependents,
   propagateToPredecessors,
   validateDependencies,
   type CascadeShift,
+  type DependencyConflict,
   type DependencyGraphEvent,
   type DependencyLink,
 } from "~/validation/dependency";
-import type { KernelEvent, Module, WriteOp } from "../types";
+import type { Conflict, KernelEvent, Module, WriteOp } from "../types";
 
 interface DependencyEvent extends KernelEvent {
   title?: string;
   dependsOn?: Array<DependencyLink>;
+  manuallyScheduled?: boolean;
 }
 
 export interface DependencyModuleOptions {
@@ -49,7 +52,17 @@ function toGraph(events: Array<DependencyEvent>): Array<DependencyGraphEvent> {
     start: toPlainDateTimeString(e.start),
     end: toPlainDateTimeString(e.end),
     dependsOn: e.dependsOn,
+    manuallyScheduled: e.manuallyScheduled,
   }));
+}
+
+function toConflict(conflict: DependencyConflict): Conflict {
+  return {
+    code: "dependency/manually-scheduled",
+    message: conflict.message,
+    eventIds: [conflict.eventId, conflict.predecessorId],
+    detail: conflict,
+  };
 }
 
 function withSource(
@@ -178,6 +191,38 @@ export function dependencyModule<E extends KernelEvent>(
 
           if (extraOps.length === 0) return batch;
           return { ...batch, ops: [...batch.ops, ...extraOps] };
+        },
+      },
+      {
+        pipeline: "write",
+        kind: "validate",
+        stage: "dependency-validate",
+        priority: options.priority,
+        run: (batch, ctx) => {
+          const settled = new Map<string, DependencyEvent>(
+            (ctx.getEvents() as Array<DependencyEvent>).map((e) => [e.id, e]),
+          );
+          const changedIds = new Set<string>();
+
+          for (const op of batch.ops) {
+            if (op.kind === "intent") continue;
+            if (op.kind === "remove") {
+              settled.delete(op.id);
+              changedIds.add(op.id);
+            } else if (op.kind === "add") {
+              settled.set(op.event.id, op.event as DependencyEvent);
+              changedIds.add(op.event.id);
+            } else {
+              settled.set(op.id, op.after as DependencyEvent);
+              changedIds.add(op.id);
+            }
+          }
+
+          return findAnchoredViolations({
+            events: toGraph([...settled.values()]),
+            changedIds,
+            timeZone,
+          }).map(toConflict);
         },
       },
     ],

@@ -12,6 +12,7 @@ export interface DependencyGraphEvent {
   start: string;
   end: string;
   dependsOn?: Array<DependencyLink>;
+  manuallyScheduled?: boolean;
 }
 
 export interface DependencyTargetEvent {
@@ -37,6 +38,7 @@ export interface DependencyConflict {
   message: string;
   originalStart: string;
   originalEnd: string;
+  anchorId?: string;
 }
 
 const REASON: Record<DependencyLink["type"], string> = {
@@ -52,6 +54,16 @@ const ANCHOR: Record<DependencyLink["type"], string> = {
   FF: " ends",
   SF: " starts",
 };
+
+export function describeDependencyViolation(
+  successorTitle: string,
+  predecessorTitle: string,
+  link: DependencyLink,
+): string {
+  const lag = link.lag ? ` ${formatLagMinutes(link.lag)}` : "";
+  const reason = `${REASON[link.type]}"${predecessorTitle}"${ANCHOR[link.type]}${lag}`;
+  return `"${successorTitle}" ${reason} (${link.type})`;
+}
 
 export function validateDependencies(
   input: ValidateDependenciesInput,
@@ -89,8 +101,6 @@ export function validateDependencies(
     );
 
     if (shortfall > 0) {
-      const lag = dep.lag ? ` ${formatLagMinutes(dep.lag)}` : "";
-      const reason = `${REASON[dep.type]}"${pred.title}"${ANCHOR[dep.type]}${lag}`;
       return [
         {
           eventId: event.id ?? "",
@@ -98,7 +108,7 @@ export function validateDependencies(
           predecessorId: pred.id,
           predecessorTitle: pred.title,
           type: dep.type,
-          message: `"${event.title}" ${reason} (${dep.type})`,
+          message: describeDependencyViolation(event.title, pred.title, dep),
           originalStart: event.start,
           originalEnd: event.end,
         },

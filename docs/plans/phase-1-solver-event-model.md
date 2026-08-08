@@ -108,12 +108,45 @@ The timeline example seeds one lagged link (a 60-minute handoff after `UI Mockup
 dependency editor grew a lag input, so the field is exercised through a consumer rather than only
 through tests.
 
-### Slice 2 — `manuallyScheduled`
+### Slice 2 — `manuallyScheduled` ✅
 
 A manually-scheduled event is an anchor: cascade and propagation must not move it, and a link into
 one that cannot be satisfied is a conflict rather than a silent shift. This is the field that makes
 "conflicts are data" (ADR 0007) reachable before the solver exists, because it is the first way the
-graph can be unsatisfiable without a cycle.
+graph can be unsatisfiable without a cycle. 1,127 tests.
+
+**The anchor is a walk rule, not a shift rule.** `propagateToDependents`, `propagateToPredecessors`
+and `computeCascade` each mark an anchored neighbour visited and `continue` — it is neither moved nor
+walked through, so the events *behind* it keep their dates too. Skipping the move but recursing
+anyway would push an anchor's successors off a predecessor that never moved.
+
+**Not moving it is only half the field.** The write that could not be absorbed has to be rejected,
+otherwise an anchor silently degrades into "the cascade stops here" and the graph is left
+inconsistent. `findAnchoredViolations({ events, changedIds, timeZone })` is the new pure core: after
+the batch has settled, any link whose successor or predecessor is an anchor, whose other end is in
+`changedIds`, and whose shortfall is still positive becomes a `DependencyConflict` carrying
+`anchorId`. `dependencyModule` runs it as a veto contribution and the kernel rejects with
+`dependency/manually-scheduled`.
+
+That veto needed a second validate stage. `WriteValidateStageName` was a single-member union
+(`"availability-validate"`) and the kernel ran that one constant; it is now `WRITE_VALIDATE_ORDER`
+with `"dependency-validate"` after it, so availability still reports first and both stages'
+conflicts come back in one rejection.
+
+**Advisory path stays ahead of the veto.** `validateMove` asks the feature for
+`getAnchorConflicts(eventId, newStart, newEnd)`, which replays the same propagate-then-check
+sequence the module performs, so a drag is blocked at preview time rather than at commit. The
+message is the dependency violation with `— "X" is manually scheduled` appended; the shared text
+comes from `describeDependencyViolation`, extracted out of `validateDependencies` so the two callers
+cannot drift.
+
+`createDependency` refuses to connect when the target is an anchor and the link would reschedule it,
+returning a `blocked` error instead of moving it. An anchor whose link is already satisfied still
+connects.
+
+The anchor is only an anchor to *other* events' arithmetic: a write that targets it directly moves
+it and cascades its dependents as usual. The timeline example pins `Integration Tests`, shows the
+flag as a 📌 badge on the bar, and the event form toggles it.
 
 ### Slice 3 — scheduling constraints
 

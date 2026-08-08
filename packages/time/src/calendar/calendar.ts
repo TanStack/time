@@ -966,6 +966,16 @@ export class CalendarCore<
     const newEndMs =
       Temporal.PlainDateTime.from(newEnd).toZonedDateTime(tz).epochMilliseconds;
 
+    const [anchored] =
+      this._dependency?.getAnchorConflicts(eventId, newStart, newEnd) ?? [];
+    if (anchored) {
+      return {
+        blocked: true,
+        blockedEventTitle: anchored.eventTitle,
+        message: anchored.message,
+      };
+    }
+
     if (event.dependsOn?.length) {
       const pulled =
         this._dependency?.getPredecessorShifts(eventId, newStart, newEnd) ?? [];

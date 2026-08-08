@@ -76,6 +76,8 @@ export interface Event<TResource extends Resource = Resource> {
 
   dependsOn?: Array<EventDependency>;
 
+  manuallyScheduled?: boolean;
+
   recurrence?: RecurrenceRule<TResource>;
 
   allDay?: boolean;

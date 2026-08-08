@@ -70,7 +70,7 @@ Ships once Phase 0 lands. Scope from ADR 0005 plus the pre-alpha breaking model 
 - [ ] **Event-model additions** for the solver (ADR 0007): dependency **lag/lead**,
       `constraints`, `manuallyScheduled`, `effort`/`duration`. Types only + honoured by
       validation; full solver is Phase 2. Slice plan in `docs/plans/phase-1-solver-event-model.md`;
-      lag/lead landed.
+      lag/lead and `manuallyScheduled` landed.
 - [x] Dependencies FS/SS/FF/SF (present) become a proper **module** — `dependencyModule`, landed in
       Phase 0.
 - [x] Undo/redo (present) becomes a **module** — `undoModule`, landed in Phase 0.
