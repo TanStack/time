@@ -4,6 +4,7 @@ import { dependencyModule } from "~/kernel/modules";
 import {
   computeCascade,
   hasDependencyPath,
+  lagMs,
   propagateToDependents,
   propagateToPredecessors,
   requiredForwardShiftMs,
@@ -57,6 +58,7 @@ export interface DependencyCreationApi {
     sourceId: string,
     targetId: string,
     type?: DependencyType,
+    lag?: number,
   ) => { blocked: boolean; error?: ResizeError };
 }
 
@@ -165,18 +167,26 @@ export function eventDependencyFeature<
             epochMs(host, toPlainDateTimeString(predecessor.end)),
             proposedStartMs,
             proposedEndMs,
+            lagMs(dependency),
           );
           if (shortfall > 0) return { dependency, predecessor };
         }
         return null;
       },
-      createDependency: (sourceId, targetId, type = "FS") => {
+      createDependency: (sourceId, targetId, type = "FS", lag) => {
         const sourceEvent = host.getEvent(sourceId);
         const targetEvent = host.getEvent(targetId);
         if (!sourceEvent || !targetEvent) return { blocked: false };
 
         const currentDeps = targetEvent.dependsOn ?? [];
-        if (currentDeps.some((d) => d.id === sourceId && d.type === type)) {
+        if (
+          currentDeps.some(
+            (d) =>
+              d.id === sourceId &&
+              d.type === type &&
+              (d.lag ?? 0) === (lag ?? 0),
+          )
+        ) {
           return { blocked: false };
         }
 
@@ -213,6 +223,7 @@ export function eventDependencyFeature<
           },
           successor: { start: targetStartStr, end: targetEndStr },
           timeZone: host.getOptions().timeZone,
+          lag,
         });
 
         if (rescheduled) {
@@ -241,7 +252,10 @@ export function eventDependencyFeature<
         }
 
         host.commitUpdate(targetId, {
-          dependsOn: [...currentDeps, { id: sourceId, type }],
+          dependsOn: [
+            ...currentDeps,
+            lag ? { id: sourceId, type, lag } : { id: sourceId, type },
+          ],
           ...(rescheduled && {
             start: rescheduled.start,
             end: rescheduled.end,

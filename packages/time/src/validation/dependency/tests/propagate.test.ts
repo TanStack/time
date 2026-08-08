@@ -16,7 +16,7 @@ const event = (
   id: string,
   start: string,
   end: string,
-  dependsOn?: Array<{ id: string; type: DependencyType }>,
+  dependsOn?: Array<{ id: string; type: DependencyType; lag?: number }>,
 ): DependencyGraphEvent => ({
   id,
   title: id,
@@ -265,5 +265,62 @@ describe("propagateToPredecessors", () => {
         events: [event("s", "09:00", "10:00", [{ id: "gone", type: "FS" }])],
       }),
     ).toEqual([]);
+  });
+});
+
+describe("dependency lag", () => {
+  it("pushes a successor past the lag, not only past the predecessor", () => {
+    const shifts = propagateToDependents({
+      sourceId: "a",
+      timeZone: UTC,
+      events: [
+        event("a", "09:00", "10:00"),
+        event("b", "10:00", "11:00", [{ id: "a", type: "FS", lag: 30 }]),
+      ],
+    });
+
+    expect(shifts).toEqual([
+      { id: "b", newStart: at("10:30"), newEnd: at("11:30") },
+    ]);
+  });
+
+  it("lets a negative lag overlap the predecessor", () => {
+    const shifts = propagateToDependents({
+      sourceId: "a",
+      timeZone: UTC,
+      events: [
+        event("a", "09:00", "11:00"),
+        event("b", "10:00", "11:00", [{ id: "a", type: "FS", lag: -60 }]),
+      ],
+    });
+
+    expect(shifts).toEqual([]);
+  });
+
+  it("pulls a predecessor back by the lag as well", () => {
+    const shifts = propagateToPredecessors({
+      sourceId: "b",
+      timeZone: UTC,
+      events: [
+        event("a", "09:00", "10:00"),
+        event("b", "10:00", "11:00", [{ id: "a", type: "FS", lag: 30 }]),
+      ],
+    });
+
+    expect(shifts).toEqual([
+      { id: "a", newStart: at("08:30"), newEnd: at("09:30") },
+    ]);
+  });
+
+  it("applies the lag when a link is first connected", () => {
+    expect(
+      shiftToSatisfyLink({
+        type: "FS",
+        predecessor: { start: at("09:00"), end: at("10:00") },
+        successor: { start: at("10:00"), end: at("11:00") },
+        timeZone: UTC,
+        lag: 45,
+      }),
+    ).toEqual({ start: at("10:45"), end: at("11:45") });
   });
 });

@@ -293,7 +293,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       start: weekdayAt(2, 9, 0),
       end: weekdayAt(2, 17, 0),
       resources: [resourceFrontend],
-      dependsOn: [{ id: "1", type: "FS" }],
+      dependsOn: [{ id: "1", type: "FS", lag: 60 }],
     },
     {
       id: "3",
@@ -378,7 +378,7 @@ interface EventFormData {
   endTime: string;
   resourceId: string;
   consumption: number;
-  dependsOn: Array<{ id: string; type: DependencyType }>;
+  dependsOn: Array<{ id: string; type: DependencyType; lag?: number }>;
 }
 
 const emptyFormData: EventFormData = {
@@ -501,7 +501,7 @@ function EventModal({
 
   const updateDependency = (
     index: number,
-    patch: Partial<{ id: string; type: DependencyType }>,
+    patch: Partial<{ id: string; type: DependencyType; lag?: number }>,
   ) => {
     setFormData({
       ...formData,
@@ -697,6 +697,18 @@ function EventModal({
                         ))}
                       </SelectContent>
                     </Select>
+                    <Input
+                      type="number"
+                      step={15}
+                      className="w-20"
+                      title="Lag in minutes (negative leads)"
+                      value={dep.lag ?? 0}
+                      onChange={(e) =>
+                        updateDependency(idx, {
+                          lag: Number(e.target.value) || undefined,
+                        })
+                      }
+                    />
                     <Button
                       type="button"
                       variant="ghost"

@@ -11,6 +11,8 @@ export type DependencyType = "FS" | "SS" | "FF" | "SF";
 export interface EventDependency {
   id: string;
   type: DependencyType;
+
+  lag?: number;
 }
 
 export type RecurrenceEditScope = "this" | "thisAndFollowing" | "all";

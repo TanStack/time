@@ -1,5 +1,10 @@
 import { Temporal } from "@js-temporal/polyfill";
-import { requiredForwardShiftMs, type DependencyLink } from "./shift";
+import {
+  formatLagMinutes,
+  lagMs,
+  requiredForwardShiftMs,
+  type DependencyLink,
+} from "./shift";
 
 export interface DependencyGraphEvent {
   id: string;
@@ -80,10 +85,12 @@ export function validateDependencies(
       predEndMs,
       newStartMs,
       newEndMs,
+      lagMs(dep),
     );
 
     if (shortfall > 0) {
-      const reason = `${REASON[dep.type]}"${pred.title}"${ANCHOR[dep.type]}`;
+      const lag = dep.lag ? ` ${formatLagMinutes(dep.lag)}` : "";
+      const reason = `${REASON[dep.type]}"${pred.title}"${ANCHOR[dep.type]}${lag}`;
       return [
         {
           eventId: event.id ?? "",

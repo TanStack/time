@@ -1,5 +1,9 @@
 import { Temporal } from "@js-temporal/polyfill";
-import { requiredBackwardShiftMs, requiredForwardShiftMs } from "./shift";
+import {
+  lagMs,
+  requiredBackwardShiftMs,
+  requiredForwardShiftMs,
+} from "./shift";
 import type { DependencyType } from "./shift";
 import type { CascadeShift } from "./computeCascade";
 import type { DependencyGraphEvent } from "./validateDependencies";
@@ -48,6 +52,7 @@ export interface LinkShiftInput {
   predecessor: Span;
   successor: Span;
   timeZone: Temporal.TimeZoneLike;
+  lag?: number;
 }
 
 export function shiftToSatisfyLink(input: LinkShiftInput): Span | null {
@@ -60,6 +65,7 @@ export function shiftToSatisfyLink(input: LinkShiftInput): Span | null {
     predecessorMs.endMs,
     successorMs.startMs,
     successorMs.endMs,
+    lagMs(input),
   );
   if (shiftMs <= 0) return null;
 
@@ -95,6 +101,7 @@ export function propagateToPredecessors(
         predMs.endMs,
         currentMs.startMs,
         currentMs.endMs,
+        lagMs(dep),
       );
       if (pullBackMs <= 0) continue;
 
@@ -155,6 +162,7 @@ export function propagateToDependents(
         currentMs.endMs,
         successorMs.startMs,
         successorMs.endMs,
+        lagMs(link),
       );
       if (shiftMs <= 0) continue;
 

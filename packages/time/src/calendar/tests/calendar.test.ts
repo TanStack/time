@@ -3557,6 +3557,64 @@ describe("CalendarCore", () => {
         expect(s.dependsOn).toEqual([{ id: "p", type: "FS" }]);
       });
 
+      test("FS with lag: pushes the target past the lag and stores it", () => {
+        const cal = createTestCalendar({
+          events: [
+            {
+              id: "p",
+              title: "P",
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: "s",
+              title: "S",
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T13:00:00`,
+              resources: [allDayResource],
+            },
+          ],
+          resources: [allDayResource],
+        });
+        cal.commitUpdate("s", { dependsOn: [] });
+
+        expect(cal.createDependency("p", "s", "FS", 30).blocked).toBe(false);
+
+        const s = cal.getEvents().find((e) => e.id === "s")!;
+        expect(s.start).toBe(`${DATE_MON}T12:30:00`);
+        expect(s.end).toBe(`${DATE_MON}T14:30:00`);
+        expect(s.dependsOn).toEqual([{ id: "p", type: "FS", lag: 30 }]);
+      });
+
+      test("a lagged link cascades by the lag when the predecessor moves", () => {
+        const cal = createTestCalendar({
+          events: [
+            {
+              id: "p",
+              title: "P",
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: "s",
+              title: "S",
+              start: `${DATE_MON}T11:30:00`,
+              end: `${DATE_MON}T12:30:00`,
+              resources: [allDayResource],
+              dependsOn: [{ id: "p", type: "FS", lag: 30 }],
+            },
+          ],
+          resources: [allDayResource],
+        });
+
+        expect(cal.getAffectedByDelta("p", 60 * 60 * 1000).map((shift) => ({
+            id: shift.event.id,
+            newStart: shift.newStart,
+          }))).toEqual([{ id: "s", newStart: `${DATE_MON}T12:30:00` }]);
+      });
+
       test("does nothing when source or target is missing", () => {
         const cal = createTestCalendar({
           events: [

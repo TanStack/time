@@ -53,7 +53,7 @@ Prerequisite for everything. Nothing user-facing.
 
 Ships once Phase 0 lands. Scope from ADR 0005 plus the pre-alpha breaking model changes.
 
-- [ ] **Feature composition as the public API** (ADR 0009) — `features` becomes a required option
+- [x] **Feature composition as the public API** (ADR 0009) — `features` becomes a required option
       built by `calendarFeatures({ ... })`; modules contribute their own methods and the instance
       surface is what was composed. **Lands first in this phase**: the hierarchy and solver items
       below attach as features, so doing it after means writing them twice. Slice plan in
@@ -63,11 +63,14 @@ Ships once Phase 0 lands. Scope from ADR 0005 plus the pre-alpha breaking model 
       / rollback.
 - [ ] **Calendar product** modules: recurrence (UI-builder subset), drag-resize, advisory
       availability.
-- [ ] **Working-time calendar hierarchy** (ADR 0008) — replaces flat `Resource.availability`.
-      Breaking; lands here so alpha ships the target shape.
+- [x] **Working-time calendar hierarchy** (ADR 0008) — replaces flat `Resource.availability`.
+      Breaking; lands here so alpha ships the target shape. Resources reference shared calendars by
+      id, resolution is root-to-leaf painting with a global specificity sort, and `workingTimeFeature`
+      exposes it — see `docs/plans/phase-1-working-time-hierarchy.md`.
 - [ ] **Event-model additions** for the solver (ADR 0007): dependency **lag/lead**,
       `constraints`, `manuallyScheduled`, `effort`/`duration`. Types only + honoured by
-      validation; full solver is Phase 2.
+      validation; full solver is Phase 2. Slice plan in `docs/plans/phase-1-solver-event-model.md`;
+      lag/lead landed.
 - [x] Dependencies FS/SS/FF/SF (present) become a proper **module** — `dependencyModule`, landed in
       Phase 0.
 - [x] Undo/redo (present) becomes a **module** — `undoModule`, landed in Phase 0.

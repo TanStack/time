@@ -1,5 +1,5 @@
 import { Temporal } from "@js-temporal/polyfill";
-import { requiredForwardShiftMs } from "./shift";
+import { lagMs, requiredForwardShiftMs } from "./shift";
 import type { DependencyGraphEvent } from "./validateDependencies";
 
 export interface CascadeInput {
@@ -75,6 +75,7 @@ export function computeCascade(input: CascadeInput): Array<CascadeShift> {
         cur.endMs,
         sStartMs,
         sEndMs,
+        lagMs(link),
       );
       if (shiftMs <= 0) continue;
 
