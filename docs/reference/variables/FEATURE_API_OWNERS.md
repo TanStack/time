@@ -9,7 +9,7 @@ title: FEATURE_API_OWNERS
 const FEATURE_API_OWNERS: object;
 ```
 
-Defined in: [calendar/features/registry.ts:77](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L77)
+Defined in: [calendar/features/registry.ts:79](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L79)
 
 ## Type Declaration
 
@@ -29,6 +29,12 @@ readonly canUndo: "historyFeature" = "historyFeature";
 
 ```ts
 readonly checkEventAvailability: "resourceAvailabilityFeature" = "resourceAvailabilityFeature";
+```
+
+### checkEventConstraint
+
+```ts
+readonly checkEventConstraint: "schedulingConstraintFeature" = "schedulingConstraintFeature";
 ```
 
 ### createDependency

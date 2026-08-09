@@ -5,7 +5,7 @@ title: EventProps
 
 # Interface: EventProps\<TResource, TEvent\>
 
-Defined in: [calendar/types.ts:109](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L109)
+Defined in: [calendar/types.ts:125](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L125)
 
 ## Type Parameters
 
@@ -25,7 +25,7 @@ Defined in: [calendar/types.ts:109](https://github.com/TanStack/time/blob/main/p
 end: string;
 ```
 
-Defined in: [calendar/types.ts:116](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L116)
+Defined in: [calendar/types.ts:132](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L132)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [calendar/types.ts:116](https://github.com/TanStack/time/blob/main/p
 isSplitEvent: boolean;
 ```
 
-Defined in: [calendar/types.ts:113](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L113)
+Defined in: [calendar/types.ts:129](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L129)
 
 ***
 
@@ -45,7 +45,7 @@ Defined in: [calendar/types.ts:113](https://github.com/TanStack/time/blob/main/p
 optional layout: EventLayout;
 ```
 
-Defined in: [calendar/types.ts:118](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L118)
+Defined in: [calendar/types.ts:134](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L134)
 
 ***
 
@@ -55,7 +55,7 @@ Defined in: [calendar/types.ts:118](https://github.com/TanStack/time/blob/main/p
 overlappingEvents: TEvent[];
 ```
 
-Defined in: [calendar/types.ts:114](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L114)
+Defined in: [calendar/types.ts:130](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L130)
 
 ***
 
@@ -65,7 +65,7 @@ Defined in: [calendar/types.ts:114](https://github.com/TanStack/time/blob/main/p
 start: string;
 ```
 
-Defined in: [calendar/types.ts:115](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L115)
+Defined in: [calendar/types.ts:131](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L131)
 
 ***
 
@@ -75,4 +75,4 @@ Defined in: [calendar/types.ts:115](https://github.com/TanStack/time/blob/main/p
 optional style: LayoutStyle;
 ```
 
-Defined in: [calendar/types.ts:119](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L119)
+Defined in: [calendar/types.ts:135](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L135)
