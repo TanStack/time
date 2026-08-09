@@ -30,7 +30,6 @@ export interface TimeEventMap {
     removed: Array<TimeEventInfo>;
     updated: Array<TimeEventInfo>;
   };
-  "time:event:resized": TimeEventInfo;
   "time:event:update:error": {
     eventId: string;
     eventTitle: string;

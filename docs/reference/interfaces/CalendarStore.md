@@ -5,7 +5,7 @@ title: CalendarStore
 
 # Interface: CalendarStore
 
-Defined in: [calendar/types.ts:141](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L141)
+Defined in: [calendar/types.ts:142](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L142)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/types.ts:141](https://github.com/TanStack/time/blob/main/p
 activeDate: string;
 ```
 
-Defined in: [calendar/types.ts:144](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L144)
+Defined in: [calendar/types.ts:145](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L145)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [calendar/types.ts:144](https://github.com/TanStack/time/blob/main/p
 currentPeriod: string;
 ```
 
-Defined in: [calendar/types.ts:142](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L142)
+Defined in: [calendar/types.ts:143](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L143)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [calendar/types.ts:142](https://github.com/TanStack/time/blob/main/p
 eventsVersion: number;
 ```
 
-Defined in: [calendar/types.ts:146](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L146)
+Defined in: [calendar/types.ts:147](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L147)
 
 ***
 
@@ -45,7 +45,7 @@ Defined in: [calendar/types.ts:146](https://github.com/TanStack/time/blob/main/p
 isPending: boolean;
 ```
 
-Defined in: [calendar/types.ts:148](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L148)
+Defined in: [calendar/types.ts:149](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L149)
 
 ***
 
@@ -55,4 +55,4 @@ Defined in: [calendar/types.ts:148](https://github.com/TanStack/time/blob/main/p
 viewMode: ViewMode;
 ```
 
-Defined in: [calendar/types.ts:145](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L145)
+Defined in: [calendar/types.ts:146](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L146)

@@ -3,8 +3,6 @@ import { describe, expect, test } from "vitest";
 import {
   calendarFeatures,
   dayEventLayoutFeature,
-  eventRecurrenceFeature,
-  eventResizeFeature,
   historyFeature,
 } from "@tanstack/time";
 import { createCalendar } from "../src";
@@ -100,44 +98,6 @@ describe("createCalendar", () => {
 
       calendar.undo();
       expect(days().flatMap((day) => day.events)).toHaveLength(1);
-
-      dispose();
-    }));
-
-  test("the resize surface exists only when resize is composed", () =>
-    createRoot((dispose) => {
-      const withoutResize = createCalendar({
-        features: calendarFeatures([dayEventLayoutFeature]),
-        viewMode: { value: 1, unit: "week" },
-        timeZone: "UTC",
-      });
-      expect("resizeState" in withoutResize).toBe(false);
-
-      const withResize = createCalendar({
-        features: calendarFeatures([
-          eventRecurrenceFeature,
-          eventResizeFeature,
-        ]),
-        viewMode: { value: 1, unit: "week" },
-        timeZone: "UTC",
-        events,
-      });
-      expect(withResize.resizeState().isResizing).toBe(false);
-      expect(
-        withResize.getResizeHandleProps(
-          "e1",
-          "bottom",
-          `${DAY}T09:00:00`,
-          `${DAY}T10:00:00`,
-        ),
-      ).toBe(
-        withResize.getResizeHandleProps(
-          "e1",
-          "bottom",
-          `${DAY}T09:00:00`,
-          `${DAY}T10:00:00`,
-        ),
-      );
 
       dispose();
     }));

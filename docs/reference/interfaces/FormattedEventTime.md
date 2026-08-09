@@ -5,7 +5,7 @@ title: FormattedEventTime
 
 # Interface: FormattedEventTime
 
-Defined in: [calendar/getResizeProps.ts:513](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L513)
+Defined in: calendar/eventTimeProps.ts:65
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/getResizeProps.ts:513](https://github.com/TanStack/time/bl
 endFormatted: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:516](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L516)
+Defined in: calendar/eventTimeProps.ts:68
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [calendar/getResizeProps.ts:516](https://github.com/TanStack/time/bl
 isMultiDay: boolean;
 ```
 
-Defined in: [calendar/getResizeProps.ts:520](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L520)
+Defined in: calendar/eventTimeProps.ts:72
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [calendar/getResizeProps.ts:520](https://github.com/TanStack/time/bl
 rangeFormatted: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:518](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L518)
+Defined in: calendar/eventTimeProps.ts:70
 
 ***
 
@@ -45,4 +45,4 @@ Defined in: [calendar/getResizeProps.ts:518](https://github.com/TanStack/time/bl
 startFormatted: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:514](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L514)
+Defined in: calendar/eventTimeProps.ts:66

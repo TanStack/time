@@ -11,14 +11,6 @@ interface UnavailabilityConflictInput {
   details: Array<AvailabilityUnavailabilityReason>;
 }
 
-export function describeUnavailability(
-  details: Array<AvailabilityUnavailabilityReason>,
-): string {
-  return details
-    .map((detail) => `${detail.resourceLabel} (${detail.reason})`)
-    .join(", ");
-}
-
 export function toUnavailabilityConflict(
   input: UnavailabilityConflictInput,
 ): AvailabilityConflict {

@@ -5,7 +5,7 @@ title: Resource
 
 # Interface: Resource
 
-Defined in: [calendar/types.ts:50](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L50)
+Defined in: [calendar/types.ts:49](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L49)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/types.ts:50](https://github.com/TanStack/time/blob/main/pa
 optional buffer: object;
 ```
 
-Defined in: [calendar/types.ts:55](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L55)
+Defined in: [calendar/types.ts:54](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L54)
 
 #### after?
 
@@ -37,7 +37,7 @@ optional before: number;
 optional calendarId: string;
 ```
 
-Defined in: [calendar/types.ts:53](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L53)
+Defined in: [calendar/types.ts:52](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L52)
 
 ***
 
@@ -47,7 +47,7 @@ Defined in: [calendar/types.ts:53](https://github.com/TanStack/time/blob/main/pa
 optional capacity: number[];
 ```
 
-Defined in: [calendar/types.ts:54](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L54)
+Defined in: [calendar/types.ts:53](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L53)
 
 ***
 
@@ -57,7 +57,7 @@ Defined in: [calendar/types.ts:54](https://github.com/TanStack/time/blob/main/pa
 id: string;
 ```
 
-Defined in: [calendar/types.ts:51](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L51)
+Defined in: [calendar/types.ts:50](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L50)
 
 ***
 
@@ -67,4 +67,4 @@ Defined in: [calendar/types.ts:51](https://github.com/TanStack/time/blob/main/pa
 label: string;
 ```
 
-Defined in: [calendar/types.ts:52](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L52)
+Defined in: [calendar/types.ts:51](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L51)

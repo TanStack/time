@@ -43,7 +43,7 @@ _Avoid_: core, engine (informal synonyms; "kernel" is canonical)
 
 **Module**:
 A unit of opt-in feature behavior that extends the kernel (recurrence, availability,
-dependencies, drag-resize, undo/redo, scheduling). Modeled on TanStack Table v9 / AG Grid
+dependencies, undo/redo, scheduling). Modeled on TanStack Table v9 / AG Grid
 modules so unused features tree-shake away. A module _adds capability and state_.
 _Avoid_: plugin, feature, extension (pick one canonical term — see open question)
 
@@ -141,7 +141,7 @@ projection.
 _Avoid_: schedule, hours, working hours
 
 **Calendar** / **Scheduler** / **Timeline**:
-Products. Calendar = kernel + recurrence/drag-resize/undo over a day/week/month view.
+Products. Calendar = kernel + recurrence/undo over a day/week/month view.
 Scheduler = kernel + availability + scheduling (free-slot projection + `book()`) over a
 slot-picker view. Timeline/Gantt = kernel + dependencies (events that push each other) over
 a timeline view.

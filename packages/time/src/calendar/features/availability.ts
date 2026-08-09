@@ -11,7 +11,6 @@ import type {
   MinuteRange,
 } from "~/validation/availability";
 import type { UnavailableRange } from "~/projection";
-import type { UnavailableTimeRange } from "../getResizeProps";
 import type { Event, Resource } from "../types";
 import type { CalendarFeature, CalendarHost } from "./types";
 import type { WorkingTimeApi } from "./workingTime";
@@ -34,7 +33,7 @@ export interface AvailabilityApi<
   getUnavailableMinuteRanges: (
     date: string,
     options?: { resourceIds?: Array<TResource["id"]> },
-  ) => Array<UnavailableTimeRange>;
+  ) => Array<MinuteRange>;
   getUnavailabilityDetails: (
     date: string,
     startMinutes: number,

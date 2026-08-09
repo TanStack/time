@@ -9,7 +9,7 @@ title: FEATURE_API_OWNERS
 const FEATURE_API_OWNERS: object;
 ```
 
-Defined in: [calendar/features/registry.ts:77](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L77)
+Defined in: [calendar/features/registry.ts:75](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L75)
 
 ## Type Declaration
 
@@ -37,12 +37,6 @@ readonly checkEventAvailability: "resourceAvailabilityFeature" = "resourceAvaila
 readonly createDependency: "eventDependencyFeature" = "eventDependencyFeature";
 ```
 
-### createResizeController
-
-```ts
-readonly createResizeController: "eventResizeFeature" = "eventResizeFeature";
-```
-
 ### editRecurringEvent
 
 ```ts
@@ -59,6 +53,12 @@ readonly findViolatedDependency: "eventDependencyFeature" = "eventDependencyFeat
 
 ```ts
 readonly getAffectedByDelta: "eventDependencyFeature" = "eventDependencyFeature";
+```
+
+### getAnchorConflicts
+
+```ts
+readonly getAnchorConflicts: "eventDependencyFeature" = "eventDependencyFeature";
 ```
 
 ### getDaySpanConflicts
@@ -89,12 +89,6 @@ readonly getEventProps: "dayEventLayoutFeature" = "dayEventLayoutFeature";
 
 ```ts
 readonly getEventsByResource: "timelineFeature" = "timelineFeature";
-```
-
-### getEventSegmentInfo
-
-```ts
-readonly getEventSegmentInfo: "eventResizeFeature" = "eventResizeFeature";
 ```
 
 ### getMasterEvent
@@ -203,10 +197,4 @@ readonly validateEventDependencies: "eventDependencyFeature" = "eventDependencyF
 
 ```ts
 readonly validateEventPlacement: "resourceAvailabilityFeature" = "resourceAvailabilityFeature";
-```
-
-### validateResize
-
-```ts
-readonly validateResize: "eventResizeFeature" = "eventResizeFeature";
 ```

@@ -9,7 +9,7 @@ title: BuiltInFeatureApi
 type BuiltInFeatureApi<TResource, TEvent> = UnionToIntersection<BuiltInFeatureApiRegistry<TResource, TEvent>[keyof BuiltInFeatureApiRegistry<TResource, TEvent>]>;
 ```
 
-Defined in: [calendar/features/registry.ts:67](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L67)
+Defined in: [calendar/features/registry.ts:65](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L65)
 
 ## Type Parameters
 

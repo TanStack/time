@@ -15,7 +15,7 @@ Defined in: [client/TimeClient.ts:14](https://github.com/TanStack/time/blob/main
 time:calendar:navigate: object;
 ```
 
-Defined in: [client/TimeClient.ts:45](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L45)
+Defined in: [client/TimeClient.ts:44](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L44)
 
 #### direction
 
@@ -37,7 +37,7 @@ targetDate: string;
 time:calendar:viewMode:changed: object;
 ```
 
-Defined in: [client/TimeClient.ts:49](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L49)
+Defined in: [client/TimeClient.ts:48](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L48)
 
 #### viewMode
 
@@ -107,16 +107,6 @@ Defined in: [client/TimeClient.ts:22](https://github.com/TanStack/time/blob/main
 
 ***
 
-### time:event:resized
-
-```ts
-time:event:resized: TimeEventInfo;
-```
-
-Defined in: [client/TimeClient.ts:33](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L33)
-
-***
-
 ### time:event:undo
 
 ```ts
@@ -151,7 +141,7 @@ updated: TimeEventInfo[];
 time:event:update:error: object;
 ```
 
-Defined in: [client/TimeClient.ts:34](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L34)
+Defined in: [client/TimeClient.ts:33](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L33)
 
 #### attemptedEnd?
 

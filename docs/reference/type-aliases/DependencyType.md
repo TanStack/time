@@ -9,4 +9,4 @@ title: DependencyType
 type DependencyType = "FS" | "SS" | "FF" | "SF";
 ```
 
-Defined in: [calendar/types.ts:9](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L9)
+Defined in: [calendar/types.ts:8](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L8)

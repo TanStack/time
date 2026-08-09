@@ -22,7 +22,7 @@ import type {
   Event,
   EventDependency,
   Resource,
-  ResizeError,
+  EventError,
 } from "../types";
 import type { CalendarFeature, CalendarHost } from "./types";
 
@@ -68,7 +68,7 @@ export interface DependencyCreationApi {
     targetId: string,
     type?: DependencyType,
     lag?: number,
-  ) => { blocked: boolean; error?: ResizeError };
+  ) => { blocked: boolean; error?: EventError };
 }
 
 export function eventDependencyFeature<

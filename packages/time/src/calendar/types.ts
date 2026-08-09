@@ -1,6 +1,5 @@
 import type { DateInput } from "~/date";
 import type { EventLayout, LayoutOptions, LayoutStyle } from "~/projection";
-import type { ResizeConstraints, ResizeEdge } from "./getResizeProps";
 
 export type EventDateTimeInput = string | Date | number;
 
@@ -181,7 +180,7 @@ export interface AvailabilityConflict {
   description: string;
 }
 
-export interface ResizeError {
+export interface EventError {
   eventId: string;
   eventTitle: string;
   reason: "unavailable-time" | "invalid-time" | "min-duration" | "blocked";
@@ -194,14 +193,14 @@ export interface ResizeError {
   conflicts?: Array<AvailabilityConflict>;
 }
 
-export interface ResizeValidationResult {
+export interface EventValidationResult {
   valid: boolean;
-  error?: ResizeError;
+  error?: EventError;
 }
 
 export type SaveEventResult =
   | { success: true }
-  | { success: false; error: ResizeError };
+  | { success: false; error: EventError };
 
 export interface TimelineEventLayout<
   TResource extends Resource = Resource,
@@ -238,31 +237,4 @@ export interface TimelineLayout<
 > {
   rows: Array<TimelineResourceRow<TResource, TEvent>>;
   currentTimePosition: number | null;
-}
-
-export interface ValidateResizeOptions {
-  eventId: string;
-  originalStart: string;
-  originalEnd: string;
-  edge: ResizeEdge;
-  totalDeltaMinutes: number;
-  targetDayDate: string;
-  originalDayDate: string;
-  occurrenceStart?: EventDateTimeInput;
-  constraints?: ResizeConstraints;
-}
-
-export interface ValidateResizeResult {
-  blocked: boolean;
-  error?: {
-    reason: ResizeError["reason"];
-    message: string;
-    conflicts: Array<AvailabilityConflict>;
-  };
-  result: {
-    start: string;
-    end: string;
-    durationMinutes: number;
-  };
-  targetDayDate: string;
 }

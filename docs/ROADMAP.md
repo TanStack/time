@@ -22,7 +22,7 @@ The phase ordering is gated by two rules the team confirmed:
 Prerequisite for everything. Nothing user-facing.
 
 - [x] Decompose `CalendarCore` into **one feature-agnostic kernel + modules as pipeline
-      stages** (ADR 0001). `Kernel` + `{recurrence, availability, dependency, resize, undo,
+      stages** (ADR 0001). `Kernel` + `{recurrence, availability, dependency, undo,
       layout}` modules; `CalendarCore` writes through the kernel and the kernel owns the events.
       What is left on the class is orchestration and read-side indexes, not rules — see
       `docs/plans/phase-0-decomposition.md`.
@@ -61,8 +61,8 @@ Ships once Phase 0 lands. Scope from ADR 0005 plus the pre-alpha breaking model 
 - [ ] **Date Primitives** (already present — audit for ADR 0002 return-type contract).
 - [ ] **Kernel**: event collection + viewport + projection + plain CRUD + `getRequiredRange`
       / rollback.
-- [ ] **Calendar product** modules: recurrence (UI-builder subset), drag-resize, advisory
-      availability.
+- [ ] **Calendar product** modules: recurrence (UI-builder subset), advisory availability.
+      Drag and resize interactions are left to the consumer's own library.
 - [x] **Working-time calendar hierarchy** (ADR 0008) — replaces flat `Resource.availability`.
       Breaking; lands here so alpha ships the target shape. Resources reference shared calendars by
       id, resolution is root-to-leaf painting with a global specificity sort, and `workingTimeFeature`

@@ -5,7 +5,7 @@ title: SegmentInfo
 
 # Interface: SegmentInfo
 
-Defined in: [calendar/getResizeProps.ts:210](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L210)
+Defined in: calendar/eventTimeProps.ts:4
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/getResizeProps.ts:210](https://github.com/TanStack/time/bl
 isFirstSegment: boolean;
 ```
 
-Defined in: [calendar/getResizeProps.ts:211](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L211)
+Defined in: calendar/eventTimeProps.ts:5
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [calendar/getResizeProps.ts:211](https://github.com/TanStack/time/bl
 isLastSegment: boolean;
 ```
 
-Defined in: [calendar/getResizeProps.ts:213](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L213)
+Defined in: calendar/eventTimeProps.ts:7
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [calendar/getResizeProps.ts:213](https://github.com/TanStack/time/bl
 isSplitEvent: boolean;
 ```
 
-Defined in: [calendar/getResizeProps.ts:215](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L215)
+Defined in: calendar/eventTimeProps.ts:9
 
 ***
 
@@ -45,7 +45,7 @@ Defined in: [calendar/getResizeProps.ts:215](https://github.com/TanStack/time/bl
 originalEnd: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:219](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L219)
+Defined in: calendar/eventTimeProps.ts:13
 
 ***
 
@@ -55,7 +55,7 @@ Defined in: [calendar/getResizeProps.ts:219](https://github.com/TanStack/time/bl
 originalStart: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:217](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L217)
+Defined in: calendar/eventTimeProps.ts:11
 
 ***
 
@@ -65,7 +65,7 @@ Defined in: [calendar/getResizeProps.ts:217](https://github.com/TanStack/time/bl
 segmentEnd: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:223](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L223)
+Defined in: calendar/eventTimeProps.ts:17
 
 ***
 
@@ -75,4 +75,4 @@ Defined in: [calendar/getResizeProps.ts:223](https://github.com/TanStack/time/bl
 segmentStart: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:221](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L221)
+Defined in: calendar/eventTimeProps.ts:15

@@ -3,7 +3,6 @@ import { dayEventLayoutFeature } from "./dayLayout";
 import { eventDependencyFeature } from "./dependency";
 import { historyFeature } from "./history";
 import { eventRecurrenceFeature } from "./recurrence";
-import { eventResizeFeature } from "./resize";
 import { timelineFeature } from "./timeline";
 import { workingTimeFeature } from "./workingTime";
 
@@ -13,7 +12,6 @@ export const stockFeatures = [
   eventDependencyFeature,
   workingTimeFeature,
   resourceAvailabilityFeature,
-  eventResizeFeature,
   dayEventLayoutFeature,
   timelineFeature,
 ] as const;

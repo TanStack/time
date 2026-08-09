@@ -11,9 +11,9 @@ type SaveEventResult =
   success: true;
 }
   | {
-  error: ResizeError;
+  error: EventError;
   success: false;
 };
 ```
 
-Defined in: [calendar/types.ts:200](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L200)
+Defined in: [calendar/types.ts:201](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L201)

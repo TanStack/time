@@ -5,7 +5,7 @@ title: ViewMode
 
 # Interface: ViewMode
 
-Defined in: [calendar/types.ts:61](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L61)
+Defined in: [calendar/types.ts:60](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L60)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/types.ts:61](https://github.com/TanStack/time/blob/main/pa
 unit: "month" | "day" | "week" | "workWeek";
 ```
 
-Defined in: [calendar/types.ts:64](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L64)
+Defined in: [calendar/types.ts:63](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L63)
 
 ***
 
@@ -25,4 +25,4 @@ Defined in: [calendar/types.ts:64](https://github.com/TanStack/time/blob/main/pa
 value: number;
 ```
 
-Defined in: [calendar/types.ts:62](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L62)
+Defined in: [calendar/types.ts:61](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L61)

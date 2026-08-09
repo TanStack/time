@@ -5,7 +5,7 @@ title: FeatureApiRegistry
 
 # Interface: FeatureApiRegistry\<TResource, TEvent\>
 
-Defined in: [calendar/features/registry.ts:35](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L35)
+Defined in: [calendar/features/registry.ts:33](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L33)
 
 ## Extends
 
@@ -29,7 +29,7 @@ Defined in: [calendar/features/registry.ts:35](https://github.com/TanStack/time/
 availability: AvailabilityApi<TResource, TEvent>;
 ```
 
-Defined in: [calendar/features/registry.ts:22](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L22)
+Defined in: [calendar/features/registry.ts:21](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L21)
 
 #### Inherited from
 
@@ -43,7 +43,7 @@ Defined in: [calendar/features/registry.ts:22](https://github.com/TanStack/time/
 dayLayout: DayLayoutApi<TResource, TEvent>;
 ```
 
-Defined in: [calendar/features/registry.ts:31](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L31)
+Defined in: [calendar/features/registry.ts:29](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L29)
 
 #### Inherited from
 
@@ -57,7 +57,7 @@ Defined in: [calendar/features/registry.ts:31](https://github.com/TanStack/time/
 dependency: DependencyCreationApi & DependencyApi & DependencyGraphApi<TResource, TEvent>;
 ```
 
-Defined in: [calendar/features/registry.ts:27](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L27)
+Defined in: [calendar/features/registry.ts:26](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L26)
 
 #### Inherited from
 
@@ -71,7 +71,7 @@ Defined in: [calendar/features/registry.ts:27](https://github.com/TanStack/time/
 history: HistoryApi;
 ```
 
-Defined in: [calendar/features/registry.ts:23](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L23)
+Defined in: [calendar/features/registry.ts:22](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L22)
 
 #### Inherited from
 
@@ -85,7 +85,7 @@ Defined in: [calendar/features/registry.ts:23](https://github.com/TanStack/time/
 peerReader: PeerReaderApi<TResource, TEvent>;
 ```
 
-Defined in: [calendar/tests/features.test.ts:37](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/tests/features.test.ts#L37)
+Defined in: [calendar/tests/features.test.ts:36](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/tests/features.test.ts#L36)
 
 ***
 
@@ -95,25 +95,11 @@ Defined in: [calendar/tests/features.test.ts:37](https://github.com/TanStack/tim
 recurrence: RecurrenceNavigationApi & RecurrenceEditApi<TResource, TEvent> & RecurrenceReadApi<TResource, TEvent>;
 ```
 
-Defined in: [calendar/features/registry.ts:24](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L24)
+Defined in: [calendar/features/registry.ts:23](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L23)
 
 #### Inherited from
 
 [`BuiltInFeatureApiRegistry`](BuiltInFeatureApiRegistry.md).[`recurrence`](BuiltInFeatureApiRegistry.md#recurrence)
-
-***
-
-### resize
-
-```ts
-resize: ResizeFeatureApi<TResource, TEvent>;
-```
-
-Defined in: [calendar/features/registry.ts:30](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L30)
-
-#### Inherited from
-
-[`BuiltInFeatureApiRegistry`](BuiltInFeatureApiRegistry.md).[`resize`](BuiltInFeatureApiRegistry.md#resize)
 
 ***
 
@@ -123,7 +109,7 @@ Defined in: [calendar/features/registry.ts:30](https://github.com/TanStack/time/
 timeline: TimelineApi<TResource, TEvent>;
 ```
 
-Defined in: [calendar/features/registry.ts:32](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L32)
+Defined in: [calendar/features/registry.ts:30](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L30)
 
 #### Inherited from
 
@@ -137,7 +123,7 @@ Defined in: [calendar/features/registry.ts:32](https://github.com/TanStack/time/
 workingTime: WorkingTimeApi<TResource>;
 ```
 
-Defined in: [calendar/features/registry.ts:21](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L21)
+Defined in: [calendar/features/registry.ts:20](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L20)
 
 #### Inherited from
 

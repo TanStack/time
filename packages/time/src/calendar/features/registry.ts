@@ -9,7 +9,6 @@ import type {
   RecurrenceNavigationApi,
   RecurrenceReadApi,
 } from "./recurrence";
-import type { ResizeFeatureApi } from "./resize";
 import type { TimelineApi } from "./timeline";
 import type { CalendarFeatureFactory, FeatureName } from "./types";
 import type { WorkingTimeApi } from "./workingTime";
@@ -27,7 +26,6 @@ export interface BuiltInFeatureApiRegistry<
   dependency: DependencyCreationApi &
     DependencyApi &
     DependencyGraphApi<TResource, TEvent>;
-  resize: ResizeFeatureApi<TResource, TEvent>;
   dayLayout: DayLayoutApi<TResource, TEvent>;
   timeline: TimelineApi<TResource, TEvent>;
 }
@@ -92,9 +90,6 @@ export const FEATURE_API_OWNERS = {
   getAffectedByDelta: "eventDependencyFeature",
   findViolatedDependency: "eventDependencyFeature",
   getAnchorConflicts: "eventDependencyFeature",
-  createResizeController: "eventResizeFeature",
-  getEventSegmentInfo: "eventResizeFeature",
-  validateResize: "eventResizeFeature",
   getEffectiveCalendar: "workingTimeFeature",
   getWorkingIntervals: "workingTimeFeature",
   getWorkingMinutes: "workingTimeFeature",

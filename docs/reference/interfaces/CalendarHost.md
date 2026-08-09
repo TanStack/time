@@ -7,10 +7,6 @@ title: CalendarHost
 
 Defined in: [calendar/features/types.ts:21](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L21)
 
-## Extended by
-
-- [`ResizeHost`](ResizeHost.md)
-
 ## Type Parameters
 
 ### TResource
@@ -326,7 +322,7 @@ Defined in: [calendar/features/types.ts:60](https://github.com/TanStack/time/blo
 ##### error?
 
 ```ts
-optional error: ResizeError;
+optional error: EventError;
 ```
 
 ##### valid

@@ -5,7 +5,7 @@ title: RecurrenceRule
 
 # Interface: RecurrenceRule\<TResource\>
 
-Defined in: [calendar/types.ts:34](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L34)
+Defined in: [calendar/types.ts:33](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L33)
 
 ## Type Parameters
 
@@ -21,7 +21,7 @@ Defined in: [calendar/types.ts:34](https://github.com/TanStack/time/blob/main/pa
 optional byWeekday: number[];
 ```
 
-Defined in: [calendar/types.ts:43](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L43)
+Defined in: [calendar/types.ts:42](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L42)
 
 ***
 
@@ -31,7 +31,7 @@ Defined in: [calendar/types.ts:43](https://github.com/TanStack/time/blob/main/pa
 optional count: number;
 ```
 
-Defined in: [calendar/types.ts:41](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L41)
+Defined in: [calendar/types.ts:40](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L40)
 
 ***
 
@@ -41,7 +41,7 @@ Defined in: [calendar/types.ts:41](https://github.com/TanStack/time/blob/main/pa
 optional exDates: EventDateTimeInput[];
 ```
 
-Defined in: [calendar/types.ts:45](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L45)
+Defined in: [calendar/types.ts:44](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L44)
 
 ***
 
@@ -51,7 +51,7 @@ Defined in: [calendar/types.ts:45](https://github.com/TanStack/time/blob/main/pa
 frequency: RecurrenceFrequency;
 ```
 
-Defined in: [calendar/types.ts:35](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L35)
+Defined in: [calendar/types.ts:34](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L34)
 
 ***
 
@@ -61,7 +61,7 @@ Defined in: [calendar/types.ts:35](https://github.com/TanStack/time/blob/main/pa
 optional interval: number;
 ```
 
-Defined in: [calendar/types.ts:37](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L37)
+Defined in: [calendar/types.ts:36](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L36)
 
 ***
 
@@ -71,7 +71,7 @@ Defined in: [calendar/types.ts:37](https://github.com/TanStack/time/blob/main/pa
 optional overrides: RecurrenceOverride<TResource>[];
 ```
 
-Defined in: [calendar/types.ts:47](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L47)
+Defined in: [calendar/types.ts:46](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L46)
 
 ***
 
@@ -81,4 +81,4 @@ Defined in: [calendar/types.ts:47](https://github.com/TanStack/time/blob/main/pa
 optional until: string;
 ```
 
-Defined in: [calendar/types.ts:39](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L39)
+Defined in: [calendar/types.ts:38](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L38)

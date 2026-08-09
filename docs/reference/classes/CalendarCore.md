@@ -177,7 +177,7 @@ Defined in: [calendar/calendar.ts:214](https://github.com/TanStack/time/blob/mai
 addEvent(event, options?): Promise<SaveEventResult>;
 ```
 
-Defined in: [calendar/calendar.ts:1056](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1056)
+Defined in: [calendar/calendar.ts:1066](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1066)
 
 #### Parameters
 
@@ -334,7 +334,7 @@ editEvent(
 options?): Promise<SaveEventResult>;
 ```
 
-Defined in: [calendar/calendar.ts:1120](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1120)
+Defined in: [calendar/calendar.ts:1130](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1130)
 
 #### Parameters
 
@@ -958,7 +958,7 @@ Defined in: [calendar/calendar.ts:218](https://github.com/TanStack/time/blob/mai
 removeEvent(id): void;
 ```
 
-Defined in: [calendar/calendar.ts:1233](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1233)
+Defined in: [calendar/calendar.ts:1243](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1243)
 
 #### Parameters
 
@@ -984,7 +984,7 @@ CalendarActions.removeEvent
 setEvents(events): void;
 ```
 
-Defined in: [calendar/calendar.ts:1253](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1253)
+Defined in: [calendar/calendar.ts:1263](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1263)
 
 #### Parameters
 
@@ -1010,7 +1010,7 @@ CalendarActions.setEvents
 setResources(resources): void;
 ```
 
-Defined in: [calendar/calendar.ts:1247](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1247)
+Defined in: [calendar/calendar.ts:1257](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1257)
 
 #### Parameters
 

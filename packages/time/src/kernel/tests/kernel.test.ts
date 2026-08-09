@@ -413,14 +413,14 @@ describe("Kernel", () => {
       expect(() =>
         createKernel({
           modules: {
-            resize: {
-              name: "resize",
+            scheduling: {
+              name: "scheduling",
               requires: ["availability"],
               contributions: [],
             } satisfies Module<TestEvent>,
           },
         }),
-      ).toThrow(/"resize" requires "availability"/);
+      ).toThrow(/"scheduling" requires "availability"/);
     });
 
     it("is satisfied whichever order the modules are given in", () => {
@@ -428,17 +428,17 @@ describe("Kernel", () => {
         name: "availability",
         contributions: [],
       };
-      const resize: Module<TestEvent> = {
-        name: "resize",
+      const scheduling: Module<TestEvent> = {
+        name: "scheduling",
         requires: ["availability"],
         contributions: [],
       };
 
       expect(() =>
-        createKernel({ modules: { resize, availability } }),
+        createKernel({ modules: { scheduling, availability } }),
       ).not.toThrow();
       expect(() =>
-        createKernel({ modules: { availability, resize } }),
+        createKernel({ modules: { availability, scheduling } }),
       ).not.toThrow();
     });
   });

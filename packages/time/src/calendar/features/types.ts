@@ -14,7 +14,7 @@ import type {
   Event,
   EventDependency,
   Resource,
-  ResizeError,
+  EventError,
   SaveEventResult,
 } from "../types";
 
@@ -60,7 +60,7 @@ export interface CalendarHost<
   validateEventDependencies: (
     event: { id?: string; title: string; start: string; end: string },
     dependsOn: Array<EventDependency>,
-  ) => { valid: boolean; error?: ResizeError };
+  ) => { valid: boolean; error?: EventError };
   validateEventPlacement: (event: {
     id?: string;
     title: string;

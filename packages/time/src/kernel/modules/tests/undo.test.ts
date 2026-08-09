@@ -1,13 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createKernel } from "../../index";
-import {
-  dependencyModule,
-  redoIntent,
-  resizeIntent,
-  resizeModule,
-  undoIntent,
-  undoModule,
-} from "../index";
+import { dependencyModule, redoIntent, undoIntent, undoModule } from "../index";
 import type { KernelEvent } from "../../index";
 import type { DependencyLink } from "~/validation/dependency";
 
@@ -156,14 +149,16 @@ describe("undoModule", () => {
       ],
       modules: {
         history,
-        resize: resizeModule<CalEvent>({ timeZone: "UTC" }),
         dependency: dependencyModule<CalEvent>({ timeZone: "UTC" }),
       },
     });
 
-    kernel.write(
-      resizeIntent({ eventId: "e1", edge: "bottom", deltaMinutes: 60 }),
-    );
+    kernel.write({
+      kind: "update",
+      id: "e1",
+      before: kernel.getEvent("e1")!,
+      after: { ...kernel.getEvent("e1")!, end: `${MONDAY}T12:00:00` },
+    });
     expect(kernel.getEvent("e2")!.start).toBe(`${MONDAY}T12:00:00`);
     expect(kernel.api.undoStack()).toHaveLength(1);
 

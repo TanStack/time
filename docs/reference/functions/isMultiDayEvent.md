@@ -9,7 +9,7 @@ title: isMultiDayEvent
 function isMultiDayEvent(start, end): boolean;
 ```
 
-Defined in: [calendar/getResizeProps.ts:469](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L469)
+Defined in: calendar/eventTimeProps.ts:53
 
 ## Parameters
 

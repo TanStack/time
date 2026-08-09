@@ -4,7 +4,6 @@ import {
   calendarFeatures,
   dayEventLayoutFeature,
   eventRecurrenceFeature,
-  eventResizeFeature,
   eventDependencyFeature,
   historyFeature,
   resourceAvailabilityFeature,
@@ -173,12 +172,12 @@ describe("calendarFeatures composition", () => {
 
   test("throws when a composed feature's required peer is missing", () => {
     expect(() =>
-      createTestCalendar(calendarFeatures([eventResizeFeature])),
-    ).toThrow(/"resize" requires "recurrence"/);
+      createTestCalendar(calendarFeatures([resourceAvailabilityFeature])),
+    ).toThrow(/"availability" requires "workingTime"/);
 
     expect(() =>
       createTestCalendar(
-        calendarFeatures([eventResizeFeature, eventRecurrenceFeature]),
+        calendarFeatures([resourceAvailabilityFeature, workingTimeFeature]),
       ),
     ).not.toThrow();
   });
@@ -389,71 +388,6 @@ describe("calendarFeatures composition", () => {
     expect(() =>
       createTestCalendar(calendarFeatures([peerReadingFeature])),
     ).toThrow(/"peerReader" requires "recurrence"/);
-  });
-
-  test("resize blocks on unavailable time only with availability composed", () => {
-    const resizeOptions = {
-      eventId: "late",
-      originalStart: `${DAY}T09:00:00`,
-      originalEnd: `${DAY}T10:00:00`,
-      edge: "bottom" as const,
-      totalDeltaMinutes: 600,
-      targetDayDate: DAY,
-      originalDayDate: DAY,
-    };
-    const events = [
-      { ...eveningEvent, start: `${DAY}T09:00:00`, end: `${DAY}T10:00:00` },
-    ];
-
-    const withAvailability = createTestCalendar(
-      calendarFeatures([
-        eventRecurrenceFeature,
-        workingTimeFeature,
-        resourceAvailabilityFeature,
-        eventResizeFeature,
-      ]),
-      events,
-      [morningRoom],
-    );
-    expect(withAvailability.validateResize(resizeOptions).blocked).toBe(true);
-
-    const withoutAvailability = createTestCalendar(
-      calendarFeatures([eventRecurrenceFeature, eventResizeFeature]),
-      events,
-      [morningRoom],
-    );
-    expect(withoutAvailability.validateResize(resizeOptions).blocked).toBe(
-      false,
-    );
-  });
-
-  test("resize across days blocks on the target day's unavailability", () => {
-    const cal = createTestCalendar(
-      calendarFeatures([
-        eventRecurrenceFeature,
-        workingTimeFeature,
-        resourceAvailabilityFeature,
-        eventResizeFeature,
-      ]),
-      [{ ...eveningEvent, start: `${DAY}T09:00:00`, end: `${DAY}T10:00:00` }],
-      [morningRoom],
-    );
-
-    const validation = cal.validateResize({
-      eventId: "late",
-      originalStart: `${DAY}T09:00:00`,
-      originalEnd: `${DAY}T10:00:00`,
-      edge: "top",
-      totalDeltaMinutes: -600,
-      targetDayDate: "2025-06-01",
-      originalDayDate: DAY,
-    });
-
-    expect(validation.blocked).toBe(true);
-    expect(validation.error?.reason).toBe("unavailable-time");
-    expect(validation.error?.message).toMatch(
-      /^Unavailable: Event at 23:00 conflicts with /,
-    );
   });
 
   test("throws when a feature shadows a core method", () => {

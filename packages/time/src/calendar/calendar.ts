@@ -36,7 +36,7 @@ import type {
   Day,
   Event,
   EventDependency,
-  ResizeError,
+  EventError,
   Resource,
   SaveEventResult,
   TimeSlot,
@@ -455,7 +455,7 @@ export class CalendarCore<
   private _conflictError(
     event: { id: string; title: string; start: string; end: string },
     conflicts: Array<Conflict>,
-  ): ResizeError {
+  ): EventError {
     const [first] = conflicts;
     return {
       eventId: event.id,

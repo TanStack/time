@@ -4,7 +4,6 @@ export * from "./generateDateRange";
 export * from "./getEventProps";
 export * from "./groupDaysBy";
 export * from "./getTimeSlots";
-export * from "./getResizeProps";
-export * from "./resizeController";
+export * from "./eventTimeProps";
 export * from "./calendar";
 export * from "./features";

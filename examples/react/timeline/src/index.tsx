@@ -1,7 +1,5 @@
-import {
-  calculateTimelineResizePreview,
-  useCalendar,
-} from "@tanstack/react-time";
+import { useCalendar } from "@tanstack/react-time";
+import { Resizable } from "re-resizable";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { timeDevtoolsPlugin } from "@tanstack/react-time-devtools";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -9,7 +7,6 @@ import {
   calendarFeatures,
   eventDependencyFeature,
   eventRecurrenceFeature,
-  eventResizeFeature,
   getTimeClient,
   historyFeature,
   workingTimeFeature,
@@ -51,7 +48,7 @@ import type {
   Day,
   DependencyType,
   Event,
-  ResizeError,
+  EventError,
   Resource,
   TimelineLayout,
   TimelineResourceRow,
@@ -89,7 +86,6 @@ const features = calendarFeatures([
   resourceAvailabilityFeature,
   eventRecurrenceFeature,
   eventDependencyFeature,
-  eventResizeFeature,
   timelineFeature,
 ]);
 
@@ -773,41 +769,30 @@ function EventModal({
   );
 }
 
-interface HorizontalResizeHandleProps {
-  edge: "left" | "right";
-  onMouseDown: (e: React.MouseEvent) => void;
+const SNAP_MINUTES = 15;
+const MINUTES_IN_DAY = 24 * 60;
+
+const horizontalGripClasses =
+  "z-30 before:absolute before:top-1/2 before:-translate-y-1/2 before:h-8 before:w-1 before:bg-neutral-400 before:rounded before:opacity-50 group-hover:before:opacity-100 before:transition-opacity hover:bg-neutral-500/30";
+
+interface EventResizeCommit {
+  event: Event<Resource>;
+  newStart: string;
+  newEnd: string;
 }
 
-function HorizontalResizeHandle({
-  edge,
-  onMouseDown,
-}: HorizontalResizeHandleProps) {
-  return (
-    <div
-      data-resize-handle
-      className={`absolute top-0 bottom-0 w-3 cursor-ew-resize z-30 bg-transparent hover:bg-neutral-500/30 pointer-events-auto ${
-        edge === "left" ? "left-0" : "right-0"
-      }`}
-      onMouseDown={onMouseDown}
-      onClick={(e) => {
-        e.stopPropagation();
-      }}
-      style={{ touchAction: "none" }}
-    >
-      <div
-        className={`absolute top-1/2 -translate-y-1/2 h-8 w-1 bg-neutral-400 rounded opacity-50 group-hover:opacity-100 transition-opacity ${
-          edge === "left" ? "left-1" : "right-1"
-        }`}
-      />
-    </div>
-  );
+function shiftDateTime(value: string, minutes: number): string {
+  const date = new Date(value);
+  date.setMinutes(date.getMinutes() + minutes);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
-function ResizeErrorToast({
+function EventErrorToast({
   error,
   onDismiss,
 }: {
-  error: ResizeError;
+  error: EventError;
   onDismiss: () => void;
 }) {
   useEffect(() => {
@@ -823,7 +808,7 @@ function ResizeErrorToast({
             <div className="text-destructive text-lg">!</div>
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-destructive-foreground mb-1">
-                Cannot Resize{" "}
+                Cannot Update{" "}
                 <span className="italic">&ldquo;{error.eventTitle}&rdquo;</span>
               </div>
               <div className="text-sm text-destructive-foreground/80 mb-2">
@@ -1021,12 +1006,6 @@ interface TimelineDependencyOverlayProps {
   timelineLayout: TimelineLayout<Resource, Event<Resource>>;
   eventBarRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
   rowsContainerRef: React.RefObject<HTMLDivElement | null>;
-  resizeState: {
-    isResizing: boolean;
-    eventId: string | null;
-    previewStart: string | null;
-    previewEnd: string | null;
-  };
   activeDragEvent: any;
   onDependencyCreate: (
     sourceId: string,
@@ -1039,7 +1018,6 @@ interface TimelineDependencyOverlayProps {
 function TimelineDependencyOverlay({
   timelineLayout,
   rowsContainerRef,
-  resizeState,
   activeDragEvent,
   onDependencyCreate,
   eventBarRefs,
@@ -1114,7 +1092,7 @@ function TimelineDependencyOverlay({
 
   useLayoutEffect(() => {
     updatePositions();
-  }, [updatePositions, resizeState, activeDragEvent]);
+  }, [updatePositions, activeDragEvent]);
 
   useEffect(() => {
     const container = rowsContainerRef.current;
@@ -1201,9 +1179,10 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
   isStartClipped,
   isEndClipped,
   color,
+  pxPerMinute,
   registerEventBar,
   onEventClick,
-  getResizeHandleProps,
+  onResizeCommit,
 }: {
   event: Event<Resource>;
   left: number;
@@ -1213,12 +1192,16 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
   isStartClipped: boolean;
   isEndClipped: boolean;
   color: any;
+  pxPerMinute: number;
   registerEventBar: (eventId: string) => (el: HTMLDivElement | null) => void;
   onEventClick: (event: Event<Resource>) => void;
-  getResizeHandleProps: ReturnType<typeof useCalendar>["getResizeHandleProps"];
+  onResizeCommit: (commit: EventResizeCommit) => void;
 }) {
   const laneHeightPct = 100 / laneCount;
   const topPct = lane * laneHeightPct;
+
+  const [leftShiftPx, setLeftShiftPx] = useState(0);
+  const justResizedRef = useRef(false);
 
   const {
     ref: setDraggableRef,
@@ -1230,6 +1213,9 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
   });
 
   const depCount = event.dependsOn?.length ?? 0;
+  const start = toPlainDateTimeString(event.start);
+  const end = toPlainDateTimeString(event.end);
+  const snapPx = Math.max(1, Math.round(SNAP_MINUTES * pxPerMinute));
 
   return (
     <div
@@ -1240,19 +1226,11 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
       data-event-id={event.id}
       data-left={left}
       data-width={width}
-      className={`group absolute border ${color.bg} ${color.border} ${color.text} flex items-center text-xs font-medium overflow-hidden shadow-xs z-30 cursor-pointer hover:brightness-110 transition-[filter] pointer-events-auto ${
-        isDragging ? "opacity-40 shadow-xl z-50" : ""
-      } ${
-        !isStartClipped && !isEndClipped
-          ? "rounded-md"
-          : !isStartClipped
-            ? "rounded-l-md"
-            : !isEndClipped
-              ? "rounded-r-md"
-              : ""
+      className={`group absolute z-30 pointer-events-auto ${
+        isDragging ? "opacity-40 z-50" : ""
       }`}
       style={{
-        left: `${left}%`,
+        left: `calc(${left}% - ${leftShiftPx}px)`,
         width: `${width}%`,
         top: `calc(${topPct}% + ${EVENT_GAP_PX}px)`,
         height: `calc(${laneHeightPct}% - ${EVENT_GAP_PX * 2}px)`,
@@ -1261,80 +1239,106 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
       onClick={(e) => {
         if (
           !(e.target as HTMLElement).closest("[data-drag-handle]") &&
-          !(e.target as HTMLElement).closest("[data-resize-handle]")
+          !justResizedRef.current
         ) {
           e.stopPropagation();
           onEventClick(event);
         }
       }}
     >
-      {!isStartClipped && (
-        <HorizontalResizeHandle
-          edge="left"
-          {...getResizeHandleProps(
-            event.id,
-            "left",
-            toPlainDateTimeString(event.start),
-            toPlainDateTimeString(event.end),
-          )}
-        />
-      )}
-      <div
-        ref={setDragHandleRef}
-        data-drag-handle
-        className="relative ml-3 w-4 h-full flex items-center justify-center cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-60 hover:opacity-100 transition-opacity z-40"
-        title="Drag to move"
+      <Resizable
+        key={`${start}|${end}`}
+        size={{ width: "100%", height: "100%" }}
+        enable={{ left: !isStartClipped, right: !isEndClipped }}
+        grid={[snapPx, 1]}
+        minWidth={snapPx}
+        handleClasses={{
+          left: horizontalGripClasses,
+          right: horizontalGripClasses,
+        }}
+        className={`border ${color.bg} ${color.border} ${color.text} flex items-center text-xs font-medium overflow-hidden shadow-xs cursor-pointer hover:brightness-110 transition-[filter] ${
+          !isStartClipped && !isEndClipped
+            ? "rounded-md"
+            : !isStartClipped
+              ? "rounded-l-md"
+              : !isEndClipped
+                ? "rounded-r-md"
+                : ""
+        }`}
+        onResizeStart={() => {
+          justResizedRef.current = true;
+        }}
+        onResize={(_e, direction, _ref, d) => {
+          setLeftShiftPx(direction === "left" ? d.width : 0);
+        }}
+        onResizeStop={(_e, direction, _ref, d) => {
+          setLeftShiftPx(0);
+          const deltaMinutes =
+            Math.round(d.width / pxPerMinute / SNAP_MINUTES) * SNAP_MINUTES;
+          if (deltaMinutes === 0) {
+            justResizedRef.current = false;
+            return;
+          }
+          onResizeCommit({
+            event,
+            newStart:
+              direction === "left"
+                ? shiftDateTime(start, -deltaMinutes)
+                : start,
+            newEnd:
+              direction === "left" ? end : shiftDateTime(end, deltaMinutes),
+          });
+          setTimeout(() => {
+            justResizedRef.current = false;
+          }, 0);
+        }}
       >
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-          <circle cx="2" cy="2" r="1.5" />
-          <circle cx="6" cy="2" r="1.5" />
-          <circle cx="10" cy="2" r="1.5" />
-          <circle cx="2" cy="6" r="1.5" />
-          <circle cx="6" cy="6" r="1.5" />
-          <circle cx="10" cy="6" r="1.5" />
-          <circle cx="2" cy="10" r="1.5" />
-          <circle cx="6" cy="10" r="1.5" />
-          <circle cx="10" cy="10" r="1.5" />
-        </svg>
-      </div>
-      <div className="flex-1 h-full min-w-0 flex items-center gap-1.5 px-2.5 cursor-pointer">
-        <span className="truncate">{event.title}</span>
-        {depCount > 0 && (
-          <span
-            className="shrink-0 text-[10px] leading-none rounded bg-amber-500/40 border border-amber-300/60 px-1 py-0.5 font-semibold"
-            title={`${depCount} dependenc${depCount === 1 ? "y" : "ies"}`}
-          >
-            ↳{depCount}
-          </span>
-        )}
-        {event.manuallyScheduled && (
-          <span
-            className="shrink-0 text-[10px] leading-none rounded bg-sky-500/40 border border-sky-300/60 px-1 py-0.5 font-semibold"
-            title="Manually scheduled — dependencies never move it"
-          >
-            📌
-          </span>
-        )}
-        {event.consumption && event.consumption.length > 0 && (
-          <span
-            className="shrink-0 text-[10px] leading-none rounded bg-black/30 px-1 py-0.5 font-semibold"
-            title="Consumption"
-          >
-            {event.consumption.reduce((a, b) => a + b, 0)}
-          </span>
-        )}
-      </div>
-      {!isEndClipped && (
-        <HorizontalResizeHandle
-          edge="right"
-          {...getResizeHandleProps(
-            event.id,
-            "right",
-            toPlainDateTimeString(event.start),
-            toPlainDateTimeString(event.end),
+        <div
+          ref={setDragHandleRef}
+          data-drag-handle
+          className="relative ml-3 w-4 h-full flex items-center justify-center cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-60 hover:opacity-100 transition-opacity z-40"
+          title="Drag to move"
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+            <circle cx="2" cy="2" r="1.5" />
+            <circle cx="6" cy="2" r="1.5" />
+            <circle cx="10" cy="2" r="1.5" />
+            <circle cx="2" cy="6" r="1.5" />
+            <circle cx="6" cy="6" r="1.5" />
+            <circle cx="10" cy="6" r="1.5" />
+            <circle cx="2" cy="10" r="1.5" />
+            <circle cx="6" cy="10" r="1.5" />
+            <circle cx="10" cy="10" r="1.5" />
+          </svg>
+        </div>
+        <div className="flex-1 h-full min-w-0 flex items-center gap-1.5 px-2.5 cursor-pointer">
+          <span className="truncate">{event.title}</span>
+          {depCount > 0 && (
+            <span
+              className="shrink-0 text-[10px] leading-none rounded bg-amber-500/40 border border-amber-300/60 px-1 py-0.5 font-semibold"
+              title={`${depCount} dependenc${depCount === 1 ? "y" : "ies"}`}
+            >
+              ↳{depCount}
+            </span>
           )}
-        />
-      )}
+          {event.manuallyScheduled && (
+            <span
+              className="shrink-0 text-[10px] leading-none rounded bg-sky-500/40 border border-sky-300/60 px-1 py-0.5 font-semibold"
+              title="Manually scheduled — dependencies never move it"
+            >
+              📌
+            </span>
+          )}
+          {event.consumption && event.consumption.length > 0 && (
+            <span
+              className="shrink-0 text-[10px] leading-none rounded bg-black/30 px-1 py-0.5 font-semibold"
+              title="Consumption"
+            >
+              {event.consumption.reduce((a, b) => a + b, 0)}
+            </span>
+          )}
+        </div>
+      </Resizable>
     </div>
   );
 });
@@ -1344,8 +1348,7 @@ const HorizontalTimelineRow = React.memo(function HorizontalTimelineRow({
   days,
   resourceColorIndex,
   onEventClick,
-  getResizeHandleProps,
-  getDayColumnProps,
+  onResizeCommit,
   getUnavailableRanges,
   eventBarRefs,
   rowWidthPx,
@@ -1355,12 +1358,7 @@ const HorizontalTimelineRow = React.memo(function HorizontalTimelineRow({
   days: Array<Day<Resource, Event<Resource>>>;
   resourceColorIndex: number;
   onEventClick: (event: Event<Resource>) => void;
-  getResizeHandleProps: ReturnType<
-    typeof useCalendar<typeof features, Resource, Event<Resource>>
-  >["getResizeHandleProps"];
-  getDayColumnProps: ReturnType<
-    typeof useCalendar<typeof features, Resource, Event<Resource>>
-  >["getDayColumnProps"];
+  onResizeCommit: (commit: EventResizeCommit) => void;
   getUnavailableRanges: ReturnType<
     typeof useCalendar<typeof features, Resource, Event<Resource>>
   >["getUnavailableRanges"];
@@ -1374,6 +1372,7 @@ const HorizontalTimelineRow = React.memo(function HorizontalTimelineRow({
   });
 
   const dayPercentage = 100 / days.length;
+  const pxPerMinute = rowWidthPx / Math.max(1, days.length * MINUTES_IN_DAY);
   const zoneColor =
     RESOURCE_ZONE_COLORS[resourceColorIndex % RESOURCE_ZONE_COLORS.length] ??
     RESOURCE_ZONE_COLORS[0];
@@ -1410,7 +1409,6 @@ const HorizontalTimelineRow = React.memo(function HorizontalTimelineRow({
               left: `${i * dayPercentage}%`,
               width: `${dayPercentage}%`,
             }}
-            {...getDayColumnProps(day.isoDate)}
           >
             {Array.from({ length: 23 }, (_, h) => (
               <div
@@ -1453,9 +1451,10 @@ const HorizontalTimelineRow = React.memo(function HorizontalTimelineRow({
               isStartClipped={isStartClipped}
               isEndClipped={isEndClipped}
               color={color}
+              pxPerMinute={pxPerMinute}
               registerEventBar={registerEventBar}
               onEventClick={onEventClick}
-              getResizeHandleProps={getResizeHandleProps}
+              onResizeCommit={onResizeCommit}
             />
           );
         },
@@ -1472,7 +1471,7 @@ function TimelineDemo() {
     initialData: EventFormData;
   }>({ isOpen: false, mode: "add", initialData: emptyFormData });
 
-  const [resizeError, setResizeError] = useState<ResizeError | null>(null);
+  const [resizeError, setEventError] = useState<EventError | null>(null);
 
   const [pendingDep, setPendingDep] = useState<{
     sourceId: string;
@@ -1522,21 +1521,18 @@ function TimelineDemo() {
         return eStart <= endDate && eEnd >= startDate;
       });
     },
-    resize: {
-      enabled: true,
-      get containerWidth() {
-        return containerWidthRef.current;
-      },
-      orientation: "horizontal",
-      constraints: {
-        minDurationMinutes: 15,
-        snapToMinutes: 15,
-      },
-      onResizeError: (error) => {
-        setResizeError(error);
-      },
-    },
   });
+
+  const handleResizeCommit = useCallback(
+    ({ event, newStart, newEnd }: EventResizeCommit) => {
+      void calendar
+        .editEvent(event.id, { start: newStart, end: newEnd })
+        .then((result) => {
+          if (!result.success) setEventError(result.error);
+        });
+    },
+    [calendar],
+  );
 
   const horizNavCooldownRef = useRef(false);
 
@@ -1619,57 +1615,6 @@ function TimelineDemo() {
   const eventBarRefsMap = useRef<Map<string, HTMLDivElement>>(new Map());
   const rowsContainerRef = useRef<HTMLDivElement>(null);
 
-  const firstDayIso = useMemo(
-    () => calendar.days[0]?.isoDate ?? "",
-    [calendar.days],
-  );
-
-  const totalDays = calendar.days.length;
-  const { resizeState } = calendar;
-  const prevResizedIdRef = useRef<string | null>(null);
-
-  useLayoutEffect(() => {
-    const prevId = prevResizedIdRef.current;
-
-    if (prevId && (!resizeState.isResizing || resizeState.eventId !== prevId)) {
-      const prevEl = eventBarRefsMap.current.get(prevId);
-      if (prevEl) {
-        prevEl.classList.remove(
-          "ring-2",
-          "ring-neutral-500",
-          "z-20",
-          "brightness-110",
-        );
-      }
-      prevResizedIdRef.current = null;
-    }
-
-    if (
-      !resizeState.isResizing ||
-      !resizeState.eventId ||
-      !resizeState.previewStart ||
-      !resizeState.previewEnd ||
-      !firstDayIso
-    ) {
-      return;
-    }
-
-    const el = eventBarRefsMap.current.get(resizeState.eventId);
-    if (!el) return;
-
-    const preview = calculateTimelineResizePreview({
-      previewStart: resizeState.previewStart,
-      previewEnd: resizeState.previewEnd,
-      firstDayIso,
-      totalDays,
-    });
-
-    el.style.left = preview.left;
-    el.style.width = preview.width;
-    el.classList.add("ring-2", "ring-neutral-500", "z-20", "brightness-110");
-    prevResizedIdRef.current = resizeState.eventId;
-  }, [resizeState, firstDayIso, totalDays]);
-
   const inferDepType = useCallback(
     (
       sourceAnchor: "start" | "end",
@@ -1716,7 +1661,7 @@ function TimelineDemo() {
         type,
       );
       if (result.blocked && result.error) {
-        setResizeError(result.error);
+        setEventError(result.error);
       }
       setPendingDep(null);
     },
@@ -1786,7 +1731,7 @@ function TimelineDemo() {
             );
 
       if (!result.success) {
-        setResizeError(result.error);
+        setEventError(result.error);
         throw new Error("Validation failed");
       }
     } finally {
@@ -1863,7 +1808,7 @@ function TimelineDemo() {
           attemptedEnd: nextEnd,
         });
 
-        setResizeError({
+        setEventError({
           eventId: draggedEvent.id,
           eventTitle: draggedEvent.title,
           reason: "unavailable-time",
@@ -2131,8 +2076,7 @@ function TimelineDemo() {
                         days={calendar.days}
                         resourceColorIndex={vr.index}
                         onEventClick={openEditModal}
-                        getResizeHandleProps={calendar.getResizeHandleProps}
-                        getDayColumnProps={calendar.getDayColumnProps}
+                        onResizeCommit={handleResizeCommit}
                         getUnavailableRanges={calendar.getUnavailableRanges}
                         eventBarRefs={eventBarRefsMap}
                         rowWidthPx={totalContentWidthPx}
@@ -2154,7 +2098,6 @@ function TimelineDemo() {
                       timelineLayout={timelineLayout}
                       eventBarRefs={eventBarRefsMap}
                       rowsContainerRef={rowsContainerRef}
-                      resizeState={resizeState}
                       activeDragEvent={activeDragEvent}
                       onDependencyCreate={handleDependencyDragged}
                     />
@@ -2281,9 +2224,9 @@ function TimelineDemo() {
         />
 
         {resizeError && (
-          <ResizeErrorToast
+          <EventErrorToast
             error={resizeError}
-            onDismiss={() => setResizeError(null)}
+            onDismiss={() => setEventError(null)}
           />
         )}
 

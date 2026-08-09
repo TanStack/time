@@ -5,7 +5,7 @@ title: UnavailabilityDetail
 
 # Interface: UnavailabilityDetail
 
-Defined in: [calendar/features/availability.ts:19](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L19)
+Defined in: [calendar/features/availability.ts:18](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L18)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/features/availability.ts:19](https://github.com/TanStack/t
 description: string;
 ```
 
-Defined in: [calendar/features/availability.ts:23](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L23)
+Defined in: [calendar/features/availability.ts:22](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L22)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [calendar/features/availability.ts:23](https://github.com/TanStack/t
 reason: "outside-hours" | "capacity" | "no-calendar";
 ```
 
-Defined in: [calendar/features/availability.ts:22](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L22)
+Defined in: [calendar/features/availability.ts:21](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L21)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [calendar/features/availability.ts:22](https://github.com/TanStack/t
 resourceId: string;
 ```
 
-Defined in: [calendar/features/availability.ts:20](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L20)
+Defined in: [calendar/features/availability.ts:19](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L19)
 
 ***
 
@@ -45,4 +45,4 @@ Defined in: [calendar/features/availability.ts:20](https://github.com/TanStack/t
 resourceLabel: string;
 ```
 
-Defined in: [calendar/features/availability.ts:21](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L21)
+Defined in: [calendar/features/availability.ts:20](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L20)

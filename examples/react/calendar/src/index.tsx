@@ -1,14 +1,13 @@
 import {
-  calculateGhostPreviewStyle,
-  calculateSegmentResizePreview,
   formatEventTimeRange,
+  getSegmentInfo,
   useCalendar,
 } from "@tanstack/react-time";
+import { Resizable } from "re-resizable";
 import {
   calendarFeatures,
   dayEventLayoutFeature,
   eventRecurrenceFeature,
-  eventResizeFeature,
   historyFeature,
   workingTimeFeature,
   resourceAvailabilityFeature,
@@ -27,7 +26,7 @@ import type {
   RecurrenceEditScope,
   RecurrenceFrequency,
   RecurrenceRule,
-  ResizeError,
+  EventError,
   Resource,
   WorkingCalendar,
 } from "@tanstack/time";
@@ -57,7 +56,6 @@ const features = calendarFeatures([
   workingTimeFeature,
   resourceAvailabilityFeature,
   eventRecurrenceFeature,
-  eventResizeFeature,
   dayEventLayoutFeature,
 ]);
 
@@ -637,31 +635,178 @@ function EventModal({
   );
 }
 
-interface ResizeHandleProps {
-  edge: "top" | "bottom";
-  onMouseDown: (e: React.MouseEvent) => void;
+const eventSegmentInfo = (event: Event<Resource>) =>
+  getSegmentInfo({
+    start: String(event.start),
+    end: String(event.end),
+    ...(event._originalStart != null
+      ? { _originalStart: event._originalStart }
+      : {}),
+    ...(event._originalEnd != null ? { _originalEnd: event._originalEnd } : {}),
+  });
+
+const DAY_HEIGHT_PX = 1440;
+const SNAP_MINUTES = 15;
+const MIN_DURATION_MINUTES = 15;
+
+const percentToPx = (value: string | number | undefined): number =>
+  typeof value === "string" && value.endsWith("%")
+    ? (parseFloat(value) / 100) * DAY_HEIGHT_PX
+    : Number(value ?? 0);
+
+function shiftDateTime(value: string, minutes: number): string {
+  const date = new Date(value);
+  date.setMinutes(date.getMinutes() + minutes);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
-function ResizeHandle({ edge, onMouseDown }: ResizeHandleProps) {
+const resizeGripClasses =
+  "before:absolute before:left-1/2 before:-translate-x-1/2 before:w-8 before:h-1 before:bg-neutral-400 before:rounded before:opacity-0 group-hover:before:opacity-100 before:transition-opacity hover:bg-neutral-500/30";
+
+export interface EventResizeCommit {
+  event: Event<Resource>;
+  newStart: string;
+  newEnd: string;
+}
+
+function ScheduleEvent({
+  event,
+  style,
+  concurrency,
+  showTopHandle,
+  showBottomHandle,
+  originalStart,
+  originalEnd,
+  onEventClick,
+  onResizeCommit,
+  children,
+}: {
+  event: Event<Resource>;
+  style: React.CSSProperties;
+  concurrency: number;
+  showTopHandle: boolean;
+  showBottomHandle: boolean;
+  originalStart: string;
+  originalEnd: string;
+  onEventClick: (event: Event<Resource>) => void;
+  onResizeCommit: (commit: EventResizeCommit) => void;
+  children: React.ReactNode;
+}) {
+  const [delta, setDelta] = useState<{ top: number; bottom: number } | null>(
+    null,
+  );
+  const justResizedRef = useRef(false);
+
+  const topPx = percentToPx(style.top);
+  const heightPx = percentToPx(style.height);
+
+  const previewStart = shiftDateTime(originalStart, -(delta?.top ?? 0));
+  const previewEnd = shiftDateTime(originalEnd, delta?.bottom ?? 0);
+  const timeRange = formatEventTimeRange(previewStart, previewEnd);
+
   return (
     <div
-      data-resize-handle
-      className={`absolute left-0 right-0 h-3 cursor-ns-resize z-30 bg-transparent hover:bg-neutral-500/30 pointer-events-auto ${
-        edge === "top"
-          ? "top-0 [@container_event_(height<24px)]:-top-3"
-          : "bottom-0 [@container_event_(height<24px)]:-bottom-3"
-      }`}
-      onMouseDown={onMouseDown}
-      onClick={(e) => {
-        e.stopPropagation();
+      className="absolute"
+      style={{
+        top: topPx - (delta?.top ?? 0),
+        left: style.left,
+        width: style.width,
+        zIndex: (delta ? 20 : 10) + Number(style.zIndex ?? 0),
       }}
-      style={{ touchAction: "none" }}
     >
-      <div
-        className={`absolute left-1/2 -translate-x-1/2 w-8 h-1 bg-neutral-400 rounded opacity-0 group-hover:opacity-100 transition-opacity ${
-          edge === "top" ? "top-1" : "bottom-1"
-        }`}
-      />
+      <Resizable
+        size={{ width: "100%", height: heightPx }}
+        enable={{ top: showTopHandle, bottom: showBottomHandle }}
+        grid={[SNAP_MINUTES, SNAP_MINUTES]}
+        minHeight={MIN_DURATION_MINUTES}
+        maxHeight={DAY_HEIGHT_PX}
+        handleClasses={{
+          top: resizeGripClasses,
+          bottom: resizeGripClasses,
+        }}
+        onResizeStart={() => {
+          justResizedRef.current = true;
+        }}
+        onResize={(_event, direction, _ref, d) => {
+          setDelta(
+            direction === "top"
+              ? { top: d.height, bottom: 0 }
+              : { top: 0, bottom: d.height },
+          );
+        }}
+        onResizeStop={(_event, direction, _ref, d) => {
+          setDelta(null);
+          if (d.height === 0) {
+            justResizedRef.current = false;
+            return;
+          }
+          onResizeCommit({
+            event,
+            newStart:
+              direction === "top"
+                ? shiftDateTime(originalStart, -d.height)
+                : originalStart,
+            newEnd:
+              direction === "top"
+                ? originalEnd
+                : shiftDateTime(originalEnd, d.height),
+          });
+          setTimeout(() => {
+            justResizedRef.current = false;
+          }, 0);
+        }}
+      >
+        <ContextMenu>
+          <ContextMenuTrigger
+            className={`@container/event [container-type:size] group absolute inset-0 bg-neutral-800 text-white rounded text-xs font-medium transition-colors border border-neutral-700 ${
+              delta
+                ? "bg-neutral-700 ring-2 ring-neutral-500"
+                : "cursor-pointer hover:bg-neutral-700"
+            }`}
+            onClick={() => {
+              if (justResizedRef.current) return;
+              onEventClick(event);
+            }}
+          >
+            <div className="absolute inset-0 overflow-hidden rounded-[inherit] px-2 py-3 [@container_event_(24px<=height<40px)]:py-1 [@container_event_(height<24px)]:py-0">
+              <div className="font-semibold flex items-center gap-1.5 leading-tight">
+                <span className="flex items-center gap-1 min-w-0">
+                  {event.recurrence && (
+                    <span
+                      className="opacity-60 shrink-0"
+                      title="Recurring event"
+                    >
+                      ↻
+                    </span>
+                  )}
+                  <span className="truncate">{event.title}</span>
+                </span>
+                {event.consumption && event.consumption.length > 0 && (
+                  <span
+                    className="text-[10px] leading-none rounded bg-black/40 px-1 py-0.5 font-semibold shrink-0"
+                    title="Consumption"
+                  >
+                    {event.consumption.reduce((a, b) => a + b, 0)}
+                  </span>
+                )}
+                {concurrency > 1 && (
+                  <span
+                    className="text-[10px] leading-none rounded bg-amber-500/20 text-amber-200 px-1 py-0.5 font-semibold shrink-0"
+                    title={`Overlaps ${concurrency - 1} other event(s)`}
+                  >
+                    ⇄{concurrency}
+                  </span>
+                )}
+              </div>
+              <div className="hidden [@container_event_(height>=56px)]:block text-xs opacity-90 mt-0.5 leading-tight truncate">
+                {timeRange.rangeFormatted}
+              </div>
+            </div>
+          </ContextMenuTrigger>
+          {children}
+        </ContextMenu>
+      </Resizable>
     </div>
   );
 }
@@ -676,6 +821,7 @@ function ScheduleView({
   rightSentinelRef,
   periodDayCount,
   overlapMode,
+  onResizeCommit,
 }: {
   calendar: ReturnType<
     typeof useCalendar<typeof features, Resource, Event<Resource>>
@@ -688,14 +834,10 @@ function ScheduleView({
   rightSentinelRef: React.RefObject<HTMLDivElement | null>;
   periodDayCount: number;
   overlapMode: OverlapMode;
+  onResizeCommit: (commit: EventResizeCommit) => void;
 }) {
   const timeSlots = calendar.getTimeSlots();
-  const {
-    resizeState,
-    getResizeHandleProps,
-    getDayColumnProps,
-    getUnavailableRanges,
-  } = calendar;
+  const { getUnavailableRanges } = calendar;
 
   const maxAllDay = days.reduce(
     (m, d) => Math.max(m, d.allDayEvents.length),
@@ -770,7 +912,6 @@ function ScheduleView({
                   <div
                     key={day.isoDate}
                     className="border-r border-neutral-800 last:border-r-0"
-                    {...getDayColumnProps(dayDate)}
                   >
                     <div className="h-12 border-b border-neutral-800 bg-neutral-950 px-3 py-2 text-center">
                       <div className="text-sm font-semibold text-neutral-200">
@@ -824,7 +965,7 @@ function ScheduleView({
                         const { style, isSplitEvent, layout } = eventProps;
                         const concurrency = layout?.concurrency ?? 1;
 
-                        const segmentInfo = calendar.getEventSegmentInfo(event);
+                        const segmentInfo = eventSegmentInfo(event);
                         const {
                           isFirstSegment,
                           isLastSegment,
@@ -832,147 +973,19 @@ function ScheduleView({
                           originalEnd,
                         } = segmentInfo;
 
-                        const isBeingResized =
-                          resizeState.isResizing &&
-                          resizeState.eventId === event.id;
-
-                        const resizePreview =
-                          isBeingResized &&
-                          resizeState.previewStart &&
-                          resizeState.previewEnd
-                            ? calculateSegmentResizePreview({
-                                dayDate,
-                                originalStart,
-                                originalEnd,
-                                previewStart: resizeState.previewStart,
-                                previewEnd: resizeState.previewEnd,
-                              })
-                            : null;
-
-                        if (resizePreview?.shouldHide) {
-                          return null;
-                        }
-
-                        const displayStyle = resizePreview?.previewStyle
-                          ? { ...style, ...resizePreview.previewStyle }
-                          : style;
-
-                        const showTopHandle = !isSplitEvent || isFirstSegment;
-                        const showBottomHandle = !isSplitEvent || isLastSegment;
-                        const isActivelyResized =
-                          isBeingResized &&
-                          resizePreview?.previewStyle !== null;
-
-                        const stackedStyle =
-                          displayStyle?.zIndex === undefined
-                            ? displayStyle
-                            : {
-                                ...displayStyle,
-                                zIndex:
-                                  (isActivelyResized ? 20 : 10) +
-                                  displayStyle.zIndex,
-                              };
-
-                        const timeRange = formatEventTimeRange(
-                          isBeingResized && resizeState.previewStart
-                            ? resizeState.previewStart
-                            : originalStart,
-                          isBeingResized && resizeState.previewEnd
-                            ? resizeState.previewEnd
-                            : originalEnd,
-                        );
-
                         return (
-                          <ContextMenu key={`${event.id}-${eventIndex}`}>
-                            <ContextMenuTrigger
-                              className={`@container/event [container-type:size] group absolute z-10 bg-neutral-800 text-white rounded text-xs font-medium transition-colors border border-neutral-700 ${
-                                isActivelyResized
-                                  ? "bg-neutral-700 ring-2 ring-neutral-500 z-20"
-                                  : "cursor-pointer hover:bg-neutral-700"
-                              }`}
-                              style={stackedStyle as React.CSSProperties}
-                              onClick={(e: React.MouseEvent) => {
-                                if (
-                                  !resizeState.isResizing &&
-                                  !(e.target as HTMLElement).closest(
-                                    "[data-resize-handle]",
-                                  )
-                                ) {
-                                  onEventClick(event);
-                                }
-                              }}
-                            >
-                              {showTopHandle && (
-                                <ResizeHandle
-                                  edge="top"
-                                  {...getResizeHandleProps(
-                                    event.id,
-                                    "top",
-                                    originalStart,
-                                    originalEnd,
-                                    {
-                                      occurrenceStart:
-                                        event._occurrenceOriginalStart,
-                                    },
-                                  )}
-                                />
-                              )}
-                              <div className="absolute inset-0 overflow-hidden rounded-[inherit] px-2 py-3 [@container_event_(24px<=height<40px)]:py-1 [@container_event_(height<24px)]:py-0">
-                                <div className="font-semibold flex items-center gap-1.5 leading-tight">
-                                  <span className="flex items-center gap-1 min-w-0">
-                                    {event.recurrence && (
-                                      <span
-                                        className="opacity-60 shrink-0"
-                                        title="Recurring event"
-                                      >
-                                        ↻
-                                      </span>
-                                    )}
-                                    <span className="truncate">
-                                      {event.title}
-                                    </span>
-                                  </span>
-                                  {event.consumption &&
-                                    event.consumption.length > 0 && (
-                                      <span
-                                        className="text-[10px] leading-none rounded bg-black/40 px-1 py-0.5 font-semibold shrink-0"
-                                        title="Consumption"
-                                      >
-                                        {event.consumption.reduce(
-                                          (a, b) => a + b,
-                                          0,
-                                        )}
-                                      </span>
-                                    )}
-                                  {concurrency > 1 && (
-                                    <span
-                                      className="text-[10px] leading-none rounded bg-amber-500/20 text-amber-200 px-1 py-0.5 font-semibold shrink-0"
-                                      title={`Overlaps ${concurrency - 1} other event(s)`}
-                                    >
-                                      ⇄{concurrency}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="hidden [@container_event_(height>=56px)]:block text-xs opacity-90 mt-0.5 leading-tight truncate">
-                                  {timeRange.rangeFormatted}
-                                </div>
-                              </div>
-                              {showBottomHandle && (
-                                <ResizeHandle
-                                  edge="bottom"
-                                  {...getResizeHandleProps(
-                                    event.id,
-                                    "bottom",
-                                    originalStart,
-                                    originalEnd,
-                                    {
-                                      occurrenceStart:
-                                        event._occurrenceOriginalStart,
-                                    },
-                                  )}
-                                />
-                              )}
-                            </ContextMenuTrigger>
+                          <ScheduleEvent
+                            key={`${event.id}-${eventIndex}`}
+                            event={event}
+                            style={style as React.CSSProperties}
+                            concurrency={concurrency}
+                            showTopHandle={!isSplitEvent || isFirstSegment}
+                            showBottomHandle={!isSplitEvent || isLastSegment}
+                            originalStart={originalStart}
+                            originalEnd={originalEnd}
+                            onEventClick={onEventClick}
+                            onResizeCommit={onResizeCommit}
+                          >
                             <ContextMenuContent>
                               <ContextMenuItem
                                 onClick={() => onEventClick(event)}
@@ -1023,38 +1036,9 @@ function ScheduleView({
                                 </>
                               )}
                             </ContextMenuContent>
-                          </ContextMenu>
+                          </ScheduleEvent>
                         );
                       })}
-                      {resizeState.isResizing &&
-                        resizeState.previewStart &&
-                        resizeState.previewEnd &&
-                        !day.events.some((e) => e.id === resizeState.eventId) &&
-                        (() => {
-                          const ghostStyle = calculateGhostPreviewStyle({
-                            dayDate,
-                            previewStart: resizeState.previewStart,
-                            previewEnd: resizeState.previewEnd,
-                          });
-
-                          if (!ghostStyle) return null;
-
-                          const timeRange = formatEventTimeRange(
-                            resizeState.previewStart,
-                            resizeState.previewEnd,
-                          );
-
-                          return (
-                            <div
-                              className="absolute bg-neutral-700/60 text-neutral-200 rounded px-2 py-1 text-xs font-medium overflow-hidden border border-neutral-600 border-dashed z-20"
-                              style={ghostStyle}
-                            >
-                              <div className="font-semibold pt-1 opacity-80">
-                                {timeRange.rangeFormatted}
-                              </div>
-                            </div>
-                          );
-                        })()}
                     </div>
                   </div>
                 );
@@ -1068,11 +1052,11 @@ function ScheduleView({
   );
 }
 
-function ResizeErrorToast({
+function EventErrorToast({
   error,
   onDismiss,
 }: {
-  error: ResizeError;
+  error: EventError;
   onDismiss: () => void;
 }) {
   useEffect(() => {
@@ -1087,7 +1071,7 @@ function ResizeErrorToast({
           <div className="text-red-400 text-lg">⚠</div>
           <div className="flex-1 min-w-0">
             <div className="font-semibold text-red-100 mb-1">
-              Cannot Resize Event
+              Cannot Update Event
             </div>
             <div className="text-sm text-red-200/80 mb-2">{error.message}</div>
             {error.conflicts && error.conflicts.length > 0 && (
@@ -1211,7 +1195,7 @@ function CalendarView() {
     newEnd: string;
   } | null>(null);
 
-  const [resizeError, setResizeError] = useState<ResizeError | null>(null);
+  const [resizeError, setEventError] = useState<EventError | null>(null);
   const [overlapMode, setOverlapMode] = useState<OverlapMode>("columns");
 
   const calendar = useCalendar({
@@ -1244,26 +1228,30 @@ function CalendarView() {
             .filter((resource): resource is Resource => resource != null) ?? [],
       }));
     },
-    resize: {
-      enabled: true,
-      containerHeight: 1440,
-      constraints: {
-        minDurationMinutes: 15,
-        snapToMinutes: 15,
-      },
-      onResizeError: (error) => {
-        setResizeError(error);
-      },
-      onRecurringResizeEnd: (resize) => {
-        setResizeScopeChoice({
-          eventId: resize.eventId,
-          occurrenceStart: resize.occurrenceStart,
-          newStart: resize.newStart,
-          newEnd: resize.newEnd,
-        });
-      },
-    },
   });
+
+  const handleResizeCommit = ({
+    event,
+    newStart,
+    newEnd,
+  }: EventResizeCommit) => {
+    const occurrenceStart = event._occurrenceOriginalStart;
+    if (occurrenceStart != null) {
+      setResizeScopeChoice({
+        eventId: event.id,
+        occurrenceStart,
+        newStart,
+        newEnd,
+      });
+      return;
+    }
+
+    void calendar
+      .editEvent(event.id, { start: newStart, end: newEnd })
+      .then((result) => {
+        if (!result.success) setEventError(result.error);
+      });
+  };
 
   const dayNames = calendar.getDaysNames("short");
 
@@ -1612,7 +1600,7 @@ function CalendarView() {
     scope: RecurrenceEditScope = event.recurrence ? "this" : "all",
   ) => {
     const masterEvent = calendar.getMasterEvent(event);
-    const segmentInfo = calendar.getEventSegmentInfo(event);
+    const segmentInfo = eventSegmentInfo(event);
     const startDate = new Date(segmentInfo.originalStart);
     const endDate = new Date(segmentInfo.originalEnd);
     const rule = masterEvent.recurrence;
@@ -1704,7 +1692,7 @@ function CalendarView() {
               allDay: data.allDay,
             });
       if (!result.success) {
-        setResizeError(result.error);
+        setEventError(result.error);
         throw new Error("Validation failed");
       }
     } finally {
@@ -1894,6 +1882,7 @@ function CalendarView() {
           rightSentinelRef={scheduleRightRef}
           periodDayCount={periodDayCount}
           overlapMode={overlapMode}
+          onResizeCommit={handleResizeCommit}
         />
       ) : (
         <div className="border border-neutral-800 rounded-lg overflow-hidden bg-black">
@@ -2127,7 +2116,7 @@ function CalendarView() {
               { scope, occurrenceStart: pending.occurrenceStart },
             )
             .then((result) => {
-              if (!result.success) setResizeError(result.error);
+              if (!result.success) setEventError(result.error);
             });
         }}
         onClose={() => setResizeScopeChoice(null)}
@@ -2146,9 +2135,9 @@ function CalendarView() {
       />
 
       {resizeError && (
-        <ResizeErrorToast
+        <EventErrorToast
           error={resizeError}
-          onDismiss={() => setResizeError(null)}
+          onDismiss={() => setEventError(null)}
         />
       )}
     </div>
