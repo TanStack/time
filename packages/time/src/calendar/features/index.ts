@@ -5,6 +5,7 @@ export * from "./registry";
 export * from "./history";
 export * from "./workingTime";
 export * from "./availability";
+export * from "./constraint";
 export * from "./dependency";
 export * from "./recurrence";
 export * from "./resize";

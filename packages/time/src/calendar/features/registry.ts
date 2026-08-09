@@ -1,6 +1,7 @@
 import type { DependencyApi } from "~/kernel/modules";
 import type { Event, Resource } from "../types";
 import type { AvailabilityApi } from "./availability";
+import type { ConstraintApi } from "./constraint";
 import type { DayLayoutApi } from "./dayLayout";
 import type { DependencyCreationApi, DependencyGraphApi } from "./dependency";
 import type { HistoryApi } from "./history";
@@ -27,6 +28,7 @@ export interface BuiltInFeatureApiRegistry<
   dependency: DependencyCreationApi &
     DependencyApi &
     DependencyGraphApi<TResource, TEvent>;
+  constraint: ConstraintApi<TResource, TEvent>;
   resize: ResizeFeatureApi<TResource, TEvent>;
   dayLayout: DayLayoutApi<TResource, TEvent>;
   timeline: TimelineApi<TResource, TEvent>;
@@ -92,6 +94,7 @@ export const FEATURE_API_OWNERS = {
   getAffectedByDelta: "eventDependencyFeature",
   findViolatedDependency: "eventDependencyFeature",
   getAnchorConflicts: "eventDependencyFeature",
+  checkEventConstraint: "schedulingConstraintFeature",
   createResizeController: "eventResizeFeature",
   getEventSegmentInfo: "eventResizeFeature",
   validateResize: "eventResizeFeature",

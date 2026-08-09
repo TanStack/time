@@ -15,6 +15,20 @@ export interface EventDependency {
   lag?: number;
 }
 
+export type ConstraintType =
+  | "start-no-earlier-than"
+  | "start-no-later-than"
+  | "finish-no-earlier-than"
+  | "finish-no-later-than"
+  | "must-start-on"
+  | "must-finish-on";
+
+export interface SchedulingConstraint {
+  type: ConstraintType;
+
+  date: string;
+}
+
 export type RecurrenceEditScope = "this" | "thisAndFollowing" | "all";
 
 export interface RecurrenceOverride<TResource extends Resource = Resource> {
@@ -77,6 +91,8 @@ export interface Event<TResource extends Resource = Resource> {
   dependsOn?: Array<EventDependency>;
 
   manuallyScheduled?: boolean;
+
+  constraint?: SchedulingConstraint;
 
   recurrence?: RecurrenceRule<TResource>;
 

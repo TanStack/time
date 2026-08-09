@@ -3,6 +3,7 @@ import { getTimeClient } from "../client";
 import { bucketByDay } from "~/projection";
 import type { LayoutOptions } from "~/projection";
 import type { WorkingTimeConfig } from "~/validation/availability";
+import type { ConstraintConflict } from "~/validation/constraints";
 import type { WorkingCalendar } from "~/workingTime";
 import { normalizeRecurrenceRule } from "~/recurrence";
 import { createKernel } from "~/kernel";
@@ -10,6 +11,7 @@ import { FEATURE_API_OWNERS } from "./features";
 import type {
   AnyCalendarFeature,
   AvailabilityApi,
+  ConstraintApi,
   DependencyGraphApi,
   CalendarFeatureList,
   CalendarHost,
@@ -368,6 +370,10 @@ export class CalendarCore<
     return this.hasFeature("dependency") ? this._api : null;
   }
 
+  private get _constraint(): ConstraintApi<TResource, TEvent> | null {
+    return this.hasFeature("constraint") ? this._api : null;
+  }
+
   private _checkAvailability(
     event: TEvent,
     newStart: string,
@@ -383,6 +389,16 @@ export class CalendarCore<
         newResources,
         newConsumption,
       ) ?? null
+    );
+  }
+
+  private _checkConstraint(
+    event: TEvent,
+    newStart: string,
+    newEnd: string,
+  ): ConstraintConflict | null {
+    return (
+      this._constraint?.checkEventConstraint(event, newStart, newEnd) ?? null
     );
   }
 
@@ -976,6 +992,15 @@ export class CalendarCore<
       };
     }
 
+    const constrained = this._checkConstraint(event, newStart, newEnd);
+    if (constrained) {
+      return {
+        blocked: true,
+        blockedEventTitle: event.title,
+        message: constrained.message,
+      };
+    }
+
     if (event.dependsOn?.length) {
       const pulled =
         this._dependency?.getPredecessorShifts(eventId, newStart, newEnd) ?? [];
@@ -988,6 +1013,19 @@ export class CalendarCore<
             blocked: true,
             blockedEventTitle: shift.event.title,
             message: `"${shift.event.title}" would be pulled into unavailable time.`,
+          };
+        }
+
+        const pulledConstraint = this._checkConstraint(
+          shift.event,
+          shift.newStart,
+          shift.newEnd,
+        );
+        if (pulledConstraint) {
+          return {
+            blocked: true,
+            blockedEventTitle: shift.event.title,
+            message: pulledConstraint.message,
           };
         }
       }
@@ -1035,6 +1073,15 @@ export class CalendarCore<
             message: `"${dep.title}" would be pushed to unavailable time.`,
           };
         }
+
+        const depConstraint = this._checkConstraint(dep, depStart, depEnd);
+        if (depConstraint) {
+          return {
+            blocked: true,
+            blockedEventTitle: dep.title,
+            message: depConstraint.message,
+          };
+        }
       }
     }
 
@@ -1055,6 +1102,19 @@ export class CalendarCore<
             blocked: true,
             blockedEventTitle: shift.event.title,
             message: `"${shift.event.title}" would be pushed into unavailable time.`,
+          };
+        }
+
+        const pushedConstraint = this._checkConstraint(
+          shift.event,
+          shift.newStart,
+          shift.newEnd,
+        );
+        if (pushedConstraint) {
+          return {
+            blocked: true,
+            blockedEventTitle: shift.event.title,
+            message: pushedConstraint.message,
           };
         }
       }

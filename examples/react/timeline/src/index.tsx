@@ -48,6 +48,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { X } from "lucide-react";
 
 import type {
+  ConstraintType,
   Day,
   DependencyType,
   Event,
@@ -357,6 +358,10 @@ function getSampleEvents(): Array<Event<Resource>> {
       end: weekdayAt(5, 13, 0),
       resources: [resourceDevOps],
       dependsOn: [{ id: "8", type: "FS" }],
+      constraint: {
+        type: "finish-no-later-than",
+        date: toPlainDateString(weekdayAt(5, 0, 0)),
+      },
     },
   ];
 }
@@ -380,8 +385,19 @@ interface EventFormData {
   resourceId: string;
   consumption: number;
   manuallyScheduled: boolean;
+  constraintType: ConstraintType | "none";
+  constraintDate: string;
   dependsOn: Array<{ id: string; type: DependencyType; lag?: number }>;
 }
+
+const CONSTRAINT_TYPES: Array<ConstraintType> = [
+  "start-no-earlier-than",
+  "start-no-later-than",
+  "finish-no-earlier-than",
+  "finish-no-later-than",
+  "must-start-on",
+  "must-finish-on",
+];
 
 const emptyFormData: EventFormData = {
   title: "",
@@ -392,6 +408,8 @@ const emptyFormData: EventFormData = {
   resourceId: resourceDesign.id,
   consumption: 1,
   manuallyScheduled: false,
+  constraintType: "none",
+  constraintDate: toPlainDateString(new Date()),
   dependsOn: [],
 };
 
@@ -607,6 +625,44 @@ function EventModal({
             <Label htmlFor="manuallyScheduled">
               Manually scheduled (dependencies never move it)
             </Label>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="constraintType">Constraint</Label>
+              <Select
+                value={formData.constraintType}
+                onValueChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    constraintType: value as ConstraintType | "none",
+                  })
+                }
+              >
+                <SelectTrigger id="constraintType">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {CONSTRAINT_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="constraintDate">Constraint Date</Label>
+              <Input
+                id="constraintDate"
+                type="date"
+                disabled={formData.constraintType === "none"}
+                value={formData.constraintDate}
+                onChange={(e) =>
+                  setFormData({ ...formData, constraintDate: e.target.value })
+                }
+              />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -1307,6 +1363,14 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
             ↳{depCount}
           </span>
         )}
+        {event.constraint && (
+          <span
+            className="shrink-0 text-[10px] leading-none rounded bg-violet-500/40 border border-violet-300/60 px-1 py-0.5 font-semibold"
+            title={`${event.constraint.type} ${event.constraint.date}`}
+          >
+            ⏱
+          </span>
+        )}
         {event.manuallyScheduled && (
           <span
             className="shrink-0 text-[10px] leading-none rounded bg-sky-500/40 border border-sky-300/60 px-1 py-0.5 font-semibold"
@@ -1740,6 +1804,9 @@ function TimelineDemo() {
         resourceId: event.resources?.[0]?.id ?? resourceDesign.id,
         consumption: event.consumption?.[0] ?? 1,
         manuallyScheduled: event.manuallyScheduled ?? false,
+        constraintType: event.constraint?.type ?? "none",
+        constraintDate:
+          event.constraint?.date.slice(0, 10) ?? toPlainDateString(event.start),
         dependsOn: event.dependsOn ?? [],
       },
     });
@@ -1755,6 +1822,10 @@ function TimelineDemo() {
 
       const resource = sampleResources.find((r) => r.id === data.resourceId);
       const resources = resource ? [resource] : [];
+      const constraint =
+        data.constraintType === "none"
+          ? undefined
+          : { type: data.constraintType, date: data.constraintDate };
 
       const result =
         modalState.mode === "edit" && modalState.eventId
@@ -1767,6 +1838,7 @@ function TimelineDemo() {
                 resources,
                 consumption: [data.consumption],
                 manuallyScheduled: data.manuallyScheduled,
+                constraint,
                 dependsOn: data.dependsOn,
               },
               { dependsOn: data.dependsOn },
@@ -1780,6 +1852,7 @@ function TimelineDemo() {
                 resources,
                 consumption: [data.consumption],
                 manuallyScheduled: data.manuallyScheduled,
+                constraint,
                 dependsOn: data.dependsOn,
               },
               { dependsOn: data.dependsOn },

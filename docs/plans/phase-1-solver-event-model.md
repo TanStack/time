@@ -148,11 +148,37 @@ The anchor is only an anchor to *other* events' arithmetic: a write that targets
 it and cascades its dependents as usual. The timeline example pins `Integration Tests`, shows the
 flag as a 📌 badge on the bar, and the event form toggles it.
 
-### Slice 3 — scheduling constraints
+### Slice 3 — scheduling constraints ✅
 
 `Event.constraint` plus a pure `validation/constraints/` core returning structured conflicts, wired
 into the kernel's veto stage next to availability. Honoured, not solved: a constraint that a move
-would violate blocks the move; nothing clamps a date yet.
+would violate blocks the move; nothing clamps a date yet. 1,156 tests.
+
+**The core needs no time zone.** `checkConstraint(event)` compares civil values on both sides — the
+event's `start`/`end` are plain datetime strings and so is `constraint.date` — so unlike the
+dependency core there is no epoch-millisecond arithmetic and nothing to convert. Six types collapse
+to one anchor lookup (`start` or `finish`), one comparison, and one satisfaction rule per family
+(`>= 0`, `<= 0`, `=== 0`).
+
+**Precision picks the granularity.** A date-only `date` compares `PlainDate`s and a datetime one
+compares `PlainDateTime`s, which is what makes "a date-only constraint and a datetime one are the
+same field" true in behaviour and not just in typing. `must-start-on: "2026-03-02"` means *that
+day*, not midnight on that day — reading it as midnight would make the most obvious constraint in
+the vocabulary almost always false.
+
+`constraintModule` is a validate-only module: no transform, no api beyond `evaluateConstraint`, and
+`"constraint-validate"` sits between availability and dependency in `WRITE_VALIDATE_ORDER`. Because
+the stage reads the *settled* batch, a dependency cascade that pushes a successor past its own
+constraint is rejected without the constraint code knowing dependencies exist — the two features
+compose through the pipeline rather than through each other.
+
+`schedulingConstraintFeature` exposes `checkEventConstraint(event, start?, end?, constraint?)` and
+`validateMove` calls it for the moved event and for every cascaded neighbour it already checks
+availability for, so the advisory path blocks the same drags the veto would reject.
+
+The timeline example gives `Deployment` a `finish-no-later-than` on the Friday of the work week and
+shows constraints as a ⏱ badge; dragging its predecessor `Auth Module` late enough is the demo —
+the cascade would push `Deployment` past Friday, so the write is refused.
 
 ### Slice 4 — `effort` / `duration`
 

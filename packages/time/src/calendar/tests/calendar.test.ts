@@ -5,7 +5,7 @@ import { stockFeatures } from "../features";
 import type { Calendar } from "../calendar";
 import type { StockFeatures } from "../features";
 import { calculateSegmentResizePreview } from "../getResizeProps";
-import type { Event, Resource } from "../types";
+import type { Event, Resource, SchedulingConstraint } from "../types";
 import type { RecurrentWorkingInterval, WorkingCalendar } from "~/workingTime";
 
 const { emitSpy } = vi.hoisted(() => ({ emitSpy: vi.fn() }));
@@ -3983,6 +3983,128 @@ describe("CalendarCore", () => {
         expect(cal.getEvents().find((e) => e.id === "s")!.dependsOn).toEqual([
           { id: "p", type: "FS" },
         ]);
+      });
+    });
+
+    describe("scheduling constraints", () => {
+      const constrained = (constraint: SchedulingConstraint) =>
+        createTestCalendar({
+          events: [
+            {
+              id: "a",
+              title: "A",
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: [allDayResource],
+              constraint,
+            },
+          ],
+          resources: [allDayResource],
+        });
+
+      test("blocks a move that would break the constraint", async () => {
+        const cal = constrained({
+          type: "start-no-later-than",
+          date: DATE_MON,
+        });
+
+        const result = await cal.editEvent("a", {
+          start: `${DATE_TUE}T10:00:00`,
+          end: `${DATE_TUE}T11:00:00`,
+        });
+
+        assert(!result.success);
+        expect(result.error.message).toContain("cannot start after");
+        expect(cal.getEvents()[0]!.start).toBe(`${DATE_MON}T10:00:00`);
+      });
+
+      test("allows a move the constraint still permits", async () => {
+        const cal = constrained({
+          type: "start-no-later-than",
+          date: DATE_MON,
+        });
+
+        const result = await cal.editEvent("a", {
+          start: `${DATE_MON}T14:00:00`,
+          end: `${DATE_MON}T15:00:00`,
+        });
+
+        assert(result.success);
+        expect(cal.getEvents()[0]!.start).toBe(`${DATE_MON}T14:00:00`);
+      });
+
+      test("validateMove reports the violated rule", () => {
+        expect(
+          constrained({ type: "must-start-on", date: DATE_MON }).validateMove(
+            "a",
+            `${DATE_TUE}T10:00:00`,
+            `${DATE_TUE}T11:00:00`,
+          ),
+        ).toMatchObject({
+          blocked: true,
+          blockedEventTitle: "A",
+          message: `"A" must start on ${DATE_MON} (must-start-on)`,
+        });
+      });
+
+      test("checkEventConstraint answers for a proposed span", () => {
+        const cal = constrained({
+          type: "finish-no-later-than",
+          date: `${DATE_MON}T12:00:00`,
+        });
+        const event = cal.getEvents()[0]!;
+
+        expect(cal.checkEventConstraint(event)).toBeNull();
+        expect(
+          cal.checkEventConstraint(
+            event,
+            `${DATE_MON}T12:00:00`,
+            `${DATE_MON}T13:00:00`,
+          ),
+        ).toMatchObject({ type: "finish-no-later-than", anchor: "finish" });
+      });
+
+      test("blocks a cascade that would push a dependent past its constraint", async () => {
+        const cal = createTestCalendar({
+          events: [
+            {
+              id: "p",
+              title: "P",
+              start: `${DATE_MON}T10:00:00`,
+              end: `${DATE_MON}T11:00:00`,
+              resources: [allDayResource],
+            },
+            {
+              id: "s",
+              title: "S",
+              start: `${DATE_MON}T11:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [allDayResource],
+              dependsOn: [{ id: "p", type: "FS" }],
+              constraint: {
+                type: "finish-no-later-than",
+                date: `${DATE_MON}T12:00:00`,
+              },
+            },
+          ],
+          resources: [allDayResource],
+        });
+
+        const result = await cal.editEvent("p", {
+          start: `${DATE_MON}T14:00:00`,
+          end: `${DATE_MON}T15:00:00`,
+        });
+
+        assert(!result.success);
+        expect(result.error.message).toContain("cannot finish after");
+
+        const events = cal.getEvents();
+        expect(events.find((e) => e.id === "p")!.start).toBe(
+          `${DATE_MON}T10:00:00`,
+        );
+        expect(events.find((e) => e.id === "s")!.start).toBe(
+          `${DATE_MON}T11:00:00`,
+        );
       });
     });
 
