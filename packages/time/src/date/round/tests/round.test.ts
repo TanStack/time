@@ -9,7 +9,7 @@ describe("round", () => {
         unit: "day",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-15T00:00:00.000Z");
     });
 
     test("should round up when at or after noon", () => {
@@ -17,7 +17,7 @@ describe("round", () => {
         unit: "day",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-16T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-16T00:00:00.000Z");
     });
 
     test("should round down when exactly at midnight", () => {
@@ -25,7 +25,7 @@ describe("round", () => {
         unit: "day",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-15T00:00:00.000Z");
     });
   });
 
@@ -35,7 +35,7 @@ describe("round", () => {
         unit: "hour",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T14:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-15T14:00:00.000Z");
     });
 
     test("should round up when at or after 30 minutes", () => {
@@ -43,7 +43,7 @@ describe("round", () => {
         unit: "hour",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T15:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-15T15:00:00.000Z");
     });
 
     test("should round up when exactly at 30 minutes", () => {
@@ -51,7 +51,7 @@ describe("round", () => {
         unit: "hour",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T15:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-15T15:00:00.000Z");
     });
   });
 
@@ -61,7 +61,7 @@ describe("round", () => {
         unit: "minute",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T14:42:00Z");
+      expect(result.toISOString()).toBe("2024-03-15T14:42:00.000Z");
     });
 
     test("should round up when at or after 30 seconds", () => {
@@ -69,7 +69,7 @@ describe("round", () => {
         unit: "minute",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T14:43:00Z");
+      expect(result.toISOString()).toBe("2024-03-15T14:43:00.000Z");
     });
   });
 
@@ -79,7 +79,7 @@ describe("round", () => {
         unit: "second",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T14:42:12Z");
+      expect(result.toISOString()).toBe("2024-03-15T14:42:12.000Z");
     });
 
     test("should round up when at or after 500 milliseconds", () => {
@@ -87,7 +87,7 @@ describe("round", () => {
         unit: "second",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T14:42:13Z");
+      expect(result.toISOString()).toBe("2024-03-15T14:42:13.000Z");
     });
   });
 
@@ -97,10 +97,7 @@ describe("round", () => {
         unit: "millisecond",
         timeZone: "UTC",
       });
-      const rounded = result.asZonedDateTime();
-      expect(rounded.millisecond).toBe(789);
-      expect(rounded.microsecond).toBe(0);
-      expect(rounded.nanosecond).toBe(0);
+      expect(result.toISOString()).toBe("2024-03-15T14:42:12.789Z");
     });
   });
 
@@ -111,7 +108,7 @@ describe("round", () => {
         unit: "hour",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T15:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-15T15:00:00.000Z");
     });
 
     test("should work with epoch time", () => {
@@ -120,7 +117,7 @@ describe("round", () => {
         unit: "hour",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T15:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-15T15:00:00.000Z");
     });
 
     test("should work with ZonedDateTime", () => {
@@ -131,27 +128,25 @@ describe("round", () => {
         unit: "hour",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T15:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-15T15:00:00.000Z");
     });
   });
 
   describe("timezone handling", () => {
-    test("should respect timezone", () => {
-      const result = round("2024-03-15T14:30:00Z", {
-        unit: "hour",
-        timeZone: "America/New_York",
-      });
-      expect(result.timeZone).toBe("America/New_York");
-    });
-  });
+    test("should round to the local hour, not to the UTC hour", () => {
+      expect(
+        round("2024-03-15T14:20:00Z", {
+          unit: "hour",
+          timeZone: "Asia/Kolkata",
+        }).toISOString(),
+      ).toBe("2024-03-15T14:30:00.000Z");
 
-  describe("calendar handling", () => {
-    test("should respect calendar", () => {
-      const result = round("2024-03-15T14:30:00Z", {
-        unit: "hour",
-        calendar: "japanese",
-      });
-      expect(result.calendar).toBe("japanese");
+      expect(
+        round("2024-03-15T14:20:00Z", {
+          unit: "hour",
+          timeZone: "UTC",
+        }).toISOString(),
+      ).toBe("2024-03-15T14:00:00.000Z");
     });
   });
 
@@ -161,7 +156,7 @@ describe("round", () => {
         unit: "day",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-01-01T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-01-01T00:00:00.000Z");
     });
 
     test("should handle month boundary correctly", () => {
@@ -169,7 +164,7 @@ describe("round", () => {
         unit: "day",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-01T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-01T00:00:00.000Z");
     });
   });
 });

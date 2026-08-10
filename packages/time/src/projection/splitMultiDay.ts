@@ -1,5 +1,23 @@
 import { Temporal } from "@js-temporal/polyfill";
-import { endOf, startOf, toPlainDateTimeString } from "~/date";
+import { toPlainDateTimeString } from "~/date";
+
+const DAY_START = {
+  hour: 0,
+  minute: 0,
+  second: 0,
+  millisecond: 0,
+  microsecond: 0,
+  nanosecond: 0,
+} as const;
+
+const DAY_END = {
+  hour: 23,
+  minute: 59,
+  second: 59,
+  millisecond: 999,
+  microsecond: 0,
+  nanosecond: 0,
+} as const;
 
 export interface SplittableEvent {
   id: string;
@@ -25,8 +43,8 @@ export function splitMultiDay<E extends SplittableEvent>(
   let currentDay = startDate;
 
   while (Temporal.ZonedDateTime.compare(currentDay, endDate) < 0) {
-    const startOfDay = startOf(currentDay, { unit: "day" }).asZonedDateTime();
-    const endOfDay = endOf(currentDay, { unit: "day" }).asZonedDateTime();
+    const startOfDay = currentDay.with(DAY_START);
+    const endOfDay = currentDay.with(DAY_END);
 
     const eventStart =
       Temporal.ZonedDateTime.compare(currentDay, startDate) === 0

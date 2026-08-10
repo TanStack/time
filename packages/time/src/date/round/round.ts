@@ -8,9 +8,7 @@ export type RoundUnit =
   | "hour"
   | "minute"
   | "second"
-  | "millisecond"
-  | "microsecond"
-  | "nanosecond";
+  | "millisecond";
 
 type RoundingMode = Temporal.RoundingMode;
 
@@ -20,7 +18,7 @@ export interface RoundOptions extends DateOperationOptions {
   roundingIncrement?: number;
 }
 
-export function round(input: DateInput, options: RoundOptions) {
+export function round(input: DateInput, options: RoundOptions): Date {
   return withDateOperation<RoundOptions>((zdt, options) => {
     const { unit, roundingMode = "halfExpand", roundingIncrement } = options;
     return zdt.round({ smallestUnit: unit, roundingMode, roundingIncrement });

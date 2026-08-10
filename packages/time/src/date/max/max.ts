@@ -1,12 +1,12 @@
 import { Temporal } from "@js-temporal/polyfill";
 import { toZonedDateTime } from "../helpers";
-import { createDateOperationResult } from "../withDateOperation";
+import { toInstantDate } from "../withDateOperation";
 import type { DateInput, DateOptions } from "../types";
 import { getDateTimeDefaults } from "~/utils";
 
 export interface MaxOptions extends DateOptions {}
 
-export function max(dates: Array<DateInput>, options?: MaxOptions) {
+export function max(dates: Array<DateInput>, options?: MaxOptions): Date {
   const { timeZone: defaultTimeZone, calendar: defaultCalendar } =
     getDateTimeDefaults();
   const { timeZone = defaultTimeZone, calendar = defaultCalendar } =
@@ -25,9 +25,5 @@ export function max(dates: Array<DateInput>, options?: MaxOptions) {
     }
   }
 
-  return createDateOperationResult(maxZdt, {
-    timeZone,
-    calendar,
-    returnFormat: "standard",
-  });
+  return toInstantDate(maxZdt);
 }

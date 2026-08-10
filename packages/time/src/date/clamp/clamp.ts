@@ -1,16 +1,13 @@
 import { Temporal } from "@js-temporal/polyfill";
 import { toZonedDateTime } from "../helpers";
-import {
-  createDateOperationResult,
-  resolveOptions,
-} from "../withDateOperation";
+import { resolveOptions, toInstantDate } from "../withDateOperation";
 import type { DateInput, DateOptions, Range } from "../types";
 
 export interface ClampOptions extends DateOptions {
   range: Range;
 }
 
-export function clamp(input: DateInput, options: ClampOptions) {
+export function clamp(input: DateInput, options: ClampOptions): Date {
   const resolved = resolveOptions(options);
   const {
     range: { start, end },
@@ -21,12 +18,12 @@ export function clamp(input: DateInput, options: ClampOptions) {
   const endZdt = toZonedDateTime(end, resolved.timeZone, resolved.calendar);
 
   if (Temporal.ZonedDateTime.compare(zdt, startZdt) < 0) {
-    return createDateOperationResult(startZdt, resolved);
+    return toInstantDate(startZdt);
   }
 
   if (Temporal.ZonedDateTime.compare(zdt, endZdt) > 0) {
-    return createDateOperationResult(endZdt, resolved);
+    return toInstantDate(endZdt);
   }
 
-  return createDateOperationResult(zdt, resolved);
+  return toInstantDate(zdt);
 }

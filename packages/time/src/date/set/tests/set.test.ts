@@ -9,7 +9,7 @@ describe("set", () => {
         fields: { year: 2025 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2025-03-15T14:42:12Z");
+      expect(result.toISOString()).toBe("2025-03-15T14:42:12.000Z");
     });
 
     test("should set month", () => {
@@ -17,7 +17,7 @@ describe("set", () => {
         fields: { month: 5 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-05-15T14:42:12Z");
+      expect(result.toISOString()).toBe("2024-05-15T14:42:12.000Z");
     });
 
     test("should set day", () => {
@@ -25,7 +25,7 @@ describe("set", () => {
         fields: { day: 1 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-01T14:42:12Z");
+      expect(result.toISOString()).toBe("2024-03-01T14:42:12.000Z");
     });
 
     test("should set hour", () => {
@@ -33,7 +33,7 @@ describe("set", () => {
         fields: { hour: 9 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T09:42:12Z");
+      expect(result.toISOString()).toBe("2024-03-15T09:42:12.000Z");
     });
 
     test("should set minute", () => {
@@ -41,7 +41,7 @@ describe("set", () => {
         fields: { minute: 30 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T14:30:12Z");
+      expect(result.toISOString()).toBe("2024-03-15T14:30:12.000Z");
     });
 
     test("should set second", () => {
@@ -49,7 +49,7 @@ describe("set", () => {
         fields: { second: 45 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T14:42:45Z");
+      expect(result.toISOString()).toBe("2024-03-15T14:42:45.000Z");
     });
 
     test("should set millisecond", () => {
@@ -57,7 +57,7 @@ describe("set", () => {
         fields: { millisecond: 500 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T14:42:12.5Z");
+      expect(result.toISOString()).toBe("2024-03-15T14:42:12.500Z");
     });
 
     test("should set multiple fields", () => {
@@ -65,7 +65,7 @@ describe("set", () => {
         fields: { year: 2025, month: 6, day: 1 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2025-06-01T14:42:12Z");
+      expect(result.toISOString()).toBe("2025-06-01T14:42:12.000Z");
     });
   });
 
@@ -75,7 +75,7 @@ describe("set", () => {
         fields: { month: 2 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-02-29T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-02-29T00:00:00.000Z");
     });
 
     test("should handle leap year correctly", () => {
@@ -83,7 +83,7 @@ describe("set", () => {
         fields: { year: 2025 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2025-02-28T00:00:00Z");
+      expect(result.toISOString()).toBe("2025-02-28T00:00:00.000Z");
     });
   });
 
@@ -94,7 +94,7 @@ describe("set", () => {
         fields: { year: 2025 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2025-03-15T14:42:12Z");
+      expect(result.toISOString()).toBe("2025-03-15T14:42:12.000Z");
     });
 
     test("should work with epoch time", () => {
@@ -103,7 +103,7 @@ describe("set", () => {
         fields: { year: 2025 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2025-03-15T14:42:12Z");
+      expect(result.toISOString()).toBe("2025-03-15T14:42:12.000Z");
     });
 
     test("should work with ZonedDateTime", () => {
@@ -114,27 +114,44 @@ describe("set", () => {
         fields: { year: 2025 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2025-03-15T14:42:12Z");
+      expect(result.toISOString()).toBe("2025-03-15T14:42:12.000Z");
     });
   });
 
   describe("timezone handling", () => {
-    test("should respect timezone", () => {
-      const result = set("2024-03-15T14:42:12Z", {
-        fields: { hour: 9 },
-        timeZone: "America/New_York",
-      });
-      expect(result.timeZone).toBe("America/New_York");
+    test("should set the field on the local clock, not on UTC", () => {
+      const fields = { hour: 9 } as const;
+
+      expect(
+        set("2024-03-15T14:42:12Z", {
+          fields,
+          timeZone: "America/New_York",
+        }).toISOString(),
+      ).toBe("2024-03-15T13:42:12.000Z");
+
+      expect(
+        set("2024-03-15T14:42:12Z", { fields, timeZone: "UTC" }).toISOString(),
+      ).toBe("2024-03-15T09:42:12.000Z");
     });
   });
 
   describe("calendar handling", () => {
-    test("should respect calendar", () => {
-      const result = set("2024-03-15T14:42:12Z", {
-        fields: { year: 2025 },
-        calendar: "japanese",
-      });
-      expect(result.calendar).toBe("japanese");
+    test("should set the year in the given calendar's era", () => {
+      const options = { fields: { year: 2025 }, timeZone: "UTC" } as const;
+
+      expect(
+        set("2024-03-15T14:42:12Z", {
+          ...options,
+          calendar: "islamic",
+        }).toISOString(),
+      ).toBe("2586-12-06T14:42:12.000Z");
+
+      expect(
+        set("2024-03-15T14:42:12Z", {
+          ...options,
+          calendar: "iso8601",
+        }).toISOString(),
+      ).toBe("2025-03-15T14:42:12.000Z");
     });
   });
 });

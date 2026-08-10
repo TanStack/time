@@ -8,9 +8,7 @@ describe("startOf", () => {
         unit: "year",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-01-01T00:00:00Z");
-      expect(result.options.timeZone).toBe("UTC");
-      expect(result.options.calendar).toBeDefined();
+      expect(result.toISOString()).toBe("2024-01-01T00:00:00.000Z");
     });
 
     test("should return start of month", () => {
@@ -18,7 +16,7 @@ describe("startOf", () => {
         unit: "month",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-01T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-01T00:00:00.000Z");
     });
 
     test("should return start of day", () => {
@@ -26,48 +24,48 @@ describe("startOf", () => {
         unit: "day",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-15T00:00:00.000Z");
     });
 
     test("should return start of hour", () => {
       const result = startOf("2024-03-15T14:42:12.789Z", { unit: "hour" });
-      expect(result.value).toContain("2024-03-15T14:00:00");
+      expect(result.toISOString()).toContain("2024-03-15T14:00:00");
     });
 
     test("should return start of minute", () => {
       const result = startOf("2024-03-15T14:42:12.789Z", { unit: "minute" });
-      expect(result.value).toContain("2024-03-15T14:42:00");
+      expect(result.toISOString()).toContain("2024-03-15T14:42:00");
     });
 
     test("should return start of second", () => {
       const result = startOf("2024-03-15T14:42:12.789Z", { unit: "second" });
-      expect(result.value).toContain("2024-03-15T14:42:12");
+      expect(result.toISOString()).toContain("2024-03-15T14:42:12");
     });
 
     test("should return start of millisecond", () => {
       const result = startOf("2024-03-15T14:42:12.789Z", {
         unit: "millisecond",
       });
-      expect(result.value).toContain("2024-03-15T14:42:12.789");
+      expect(result.toISOString()).toContain("2024-03-15T14:42:12.789");
     });
   });
 
   describe("week calculation", () => {
     test("should return start of week (Monday)", () => {
       const result = startOf("2024-03-15T14:42:12.789Z", { unit: "week" });
-      const resultDate = new Date(result.value as unknown as string);
+      const resultDate = result;
       expect(resultDate.getDay()).toBe(1);
     });
 
     test("should return start of week for Sunday", () => {
       const result = startOf("2024-03-17T14:42:12.789Z", { unit: "week" });
-      const resultDate = new Date(result.value as unknown as string);
+      const resultDate = result;
       expect(resultDate.getDay()).toBe(1);
     });
 
     test("should return start of week for Monday", () => {
       const result = startOf("2024-03-11T14:42:12.789Z", { unit: "week" });
-      const resultDate = new Date(result.value as unknown as string);
+      const resultDate = result;
       expect(resultDate.getDay()).toBe(1);
       expect(resultDate.toISOString()).toContain("2024-03-11");
     });
@@ -79,7 +77,7 @@ describe("startOf", () => {
         unit: "year",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-01-01T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-01-01T00:00:00.000Z");
     });
 
     test("should handle start of month for first day", () => {
@@ -87,7 +85,7 @@ describe("startOf", () => {
         unit: "month",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-01T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-01T00:00:00.000Z");
     });
 
     test("should handle start of day at midnight", () => {
@@ -95,12 +93,12 @@ describe("startOf", () => {
         unit: "day",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-15T00:00:00.000Z");
     });
 
     test("should handle start of hour at 00:00", () => {
       const result = startOf("2024-03-15T14:00:00Z", { unit: "hour" });
-      expect(result.value).toContain("2024-03-15T14:00:00");
+      expect(result.toISOString()).toContain("2024-03-15T14:00:00");
     });
   });
 });

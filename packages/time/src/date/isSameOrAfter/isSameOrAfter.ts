@@ -1,7 +1,5 @@
-import { Temporal } from "@js-temporal/polyfill";
 import type { DateInput, DateOptions } from "../types";
 import { getDateTimeDefaults } from "~/utils";
-import { normalizeWeek } from "~/date/helpers";
 import { startOf } from "~/date/startOf/startOf";
 
 export type IsSameOrAfterUnit =
@@ -27,16 +25,12 @@ export function isSameOrAfter(
     getDateTimeDefaults();
   const { timeZone = defaultTimeZone, calendar = defaultCalendar } = options;
 
-  const startOf1 = startOf(date1, { unit: options.unit, timeZone, calendar });
-  const startOf2 = startOf(date2, { unit: options.unit, timeZone, calendar });
-  const zdt1 = startOf1.asZonedDateTime();
-  const zdt2 = startOf2.asZonedDateTime();
+  const anchor = (date: DateInput) => {
+    const start = startOf(date, { unit: options.unit, timeZone, calendar });
+    return options.unit === "week"
+      ? startOf(start, { unit: "day", timeZone, calendar })
+      : start;
+  };
 
-  if (options.unit === "week") {
-    const normalized1 = normalizeWeek(zdt1);
-    const normalized2 = normalizeWeek(zdt2);
-    return Temporal.ZonedDateTime.compare(normalized1, normalized2) >= 0;
-  }
-
-  return Temporal.ZonedDateTime.compare(zdt1, zdt2) >= 0;
+  return anchor(date1).getTime() >= anchor(date2).getTime();
 }

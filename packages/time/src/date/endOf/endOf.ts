@@ -16,7 +16,7 @@ export interface EndOfOptions extends DateOperationOptions {
   unit: EndOfUnit;
 }
 
-export function endOf(input: DateInput, options: EndOfOptions) {
+export function endOf(input: DateInput, options: EndOfOptions): Date {
   return withDateOperation<EndOfOptions>((zdt, { unit }) => {
     switch (unit) {
       case "year":

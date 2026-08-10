@@ -1,4 +1,5 @@
 import { toZonedDateTime } from "../helpers";
+import { toInstantDate } from "../withDateOperation";
 import type { DateInput, DateOptions } from "../types";
 import type {
   DateFormatterBuildParams,
@@ -41,7 +42,7 @@ export function format(
   } = formatOptions ?? {};
 
   const zdt = toZonedDateTime(date, timeZone, calendar);
-  const dateObj = new Date(Number(zdt.epochNanoseconds / 1_000_000n));
+  const dateObj = toInstantDate(zdt);
 
   const mergedOptions =
     typeof options === "string"

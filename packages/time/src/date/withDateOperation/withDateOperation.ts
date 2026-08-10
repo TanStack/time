@@ -3,16 +3,11 @@ import type { DateInput, DateOptions } from "../types";
 import { getDateTimeDefaults } from "~/utils";
 import { toZonedDateTime } from "~/date/helpers";
 
-export type ReturnFormat = "standard" | "long";
-
-export interface DateOperationOptions extends DateOptions {
-  returnFormat?: ReturnFormat;
-}
+export type DateOperationOptions = DateOptions;
 
 export interface ResolvedDateOperationOptions {
   timeZone: string;
   calendar: string;
-  returnFormat: ReturnFormat;
 }
 
 export function resolveOptions(
@@ -21,59 +16,24 @@ export function resolveOptions(
   const { timeZone: defaultTimeZone, calendar: defaultCalendar } =
     getDateTimeDefaults();
   const { timeZone = defaultTimeZone, calendar = defaultCalendar } = options;
-  return {
-    timeZone,
-    calendar,
-    returnFormat: options.returnFormat ?? "standard",
-  };
+  return { timeZone, calendar };
 }
 
-export function createDateOperationResult(
-  zdt: Temporal.ZonedDateTime,
-  options: ResolvedDateOperationOptions,
-) {
-  const { returnFormat } = options;
-  const getValue = (): string => {
-    switch (returnFormat) {
-      case "standard":
-        return zdt.toInstant().toString();
-      case "long":
-        return `${zdt.toInstant().toString()}[${zdt.timeZoneId}][u-ca=${zdt.calendarId}]`;
-      default:
-        return zdt.toInstant().toString();
-    }
-  };
-
-  return {
-    value: getValue(),
-    options,
-    returnFormat,
-    asDate: () => {
-      return new Date(Number(zdt.epochNanoseconds / 1_000_000n));
-    },
-    asEpoch: () => {
-      return Number(zdt.epochNanoseconds / 1_000_000n);
-    },
-    asZonedDateTime: () => {
-      return zdt;
-    },
-    timeZone: options.timeZone,
-    calendar: options.calendar,
-  };
+export function toInstantDate(zdt: Temporal.ZonedDateTime): Date {
+  return new Date(zdt.epochMilliseconds);
 }
 
 export function withDateOperation<TArgs>(
   fn: (zdt: Temporal.ZonedDateTime, args: TArgs) => Temporal.ZonedDateTime,
 ) {
-  return (input: DateInput, options: DateOperationOptions & TArgs) => {
+  return (input: DateInput, options: DateOperationOptions & TArgs): Date => {
     const resolved = resolveOptions(options);
     const inputZdt = toZonedDateTime(
       input,
       resolved.timeZone,
       resolved.calendar,
     );
-    const resultZdt = fn(inputZdt, options);
 
-    return createDateOperationResult(resultZdt, resolved);
+    return toInstantDate(fn(inputZdt, options));
   };
 }

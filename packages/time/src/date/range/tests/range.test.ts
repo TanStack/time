@@ -13,11 +13,11 @@ describe("range", () => {
       });
 
       expect(result).toHaveLength(5);
-      expect(result[0]!.value).toBe("2024-03-01T00:00:00Z");
-      expect(result[1]!.value).toBe("2024-03-02T00:00:00Z");
-      expect(result[2]!.value).toBe("2024-03-03T00:00:00Z");
-      expect(result[3]!.value).toBe("2024-03-04T00:00:00Z");
-      expect(result[4]!.value).toBe("2024-03-05T00:00:00Z");
+      expect(result[0]!.toISOString()).toBe("2024-03-01T00:00:00.000Z");
+      expect(result[1]!.toISOString()).toBe("2024-03-02T00:00:00.000Z");
+      expect(result[2]!.toISOString()).toBe("2024-03-03T00:00:00.000Z");
+      expect(result[3]!.toISOString()).toBe("2024-03-04T00:00:00.000Z");
+      expect(result[4]!.toISOString()).toBe("2024-03-05T00:00:00.000Z");
     });
 
     test("should generate range with 2-day intervals", () => {
@@ -29,10 +29,10 @@ describe("range", () => {
       });
 
       expect(result).toHaveLength(4);
-      expect(result[0]!.value).toBe("2024-03-01T00:00:00Z");
-      expect(result[1]!.value).toBe("2024-03-03T00:00:00Z");
-      expect(result[2]!.value).toBe("2024-03-05T00:00:00Z");
-      expect(result[3]!.value).toBe("2024-03-07T00:00:00Z");
+      expect(result[0]!.toISOString()).toBe("2024-03-01T00:00:00.000Z");
+      expect(result[1]!.toISOString()).toBe("2024-03-03T00:00:00.000Z");
+      expect(result[2]!.toISOString()).toBe("2024-03-05T00:00:00.000Z");
+      expect(result[3]!.toISOString()).toBe("2024-03-07T00:00:00.000Z");
     });
   });
 
@@ -46,10 +46,10 @@ describe("range", () => {
       });
 
       expect(result).toHaveLength(4);
-      expect(result[0]!.value).toBe("2024-03-01T00:00:00Z");
-      expect(result[1]!.value).toBe("2024-03-01T01:00:00Z");
-      expect(result[2]!.value).toBe("2024-03-01T02:00:00Z");
-      expect(result[3]!.value).toBe("2024-03-01T03:00:00Z");
+      expect(result[0]!.toISOString()).toBe("2024-03-01T00:00:00.000Z");
+      expect(result[1]!.toISOString()).toBe("2024-03-01T01:00:00.000Z");
+      expect(result[2]!.toISOString()).toBe("2024-03-01T02:00:00.000Z");
+      expect(result[3]!.toISOString()).toBe("2024-03-01T03:00:00.000Z");
     });
 
     test("should generate range with 6-hour intervals", () => {
@@ -61,11 +61,11 @@ describe("range", () => {
       });
 
       expect(result).toHaveLength(5);
-      expect(result[0]!.value).toBe("2024-03-01T00:00:00Z");
-      expect(result[1]!.value).toBe("2024-03-01T06:00:00Z");
-      expect(result[2]!.value).toBe("2024-03-01T12:00:00Z");
-      expect(result[3]!.value).toBe("2024-03-01T18:00:00Z");
-      expect(result[4]!.value).toBe("2024-03-02T00:00:00Z");
+      expect(result[0]!.toISOString()).toBe("2024-03-01T00:00:00.000Z");
+      expect(result[1]!.toISOString()).toBe("2024-03-01T06:00:00.000Z");
+      expect(result[2]!.toISOString()).toBe("2024-03-01T12:00:00.000Z");
+      expect(result[3]!.toISOString()).toBe("2024-03-01T18:00:00.000Z");
+      expect(result[4]!.toISOString()).toBe("2024-03-02T00:00:00.000Z");
     });
   });
 
@@ -79,11 +79,11 @@ describe("range", () => {
       });
 
       expect(result).toHaveLength(5);
-      expect(result[0]!.value).toBe("2024-03-01T00:00:00Z");
-      expect(result[1]!.value).toBe("2024-03-08T00:00:00Z");
-      expect(result[2]!.value).toBe("2024-03-15T00:00:00Z");
-      expect(result[3]!.value).toBe("2024-03-22T00:00:00Z");
-      expect(result[4]!.value).toBe("2024-03-29T00:00:00Z");
+      expect(result[0]!.toISOString()).toBe("2024-03-01T00:00:00.000Z");
+      expect(result[1]!.toISOString()).toBe("2024-03-08T00:00:00.000Z");
+      expect(result[2]!.toISOString()).toBe("2024-03-15T00:00:00.000Z");
+      expect(result[3]!.toISOString()).toBe("2024-03-22T00:00:00.000Z");
+      expect(result[4]!.toISOString()).toBe("2024-03-29T00:00:00.000Z");
     });
   });
 
@@ -97,11 +97,11 @@ describe("range", () => {
       });
 
       expect(result).toHaveLength(5);
-      expect(result[0]!.value).toBe("2024-01-15T00:00:00Z");
-      expect(result[1]!.value).toBe("2024-02-15T00:00:00Z");
-      expect(result[2]!.value).toBe("2024-03-15T00:00:00Z");
-      expect(result[3]!.value).toBe("2024-04-15T00:00:00Z");
-      expect(result[4]!.value).toBe("2024-05-15T00:00:00Z");
+      expect(result[0]!.toISOString()).toBe("2024-01-15T00:00:00.000Z");
+      expect(result[1]!.toISOString()).toBe("2024-02-15T00:00:00.000Z");
+      expect(result[2]!.toISOString()).toBe("2024-03-15T00:00:00.000Z");
+      expect(result[3]!.toISOString()).toBe("2024-04-15T00:00:00.000Z");
+      expect(result[4]!.toISOString()).toBe("2024-05-15T00:00:00.000Z");
     });
   });
 
@@ -115,11 +115,11 @@ describe("range", () => {
       });
 
       expect(result).toHaveLength(5);
-      expect(result[0]!.value).toBe("2024-03-01T00:00:00Z");
-      expect(result[1]!.value).toBe("2024-03-01T00:15:00Z");
-      expect(result[2]!.value).toBe("2024-03-01T00:30:00Z");
-      expect(result[3]!.value).toBe("2024-03-01T00:45:00Z");
-      expect(result[4]!.value).toBe("2024-03-01T01:00:00Z");
+      expect(result[0]!.toISOString()).toBe("2024-03-01T00:00:00.000Z");
+      expect(result[1]!.toISOString()).toBe("2024-03-01T00:15:00.000Z");
+      expect(result[2]!.toISOString()).toBe("2024-03-01T00:30:00.000Z");
+      expect(result[3]!.toISOString()).toBe("2024-03-01T00:45:00.000Z");
+      expect(result[4]!.toISOString()).toBe("2024-03-01T01:00:00.000Z");
     });
   });
 
@@ -133,9 +133,9 @@ describe("range", () => {
       });
 
       expect(result).toHaveLength(3);
-      expect(result[0]!.value).toBe("2024-03-01T00:00:00Z");
-      expect(result[1]!.value).toBe("2024-03-02T06:00:00Z");
-      expect(result[2]!.value).toBe("2024-03-03T12:00:00Z");
+      expect(result[0]!.toISOString()).toBe("2024-03-01T00:00:00.000Z");
+      expect(result[1]!.toISOString()).toBe("2024-03-02T06:00:00.000Z");
+      expect(result[2]!.toISOString()).toBe("2024-03-03T12:00:00.000Z");
     });
   });
 
@@ -149,11 +149,11 @@ describe("range", () => {
       });
 
       expect(result).toHaveLength(5);
-      expect(result[0]!.value).toBe("2024-03-05T00:00:00Z");
-      expect(result[1]!.value).toBe("2024-03-04T00:00:00Z");
-      expect(result[2]!.value).toBe("2024-03-03T00:00:00Z");
-      expect(result[3]!.value).toBe("2024-03-02T00:00:00Z");
-      expect(result[4]!.value).toBe("2024-03-01T00:00:00Z");
+      expect(result[0]!.toISOString()).toBe("2024-03-05T00:00:00.000Z");
+      expect(result[1]!.toISOString()).toBe("2024-03-04T00:00:00.000Z");
+      expect(result[2]!.toISOString()).toBe("2024-03-03T00:00:00.000Z");
+      expect(result[3]!.toISOString()).toBe("2024-03-02T00:00:00.000Z");
+      expect(result[4]!.toISOString()).toBe("2024-03-01T00:00:00.000Z");
     });
 
     test("should generate backward hourly range", () => {
@@ -165,10 +165,10 @@ describe("range", () => {
       });
 
       expect(result).toHaveLength(4);
-      expect(result[0]!.value).toBe("2024-03-01T03:00:00Z");
-      expect(result[1]!.value).toBe("2024-03-01T02:00:00Z");
-      expect(result[2]!.value).toBe("2024-03-01T01:00:00Z");
-      expect(result[3]!.value).toBe("2024-03-01T00:00:00Z");
+      expect(result[0]!.toISOString()).toBe("2024-03-01T03:00:00.000Z");
+      expect(result[1]!.toISOString()).toBe("2024-03-01T02:00:00.000Z");
+      expect(result[2]!.toISOString()).toBe("2024-03-01T01:00:00.000Z");
+      expect(result[3]!.toISOString()).toBe("2024-03-01T00:00:00.000Z");
     });
   });
 
@@ -182,7 +182,7 @@ describe("range", () => {
       });
 
       expect(result).toHaveLength(1);
-      expect(result[0]!.value).toBe("2024-03-01T00:00:00Z");
+      expect(result[0]!.toISOString()).toBe("2024-03-01T00:00:00.000Z");
     });
 
     test("should throw error for zero step", () => {
@@ -227,7 +227,7 @@ describe("range", () => {
       });
 
       expect(result).toHaveLength(4);
-      expect(result[3]!.value).toBe("2024-03-04T00:00:00Z");
+      expect(result[3]!.toISOString()).toBe("2024-03-04T00:00:00.000Z");
     });
   });
 
@@ -241,7 +241,7 @@ describe("range", () => {
       });
 
       expect(result).toHaveLength(3);
-      expect(result[0]!.value).toBe("2024-03-01T00:00:00Z");
+      expect(result[0]!.toISOString()).toBe("2024-03-01T00:00:00.000Z");
     });
 
     test("should work with epoch timestamps", () => {
@@ -256,7 +256,7 @@ describe("range", () => {
       });
 
       expect(result).toHaveLength(3);
-      expect(result[0]!.value).toBe("2024-03-01T00:00:00Z");
+      expect(result[0]!.toISOString()).toBe("2024-03-01T00:00:00.000Z");
     });
 
     test("should work with ZonedDateTime", () => {
@@ -275,12 +275,12 @@ describe("range", () => {
       });
 
       expect(result).toHaveLength(3);
-      expect(result[0]!.value).toBe("2024-03-01T00:00:00Z");
+      expect(result[0]!.toISOString()).toBe("2024-03-01T00:00:00.000Z");
     });
   });
 
-  describe("output methods", () => {
-    test("asDate should return Date objects", () => {
+  describe("output", () => {
+    test("should return an array of Dates", () => {
       const result = range({
         start: "2024-03-01T00:00:00Z",
         end: "2024-03-02T00:00:00Z",
@@ -288,34 +288,11 @@ describe("range", () => {
         timeZone: "UTC",
       });
 
-      const date = result[0]!.asDate();
-      expect(date).toBeInstanceOf(Date);
-      expect(date.toISOString()).toBe("2024-03-01T00:00:00.000Z");
-    });
-
-    test("asEpoch should return epoch timestamps", () => {
-      const result = range({
-        start: "2024-03-01T00:00:00Z",
-        end: "2024-03-02T00:00:00Z",
-        step: { days: 1 },
-        timeZone: "UTC",
-      });
-
-      const epoch = result[0]!.asEpoch();
-      expect(typeof epoch).toBe("number");
-      expect(epoch).toBe(new Date("2024-03-01T00:00:00Z").getTime());
-    });
-
-    test("asZonedDateTime should return ZonedDateTime instances", () => {
-      const result = range({
-        start: "2024-03-01T00:00:00Z",
-        end: "2024-03-02T00:00:00Z",
-        step: { days: 1 },
-        timeZone: "UTC",
-      });
-
-      const zdt = result[0]!.asZonedDateTime();
-      expect(zdt).toBeInstanceOf(Temporal.ZonedDateTime);
+      expect(result[0]!).toBeInstanceOf(Date);
+      expect(result[0]!.toISOString()).toBe("2024-03-01T00:00:00.000Z");
+      expect(result[0]!.getTime()).toBe(
+        new Date("2024-03-01T00:00:00Z").getTime(),
+      );
     });
   });
 
@@ -329,22 +306,6 @@ describe("range", () => {
       });
 
       expect(result).toHaveLength(3);
-    });
-  });
-
-  describe("returnFormat", () => {
-    test("should return long format when specified", () => {
-      const result = range({
-        start: "2024-03-01T00:00:00Z",
-        end: "2024-03-02T00:00:00Z",
-        step: { days: 1 },
-        timeZone: "UTC",
-        calendar: "gregory",
-        returnFormat: "long",
-      });
-
-      expect(result[0]!.value).toContain("[UTC]");
-      expect(result[0]!.value).toContain("[u-ca=gregory]");
     });
   });
 });

@@ -6,7 +6,7 @@ export interface SubtractOptions extends DateOperationOptions {
   duration: DurationLike;
 }
 
-export function subtract(input: DateInput, options: SubtractOptions) {
+export function subtract(input: DateInput, options: SubtractOptions): Date {
   return withDateOperation<SubtractOptions>((zdt, { duration }) => {
     return zdt.subtract(duration);
   })(input, options);

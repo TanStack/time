@@ -9,7 +9,7 @@ describe("ceil", () => {
         unit: "day",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-16T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-16T00:00:00.000Z");
     });
 
     test("should ceil up to next hour", () => {
@@ -17,7 +17,7 @@ describe("ceil", () => {
         unit: "hour",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T15:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-15T15:00:00.000Z");
     });
 
     test("should ceil up to next minute", () => {
@@ -25,7 +25,7 @@ describe("ceil", () => {
         unit: "minute",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T14:43:00Z");
+      expect(result.toISOString()).toBe("2024-03-15T14:43:00.000Z");
     });
 
     test("should ceil up to next second", () => {
@@ -33,7 +33,7 @@ describe("ceil", () => {
         unit: "second",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T14:42:13Z");
+      expect(result.toISOString()).toBe("2024-03-15T14:42:13.000Z");
     });
 
     test("should keep millisecond boundary for string input", () => {
@@ -41,10 +41,7 @@ describe("ceil", () => {
         unit: "millisecond",
         timeZone: "UTC",
       });
-      const ceiled = result.asZonedDateTime();
-      expect(ceiled.millisecond).toBe(789);
-      expect(ceiled.microsecond).toBe(0);
-      expect(ceiled.nanosecond).toBe(0);
+      expect(result.toISOString()).toBe("2024-03-15T14:42:12.789Z");
     });
 
     test("should not change when already at boundary", () => {
@@ -52,7 +49,7 @@ describe("ceil", () => {
         unit: "day",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-15T00:00:00.000Z");
     });
   });
 
@@ -63,7 +60,7 @@ describe("ceil", () => {
         unit: "hour",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T15:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-15T15:00:00.000Z");
     });
 
     test("should work with epoch time", () => {
@@ -72,7 +69,7 @@ describe("ceil", () => {
         unit: "hour",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T15:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-15T15:00:00.000Z");
     });
 
     test("should work with ZonedDateTime", () => {
@@ -83,7 +80,7 @@ describe("ceil", () => {
         unit: "hour",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T15:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-15T15:00:00.000Z");
     });
 
     test("should ceil sub-millisecond with ZonedDateTime", () => {
@@ -94,30 +91,25 @@ describe("ceil", () => {
         unit: "millisecond",
         timeZone: "UTC",
       });
-      const ceiled = result.asZonedDateTime();
-      expect(ceiled.millisecond).toBe(790);
-      expect(ceiled.microsecond).toBe(0);
-      expect(ceiled.nanosecond).toBe(0);
+      expect(result.toISOString()).toBe("2024-03-15T14:42:12.790Z");
     });
   });
 
   describe("timezone handling", () => {
-    test("should respect timezone", () => {
-      const result = ceil("2024-03-15T14:20:00Z", {
-        unit: "hour",
-        timeZone: "America/New_York",
-      });
-      expect(result.timeZone).toBe("America/New_York");
-    });
-  });
+    test("should ceil to the local hour, not to the UTC hour", () => {
+      expect(
+        ceil("2024-03-15T14:20:00Z", {
+          unit: "hour",
+          timeZone: "Asia/Kolkata",
+        }).toISOString(),
+      ).toBe("2024-03-15T14:30:00.000Z");
 
-  describe("calendar handling", () => {
-    test("should respect calendar", () => {
-      const result = ceil("2024-03-15T14:20:00Z", {
-        unit: "hour",
-        calendar: "japanese",
-      });
-      expect(result.calendar).toBe("japanese");
+      expect(
+        ceil("2024-03-15T14:20:00Z", {
+          unit: "hour",
+          timeZone: "UTC",
+        }).toISOString(),
+      ).toBe("2024-03-15T15:00:00.000Z");
     });
   });
 
@@ -127,7 +119,7 @@ describe("ceil", () => {
         unit: "day",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2025-01-01T00:00:00Z");
+      expect(result.toISOString()).toBe("2025-01-01T00:00:00.000Z");
     });
 
     test("should handle month boundary", () => {
@@ -135,7 +127,7 @@ describe("ceil", () => {
         unit: "day",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-01T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-01T00:00:00.000Z");
     });
   });
 });

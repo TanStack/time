@@ -1,9 +1,6 @@
 import { Temporal } from "@js-temporal/polyfill";
 import { toZonedDateTime } from "../helpers";
-import {
-  createDateOperationResult,
-  resolveOptions,
-} from "../withDateOperation";
+import { resolveOptions, toInstantDate } from "../withDateOperation";
 import type { DateOperationOptions } from "../withDateOperation";
 import type { DateInput, DurationLike } from "../types";
 
@@ -13,7 +10,7 @@ export interface RangeOptions extends DateOperationOptions {
   step: DurationLike;
 }
 
-export function range(options: RangeOptions) {
+export function range(options: RangeOptions): Array<Date> {
   const { start, end, step } = options;
   const resolved = resolveOptions(options);
   const duration = Temporal.Duration.from(step);
@@ -36,11 +33,11 @@ export function range(options: RangeOptions) {
     );
   }
 
-  const result: Array<ReturnType<typeof createDateOperationResult>> = [];
+  const result: Array<Date> = [];
   let current = startZdt;
 
   while (duration.sign * Temporal.ZonedDateTime.compare(current, endZdt) <= 0) {
-    result.push(createDateOperationResult(current, resolved));
+    result.push(toInstantDate(current));
     current = current.add(duration);
   }
 

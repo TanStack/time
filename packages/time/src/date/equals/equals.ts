@@ -1,4 +1,3 @@
-import { normalizeWeek } from "../helpers";
 import { startOf } from "../startOf";
 import type { DateInput, DateOptions } from "../types";
 import { getDateTimeDefaults } from "~/utils";
@@ -26,22 +25,12 @@ export function equals(
   const { timeZone = defaultTimeZone, calendar = defaultCalendar } =
     options ?? {};
 
-  const startOf1 = startOf(date1, { unit, timeZone, calendar });
-  const startOf2 = startOf(date2, { unit, timeZone, calendar });
+  const anchor = (date: DateInput) => {
+    const start = startOf(date, { unit, timeZone, calendar });
+    return unit === "week"
+      ? startOf(start, { unit: "day", timeZone, calendar })
+      : start;
+  };
 
-  const zdt1 = startOf1.asZonedDateTime();
-  const zdt2 = startOf2.asZonedDateTime();
-
-  if (unit === "week") {
-    const normalized1 = normalizeWeek(zdt1);
-    const normalized2 = normalizeWeek(zdt2);
-    return (
-      normalized1.toInstant().epochNanoseconds ===
-      normalized2.toInstant().epochNanoseconds
-    );
-  }
-
-  return (
-    zdt1.toInstant().epochNanoseconds === zdt2.toInstant().epochNanoseconds
-  );
+  return anchor(date1).getTime() === anchor(date2).getTime();
 }

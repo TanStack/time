@@ -12,7 +12,7 @@ describe("clamp", () => {
         },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-15T00:00:00.000Z");
     });
 
     test("should clamp to start when before range", () => {
@@ -23,7 +23,7 @@ describe("clamp", () => {
         },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-01T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-01T00:00:00.000Z");
     });
 
     test("should clamp to end when after range", () => {
@@ -34,7 +34,7 @@ describe("clamp", () => {
         },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-31T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-31T00:00:00.000Z");
     });
 
     test("should clamp to start when equal to start", () => {
@@ -45,7 +45,7 @@ describe("clamp", () => {
         },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-01T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-01T00:00:00.000Z");
     });
 
     test("should clamp to end when equal to end", () => {
@@ -56,7 +56,7 @@ describe("clamp", () => {
         },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-31T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-31T00:00:00.000Z");
     });
   });
 
@@ -69,7 +69,7 @@ describe("clamp", () => {
         },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-01T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-01T00:00:00.000Z");
     });
 
     test("should work with epoch time", () => {
@@ -80,7 +80,7 @@ describe("clamp", () => {
         },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-01T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-01T00:00:00.000Z");
     });
 
     test("should work with ZonedDateTime", () => {
@@ -98,33 +98,7 @@ describe("clamp", () => {
         },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-01T00:00:00Z");
-    });
-  });
-
-  describe("timezone handling", () => {
-    test("should respect timezone", () => {
-      const result = clamp("2024-02-15T00:00:00Z", {
-        range: {
-          start: "2024-03-01T00:00:00Z",
-          end: "2024-03-31T00:00:00Z",
-        },
-        timeZone: "America/New_York",
-      });
-      expect(result.timeZone).toBe("America/New_York");
-    });
-  });
-
-  describe("calendar handling", () => {
-    test("should respect calendar", () => {
-      const result = clamp("2024-02-15T00:00:00Z", {
-        range: {
-          start: "2024-03-01T00:00:00Z",
-          end: "2024-03-31T00:00:00Z",
-        },
-        calendar: "japanese",
-      });
-      expect(result.calendar).toBe("japanese");
+      expect(result.toISOString()).toBe("2024-03-01T00:00:00.000Z");
     });
   });
 
@@ -137,7 +111,7 @@ describe("clamp", () => {
         },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-10T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-10T00:00:00.000Z");
     });
   });
 });

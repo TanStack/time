@@ -18,7 +18,7 @@ export interface SetOptions extends DateOperationOptions {
   fields: SetFields;
 }
 
-export function set(input: DateInput, options: SetOptions) {
+export function set(input: DateInput, options: SetOptions): Date {
   return withDateOperation<SetOptions>((zdt, { fields }) => {
     return zdt.with(fields);
   })(input, options);

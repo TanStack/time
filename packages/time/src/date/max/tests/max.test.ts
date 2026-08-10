@@ -13,19 +13,19 @@ describe("max", () => {
         ],
         { timeZone: "UTC" },
       );
-      expect(result.value).toBe("2024-03-31T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-31T00:00:00.000Z");
     });
 
     test("should work with single date", () => {
       const result = max(["2024-03-15T00:00:00Z"], { timeZone: "UTC" });
-      expect(result.value).toBe("2024-03-15T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-15T00:00:00.000Z");
     });
 
     test("should work with two dates", () => {
       const result = max(["2024-03-31T00:00:00Z", "2024-03-01T00:00:00Z"], {
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-31T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-31T00:00:00.000Z");
     });
   });
 
@@ -39,7 +39,7 @@ describe("max", () => {
         ],
         { timeZone: "UTC" },
       );
-      expect(result.value).toBe("2024-03-31T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-31T00:00:00.000Z");
     });
 
     test("should work with ZonedDateTime", () => {
@@ -54,25 +54,17 @@ describe("max", () => {
         ],
         { timeZone: "UTC" },
       );
-      expect(result.value).toBe("2024-03-31T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-03-31T00:00:00.000Z");
     });
   });
 
   describe("timezone handling", () => {
-    test("should respect timezone", () => {
-      const result = max(["2024-03-15T00:00:00Z", "2024-03-01T00:00:00Z"], {
-        timeZone: "America/New_York",
-      });
-      expect(result.timeZone).toBe("America/New_York");
-    });
-  });
+    test("should pick the same instant in any timezone", () => {
+      const dates = ["2024-03-15T00:00:00Z", "2024-03-01T00:00:00Z"];
 
-  describe("calendar handling", () => {
-    test("should respect calendar", () => {
-      const result = max(["2024-03-15T00:00:00Z", "2024-03-01T00:00:00Z"], {
-        calendar: "japanese",
-      });
-      expect(result.calendar).toBe("japanese");
+      expect(max(dates, { timeZone: "America/New_York" }).getTime()).toBe(
+        max(dates, { timeZone: "Asia/Tokyo" }).getTime(),
+      );
     });
   });
 

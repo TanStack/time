@@ -6,7 +6,7 @@ export interface AddOptions extends DateOperationOptions {
   duration: DurationLike;
 }
 
-export function add(input: DateInput, options: AddOptions) {
+export function add(input: DateInput, options: AddOptions): Date {
   return withDateOperation<AddOptions>((zdt, { duration }) => {
     return zdt.add(duration);
   })(input, options);

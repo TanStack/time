@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Kernel } from "../../index";
 import type { KernelEvent } from "../../index";
 import { durationModule } from "../index";
+import type { DurationModuleApi } from "../index";
 import type { WorkingCalendar } from "~/workingTime";
 
 interface CalEvent extends KernelEvent {
@@ -28,14 +29,17 @@ const OFFICE: WorkingCalendar = {
 const MON = "2026-03-02";
 
 const kernelWith = () =>
-  new Kernel<CalEvent>().use(
+  new Kernel<CalEvent, DurationModuleApi>().use(
     durationModule<CalEvent>({
       resources: [{ id: "r", calendarId: "office" }],
       workingTime: { calendars: [OFFICE], defaultCalendarId: "office" },
     }),
   );
 
-const add = (kernel: Kernel<CalEvent>, event: Partial<CalEvent> = {}) =>
+const add = (
+  kernel: Kernel<CalEvent, DurationModuleApi>,
+  event: Partial<CalEvent> = {},
+) =>
   kernel.write({
     kind: "add",
     event: {

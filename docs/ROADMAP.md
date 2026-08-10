@@ -35,8 +35,8 @@ Prerequisite for everything. Nothing user-facing.
 - [x] Migrate boundary types: `currentPeriod` / `activeDate` are ISO `YYYY-MM-DD` strings and
       `Day.date` is gone (`Day.isoDate` was already the documented field), so no Temporal value
       crosses the calendar boundary (ADR 0002). The `{ value, options, asZonedDateTime }` shape
-      the Date Primitives still return contradicts the same ADR — that is the Phase 1 audit
-      below, not this item.
+      the Date Primitives returned contradicted the same ADR; that was the Phase 1 audit below,
+      and it has since landed.
 - [x] Remove pixels from the core: `containerHeight` dropped from `getUnavailableRanges`
       (now `startFraction`/`endFraction` + `%`); logical layout (`startFraction`,
       `endFraction`, `column`, `columnCount`) lives in the `layout` projection stage with
@@ -58,7 +58,11 @@ Ships once Phase 0 lands. Scope from ADR 0005 plus the pre-alpha breaking model 
       surface is what was composed. **Lands first in this phase**: the hierarchy and solver items
       below attach as features, so doing it after means writing them twice. Slice plan in
       `docs/plans/phase-1-feature-composition.md`; the kernel's `Module.api` seam landed.
-- [ ] **Date Primitives** (already present — audit for ADR 0002 return-type contract).
+- [x] **Date Primitives** (already present — audited for the ADR 0002 return-type contract). The
+      twelve instant-bearing primitives returned the `{ value, options, asZonedDateTime }` tuple the
+      ADR rejects; they now return a native `Date`, which also makes them compose as `DateInput`.
+      See `docs/plans/phase-1-date-primitives-audit.md`. `DateInput` still *accepts* Temporal values
+      — an input-side question the audit deliberately left open.
 - [ ] **Kernel**: event collection + viewport + projection + plain CRUD + `getRequiredRange`
       / rollback.
 - [ ] **Calendar product** modules: recurrence (UI-builder subset), drag-resize, advisory

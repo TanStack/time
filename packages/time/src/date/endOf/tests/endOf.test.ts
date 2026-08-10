@@ -8,7 +8,7 @@ describe("endOf", () => {
         unit: "year",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-12-31T23:59:59.999Z");
+      expect(result.toISOString()).toBe("2024-12-31T23:59:59.999Z");
     });
 
     test("should return end of month", () => {
@@ -16,7 +16,7 @@ describe("endOf", () => {
         unit: "month",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-31T23:59:59.999Z");
+      expect(result.toISOString()).toBe("2024-03-31T23:59:59.999Z");
     });
 
     test("should return end of day", () => {
@@ -24,27 +24,27 @@ describe("endOf", () => {
         unit: "day",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T23:59:59.999Z");
+      expect(result.toISOString()).toBe("2024-03-15T23:59:59.999Z");
     });
 
     test("should return end of hour", () => {
       const result = endOf("2024-03-15T14:42:12.789Z", { unit: "hour" });
-      expect(result.value).toContain("2024-03-15T14:59:59.999");
+      expect(result.toISOString()).toContain("2024-03-15T14:59:59.999");
     });
 
     test("should return end of minute", () => {
       const result = endOf("2024-03-15T14:42:12.789Z", { unit: "minute" });
-      expect(result.value).toContain("2024-03-15T14:42:59.999");
+      expect(result.toISOString()).toContain("2024-03-15T14:42:59.999");
     });
 
     test("should return end of second", () => {
       const result = endOf("2024-03-15T14:42:12.789Z", { unit: "second" });
-      expect(result.value).toContain("2024-03-15T14:42:12.999");
+      expect(result.toISOString()).toContain("2024-03-15T14:42:12.999");
     });
 
     test("should return end of millisecond", () => {
       const result = endOf("2024-03-15T14:42:12.789Z", { unit: "millisecond" });
-      expect(result.value).toContain("2024-03-15T14:42:12.789");
+      expect(result.toISOString()).toContain("2024-03-15T14:42:12.789");
     });
   });
 
@@ -54,10 +54,10 @@ describe("endOf", () => {
         unit: "week",
         timeZone: "UTC",
       });
-      const resultDate = new Date(result.value);
+      const resultDate = result;
       expect(resultDate.getUTCDay()).toBe(0);
-      expect(result.value).toContain("2024-03-17");
-      expect(result.value).toContain("23:59:59.999");
+      expect(result.toISOString()).toContain("2024-03-17");
+      expect(result.toISOString()).toContain("23:59:59.999");
     });
 
     test("should return end of week for Sunday", () => {
@@ -65,10 +65,10 @@ describe("endOf", () => {
         unit: "week",
         timeZone: "UTC",
       });
-      const resultDate = new Date(result.value);
+      const resultDate = result;
       expect(resultDate.getUTCDay()).toBe(0);
-      expect(result.value).toContain("2024-03-17");
-      expect(result.value).toContain("23:59:59.999");
+      expect(result.toISOString()).toContain("2024-03-17");
+      expect(result.toISOString()).toContain("23:59:59.999");
     });
 
     test("should return end of week for Monday", () => {
@@ -76,9 +76,9 @@ describe("endOf", () => {
         unit: "week",
         timeZone: "UTC",
       });
-      const resultDate = new Date(result.value);
+      const resultDate = result;
       expect(resultDate.getUTCDay()).toBe(0);
-      expect(result.value).toContain("2024-03-17");
+      expect(result.toISOString()).toContain("2024-03-17");
     });
   });
 
@@ -88,7 +88,7 @@ describe("endOf", () => {
         unit: "year",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-12-31T23:59:59.999Z");
+      expect(result.toISOString()).toBe("2024-12-31T23:59:59.999Z");
     });
 
     test("should handle end of month for last day", () => {
@@ -96,7 +96,7 @@ describe("endOf", () => {
         unit: "month",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-31T23:59:59.999Z");
+      expect(result.toISOString()).toBe("2024-03-31T23:59:59.999Z");
     });
 
     test("should handle end of month for February in leap year", () => {
@@ -104,7 +104,7 @@ describe("endOf", () => {
         unit: "month",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-02-29T23:59:59.999Z");
+      expect(result.toISOString()).toBe("2024-02-29T23:59:59.999Z");
     });
 
     test("should handle end of month for February in non-leap year", () => {
@@ -112,7 +112,7 @@ describe("endOf", () => {
         unit: "month",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2023-02-28T23:59:59.999Z");
+      expect(result.toISOString()).toBe("2023-02-28T23:59:59.999Z");
     });
 
     test("should handle end of day at 23:59:59", () => {
@@ -120,12 +120,12 @@ describe("endOf", () => {
         unit: "day",
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T23:59:59.999Z");
+      expect(result.toISOString()).toBe("2024-03-15T23:59:59.999Z");
     });
 
     test("should handle end of hour at 59:59", () => {
       const result = endOf("2024-03-15T14:59:59Z", { unit: "hour" });
-      expect(result.value).toContain("2024-03-15T14:59:59.999");
+      expect(result.toISOString()).toContain("2024-03-15T14:59:59.999");
     });
   });
 });

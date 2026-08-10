@@ -1,12 +1,12 @@
 import { Temporal } from "@js-temporal/polyfill";
 import { toZonedDateTime } from "../helpers";
-import { createDateOperationResult } from "../withDateOperation";
+import { toInstantDate } from "../withDateOperation";
 import type { DateInput, DateOptions } from "../types";
 import { getDateTimeDefaults } from "~/utils";
 
 export interface MinOptions extends DateOptions {}
 
-export function min(dates: Array<DateInput>, options?: MinOptions) {
+export function min(dates: Array<DateInput>, options?: MinOptions): Date {
   const { timeZone: defaultTimeZone, calendar: defaultCalendar } =
     getDateTimeDefaults();
   const { timeZone = defaultTimeZone, calendar = defaultCalendar } =
@@ -25,9 +25,5 @@ export function min(dates: Array<DateInput>, options?: MinOptions) {
     }
   }
 
-  return createDateOperationResult(minZdt, {
-    timeZone,
-    calendar,
-    returnFormat: "standard",
-  });
+  return toInstantDate(minZdt);
 }

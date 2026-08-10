@@ -1,4 +1,5 @@
 import { startOf } from "../startOf";
+import { toZonedDateTime } from "../helpers";
 import type { DateInput, DateOptions } from "../types";
 import { getDateTimeDefaults } from "~/utils";
 
@@ -29,12 +30,15 @@ export function count(
     calendar = defaultCalendar,
   } = options;
 
-  const startZdt = startOf(start, {
-    unit,
-    timeZone,
-    calendar,
-  }).asZonedDateTime();
-  const endZdt = startOf(end, { unit, timeZone, calendar }).asZonedDateTime();
+  const anchor = (date: DateInput) =>
+    toZonedDateTime(
+      startOf(date, { unit, timeZone, calendar }),
+      timeZone,
+      calendar,
+    );
+
+  const startZdt = anchor(start);
+  const endZdt = anchor(end);
 
   const duration = startZdt.until(endZdt);
   return duration.total({ unit, relativeTo: startZdt });

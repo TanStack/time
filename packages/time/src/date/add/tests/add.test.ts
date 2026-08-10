@@ -9,7 +9,7 @@ describe("add", () => {
         duration: { days: 1 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-16T14:42:12.789Z");
+      expect(result.toISOString()).toBe("2024-03-16T14:42:12.789Z");
     });
 
     test("should add multiple days", () => {
@@ -17,7 +17,7 @@ describe("add", () => {
         duration: { days: 7 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-22T14:42:12.789Z");
+      expect(result.toISOString()).toBe("2024-03-22T14:42:12.789Z");
     });
 
     test("should add hours", () => {
@@ -25,7 +25,7 @@ describe("add", () => {
         duration: { hours: 2 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T16:42:12.789Z");
+      expect(result.toISOString()).toBe("2024-03-15T16:42:12.789Z");
     });
 
     test("should add minutes", () => {
@@ -33,7 +33,7 @@ describe("add", () => {
         duration: { minutes: 30 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T15:12:12.789Z");
+      expect(result.toISOString()).toBe("2024-03-15T15:12:12.789Z");
     });
 
     test("should add seconds", () => {
@@ -41,7 +41,7 @@ describe("add", () => {
         duration: { seconds: 45 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T14:42:57.789Z");
+      expect(result.toISOString()).toBe("2024-03-15T14:42:57.789Z");
     });
 
     test("should add milliseconds", () => {
@@ -49,7 +49,7 @@ describe("add", () => {
         duration: { milliseconds: 100 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T14:42:12.889Z");
+      expect(result.toISOString()).toBe("2024-03-15T14:42:12.889Z");
     });
 
     test("should add months", () => {
@@ -57,7 +57,7 @@ describe("add", () => {
         duration: { months: 1 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-04-15T14:42:12.789Z");
+      expect(result.toISOString()).toBe("2024-04-15T14:42:12.789Z");
     });
 
     test("should add years", () => {
@@ -65,7 +65,7 @@ describe("add", () => {
         duration: { years: 1 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2025-03-15T14:42:12.789Z");
+      expect(result.toISOString()).toBe("2025-03-15T14:42:12.789Z");
     });
 
     test("should add weeks", () => {
@@ -73,7 +73,7 @@ describe("add", () => {
         duration: { weeks: 2 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-29T14:42:12.789Z");
+      expect(result.toISOString()).toBe("2024-03-29T14:42:12.789Z");
     });
   });
 
@@ -83,7 +83,7 @@ describe("add", () => {
         duration: { days: 1, hours: 2, minutes: 30 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-16T17:12:12.789Z");
+      expect(result.toISOString()).toBe("2024-03-16T17:12:12.789Z");
     });
 
     test("should handle year and month addition", () => {
@@ -91,7 +91,7 @@ describe("add", () => {
         duration: { years: 1, months: 2 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2025-05-15T14:42:12.789Z");
+      expect(result.toISOString()).toBe("2025-05-15T14:42:12.789Z");
     });
   });
 
@@ -101,7 +101,7 @@ describe("add", () => {
         duration: { months: 1 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-02-29T00:00:00Z");
+      expect(result.toISOString()).toBe("2024-02-29T00:00:00.000Z");
     });
 
     test("should handle leap year correctly", () => {
@@ -109,7 +109,7 @@ describe("add", () => {
         duration: { years: 1 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2025-02-28T00:00:00Z");
+      expect(result.toISOString()).toBe("2025-02-28T00:00:00.000Z");
     });
 
     test("should handle negative duration (subtraction)", () => {
@@ -117,7 +117,7 @@ describe("add", () => {
         duration: { days: -1 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-14T14:42:12.789Z");
+      expect(result.toISOString()).toBe("2024-03-14T14:42:12.789Z");
     });
 
     test("should handle zero duration", () => {
@@ -125,7 +125,7 @@ describe("add", () => {
         duration: { days: 0 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-15T14:42:12.789Z");
+      expect(result.toISOString()).toBe("2024-03-15T14:42:12.789Z");
     });
   });
 
@@ -136,7 +136,7 @@ describe("add", () => {
         duration: { days: 1 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-16T14:42:12.789Z");
+      expect(result.toISOString()).toBe("2024-03-16T14:42:12.789Z");
     });
 
     test("should work with epoch time", () => {
@@ -145,7 +145,7 @@ describe("add", () => {
         duration: { days: 1 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-16T14:42:12.789Z");
+      expect(result.toISOString()).toBe("2024-03-16T14:42:12.789Z");
     });
 
     test("should work with ZonedDateTime", () => {
@@ -156,7 +156,7 @@ describe("add", () => {
         duration: { days: 1 },
         timeZone: "UTC",
       });
-      expect(result.value).toBe("2024-03-16T14:42:12.789Z");
+      expect(result.toISOString()).toBe("2024-03-16T14:42:12.789Z");
     });
   });
 
@@ -166,26 +166,45 @@ describe("add", () => {
         duration: { hours: 1 },
         timeZone: "America/New_York",
       });
-      expect(result.options.timeZone).toBe("America/New_York");
-      expect(result.value).toContain("2024-03-15");
+      expect(result.toISOString()).toContain("2024-03-15");
     });
 
-    test("should return timezone in options", () => {
-      const result = add("2024-03-15T14:42:12.789Z", {
-        duration: { days: 1 },
-        timeZone: "Asia/Tokyo",
-      });
-      expect(result.options.timeZone).toBe("Asia/Tokyo");
+    test("should add calendar days in the given timezone, not in UTC", () => {
+      const options = { duration: { days: 1 } } as const;
+
+      expect(
+        add("2024-03-09T12:00:00Z", {
+          ...options,
+          timeZone: "America/New_York",
+        }).toISOString(),
+      ).toBe("2024-03-10T11:00:00.000Z");
+
+      expect(
+        add("2024-03-09T12:00:00Z", {
+          ...options,
+          timeZone: "UTC",
+        }).toISOString(),
+      ).toBe("2024-03-10T12:00:00.000Z");
     });
   });
 
   describe("calendar handling", () => {
-    test("should respect calendar", () => {
-      const result = add("2024-03-15T14:42:12.789Z", {
-        duration: { days: 1 },
-        calendar: "japanese",
-      });
-      expect(result.options.calendar).toBe("japanese");
+    test("should add months in the given calendar", () => {
+      const options = { duration: { months: 1 }, timeZone: "UTC" } as const;
+
+      expect(
+        add("2024-03-15T14:42:12.789Z", {
+          ...options,
+          calendar: "islamic",
+        }).toISOString(),
+      ).toBe("2024-04-13T14:42:12.789Z");
+
+      expect(
+        add("2024-03-15T14:42:12.789Z", {
+          ...options,
+          calendar: "iso8601",
+        }).toISOString(),
+      ).toBe("2024-04-15T14:42:12.789Z");
     });
   });
 });

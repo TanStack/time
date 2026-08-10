@@ -7,15 +7,13 @@ export type CeilUnit =
   | "hour"
   | "minute"
   | "second"
-  | "millisecond"
-  | "microsecond"
-  | "nanosecond";
+  | "millisecond";
 
 export interface CeilOptions extends DateOperationOptions {
   unit: CeilUnit;
 }
 
-export function ceil(input: DateInput, options: CeilOptions) {
+export function ceil(input: DateInput, options: CeilOptions): Date {
   return withDateOperation<CeilOptions>((zdt, { unit }) => {
     return zdt.round({ smallestUnit: unit, roundingMode: "ceil" });
   })(input, options);
