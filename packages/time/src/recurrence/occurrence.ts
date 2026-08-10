@@ -25,13 +25,16 @@ export function nextOccurrenceDate<
   if (!master.recurrence) return null;
 
   const from = Temporal.PlainDate.from(fromIsoDate);
+  const searchStart = from.add({ days: 1 }).toString({ calendarName: "never" });
   const occurrences = expandRecurringEvent<TResource, TEvent>(
     master,
-    from.add({ days: 1 }).toString({ calendarName: "never" }),
+    searchStart,
     from.add({ years: horizonYears }).toString({ calendarName: "never" }),
   );
 
-  const first = occurrences[0];
+  const first = occurrences.find(
+    (occurrence) => isoDateOf(occurrence.start) >= searchStart,
+  );
   return first ? isoDateOf(first.start) : null;
 }
 

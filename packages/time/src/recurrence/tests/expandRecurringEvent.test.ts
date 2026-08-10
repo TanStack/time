@@ -120,6 +120,31 @@ describe("expandRecurringEvent", () => {
     expect(starts(occ)).toEqual(["2026-01-31T09:00:00", "2026-02-28T09:00:00"]);
   });
 
+  it("returns an occurrence that starts before the window but ends inside it", () => {
+    const occ = expandRecurringEvent(
+      daily({
+        recurrence: {
+          frequency: "daily",
+          overrides: [
+            {
+              originalStart: "2026-01-06T09:00:00",
+              start: "2026-01-06T09:00:00",
+              end: "2026-01-07T10:00:00",
+            },
+          ],
+        },
+      }),
+      "2026-01-07",
+      "2026-01-08",
+    );
+    expect(starts(occ)).toEqual(["2026-01-06T09:00:00", "2026-01-07T09:00:00"]);
+  });
+
+  it("drops an occurrence that ends before the window starts", () => {
+    const occ = expandRecurringEvent(daily(), "2026-01-07", "2026-01-08");
+    expect(starts(occ)).toEqual(["2026-01-07T09:00:00"]);
+  });
+
   it("tags occurrences with master id and index", () => {
     const occ = expandRecurringEvent(daily(), "2026-01-05", "2026-01-07");
     expect(occ[0]!.id).toBe("m");

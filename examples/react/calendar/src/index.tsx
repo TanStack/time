@@ -68,6 +68,12 @@ function formatDateToISO(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+function shiftIsoDate(isoDate: string, days: number): string {
+  const date = new Date(`${isoDate}T00:00:00`);
+  date.setDate(date.getDate() + days);
+  return formatDateToISO(date);
+}
+
 function padTimePart(n: number): string {
   return String(n).padStart(2, "0");
 }
@@ -1303,6 +1309,7 @@ function CalendarView() {
   const prevScheduleScrollWidthRef = useRef(0);
   const needsScheduleScrollAdjRef = useRef(false);
   const needsScheduleScrollResetRef = useRef(false);
+  const scheduleScrollRatioRef = useRef(0);
   const [scheduleBufferVersion, setScheduleBufferVersion] = useState(0);
   const prevViewModeUnitRef = useRef(calendar.viewMode.unit);
 
@@ -1325,22 +1332,39 @@ function CalendarView() {
         rafRef.current = undefined;
         const viewportRect = el.getBoundingClientRect();
         const cells = el.querySelectorAll<HTMLElement>("[data-day-date]");
+        const visibleHeightByMonth = new Map<string, number>();
+
         for (const cell of cells) {
+          const iso = cell.getAttribute("data-day-date");
+          if (!iso) continue;
           const cellRect = cell.getBoundingClientRect();
-          if (cellRect.bottom > viewportRect.top) {
-            const iso = cell.getAttribute("data-day-date");
-            if (iso) {
-              const d = new Date(`${iso}T00:00:00`);
-              setVisibleMonth(
-                d.toLocaleDateString(undefined, {
-                  month: "long",
-                  year: "numeric",
-                }),
-              );
-            }
-            break;
+          const visibleHeight =
+            Math.min(cellRect.bottom, viewportRect.bottom) -
+            Math.max(cellRect.top, viewportRect.top);
+          if (visibleHeight <= 0) continue;
+          const month = iso.slice(0, 7);
+          visibleHeightByMonth.set(
+            month,
+            (visibleHeightByMonth.get(month) ?? 0) + visibleHeight,
+          );
+        }
+
+        let dominantMonth: string | null = null;
+        let dominantHeight = 0;
+        for (const [month, height] of visibleHeightByMonth) {
+          if (height > dominantHeight) {
+            dominantMonth = month;
+            dominantHeight = height;
           }
         }
+        if (!dominantMonth) return;
+
+        setVisibleMonth(
+          new Date(`${dominantMonth}-01T00:00:00`).toLocaleDateString(
+            undefined,
+            { month: "long", year: "numeric" },
+          ),
+        );
       });
     };
 
@@ -1392,12 +1416,14 @@ function CalendarView() {
     if (needsScrollResetRef.current) {
       needsScrollResetRef.current = false;
       el.scrollTop = 0;
+      markMonthScroll();
       return;
     }
 
     if (!needsScrollAdjRef.current) return;
     needsScrollAdjRef.current = false;
     el.scrollTop += el.scrollHeight - prevScrollHeightRef.current;
+    markMonthScroll();
   });
 
   if (prevViewModeUnitRef.current !== calendar.viewMode.unit) {
@@ -1434,37 +1460,45 @@ function CalendarView() {
     calendar.groupDaysBy,
   ]);
 
-  const { startSentinelRef: monthTopRef, endSentinelRef: monthBottomRef } =
-    useInfiniteScroll({
-      root: monthScrollRef,
-      rootMargin: "120px 0px",
-      cooldownMs: 1000,
-      onReachStart: () => {
-        const el = monthScrollRef.current;
-        if (!el || el.scrollHeight <= el.clientHeight) return;
-        if (!calendar.canGoPreviousPeriod() || calendar.isPending) return;
-        navDirectionRef.current = "backward";
-        calendar.goToPreviousPeriod();
-      },
-      onReachEnd: () => {
-        const el = monthScrollRef.current;
-        if (!el || el.clientHeight === 0) return;
-        if (!calendar.canGoNextPeriod() || calendar.isPending) return;
-        navDirectionRef.current = "forward";
-        calendar.goToNextPeriod();
-      },
-      disabled: isScheduleView,
-    });
+  const {
+    startSentinelRef: monthTopRef,
+    endSentinelRef: monthBottomRef,
+    markProgrammaticScroll: markMonthScroll,
+  } = useInfiniteScroll({
+    root: monthScrollRef,
+    rootMargin: "120px 0px",
+    cooldownMs: 1000,
+    onReachStart: () => {
+      const el = monthScrollRef.current;
+      if (!el || el.scrollHeight <= el.clientHeight) return;
+      if (!monthBufferRef.current || calendar.isPending) return;
+      navDirectionRef.current = "backward";
+      calendar.goToSpecificPeriod(
+        shiftIsoDate(monthBufferRef.current.start, -1),
+      );
+    },
+    onReachEnd: () => {
+      const el = monthScrollRef.current;
+      if (!el || el.clientHeight === 0) return;
+      if (!monthBufferRef.current || calendar.isPending) return;
+      navDirectionRef.current = "forward";
+      calendar.goToSpecificPeriod(shiftIsoDate(monthBufferRef.current.end, 1));
+    },
+    disabled: isScheduleView,
+  });
 
   if (
     isScheduleView &&
     scheduleBufferRef.current === null &&
     scheduleDays.length > 0
   ) {
+    const periodDays = scheduleDays.length;
     scheduleBufferRef.current = {
-      start: scheduleDays[0].isoDate,
-      end: scheduleDays[scheduleDays.length - 1].isoDate,
+      start: shiftIsoDate(scheduleDays[0].isoDate, -periodDays),
+      end: shiftIsoDate(scheduleDays[periodDays - 1].isoDate, periodDays),
     };
+    scheduleScrollRatioRef.current = 1 / 3;
+    needsScheduleScrollResetRef.current = true;
   }
 
   useEffect(() => {
@@ -1487,7 +1521,12 @@ function CalendarView() {
     const newEnd = currentDays[currentDays.length - 1].isoDate;
 
     if (scheduleNavDirectionRef.current === "none") {
-      scheduleBufferRef.current = { start: newStart, end: newEnd };
+      const periodDays = currentDays.length;
+      scheduleBufferRef.current = {
+        start: shiftIsoDate(newStart, -periodDays),
+        end: shiftIsoDate(newEnd, periodDays),
+      };
+      scheduleScrollRatioRef.current = 1 / 3;
       needsScheduleScrollResetRef.current = true;
     } else {
       const direction = scheduleNavDirectionRef.current;
@@ -1521,13 +1560,15 @@ function CalendarView() {
 
     if (needsScheduleScrollResetRef.current) {
       needsScheduleScrollResetRef.current = false;
-      el.scrollLeft = 0;
+      el.scrollLeft = el.scrollWidth * scheduleScrollRatioRef.current;
+      markScheduleScroll();
       return;
     }
 
     if (!needsScheduleScrollAdjRef.current) return;
     needsScheduleScrollAdjRef.current = false;
     el.scrollLeft += el.scrollWidth - prevScheduleScrollWidthRef.current;
+    markScheduleScroll();
   });
 
   const bufferedScheduleDays = useMemo(() => {
@@ -1551,6 +1592,7 @@ function CalendarView() {
   const {
     startSentinelRef: scheduleLeftRef,
     endSentinelRef: scheduleRightRef,
+    markProgrammaticScroll: markScheduleScroll,
   } = useInfiniteScroll({
     root: scheduleScrollRef,
     rootMargin: "0px 50%",
@@ -1558,19 +1600,35 @@ function CalendarView() {
     onReachStart: () => {
       const el = scheduleScrollRef.current;
       if (!el || el.scrollWidth <= el.clientWidth) return;
-      if (!calendar.canGoPreviousPeriod() || calendar.isPending) return;
+      if (!scheduleBufferRef.current || calendar.isPending) return;
       scheduleNavDirectionRef.current = "backward";
-      calendar.goToPreviousPeriod();
+      calendar.goToSpecificPeriod(
+        shiftIsoDate(scheduleBufferRef.current.start, -1),
+      );
     },
     onReachEnd: () => {
       const el = scheduleScrollRef.current;
       if (!el || el.clientWidth === 0) return;
-      if (!calendar.canGoNextPeriod() || calendar.isPending) return;
+      if (!scheduleBufferRef.current || calendar.isPending) return;
       scheduleNavDirectionRef.current = "forward";
-      calendar.goToNextPeriod();
+      calendar.goToSpecificPeriod(
+        shiftIsoDate(scheduleBufferRef.current.end, 1),
+      );
     },
     disabled: !isScheduleView,
   });
+
+  const goToPreviousPeriod = () => {
+    navDirectionRef.current = "none";
+    scheduleNavDirectionRef.current = "none";
+    calendar.goToPreviousPeriod();
+  };
+
+  const goToNextPeriod = () => {
+    navDirectionRef.current = "none";
+    scheduleNavDirectionRef.current = "none";
+    calendar.goToNextPeriod();
+  };
 
   const goToToday = () => {
     navDirectionRef.current = "none";
@@ -1735,7 +1793,7 @@ function CalendarView() {
 
         <div className="flex gap-3 items-center mb-4 flex-wrap">
           <Button
-            onClick={calendar.goToPreviousPeriod}
+            onClick={goToPreviousPeriod}
             disabled={!calendar.canGoPreviousPeriod() || calendar.isPending}
             variant="outline"
           >
@@ -1751,7 +1809,7 @@ function CalendarView() {
           </Button>
 
           <Button
-            onClick={calendar.goToNextPeriod}
+            onClick={goToNextPeriod}
             disabled={!calendar.canGoNextPeriod() || calendar.isPending}
             variant="outline"
           >

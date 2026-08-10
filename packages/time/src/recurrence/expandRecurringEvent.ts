@@ -197,15 +197,21 @@ export function expandRecurringEvent<
               ? addDuration(occurrenceStartStr)
               : originalEndStr;
 
-        const occurrenceDate = Temporal.PlainDateTime.from(occurrenceStartStr)
-          .toPlainDate()
-          .toString({ calendarName: "never" });
+        const occurrenceStartDate =
+          Temporal.PlainDateTime.from(occurrenceStartStr).toPlainDate();
+        const occurrenceEnd = Temporal.PlainDateTime.from(occurrenceEndStr);
 
-        if (
-          occurrenceDate >=
-            windowStartDate.toString({ calendarName: "never" }) &&
-          occurrenceDate < windowEndDate.toString({ calendarName: "never" })
-        ) {
+        const startsBeforeWindowEnd =
+          Temporal.PlainDate.compare(occurrenceStartDate, windowEndDate) < 0;
+        const endsAfterWindowStart =
+          Temporal.PlainDate.compare(occurrenceStartDate, windowStartDate) >=
+            0 ||
+          Temporal.PlainDateTime.compare(
+            occurrenceEnd,
+            windowStartDate.toPlainDateTime(),
+          ) > 0;
+
+        if (startsBeforeWindowEnd && endsAfterWindowStart) {
           const overrideFields = override
             ? ({ ...override } as Record<string, unknown>)
             : {};
