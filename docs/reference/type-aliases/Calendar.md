@@ -9,7 +9,7 @@ title: Calendar
 type Calendar<TFeatures, TResource, TEvent> = CalendarCore<TFeatures, TResource, TEvent> & ComposedApi<TFeatures, TResource, TEvent>;
 ```
 
-Defined in: [calendar/calendar.ts:167](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L167)
+Defined in: [calendar/calendar.ts:169](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L169)
 
 ## Type Parameters
 

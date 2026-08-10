@@ -9,7 +9,7 @@ title: ComposedApi
 type ComposedApi<TFeatures, TResource, TEvent> = UnionToIntersection<FeatureApiRegistry<TResource, TEvent>[FeatureName<TFeatures[number]> & keyof FeatureApiRegistry<TResource, TEvent>]>;
 ```
 
-Defined in: [calendar/features/registry.ts:48](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L48)
+Defined in: [calendar/features/registry.ts:50](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L50)
 
 ## Type Parameters
 
