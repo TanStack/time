@@ -169,5 +169,7 @@ The module was always correct at runtime; the test was asserting against `unknow
 
 - [x] No public primitive returns an object literal, a `Temporal` value, or a zone/calendar.
 - [x] Every instant-bearing primitive returns `Date` and therefore composes as a `DateInput`.
+- [x] No option offers a precision the return type cannot express — `RoundUnit` and `CeilUnit` stop
+      at `"millisecond"`.
 - [x] No `.value` / `.asDate()` / `.asEpoch()` / `.asZonedDateTime()` remains anywhere in the repo.
 - [x] The suite stays green, including the `PURE_DIRS` walk.

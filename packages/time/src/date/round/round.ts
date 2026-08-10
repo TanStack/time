@@ -3,12 +3,7 @@ import type { DateInput } from "../types";
 import type { DateOperationOptions } from "../withDateOperation";
 import type { Temporal } from "@js-temporal/polyfill";
 
-export type RoundUnit =
-  | "day"
-  | "hour"
-  | "minute"
-  | "second"
-  | "millisecond";
+export type RoundUnit = "day" | "hour" | "minute" | "second" | "millisecond";
 
 type RoundingMode = Temporal.RoundingMode;
 
