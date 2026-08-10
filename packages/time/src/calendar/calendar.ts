@@ -4,6 +4,7 @@ import { bucketByDay } from "~/projection";
 import type { LayoutOptions } from "~/projection";
 import type { WorkingTimeConfig } from "~/validation/availability";
 import type { ConstraintConflict } from "~/validation/constraints";
+import type { DurationConflict } from "~/validation/duration";
 import type { WorkingCalendar } from "~/workingTime";
 import { normalizeRecurrenceRule } from "~/recurrence";
 import { createKernel } from "~/kernel";
@@ -13,6 +14,7 @@ import type {
   AvailabilityApi,
   ConstraintApi,
   DependencyGraphApi,
+  DurationApi,
   CalendarFeatureList,
   CalendarHost,
   ComposedApi,
@@ -400,6 +402,54 @@ export class CalendarCore<
     return (
       this._constraint?.checkEventConstraint(event, newStart, newEnd) ?? null
     );
+  }
+
+  private get _duration(): DurationApi<TResource, TEvent> | null {
+    return this.hasFeature("duration") ? this._api : null;
+  }
+
+  private _checkDuration(
+    event: TEvent,
+    newStart: string,
+    newEnd: string,
+    newResources?: Array<TResource | string>,
+  ): DurationConflict | null {
+    return (
+      this._duration?.checkEventDuration(
+        event,
+        newStart,
+        newEnd,
+        newResources,
+      )[0] ?? null
+    );
+  }
+
+  private _neighbourBlock(
+    event: TEvent,
+    newStart: string,
+    newEnd: string,
+    unavailableMessage: string,
+  ): { blocked: true; blockedEventTitle: string; message: string } | null {
+    if (this._checkAvailability(event, newStart, newEnd)) {
+      return {
+        blocked: true,
+        blockedEventTitle: event.title,
+        message: unavailableMessage,
+      };
+    }
+
+    const rule =
+      this._checkConstraint(event, newStart, newEnd) ??
+      this._checkDuration(event, newStart, newEnd);
+    if (rule) {
+      return {
+        blocked: true,
+        blockedEventTitle: event.title,
+        message: rule.message,
+      };
+    }
+
+    return null;
   }
 
   private _workingTime(): WorkingTimeConfig {
@@ -992,12 +1042,14 @@ export class CalendarCore<
       };
     }
 
-    const constrained = this._checkConstraint(event, newStart, newEnd);
-    if (constrained) {
+    const rule =
+      this._checkConstraint(event, newStart, newEnd) ??
+      this._checkDuration(event, newStart, newEnd, newResources);
+    if (rule) {
       return {
         blocked: true,
         blockedEventTitle: event.title,
-        message: constrained.message,
+        message: rule.message,
       };
     }
 
@@ -1006,28 +1058,13 @@ export class CalendarCore<
         this._dependency?.getPredecessorShifts(eventId, newStart, newEnd) ?? [];
 
       for (const shift of pulled) {
-        if (
-          this._checkAvailability(shift.event, shift.newStart, shift.newEnd)
-        ) {
-          return {
-            blocked: true,
-            blockedEventTitle: shift.event.title,
-            message: `"${shift.event.title}" would be pulled into unavailable time.`,
-          };
-        }
-
-        const pulledConstraint = this._checkConstraint(
+        const blocked = this._neighbourBlock(
           shift.event,
           shift.newStart,
           shift.newEnd,
+          `"${shift.event.title}" would be pulled into unavailable time.`,
         );
-        if (pulledConstraint) {
-          return {
-            blocked: true,
-            blockedEventTitle: shift.event.title,
-            message: pulledConstraint.message,
-          };
-        }
+        if (blocked) return blocked;
       }
     }
 
@@ -1065,23 +1102,13 @@ export class CalendarCore<
         newStart: depStart,
         newEnd: depEnd,
       } of affected) {
-        const depConflict = this._checkAvailability(dep, depStart, depEnd);
-        if (depConflict) {
-          return {
-            blocked: true,
-            blockedEventTitle: dep.title,
-            message: `"${dep.title}" would be pushed to unavailable time.`,
-          };
-        }
-
-        const depConstraint = this._checkConstraint(dep, depStart, depEnd);
-        if (depConstraint) {
-          return {
-            blocked: true,
-            blockedEventTitle: dep.title,
-            message: depConstraint.message,
-          };
-        }
+        const blocked = this._neighbourBlock(
+          dep,
+          depStart,
+          depEnd,
+          `"${dep.title}" would be pushed to unavailable time.`,
+        );
+        if (blocked) return blocked;
       }
     }
 
@@ -1095,28 +1122,13 @@ export class CalendarCore<
         this._dependency?.getDependentShifts(eventId, newStart, newEnd) ?? [];
 
       for (const shift of pushed) {
-        if (
-          this._checkAvailability(shift.event, shift.newStart, shift.newEnd)
-        ) {
-          return {
-            blocked: true,
-            blockedEventTitle: shift.event.title,
-            message: `"${shift.event.title}" would be pushed into unavailable time.`,
-          };
-        }
-
-        const pushedConstraint = this._checkConstraint(
+        const blocked = this._neighbourBlock(
           shift.event,
           shift.newStart,
           shift.newEnd,
+          `"${shift.event.title}" would be pushed into unavailable time.`,
         );
-        if (pushedConstraint) {
-          return {
-            blocked: true,
-            blockedEventTitle: shift.event.title,
-            message: pushedConstraint.message,
-          };
-        }
+        if (blocked) return blocked;
       }
     }
 

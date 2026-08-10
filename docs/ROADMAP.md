@@ -67,10 +67,11 @@ Ships once Phase 0 lands. Scope from ADR 0005 plus the pre-alpha breaking model 
       Breaking; lands here so alpha ships the target shape. Resources reference shared calendars by
       id, resolution is root-to-leaf painting with a global specificity sort, and `workingTimeFeature`
       exposes it — see `docs/plans/phase-1-working-time-hierarchy.md`.
-- [ ] **Event-model additions** for the solver (ADR 0007): dependency **lag/lead**,
+- [x] **Event-model additions** for the solver (ADR 0007): dependency **lag/lead**,
       `constraints`, `manuallyScheduled`, `effort`/`duration`. Types only + honoured by
-      validation; full solver is Phase 2. Slice plan in `docs/plans/phase-1-solver-event-model.md`;
-      lag/lead, `manuallyScheduled` and `constraints` landed.
+      validation; full solver is Phase 2. All four slices landed — see
+      `docs/plans/phase-1-solver-event-model.md`. The write pipeline now vetoes through four
+      validate stages (availability, constraint, duration, dependency).
 - [x] Dependencies FS/SS/FF/SF (present) become a proper **module** — `dependencyModule`, landed in
       Phase 0.
 - [x] Undo/redo (present) becomes a **module** — `undoModule`, landed in Phase 0.

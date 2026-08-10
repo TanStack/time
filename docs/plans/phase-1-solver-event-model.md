@@ -180,12 +180,45 @@ The timeline example gives `Deployment` a `finish-no-later-than` on the Friday o
 shows constraints as a ⏱ badge; dragging its predecessor `Auth Module` late enough is the demo —
 the cascade would push `Deployment` past Friday, so the write is refused.
 
-### Slice 4 — `effort` / `duration`
+### Slice 4 — `effort` / `duration` ✅
 
 Both optional minutes. `duration` is *working-time* duration, so it is derived through the ADR 0008
 resolver rather than from wall-clock arithmetic; validation flags a declared `duration` that does
 not match the span's working minutes. `effort` is carried and validated against duration but not
-allocated — allocation is Phase 4's M:N assignment entity.
+allocated — allocation is Phase 4's M:N assignment entity. 1,180 tests.
+
+**`workingMinutesBetween` is the whole field.** It builds the same calendar layers the working-time
+feature does — `[resource calendar ?? default, event calendar]` per resource — and sums
+`getLayeredWorkingTime` over the span. A 07:00–12:00 event against a 09:00–17:00 calendar is 180
+minutes of duration, not 300, and a Saturday event is zero. The public `getWorkingDuration(event,
+start?, end?)` is the same call, which is what makes the number a consumer can render rather than
+only a rule the kernel enforces.
+
+**No calendar means wall clock.** If no layer resolves to a configured calendar, the span's
+wall-clock minutes are the duration. Without that fallback every duration on an unconfigured
+calendar would read as zero and the field would be unusable until working time was set up —
+`hasAnyWorkingCalendar` is already how the availability core distinguishes "closed" from
+"unconfigured", so this follows it.
+
+`end` stays authoritative, as the open question below settled it: a declared `duration` that does
+not equal the working span is a conflict, not an instruction to move `end`. Making duration
+authoritative would mean a write to `end` back-propagating into `duration`, and that is solver
+behaviour. `effort` is checked against the declared duration when there is one and against the
+working span otherwise — effort that cannot fit in the time it is scheduled in is the one thing
+worth flagging before allocation exists.
+
+`durationModule` needs resources and working-time config, so it takes the same
+`resources | () => resources` options shape as `availabilityModule` and `eventDurationFeature`
+feeds it from the feature ctx. `"duration-validate"` runs after constraints and before dependencies.
+
+`validateMove`'s three neighbour loops (pulled predecessors, delta-affected, pushed dependents) had
+each grown a copy of availability-then-constraint; they now go through one `_neighbourBlock` helper
+that also runs the duration rule, so a cascade that drags a neighbour across a weekend and changes
+its working minutes is caught in the advisory path too. The moved event itself also passes
+`newResources`, because a timeline drag between rows changes the calendar and therefore the duration.
+
+No example change: duration is a derived assertion, and a form field that must exactly equal the
+resolver's answer would be a trap rather than a demo. Lag and constraint carry the example.
 
 ## Open questions
 
@@ -199,12 +232,19 @@ allocated — allocation is Phase 4's M:N assignment entity.
 - **ASAP/ALAP direction** is on the solve request in ADR 0007, not on the event. Nothing in this
   plan carries it.
 
-## Definition of done
+## Definition of done — met
 
-- Every field above exists on the public model, is exported, and round-trips through the kernel
-  without the solver.
-- Each field changes at least one observable behaviour in the existing validation or cascade path —
-  no field lands as an inert type.
-- The pure cores stay pure: `validation/constraints/` is covered by `PURE_DIRS`.
-- The examples show lag and a constraint, so the shapes are proven against a consumer rather than
-  only against tests.
+- [x] Every field above exists on the public model, is exported, and round-trips through the kernel
+      without the solver.
+- [x] Each field changes at least one observable behaviour in the existing validation or cascade path —
+      no field lands as an inert type. `lag` moves the anchor every consumer of
+      `requiredForwardShiftMs` reads, `manuallyScheduled` stops the walk and vetoes what it cannot
+      absorb, `constraint` and `duration`/`effort` each veto from their own stage.
+- [x] The pure cores stay pure: `validation/constraints/` and `validation/duration/` sit under
+      `src/validation`, which `PURE_DIRS` walks whole.
+- [x] The examples show lag and a constraint, so the shapes are proven against a consumer rather than
+      only against tests.
+
+The write pipeline ends this plan with four validate stages — `availability`, `constraint`,
+`duration`, `dependency` — where it started with one. That is the shape the Phase 2 fixpoint
+`schedule` stage has to satisfy: the solver proposes, and these stages are what it must not violate.

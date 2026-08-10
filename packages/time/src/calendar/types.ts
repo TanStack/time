@@ -94,6 +94,10 @@ export interface Event<TResource extends Resource = Resource> {
 
   constraint?: SchedulingConstraint;
 
+  duration?: number;
+
+  effort?: number;
+
   recurrence?: RecurrenceRule<TResource>;
 
   allDay?: boolean;

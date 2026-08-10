@@ -4108,6 +4108,92 @@ describe("CalendarCore", () => {
       });
     });
 
+    describe("effort and duration", () => {
+      const withDuration = (duration?: number, effort?: number) =>
+        createTestCalendar({
+          events: [
+            {
+              id: "a",
+              title: "A",
+              start: `${DATE_MON}T07:00:00`,
+              end: `${DATE_MON}T12:00:00`,
+              resources: [weekdayResource],
+              duration,
+              effort,
+            },
+          ],
+          resources: [weekdayResource],
+        });
+
+      test("measures duration in working time, not wall clock", () => {
+        const cal = withDuration();
+        const event = cal.getEvents()[0]!;
+
+        expect(cal.getWorkingDuration(event)).toBe(240);
+      });
+
+      test("answers the working duration of a proposed span", () => {
+        const cal = withDuration();
+        const event = cal.getEvents()[0]!;
+
+        expect(
+          cal.getWorkingDuration(
+            event,
+            `${DATE_MON}T09:00:00`,
+            `${DATE_MON}T10:30:00`,
+          ),
+        ).toBe(90);
+      });
+
+      test("blocks a move that leaves the declared duration behind", async () => {
+        const cal = withDuration(240);
+
+        const result = await cal.editEvent("a", {
+          start: `${DATE_MON}T09:00:00`,
+          end: `${DATE_MON}T12:00:00`,
+        });
+
+        assert(!result.success);
+        expect(result.error.message).toContain("of working time");
+        expect(cal.getEvents()[0]!.start).toBe(`${DATE_MON}T07:00:00`);
+      });
+
+      test("allows a move that keeps the declared duration", async () => {
+        const cal = withDuration(240);
+
+        const result = await cal.editEvent("a", {
+          start: `${DATE_MON}T09:00:00`,
+          end: `${DATE_MON}T13:00:00`,
+        });
+
+        assert(result.success);
+        expect(cal.getEvents()[0]!.start).toBe(`${DATE_MON}T09:00:00`);
+      });
+
+      test("validateMove reports the mismatch", () => {
+        expect(
+          withDuration(240).validateMove(
+            "a",
+            `${DATE_MON}T09:00:00`,
+            `${DATE_MON}T12:00:00`,
+          ),
+        ).toMatchObject({
+          blocked: true,
+          blockedEventTitle: "A",
+          message:
+            '"A" declares 240m of duration but spans 180m of working time',
+        });
+      });
+
+      test("blocks effort that outgrows the duration it is carried with", () => {
+        expect(
+          withDuration(240, 300)
+            .checkEventDuration(withDuration(240, 300).getEvents()[0]!)
+            .map((conflict) => conflict.reason),
+        ).toEqual(["effort-exceeds-duration"]);
+      });
+    });
+
     describe("commitUpdate forward cascade per type", () => {
       test("FS: shifts successor when predecessor.end extends past successor.start", () => {
         const cal = createTestCalendar({

@@ -94,6 +94,7 @@ export type WriteTransformStageName =
 export type WriteValidateStageName =
   | "availability-validate"
   | "constraint-validate"
+  | "duration-validate"
   | "dependency-validate";
 
 export type ProjectionModuleStageName = Exclude<
@@ -119,6 +120,7 @@ export const WRITE_EMIT_STAGE: WriteTransformStageName = "emit";
 export const WRITE_VALIDATE_ORDER: ReadonlyArray<WriteValidateStageName> = [
   "availability-validate",
   "constraint-validate",
+  "duration-validate",
   "dependency-validate",
 ];
 

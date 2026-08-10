@@ -1,5 +1,6 @@
 export * from "./availability";
 export * from "./constraint";
+export * from "./duration";
 export * from "./dependency";
 export * from "./layout";
 export * from "./recurrence";

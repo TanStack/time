@@ -3,6 +3,7 @@ import type { Event, Resource } from "../types";
 import type { AvailabilityApi } from "./availability";
 import type { ConstraintApi } from "./constraint";
 import type { DayLayoutApi } from "./dayLayout";
+import type { DurationApi } from "./duration";
 import type { DependencyCreationApi, DependencyGraphApi } from "./dependency";
 import type { HistoryApi } from "./history";
 import type {
@@ -29,6 +30,7 @@ export interface BuiltInFeatureApiRegistry<
     DependencyApi &
     DependencyGraphApi<TResource, TEvent>;
   constraint: ConstraintApi<TResource, TEvent>;
+  duration: DurationApi<TResource, TEvent>;
   resize: ResizeFeatureApi<TResource, TEvent>;
   dayLayout: DayLayoutApi<TResource, TEvent>;
   timeline: TimelineApi<TResource, TEvent>;
@@ -95,6 +97,8 @@ export const FEATURE_API_OWNERS = {
   findViolatedDependency: "eventDependencyFeature",
   getAnchorConflicts: "eventDependencyFeature",
   checkEventConstraint: "schedulingConstraintFeature",
+  getWorkingDuration: "eventDurationFeature",
+  checkEventDuration: "eventDurationFeature",
   createResizeController: "eventResizeFeature",
   getEventSegmentInfo: "eventResizeFeature",
   validateResize: "eventResizeFeature",
