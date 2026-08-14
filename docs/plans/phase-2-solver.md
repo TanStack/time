@@ -107,13 +107,13 @@ The suite asserts the round trip against Phase 1's measure: for several starts a
 pair an inverse rather than two functions that merely look related — and it caught an arithmetic error
 in a hand-written expectation while the implementation was right.
 
-### Slice 2 — `solve()` with a real fixpoint, forward only
+### Slice 2 — `solve()` with a real fixpoint, forward only ✅
 
-New `src/solver/` with the ADR's signature:
-`solve({ anchors, events, dependencies, constraints, calendars, direction }) → { events, conflicts }`.
-Build the graph from the request each call; relax topologically; iterate until no position changes.
-Bounded by an explicit cap that returns an **unsatisfiable conflict**, never a hang, and by cycle
-detection that names the cycle rather than spinning to the cap.
+New `src/solver/` with the ADR's signature, minus the two inputs later slices add:
+`solve({ events, dependencies, anchors?, timeZone }) → { events, conflicts }`. Build the graph from
+the request each call; relax until no position changes. Bounded by an explicit cap that returns an
+**unsatisfiable conflict**, never a hang, and by cycle detection that names the cycle rather than
+spinning to the cap.
 
 This slice deliberately ships without calendars or constraints. Convergence is the risk worth
 isolating: the current `visited` set makes re-propagation impossible, so replacing it with a
@@ -122,6 +122,41 @@ dependency graphs alone before two more inputs can feed it.
 
 `src/solver` joins `PURE_DIRS` in `validation/tests/purity.test.ts` in this slice, so the boundary is
 enforced from the first commit rather than asserted later.
+
+**`anchors` is the request's fixed points, not just the persisted flag.** ADR 0007 says
+`manuallyScheduled` events are anchors, but the event the caller is *currently* moving is also a
+fixed point for that one call even though it usually isn't `manuallyScheduled` — that is what
+`sourceId` meant in today's `propagateToPredecessors`/`propagateToDependents`. `solve()` takes an
+optional `anchors: Array<string>` of ids alongside the events, and unions it with every event whose
+`manuallyScheduled` is `true` before relaxing. Nothing here wires a caller yet (that is slice 6), so
+the field is exercised only by tests until then.
+
+**One relaxation rule replaces the two directional walks.** `propagateToPredecessors` and
+`propagateToDependents` both exist today because the source event is a fixed point and everything
+around it — predecessors and dependents — has to react. A fixpoint doesn't need two walks: for every
+dependency edge, `requiredForwardShiftMs` gives the same signed shortfall either function used, and
+there are only three cases —
+- successor is free → push it forward (this is `propagateToDependents`'s case),
+- successor is fixed and predecessor is free → pull the predecessor backward instead (this is
+  `propagateToPredecessors`'s case, reached by the same formula rather than a mirrored one),
+- both fixed and still violated → that edge can never resolve, so it is reported as a conflict once
+  and excluded from the loop rather than rechecked every pass.
+
+Iterating this rule to a fixpoint (instead of walking outward from one source with a `visited` set)
+is what makes a diamond graph converge correctly — two chains pushing the same successor from
+different directions need more than one pass over that node, which a single directional walk cannot
+give it.
+
+**Cycle detection runs once, up front, structurally — not as a symptom of non-convergence.** A DFS
+over the raw `predecessorId → successorId` edges (three-state visited/visiting/done, same shape as
+any topological-sort cycle check) finds a genuine graph cycle before relaxation starts, names every
+id on it, and its edges are excluded from the loop the same way an unsatisfiable both-anchored edge
+is. That leaves the iteration cap to catch a different failure: two edges that are individually
+satisfiable but pull the same free node in opposite directions forever (predecessor-edge wants it
+later, fixed-successor-edge wants it earlier) — a cycle in the *relaxation* graph that does not exist
+in the *dependency* graph, and the only way to see it is to run out of iterations. The cap is
+`events.length + 1`, sized to the graph the way the phase's open question asks for rather than a
+constant; a 40-node legal chain is the regression test that it does not false-flag.
 
 ### Slice 3 — constraints clamp inside the loop
 

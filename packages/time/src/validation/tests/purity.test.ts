@@ -7,6 +7,7 @@ const PURE_DIRS = [
   "src/projection",
   "src/recurrence",
   "src/workingTime",
+  "src/solver",
 ];
 
 const FORBIDDEN = [
