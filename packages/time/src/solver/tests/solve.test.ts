@@ -170,8 +170,7 @@ describe("solve", () => {
       {
         code: "unsatisfiable",
         eventIds: ["a", "b"],
-        message:
-          '"b" and "a" are both fixed and violate a FS dependency',
+        message: '"b" and "a" are both fixed and violate a FS dependency',
       },
     ]);
     expect(positionOf(result.events, "a").start).toBe("2026-01-05T09:00:00");
@@ -210,9 +209,7 @@ describe("solve", () => {
 
     for (let i = 0; i < length; i++) {
       const start = base.add({ hours: i });
-      events.push(
-        event(`e${i}`, stamp(start), stamp(start.add({ hours: 1 }))),
-      );
+      events.push(event(`e${i}`, stamp(start), stamp(start.add({ hours: 1 }))));
       if (i > 0) {
         dependencies.push({
           predecessorId: `e${i - 1}`,
