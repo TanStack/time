@@ -87,4 +87,8 @@
   html {
     font-family: var(--font-sans);
   }
+
+  [data-dnd-placeholder="clone"] {
+    opacity: 0.35;
+  }
 }

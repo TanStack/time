@@ -16,7 +16,7 @@ import {
 } from "@tanstack/time";
 import {
   DragDropProvider,
-  DragOverlay,
+  PointerSensor,
   useDraggable,
   useDroppable,
 } from "@dnd-kit/react";
@@ -38,7 +38,7 @@ import type {
   Resource,
   WorkingCalendar,
 } from "@tanstack/time";
-import type { DragEndEvent, DragStartEvent } from "@dnd-kit/react";
+import type { DragEndEvent, DragMoveEvent } from "@dnd-kit/react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -137,6 +137,18 @@ type EventDragData = {
 
 type DayDropData = { isoDate: string };
 
+type DragTimePreview = { eventId: string; start: string; end: string };
+
+const DRAG_GROUP_ATTRIBUTE = "data-drag-group";
+
+function dragGroupSiblings(eventId: string): Array<HTMLElement> {
+  return Array.from(
+    document.querySelectorAll<HTMLElement>(
+      `[${DRAG_GROUP_ATTRIBUTE}="${eventId}"]:not([data-dnd-dragging]):not([data-dnd-placeholder])`,
+    ),
+  );
+}
+
 function formatDateTimeToISO(date: Date): string {
   return `${formatDateToISO(date)}T${padTimePart(date.getHours())}:${padTimePart(date.getMinutes())}:${padTimePart(date.getSeconds())}`;
 }
@@ -162,30 +174,29 @@ function pixelsToSnappedMinutes(deltaY: number): number {
   return Math.round(deltaY / DRAG_SNAP_MINUTES) * DRAG_SNAP_MINUTES;
 }
 
-function DragGrip({
-  handleRef,
-}: {
-  handleRef: (element: Element | null) => void;
-}) {
-  return (
-    <span
-      ref={handleRef}
-      data-drag-handle
-      title="Drag to move"
-      className="shrink-0 cursor-grab opacity-0 transition-opacity group-hover:opacity-60 hover:opacity-100 active:cursor-grabbing"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <svg width="8" height="12" viewBox="0 0 8 12" fill="currentColor">
-        <circle cx="2" cy="2" r="1" />
-        <circle cx="6" cy="2" r="1" />
-        <circle cx="2" cy="6" r="1" />
-        <circle cx="6" cy="6" r="1" />
-        <circle cx="2" cy="10" r="1" />
-        <circle cx="6" cy="10" r="1" />
-      </svg>
-    </span>
-  );
+function resolveDropTimes(
+  source: EventDragData,
+  target: DayDropData | undefined,
+  transformY: number,
+): { start: string; end: string; moved: boolean } {
+  const dayShift = target ? isoDayDiff(source.dayDate, target.isoDate) : 0;
+  const minuteShift =
+    source.granularity === "time" ? pixelsToSnappedMinutes(transformY) : 0;
+
+  return {
+    start: shiftPlainDateTime(source.originalStart, dayShift, minuteShift),
+    end: shiftPlainDateTime(source.originalEnd, dayShift, minuteShift),
+    moved: dayShift !== 0 || minuteShift !== 0,
+  };
 }
+
+const eventDragSensors = [
+  PointerSensor.configure({
+    preventActivation: (event) =>
+      event.target instanceof Element &&
+      event.target.closest("[data-resize-handle]") !== null,
+  }),
+];
 
 function EventDragSource({
   id,
@@ -198,17 +209,18 @@ function EventDragSource({
   disabled?: boolean;
   children: (drag: {
     ref: (element: Element | null) => void;
-    handleRef: (element: Element | null) => void;
     isDragging: boolean;
   }) => React.ReactNode;
 }) {
-  const { ref, handleRef, isDragging } = useDraggable<EventDragData>({
+  const { ref, isDragging } = useDraggable<EventDragData>({
     id,
     data,
     disabled,
+    feedback: "clone",
+    sensors: eventDragSensors,
   });
 
-  return <>{children({ ref, handleRef, isDragging })}</>;
+  return <>{children({ ref, isDragging })}</>;
 }
 
 function DayDropZone({
@@ -898,6 +910,7 @@ function ScheduleView({
   rightSentinelRef,
   periodDayCount,
   overlapMode,
+  dragPreview,
 }: {
   calendar: ReturnType<
     typeof useCalendar<typeof features, Resource, DemoEvent>
@@ -910,6 +923,7 @@ function ScheduleView({
   rightSentinelRef: React.RefObject<HTMLDivElement | null>;
   periodDayCount: number;
   overlapMode: OverlapMode;
+  dragPreview: DragTimePreview | null;
 }) {
   const timeSlots = calendar.getTimeSlots();
   const {
@@ -1025,14 +1039,18 @@ function ScheduleView({
                             {(drag) => (
                               <div
                                 ref={drag.ref}
-                                className={`group flex items-center gap-1 cursor-pointer text-white rounded px-2 text-[11px] font-medium border ${eventClassOf(
+                                data-drag-group={event.id}
+                                className={`group flex items-center gap-1 cursor-grab active:cursor-grabbing text-white rounded px-2 text-[11px] font-medium border ${eventClassOf(
                                   event,
-                                )} ${drag.isDragging ? "opacity-40" : ""}`}
+                                )} ${
+                                  drag.isDragging
+                                    ? "shadow-xl ring-1 ring-neutral-400"
+                                    : ""
+                                }`}
                                 style={{ height: 20, lineHeight: "20px" }}
                                 title={event.title}
                                 onClick={() => onEventClick(event)}
                               >
-                                <DragGrip handleRef={drag.handleRef} />
                                 <span className="truncate">{event.title}</span>
                               </div>
                             )}
@@ -1117,13 +1135,20 @@ function ScheduleView({
                                   displayStyle.zIndex,
                               };
 
+                        const dragTimes =
+                          dragPreview?.eventId === event.id
+                            ? dragPreview
+                            : null;
+
                         const timeRange = formatEventTimeRange(
-                          isBeingResized && resizeState.previewStart
-                            ? resizeState.previewStart
-                            : originalStart,
-                          isBeingResized && resizeState.previewEnd
-                            ? resizeState.previewEnd
-                            : originalEnd,
+                          dragTimes?.start ??
+                            (isBeingResized && resizeState.previewStart
+                              ? resizeState.previewStart
+                              : originalStart),
+                          dragTimes?.end ??
+                            (isBeingResized && resizeState.previewEnd
+                              ? resizeState.previewEnd
+                              : originalEnd),
                         );
 
                         return (
@@ -1144,13 +1169,18 @@ function ScheduleView({
                               <ContextMenu>
                                 <ContextMenuTrigger
                                   ref={drag.ref}
+                                  data-drag-group={event.id}
                                   className={`@container/event [container-type:size] group absolute z-10 text-white rounded text-xs font-medium transition-colors border ${eventClassOf(
                                     event,
                                   )} ${
                                     isActivelyResized
                                       ? "ring-2 ring-neutral-500 z-20"
-                                      : "cursor-pointer"
-                                  } ${drag.isDragging ? "opacity-40" : ""}`}
+                                      : "cursor-grab active:cursor-grabbing"
+                                  } ${
+                                    drag.isDragging
+                                      ? "shadow-xl ring-1 ring-neutral-400"
+                                      : ""
+                                  }`}
                                   style={stackedStyle as React.CSSProperties}
                                   onClick={(e: React.MouseEvent) => {
                                     if (
@@ -1180,7 +1210,6 @@ function ScheduleView({
                                   )}
                                   <div className="absolute inset-0 overflow-hidden rounded-[inherit] px-2 py-3 [@container_event_(24px<=height<40px)]:py-1 [@container_event_(height<24px)]:py-0">
                                     <div className="font-semibold flex items-center gap-1.5 leading-tight">
-                                      <DragGrip handleRef={drag.handleRef} />
                                       <span className="flex items-center gap-1 min-w-0">
                                         {event.recurrence && (
                                           <span
@@ -1215,7 +1244,13 @@ function ScheduleView({
                                         </span>
                                       )}
                                     </div>
-                                    <div className="hidden [@container_event_(height>=56px)]:block text-xs opacity-90 mt-0.5 leading-tight truncate">
+                                    <div
+                                      className={`text-xs opacity-90 mt-0.5 leading-tight truncate ${
+                                        dragTimes
+                                          ? "block"
+                                          : "hidden [@container_event_(height>=56px)]:block"
+                                      }`}
+                                    >
                                       {timeRange.rangeFormatted}
                                     </div>
                                   </div>
@@ -2079,8 +2114,8 @@ function CalendarView() {
     calendar.removeEvent(modalState.eventId);
   };
 
-  const [activeDrag, setActiveDrag] = useState<EventDragData | null>(null);
   const [moveError, setMoveError] = useState<ResizeError | null>(null);
+  const [dragPreview, setDragPreview] = useState<DragTimePreview | null>(null);
   const [moveScopeChoice, setMoveScopeChoice] = useState<{
     event: DemoEvent;
     eventId: string;
@@ -2089,36 +2124,54 @@ function CalendarView() {
     newEnd: string;
   } | null>(null);
 
-  const handleDragStart = (e: Parameters<DragStartEvent>[0]) => {
-    setActiveDrag(
-      (e.operation.source?.data as EventDragData | undefined) ?? null,
+  const handleDragMove = (e: Parameters<DragMoveEvent>[0]) => {
+    const source = e.operation.source?.data as EventDragData | undefined;
+    if (!source) return;
+
+    const { x, y } = e.operation.transform;
+    for (const element of dragGroupSiblings(source.event.id)) {
+      element.style.translate = `${x}px ${y}px`;
+      element.style.zIndex = "40";
+    }
+
+    const { start, end } = resolveDropTimes(
+      source,
+      e.operation.target?.data as DayDropData | undefined,
+      y,
+    );
+
+    setDragPreview((prev) =>
+      prev?.eventId === source.event.id &&
+      prev.start === start &&
+      prev.end === end
+        ? prev
+        : { eventId: source.event.id, start, end },
     );
   };
 
   const handleDragEnd = async (e: Parameters<DragEndEvent>[0]) => {
-    setActiveDrag(null);
+    setDragPreview(null);
 
     const source = e.operation.source?.data as EventDragData | undefined;
-    const target = e.operation.target?.data as DayDropData | undefined;
+    if (source) {
+      for (const element of dragGroupSiblings(source.event.id)) {
+        element.style.removeProperty("translate");
+        element.style.removeProperty("z-index");
+      }
+    }
     if (e.canceled || !source) return;
 
-    const dayShift = target ? isoDayDiff(source.dayDate, target.isoDate) : 0;
-    const minuteShift =
-      source.granularity === "time"
-        ? pixelsToSnappedMinutes(e.operation.transform.y)
-        : 0;
-    if (dayShift === 0 && minuteShift === 0) return;
+    const {
+      start: newStart,
+      end: newEnd,
+      moved,
+    } = resolveDropTimes(
+      source,
+      e.operation.target?.data as DayDropData | undefined,
+      e.operation.transform.y,
+    );
+    if (!moved) return;
 
-    const newStart = shiftPlainDateTime(
-      source.originalStart,
-      dayShift,
-      minuteShift,
-    );
-    const newEnd = shiftPlainDateTime(
-      source.originalEnd,
-      dayShift,
-      minuteShift,
-    );
     const { event } = source;
 
     if (event.recurrence) {
@@ -2163,7 +2216,7 @@ function CalendarView() {
   };
 
   return (
-    <DragDropProvider onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DragDropProvider onDragMove={handleDragMove} onDragEnd={handleDragEnd}>
       <div className="p-5 max-w-[1200px] mx-auto min-h-screen">
         <div className="mb-6">
           <h1 className="m-0 mb-4 text-[28px] font-semibold text-white">
@@ -2389,6 +2442,7 @@ function CalendarView() {
             rightSentinelRef={scheduleRightRef}
             periodDayCount={periodDayCount}
             overlapMode={overlapMode}
+            dragPreview={dragPreview}
           />
         ) : (
           <div className="border border-neutral-800 rounded-lg overflow-hidden bg-black">
@@ -2497,13 +2551,15 @@ function CalendarView() {
                                   {(drag) => (
                                     <Badge
                                       ref={drag.ref}
-                                      className={`group cursor-pointer text-white border flex items-center gap-1.5 max-w-full shrink-0 w-full ${eventClassOf(event)} ${
-                                        drag.isDragging ? "opacity-40" : ""
+                                      data-drag-group={event.id}
+                                      className={`group cursor-grab active:cursor-grabbing text-white border flex items-center gap-1.5 max-w-full shrink-0 w-full ${eventClassOf(event)} ${
+                                        drag.isDragging
+                                          ? "shadow-xl ring-1 ring-neutral-400"
+                                          : ""
                                       }`}
                                       title={event.title}
                                       onClick={() => handleEventClick(event)}
                                     >
-                                      <DragGrip handleRef={drag.handleRef} />
                                       <span className="truncate">
                                         {event.title}
                                       </span>
@@ -2534,18 +2590,18 @@ function CalendarView() {
                                       <ContextMenuTrigger className="contents">
                                         <Badge
                                           ref={drag.ref}
+                                          data-drag-group={event.id}
                                           variant="secondary"
-                                          className={`group cursor-pointer text-white border flex items-center gap-1.5 max-w-full shrink-0 w-full ${eventClassOf(event)} ${
-                                            drag.isDragging ? "opacity-40" : ""
+                                          className={`group cursor-grab active:cursor-grabbing text-white border flex items-center gap-1.5 max-w-full shrink-0 w-full ${eventClassOf(event)} ${
+                                            drag.isDragging
+                                              ? "shadow-xl ring-1 ring-neutral-400"
+                                              : ""
                                           }`}
                                           title={event.title}
                                           onClick={() =>
                                             handleEventClick(event)
                                           }
                                         >
-                                          <DragGrip
-                                            handleRef={drag.handleRef}
-                                          />
                                           <span className="flex items-center gap-1 min-w-0">
                                             {event.recurrence && (
                                               <span
@@ -2731,22 +2787,6 @@ function CalendarView() {
             title="Cannot Move Event"
             onDismiss={() => setMoveError(null)}
           />
-        )}
-
-        {activeDrag && (
-          <DragOverlay dropAnimation={null}>
-            <div className="rounded border border-neutral-600 bg-neutral-800 px-2 py-1 text-xs font-medium text-white shadow-lg">
-              <div className="truncate">{activeDrag.event.title}</div>
-              <div className="opacity-70">
-                {
-                  formatEventTimeRange(
-                    activeDrag.originalStart,
-                    activeDrag.originalEnd,
-                  ).rangeFormatted
-                }
-              </div>
-            </div>
-          </DragOverlay>
         )}
       </div>
     </DragDropProvider>

@@ -59,7 +59,7 @@
     "solid-js": "^1.9.10"
   },
   "devDependencies": {
-    "@tanstack/devtools": "^0.11.0",
+    "@tanstack/devtools": "^0.14.0",
     "rolldown-plugin-solid": "^0.2.1"
   }
 }

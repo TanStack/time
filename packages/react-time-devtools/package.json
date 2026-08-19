@@ -56,7 +56,7 @@
     "@tanstack/time-devtools": "workspace:*"
   },
   "devDependencies": {
-    "@tanstack/devtools": "^0.11.0",
+    "@tanstack/devtools": "^0.14.0",
     "@types/react": "^19.2.8",
     "@vitejs/plugin-react": "^5.1.2",
     "react": "^19.2.3",
