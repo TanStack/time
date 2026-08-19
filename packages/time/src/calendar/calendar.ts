@@ -474,6 +474,7 @@ export class CalendarCore<
       getEventMap: (window) => this.getEventMap(window),
       getDaysWithEvents: () => this.getDaysWithEvents(),
       getEventsByDate: (date) => this.getEventsByDate(date),
+      invalidateEvents: () => this._invalidateEvents(),
       goToSpecificPeriod: (isoDate) => this.goToSpecificPeriod(isoDate),
       write: (ops, reason) => this._write(ops, reason),
       fetchEventsForRange: (start, end) => this.fetchEventsForRange(start, end),
@@ -913,6 +914,11 @@ export class CalendarCore<
       this._indexUpdateEvent(current, op.after);
     }
 
+    this._invalidateEvents();
+  }
+
+  private _invalidateEvents() {
+    this._bumpMapVersion();
     this.store.setState((prev) => ({
       ...prev,
       eventsVersion: prev.eventsVersion + 1,

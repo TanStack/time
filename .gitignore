@@ -2,7 +2,9 @@
 # See https://help.github.com/ignore-files/ for more about ignoring files.
 
 # dependencies
+node_modules/
 node_modules
+**/node_modules/
 package-lock.json
 yarn.lock
 
@@ -15,6 +17,13 @@ artifacts
 .rpt2_cache
 coverage
 *.tgz
+
+# deploy/tooling output
+.vercel
+.netlify
+.turbo
+.output
+.vite
 
 # misc
 .DS_Store

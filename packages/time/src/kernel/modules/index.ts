@@ -2,6 +2,7 @@ export * from "./availability";
 export * from "./constraint";
 export * from "./duration";
 export * from "./dependency";
+export * from "./filter";
 export * from "./layout";
 export * from "./recurrence";
 export * from "./resize";

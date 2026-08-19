@@ -5,6 +5,7 @@ import type { ConstraintApi } from "./constraint";
 import type { DayLayoutApi } from "./dayLayout";
 import type { DurationApi } from "./duration";
 import type { DependencyCreationApi, DependencyGraphApi } from "./dependency";
+import type { EventFilterApi } from "./filter";
 import type { HistoryApi } from "./history";
 import type {
   RecurrenceEditApi,
@@ -31,6 +32,7 @@ export interface BuiltInFeatureApiRegistry<
     DependencyGraphApi<TResource, TEvent>;
   constraint: ConstraintApi<TResource, TEvent>;
   duration: DurationApi<TResource, TEvent>;
+  filter: EventFilterApi<TResource, TEvent>;
   resize: ResizeFeatureApi<TResource, TEvent>;
   dayLayout: DayLayoutApi<TResource, TEvent>;
   timeline: TimelineApi<TResource, TEvent>;
@@ -99,6 +101,11 @@ export const FEATURE_API_OWNERS = {
   checkEventConstraint: "schedulingConstraintFeature",
   getWorkingDuration: "eventDurationFeature",
   checkEventDuration: "eventDurationFeature",
+  setEventFilter: "eventFilterFeature",
+  clearEventFilters: "eventFilterFeature",
+  getEventFilterIds: "eventFilterFeature",
+  isEventVisible: "eventFilterFeature",
+  getHiddenEvents: "eventFilterFeature",
   createResizeController: "eventResizeFeature",
   getEventSegmentInfo: "eventResizeFeature",
   validateResize: "eventResizeFeature",

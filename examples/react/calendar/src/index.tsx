@@ -7,12 +7,19 @@ import {
 import {
   calendarFeatures,
   dayEventLayoutFeature,
+  eventFilterFeature,
   eventRecurrenceFeature,
   eventResizeFeature,
   historyFeature,
   workingTimeFeature,
   resourceAvailabilityFeature,
 } from "@tanstack/time";
+import {
+  DragDropProvider,
+  DragOverlay,
+  useDraggable,
+  useDroppable,
+} from "@dnd-kit/react";
 import ReactDOM from "react-dom/client";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { TanStackDevtools } from "@tanstack/react-devtools";
@@ -31,6 +38,7 @@ import type {
   Resource,
   WorkingCalendar,
 } from "@tanstack/time";
+import type { DragEndEvent, DragStartEvent } from "@dnd-kit/react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -58,6 +66,7 @@ const features = calendarFeatures([
   resourceAvailabilityFeature,
   eventRecurrenceFeature,
   eventResizeFeature,
+  eventFilterFeature,
   dayEventLayoutFeature,
 ]);
 
@@ -111,6 +120,126 @@ function dateTimeOnWeekday(
 
 function getResourceId(resource: Resource | string): string {
   return typeof resource === "string" ? resource : resource.id;
+}
+
+const DRAG_SNAP_MINUTES = 15;
+
+type DragGranularity = "time" | "day";
+
+type EventDragData = {
+  event: DemoEvent;
+  dayDate: string;
+  granularity: DragGranularity;
+  originalStart: string;
+  originalEnd: string;
+  occurrenceStart?: EventDateTimeInput;
+};
+
+type DayDropData = { isoDate: string };
+
+function formatDateTimeToISO(date: Date): string {
+  return `${formatDateToISO(date)}T${padTimePart(date.getHours())}:${padTimePart(date.getMinutes())}:${padTimePart(date.getSeconds())}`;
+}
+
+function shiftPlainDateTime(
+  plainDateTime: string,
+  dayShift: number,
+  minuteShift: number,
+): string {
+  const date = new Date(plainDateTime);
+  date.setDate(date.getDate() + dayShift);
+  date.setMinutes(date.getMinutes() + minuteShift);
+  return formatDateTimeToISO(date);
+}
+
+function isoDayDiff(fromIsoDate: string, toIsoDate: string): number {
+  const from = new Date(`${fromIsoDate}T00:00:00`).getTime();
+  const to = new Date(`${toIsoDate}T00:00:00`).getTime();
+  return Math.round((to - from) / 86_400_000);
+}
+
+function pixelsToSnappedMinutes(deltaY: number): number {
+  return Math.round(deltaY / DRAG_SNAP_MINUTES) * DRAG_SNAP_MINUTES;
+}
+
+function DragGrip({
+  handleRef,
+}: {
+  handleRef: (element: Element | null) => void;
+}) {
+  return (
+    <span
+      ref={handleRef}
+      data-drag-handle
+      title="Drag to move"
+      className="shrink-0 cursor-grab opacity-0 transition-opacity group-hover:opacity-60 hover:opacity-100 active:cursor-grabbing"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <svg width="8" height="12" viewBox="0 0 8 12" fill="currentColor">
+        <circle cx="2" cy="2" r="1" />
+        <circle cx="6" cy="2" r="1" />
+        <circle cx="2" cy="6" r="1" />
+        <circle cx="6" cy="6" r="1" />
+        <circle cx="2" cy="10" r="1" />
+        <circle cx="6" cy="10" r="1" />
+      </svg>
+    </span>
+  );
+}
+
+function EventDragSource({
+  id,
+  data,
+  disabled,
+  children,
+}: {
+  id: string;
+  data: EventDragData;
+  disabled?: boolean;
+  children: (drag: {
+    ref: (element: Element | null) => void;
+    handleRef: (element: Element | null) => void;
+    isDragging: boolean;
+  }) => React.ReactNode;
+}) {
+  const { ref, handleRef, isDragging } = useDraggable<EventDragData>({
+    id,
+    data,
+    disabled,
+  });
+
+  return <>{children({ ref, handleRef, isDragging })}</>;
+}
+
+function DayDropZone({
+  isoDate,
+  className,
+  columnRef,
+  children,
+  ...rest
+}: React.ComponentProps<"div"> & {
+  isoDate: string;
+  columnRef?: (element: HTMLElement | null) => void;
+}) {
+  const { ref: setDroppableRef, isDropTarget } = useDroppable<DayDropData>({
+    id: `day-${isoDate}`,
+    data: { isoDate },
+  });
+
+  return (
+    <div
+      ref={(element) => {
+        setDroppableRef(element);
+        columnRef?.(element);
+      }}
+      className={`${className ?? ""} ${
+        isDropTarget ? "ring-1 ring-inset ring-neutral-500" : ""
+      }`}
+      {...rest}
+    >
+      {children}
+    </div>
+  );
 }
 
 const LEAD_SHARE = 0.6;
@@ -167,7 +296,57 @@ const sampleResources: Array<Resource> = [
   { id: "room-b", label: "Room B", capacity: [2] },
 ];
 
-function getSampleEvents(): Array<Event<Resource>> {
+interface EventCategory {
+  id: string;
+  label: string;
+  swatch: string;
+  eventClass: string;
+}
+
+const eventCategories: Array<EventCategory> = [
+  {
+    id: "work",
+    label: "Work",
+    swatch: "#1d4ed8",
+    eventClass: "bg-blue-900/80 border-blue-700/60 hover:bg-blue-800/90",
+  },
+  {
+    id: "team",
+    label: "Team",
+    swatch: "#047857",
+    eventClass:
+      "bg-emerald-900/80 border-emerald-700/60 hover:bg-emerald-800/90",
+  },
+  {
+    id: "personal",
+    label: "Personal",
+    swatch: "#7e22ce",
+    eventClass: "bg-purple-900/80 border-purple-700/60 hover:bg-purple-800/90",
+  },
+  {
+    id: "holiday",
+    label: "Holidays",
+    swatch: "#b45309",
+    eventClass: "bg-amber-800/80 border-amber-600/60 hover:bg-amber-700/90",
+  },
+];
+
+const categoryById = new Map(
+  eventCategories.map((category) => [category.id, category]),
+);
+
+const FALLBACK_EVENT_CLASS =
+  "bg-neutral-800 border-neutral-700 hover:bg-neutral-700";
+
+function eventClassOf(event: DemoEvent): string {
+  return categoryById.get(event.categoryId)?.eventClass ?? FALLBACK_EVENT_CLASS;
+}
+
+interface DemoEvent extends Event<Resource> {
+  categoryId: string;
+}
+
+function getSampleEvents(): Array<DemoEvent> {
   return [
     {
       id: "1",
@@ -176,6 +355,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       end: dateTimeOnWeekday(2, 13, 0),
       resources: [sampleResources[0]],
       consumption: [2],
+      categoryId: "team",
     },
     {
       id: "2",
@@ -184,6 +364,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       end: dateTimeOnWeekday(3, 15, 30),
       resources: [sampleResources[0]],
       consumption: [2],
+      categoryId: "work",
     },
     {
       id: "3",
@@ -192,6 +373,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       end: dateTimeOnWeekday(4, 16, 30),
       resources: [sampleResources[1]],
       consumption: [1],
+      categoryId: "team",
     },
     // Overlap demo: switch between "Side by side" and "Expand" to see the difference.
     // With "columns" every event gets an equal slice; with "expand" the early/late
@@ -203,6 +385,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       end: dateTimeOnWeekday(3, 19, 0),
       resources: [sampleResources[0]],
       consumption: [1],
+      categoryId: "work",
     },
     {
       id: "expand-left",
@@ -211,6 +394,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       end: dateTimeOnWeekday(3, 17, 30),
       resources: [sampleResources[1]],
       consumption: [1],
+      categoryId: "personal",
     },
     {
       id: "expand-gap",
@@ -219,6 +403,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       end: dateTimeOnWeekday(3, 18, 0),
       resources: [sampleResources[1]],
       consumption: [1],
+      categoryId: "personal",
     },
     {
       id: "expand-right",
@@ -227,6 +412,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       end: dateTimeOnWeekday(3, 19, 0),
       resources: [sampleResources[1]],
       consumption: [1],
+      categoryId: "personal",
     },
     {
       id: "expand-floater",
@@ -235,6 +421,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       end: dateTimeOnWeekday(3, 18, 0),
       resources: [sampleResources[0]],
       consumption: [1],
+      categoryId: "work",
     },
     {
       id: "4",
@@ -243,6 +430,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       end: dateTimeOnWeekday(5, 13, 0),
       resources: [sampleResources[0]],
       consumption: [1],
+      categoryId: "work",
     },
     {
       id: "5",
@@ -251,6 +439,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       end: dateTimeOnWeekday(5, 14, 30),
       resources: [sampleResources[0]],
       consumption: [2],
+      categoryId: "personal",
     },
     {
       id: "6",
@@ -259,6 +448,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       end: dateTimeOnWeekday(2, 14, 0),
       resources: [sampleResources[1]],
       consumption: [1],
+      categoryId: "team",
     },
     {
       id: "r-standup",
@@ -267,6 +457,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       end: dateTimeOnWeekday(1, 9, 15),
       resources: [sampleResources[0]],
       consumption: [1],
+      categoryId: "team",
       recurrence: {
         frequency: "daily",
         interval: 1,
@@ -289,6 +480,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       end: dateTimeOnWeekday(1, 10, 30),
       resources: [sampleResources[1]],
       consumption: [1],
+      categoryId: "team",
       recurrence: {
         frequency: "weekly",
         interval: 1,
@@ -303,6 +495,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       end: dateTimeOnWeekday(1, 15, 0),
       resources: [sampleResources[0]],
       consumption: [1],
+      categoryId: "work",
       recurrence: {
         frequency: "monthly",
         interval: 1,
@@ -314,6 +507,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       start: `${formatDateToISO(weekdayAt(3))}T00:00:00`,
       end: `${formatDateToISO(weekdayAt(3))}T23:59:59`,
       allDay: true,
+      categoryId: "holiday",
     },
     {
       id: "ad-conf",
@@ -321,6 +515,7 @@ function getSampleEvents(): Array<Event<Resource>> {
       start: `${formatDateToISO(weekdayAt(4))}T00:00:00`,
       end: `${formatDateToISO(weekdayAt(5))}T23:59:59`,
       allDay: true,
+      categoryId: "team",
     },
   ];
 }
@@ -333,6 +528,7 @@ interface EventFormData {
   startTime: string;
   endDate: string;
   endTime: string;
+  categoryId: string;
   resourceId: string;
   consumption: number;
   recurrenceFrequency: RecurrenceFrequency | "none";
@@ -347,6 +543,7 @@ const emptyFormData: EventFormData = {
   startTime: "09:00",
   endDate: formatDateToISO(new Date()),
   endTime: "10:00",
+  categoryId: eventCategories[0]?.id ?? "",
   resourceId: sampleResources[0]?.id ?? "",
   consumption: 1,
   recurrenceFrequency: "none",
@@ -474,6 +671,25 @@ function EventModal({
                 required={!formData.allDay}
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="categoryId">Calendar</Label>
+            <select
+              id="categoryId"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+              value={formData.categoryId}
+              onChange={(e) =>
+                setFormData({ ...formData, categoryId: e.target.value })
+              }
+              required
+            >
+              {eventCategories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -684,11 +900,11 @@ function ScheduleView({
   overlapMode,
 }: {
   calendar: ReturnType<
-    typeof useCalendar<typeof features, Resource, Event<Resource>>
+    typeof useCalendar<typeof features, Resource, DemoEvent>
   >;
-  days: Array<Day<Resource, Event<Resource>>>;
+  days: Array<Day<Resource, DemoEvent>>;
   resources: Array<Resource>;
-  onEventClick: (event: Event<Resource>, scope?: RecurrenceEditScope) => void;
+  onEventClick: (event: DemoEvent, scope?: RecurrenceEditScope) => void;
   scrollRef: React.RefObject<HTMLDivElement | null>;
   leftSentinelRef: React.RefObject<HTMLDivElement | null>;
   rightSentinelRef: React.RefObject<HTMLDivElement | null>;
@@ -773,10 +989,11 @@ function ScheduleView({
                   weekday: "short",
                 }).format(new Date(`${day.isoDate}T00:00:00`));
                 return (
-                  <div
+                  <DayDropZone
                     key={day.isoDate}
+                    isoDate={dayDate}
                     className="border-r border-neutral-800 last:border-r-0"
-                    {...getDayColumnProps(dayDate)}
+                    columnRef={getDayColumnProps(dayDate).ref}
                   >
                     <div className="h-12 border-b border-neutral-800 bg-neutral-950 px-3 py-2 text-center">
                       <div className="text-sm font-semibold text-neutral-200">
@@ -790,17 +1007,38 @@ function ScheduleView({
                       className="border-b border-neutral-800 bg-neutral-950/60 px-1 py-1 flex flex-col gap-1 overflow-hidden"
                       style={{ height: allDayRowHeight }}
                     >
-                      {day.allDayEvents.map((event) => (
-                        <div
-                          key={`ad-${event.id}`}
-                          className="cursor-pointer bg-amber-700/70 hover:bg-amber-600/80 text-amber-50 rounded px-2 text-[11px] font-medium truncate border border-amber-600/40"
-                          style={{ height: 20, lineHeight: "20px" }}
-                          title={event.title}
-                          onClick={() => onEventClick(event)}
-                        >
-                          {event.title}
-                        </div>
-                      ))}
+                      {day.allDayEvents.map((event) => {
+                        const segment = calendar.getEventSegmentInfo(event);
+                        return (
+                          <EventDragSource
+                            key={`ad-${event.id}`}
+                            id={`all-day-${event.id}-${dayDate}`}
+                            data={{
+                              event,
+                              dayDate,
+                              granularity: "day",
+                              originalStart: segment.originalStart,
+                              originalEnd: segment.originalEnd,
+                              occurrenceStart: event._occurrenceOriginalStart,
+                            }}
+                          >
+                            {(drag) => (
+                              <div
+                                ref={drag.ref}
+                                className={`group flex items-center gap-1 cursor-pointer text-white rounded px-2 text-[11px] font-medium border ${eventClassOf(
+                                  event,
+                                )} ${drag.isDragging ? "opacity-40" : ""}`}
+                                style={{ height: 20, lineHeight: "20px" }}
+                                title={event.title}
+                                onClick={() => onEventClick(event)}
+                              >
+                                <DragGrip handleRef={drag.handleRef} />
+                                <span className="truncate">{event.title}</span>
+                              </div>
+                            )}
+                          </EventDragSource>
+                        );
+                      })}
                     </div>
                     <div className="relative h-[1440px] bg-neutral-950/30">
                       {resources.map((resource, resourceIdx) => {
@@ -889,147 +1127,172 @@ function ScheduleView({
                         );
 
                         return (
-                          <ContextMenu key={`${event.id}-${eventIndex}`}>
-                            <ContextMenuTrigger
-                              className={`@container/event [container-type:size] group absolute z-10 bg-neutral-800 text-white rounded text-xs font-medium transition-colors border border-neutral-700 ${
-                                isActivelyResized
-                                  ? "bg-neutral-700 ring-2 ring-neutral-500 z-20"
-                                  : "cursor-pointer hover:bg-neutral-700"
-                              }`}
-                              style={stackedStyle as React.CSSProperties}
-                              onClick={(e: React.MouseEvent) => {
-                                if (
-                                  !resizeState.isResizing &&
-                                  !(e.target as HTMLElement).closest(
-                                    "[data-resize-handle]",
-                                  )
-                                ) {
-                                  onEventClick(event);
-                                }
-                              }}
-                            >
-                              {showTopHandle && (
-                                <ResizeHandle
-                                  edge="top"
-                                  {...getResizeHandleProps(
-                                    event.id,
-                                    "top",
-                                    originalStart,
-                                    originalEnd,
-                                    {
-                                      occurrenceStart:
-                                        event._occurrenceOriginalStart,
-                                    },
+                          <EventDragSource
+                            key={`${event.id}-${eventIndex}`}
+                            id={`event-${event.id}-${dayDate}`}
+                            data={{
+                              event,
+                              dayDate,
+                              granularity: "time",
+                              originalStart,
+                              originalEnd,
+                              occurrenceStart: event._occurrenceOriginalStart,
+                            }}
+                            disabled={resizeState.isResizing}
+                          >
+                            {(drag) => (
+                              <ContextMenu>
+                                <ContextMenuTrigger
+                                  ref={drag.ref}
+                                  className={`@container/event [container-type:size] group absolute z-10 text-white rounded text-xs font-medium transition-colors border ${eventClassOf(
+                                    event,
+                                  )} ${
+                                    isActivelyResized
+                                      ? "ring-2 ring-neutral-500 z-20"
+                                      : "cursor-pointer"
+                                  } ${drag.isDragging ? "opacity-40" : ""}`}
+                                  style={stackedStyle as React.CSSProperties}
+                                  onClick={(e: React.MouseEvent) => {
+                                    if (
+                                      !resizeState.isResizing &&
+                                      !(e.target as HTMLElement).closest(
+                                        "[data-resize-handle]",
+                                      )
+                                    ) {
+                                      onEventClick(event);
+                                    }
+                                  }}
+                                >
+                                  {showTopHandle && (
+                                    <ResizeHandle
+                                      edge="top"
+                                      {...getResizeHandleProps(
+                                        event.id,
+                                        "top",
+                                        originalStart,
+                                        originalEnd,
+                                        {
+                                          occurrenceStart:
+                                            event._occurrenceOriginalStart,
+                                        },
+                                      )}
+                                    />
                                   )}
-                                />
-                              )}
-                              <div className="absolute inset-0 overflow-hidden rounded-[inherit] px-2 py-3 [@container_event_(24px<=height<40px)]:py-1 [@container_event_(height<24px)]:py-0">
-                                <div className="font-semibold flex items-center gap-1.5 leading-tight">
-                                  <span className="flex items-center gap-1 min-w-0">
-                                    {event.recurrence && (
-                                      <span
-                                        className="opacity-60 shrink-0"
-                                        title="Recurring event"
-                                      >
-                                        ↻
-                                      </span>
-                                    )}
-                                    <span className="truncate">
-                                      {event.title}
-                                    </span>
-                                  </span>
-                                  {event.consumption &&
-                                    event.consumption.length > 0 && (
-                                      <span
-                                        className="text-[10px] leading-none rounded bg-black/40 px-1 py-0.5 font-semibold shrink-0"
-                                        title="Consumption"
-                                      >
-                                        {event.consumption.reduce(
-                                          (a, b) => a + b,
-                                          0,
+                                  <div className="absolute inset-0 overflow-hidden rounded-[inherit] px-2 py-3 [@container_event_(24px<=height<40px)]:py-1 [@container_event_(height<24px)]:py-0">
+                                    <div className="font-semibold flex items-center gap-1.5 leading-tight">
+                                      <DragGrip handleRef={drag.handleRef} />
+                                      <span className="flex items-center gap-1 min-w-0">
+                                        {event.recurrence && (
+                                          <span
+                                            className="opacity-60 shrink-0"
+                                            title="Recurring event"
+                                          >
+                                            ↻
+                                          </span>
                                         )}
+                                        <span className="truncate">
+                                          {event.title}
+                                        </span>
                                       </span>
-                                    )}
-                                  {concurrency > 1 && (
-                                    <span
-                                      className="text-[10px] leading-none rounded bg-amber-500/20 text-amber-200 px-1 py-0.5 font-semibold shrink-0"
-                                      title={`Overlaps ${concurrency - 1} other event(s)`}
-                                    >
-                                      ⇄{concurrency}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="hidden [@container_event_(height>=56px)]:block text-xs opacity-90 mt-0.5 leading-tight truncate">
-                                  {timeRange.rangeFormatted}
-                                </div>
-                              </div>
-                              {showBottomHandle && (
-                                <ResizeHandle
-                                  edge="bottom"
-                                  {...getResizeHandleProps(
-                                    event.id,
-                                    "bottom",
-                                    originalStart,
-                                    originalEnd,
-                                    {
-                                      occurrenceStart:
-                                        event._occurrenceOriginalStart,
-                                    },
-                                  )}
-                                />
-                              )}
-                            </ContextMenuTrigger>
-                            <ContextMenuContent>
-                              <ContextMenuItem
-                                onClick={() => onEventClick(event)}
-                              >
-                                {event.recurrence
-                                  ? "Edit this occurrence"
-                                  : "Edit event"}
-                              </ContextMenuItem>
-                              {event.recurrence && (
-                                <>
-                                  <ContextMenuItem
-                                    onClick={() =>
-                                      onEventClick(event, "thisAndFollowing")
-                                    }
-                                  >
-                                    Edit this and following
-                                  </ContextMenuItem>
-                                  <ContextMenuItem
-                                    onClick={() => onEventClick(event, "all")}
-                                  >
-                                    Edit series
-                                  </ContextMenuItem>
-                                </>
-                              )}
-                              {event.recurrence && (
-                                <>
-                                  <ContextMenuSeparator />
-                                  <ContextMenuItem
-                                    onClick={() =>
-                                      calendar.goToPreviousOccurrence(
+                                      {event.consumption &&
+                                        event.consumption.length > 0 && (
+                                          <span
+                                            className="text-[10px] leading-none rounded bg-black/40 px-1 py-0.5 font-semibold shrink-0"
+                                            title="Consumption"
+                                          >
+                                            {event.consumption.reduce(
+                                              (a, b) => a + b,
+                                              0,
+                                            )}
+                                          </span>
+                                        )}
+                                      {concurrency > 1 && (
+                                        <span
+                                          className="text-[10px] leading-none rounded bg-amber-500/20 text-amber-200 px-1 py-0.5 font-semibold shrink-0"
+                                          title={`Overlaps ${concurrency - 1} other event(s)`}
+                                        >
+                                          ⇄{concurrency}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="hidden [@container_event_(height>=56px)]:block text-xs opacity-90 mt-0.5 leading-tight truncate">
+                                      {timeRange.rangeFormatted}
+                                    </div>
+                                  </div>
+                                  {showBottomHandle && (
+                                    <ResizeHandle
+                                      edge="bottom"
+                                      {...getResizeHandleProps(
                                         event.id,
-                                        event.start,
-                                      )
-                                    }
-                                  >
-                                    ← Previous occurrence
-                                  </ContextMenuItem>
+                                        "bottom",
+                                        originalStart,
+                                        originalEnd,
+                                        {
+                                          occurrenceStart:
+                                            event._occurrenceOriginalStart,
+                                        },
+                                      )}
+                                    />
+                                  )}
+                                </ContextMenuTrigger>
+                                <ContextMenuContent>
                                   <ContextMenuItem
-                                    onClick={() =>
-                                      calendar.goToNextOccurrence(
-                                        event.id,
-                                        event.start,
-                                      )
-                                    }
+                                    onClick={() => onEventClick(event)}
                                   >
-                                    Next occurrence →
+                                    {event.recurrence
+                                      ? "Edit this occurrence"
+                                      : "Edit event"}
                                   </ContextMenuItem>
-                                </>
-                              )}
-                            </ContextMenuContent>
-                          </ContextMenu>
+                                  {event.recurrence && (
+                                    <>
+                                      <ContextMenuItem
+                                        onClick={() =>
+                                          onEventClick(
+                                            event,
+                                            "thisAndFollowing",
+                                          )
+                                        }
+                                      >
+                                        Edit this and following
+                                      </ContextMenuItem>
+                                      <ContextMenuItem
+                                        onClick={() =>
+                                          onEventClick(event, "all")
+                                        }
+                                      >
+                                        Edit series
+                                      </ContextMenuItem>
+                                    </>
+                                  )}
+                                  {event.recurrence && (
+                                    <>
+                                      <ContextMenuSeparator />
+                                      <ContextMenuItem
+                                        onClick={() =>
+                                          calendar.goToPreviousOccurrence(
+                                            event.id,
+                                            event.start,
+                                          )
+                                        }
+                                      >
+                                        ← Previous occurrence
+                                      </ContextMenuItem>
+                                      <ContextMenuItem
+                                        onClick={() =>
+                                          calendar.goToNextOccurrence(
+                                            event.id,
+                                            event.start,
+                                          )
+                                        }
+                                      >
+                                        Next occurrence →
+                                      </ContextMenuItem>
+                                    </>
+                                  )}
+                                </ContextMenuContent>
+                              </ContextMenu>
+                            )}
+                          </EventDragSource>
                         );
                       })}
                       {resizeState.isResizing &&
@@ -1062,7 +1325,7 @@ function ScheduleView({
                           );
                         })()}
                     </div>
-                  </div>
+                  </DayDropZone>
                 );
               })}
             </div>
@@ -1076,9 +1339,11 @@ function ScheduleView({
 
 function ResizeErrorToast({
   error,
+  title = "Cannot Resize Event",
   onDismiss,
 }: {
   error: ResizeError;
+  title?: string;
   onDismiss: () => void;
 }) {
   useEffect(() => {
@@ -1092,9 +1357,7 @@ function ResizeErrorToast({
         <div className="flex items-start gap-3">
           <div className="text-red-400 text-lg">⚠</div>
           <div className="flex-1 min-w-0">
-            <div className="font-semibold text-red-100 mb-1">
-              Cannot Resize Event
-            </div>
+            <div className="font-semibold text-red-100 mb-1">{title}</div>
             <div className="text-sm text-red-200/80 mb-2">{error.message}</div>
             {error.conflicts && error.conflicts.length > 0 && (
               <div className="mt-2 space-y-1">
@@ -1208,8 +1471,9 @@ function CalendarView() {
     initialData: emptyFormData,
   });
 
-  const [scopeChoiceEvent, setScopeChoiceEvent] =
-    useState<Event<Resource> | null>(null);
+  const [scopeChoiceEvent, setScopeChoiceEvent] = useState<DemoEvent | null>(
+    null,
+  );
   const [resizeScopeChoice, setResizeScopeChoice] = useState<{
     eventId: string;
     occurrenceStart: EventDateTimeInput;
@@ -1219,8 +1483,11 @@ function CalendarView() {
 
   const [resizeError, setResizeError] = useState<ResizeError | null>(null);
   const [overlapMode, setOverlapMode] = useState<OverlapMode>("columns");
+  const [visibleCategoryIds, setVisibleCategoryIds] = useState(
+    () => new Set(eventCategories.map((category) => category.id)),
+  );
 
-  const calendar = useCalendar({
+  const calendar = useCalendar<typeof features, Resource, DemoEvent>({
     features,
     viewMode: { value: 1, unit: "month" },
     events: [],
@@ -1273,9 +1540,30 @@ function CalendarView() {
 
   const dayNames = calendar.getDaysNames("short");
 
+  const { setEventFilter } = calendar;
+
+  useEffect(() => {
+    const showsEveryCalendar =
+      visibleCategoryIds.size === eventCategories.length;
+    setEventFilter(
+      "category",
+      showsEveryCalendar
+        ? null
+        : (event) => visibleCategoryIds.has(event.categoryId),
+    );
+  }, [setEventFilter, visibleCategoryIds]);
+
+  const toggleCategory = (categoryId: string) => {
+    setVisibleCategoryIds((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(categoryId)) next.add(categoryId);
+      return next;
+    });
+  };
+
   const isScheduleView =
     calendar.viewMode.unit === "week" || calendar.viewMode.unit === "day";
-  const scheduleDays: Array<Day<Resource, Event<Resource>>> = isScheduleView
+  const scheduleDays: Array<Day<Resource, DemoEvent>> = isScheduleView
     ? calendar.viewMode.unit === "day"
       ? calendar.days.filter((day) => {
           const currentDateStr = calendar.currentPeriod;
@@ -1654,10 +1942,7 @@ function CalendarView() {
     });
   };
 
-  const handleEventClick = (
-    event: Event<Resource>,
-    scope?: RecurrenceEditScope,
-  ) => {
+  const handleEventClick = (event: DemoEvent, scope?: RecurrenceEditScope) => {
     if (event.recurrence && !scope) {
       setScopeChoiceEvent(event);
       return;
@@ -1666,7 +1951,7 @@ function CalendarView() {
   };
 
   const openEditModal = (
-    event: Event<Resource>,
+    event: DemoEvent,
     scope: RecurrenceEditScope = event.recurrence ? "this" : "all",
   ) => {
     const masterEvent = calendar.getMasterEvent(event);
@@ -1692,6 +1977,11 @@ function CalendarView() {
         startTime: startDate.toTimeString().slice(0, 5),
         endDate: formatDateToISO(endDate),
         endTime: endDate.toTimeString().slice(0, 5),
+        categoryId:
+          event.categoryId ||
+          masterEvent.categoryId ||
+          eventCategories[0]?.id ||
+          "",
         resourceId: eventResourceId || resources[0]?.id || "",
         consumption:
           event.consumption?.[0] ?? masterEvent.consumption?.[0] ?? 1,
@@ -1731,10 +2021,11 @@ function CalendarView() {
         data.allDay || !selectedResource ? [] : [selectedResource];
       const eventConsumption = data.allDay ? [] : [data.consumption];
 
-      const updates: Partial<Omit<Event<Resource>, "id">> = {
+      const updates: Partial<Omit<DemoEvent, "id">> = {
         title: data.title,
         start,
         end,
+        categoryId: data.categoryId,
         ...(modalState.isRecurring && data.recurrenceEditScope === "this"
           ? {}
           : { recurrence }),
@@ -1756,6 +2047,7 @@ function CalendarView() {
               title: data.title,
               start,
               end,
+              categoryId: data.categoryId,
               recurrence,
               resources: eventResources,
               consumption: eventConsumption,
@@ -1769,6 +2061,9 @@ function CalendarView() {
       setIsSaving(false);
     }
   };
+
+  const hiddenEventCount = calendar.getHiddenEvents().length;
+  const loadedEventCount = calendar.getEvents().length;
 
   const handleDelete = (data: EventFormData) => {
     if (!modalState.eventId) return;
@@ -1784,432 +2079,677 @@ function CalendarView() {
     calendar.removeEvent(modalState.eventId);
   };
 
+  const [activeDrag, setActiveDrag] = useState<EventDragData | null>(null);
+  const [moveError, setMoveError] = useState<ResizeError | null>(null);
+  const [moveScopeChoice, setMoveScopeChoice] = useState<{
+    event: DemoEvent;
+    eventId: string;
+    occurrenceStart: EventDateTimeInput;
+    newStart: string;
+    newEnd: string;
+  } | null>(null);
+
+  const handleDragStart = (e: Parameters<DragStartEvent>[0]) => {
+    setActiveDrag(
+      (e.operation.source?.data as EventDragData | undefined) ?? null,
+    );
+  };
+
+  const handleDragEnd = async (e: Parameters<DragEndEvent>[0]) => {
+    setActiveDrag(null);
+
+    const source = e.operation.source?.data as EventDragData | undefined;
+    const target = e.operation.target?.data as DayDropData | undefined;
+    if (e.canceled || !source) return;
+
+    const dayShift = target ? isoDayDiff(source.dayDate, target.isoDate) : 0;
+    const minuteShift =
+      source.granularity === "time"
+        ? pixelsToSnappedMinutes(e.operation.transform.y)
+        : 0;
+    if (dayShift === 0 && minuteShift === 0) return;
+
+    const newStart = shiftPlainDateTime(
+      source.originalStart,
+      dayShift,
+      minuteShift,
+    );
+    const newEnd = shiftPlainDateTime(
+      source.originalEnd,
+      dayShift,
+      minuteShift,
+    );
+    const { event } = source;
+
+    if (event.recurrence) {
+      setMoveScopeChoice({
+        event,
+        eventId: event.id,
+        occurrenceStart: source.occurrenceStart ?? source.originalStart,
+        newStart,
+        newEnd,
+      });
+      return;
+    }
+
+    const eventId = calendar.getMasterEvent(event).id;
+    const validation = calendar.validateMove(
+      eventId,
+      newStart,
+      newEnd,
+      event.resources,
+      event.consumption,
+    );
+
+    if (validation.blocked) {
+      setMoveError({
+        eventId,
+        eventTitle: validation.blockedEventTitle ?? event.title,
+        reason: "unavailable-time",
+        message: validation.message ?? "This move is blocked.",
+        originalStart: source.originalStart,
+        originalEnd: source.originalEnd,
+        attemptedStart: newStart,
+        attemptedEnd: newEnd,
+      });
+      return;
+    }
+
+    const result = await calendar.editEvent(eventId, {
+      start: newStart,
+      end: newEnd,
+    });
+    if (!result.success) setMoveError(result.error);
+  };
+
   return (
-    <div className="p-5 max-w-[1200px] mx-auto min-h-screen">
-      <div className="mb-6">
-        <h1 className="m-0 mb-4 text-[28px] font-semibold text-white">
-          TanStack Time
-        </h1>
+    <DragDropProvider onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="p-5 max-w-[1200px] mx-auto min-h-screen">
+        <div className="mb-6">
+          <h1 className="m-0 mb-4 text-[28px] font-semibold text-white">
+            TanStack Time
+          </h1>
 
-        <div className="flex gap-3 items-center mb-4 flex-wrap">
-          <Button
-            onClick={goToPreviousPeriod}
-            disabled={!calendar.canGoPreviousPeriod() || calendar.isPending}
-            variant="outline"
-          >
-            ← Previous
-          </Button>
-
-          <Button
-            onClick={goToToday}
-            disabled={calendar.isPending}
-            variant="outline"
-          >
-            Today
-          </Button>
-
-          <Button
-            onClick={goToNextPeriod}
-            disabled={!calendar.canGoNextPeriod() || calendar.isPending}
-            variant="outline"
-          >
-            Next →
-          </Button>
-
-          <Button onClick={openAddModal}>+ Add Event</Button>
-
-          <Button
-            onClick={calendar.undo}
-            disabled={!calendar.canUndo()}
-            variant="outline"
-            title="Undo"
-          >
-            ↩ Undo
-          </Button>
-          <Button
-            onClick={calendar.redo}
-            disabled={!calendar.canRedo()}
-            variant="outline"
-            title="Redo"
-          >
-            ↪ Redo
-          </Button>
-
-          <div className="ml-auto flex gap-2">
+          <div className="flex gap-3 items-center mb-4 flex-wrap">
             <Button
-              onClick={() =>
-                calendar.changeViewMode({ value: 1, unit: "month" })
-              }
-              variant={
-                calendar.viewMode.unit === "month" ? "secondary" : "outline"
-              }
-              size="sm"
+              onClick={goToPreviousPeriod}
+              disabled={!calendar.canGoPreviousPeriod() || calendar.isPending}
+              variant="outline"
             >
-              Month
+              ← Previous
+            </Button>
+
+            <Button
+              onClick={goToToday}
+              disabled={calendar.isPending}
+              variant="outline"
+            >
+              Today
+            </Button>
+
+            <Button
+              onClick={goToNextPeriod}
+              disabled={!calendar.canGoNextPeriod() || calendar.isPending}
+              variant="outline"
+            >
+              Next →
+            </Button>
+
+            <Button onClick={openAddModal}>+ Add Event</Button>
+
+            <Button
+              onClick={calendar.undo}
+              disabled={!calendar.canUndo()}
+              variant="outline"
+              title="Undo"
+            >
+              ↩ Undo
             </Button>
             <Button
-              onClick={() =>
-                calendar.changeViewMode({ value: 1, unit: "week" })
-              }
-              variant={
-                calendar.viewMode.unit === "week" ? "secondary" : "outline"
-              }
-              size="sm"
+              onClick={calendar.redo}
+              disabled={!calendar.canRedo()}
+              variant="outline"
+              title="Redo"
             >
-              Week
+              ↪ Redo
             </Button>
-            <Button
-              onClick={() => calendar.changeViewMode({ value: 1, unit: "day" })}
-              variant={
-                calendar.viewMode.unit === "day" ? "secondary" : "outline"
-              }
-              size="sm"
-            >
-              Day
-            </Button>
+
+            <div className="ml-auto flex gap-2">
+              <Button
+                onClick={() =>
+                  calendar.changeViewMode({ value: 1, unit: "month" })
+                }
+                variant={
+                  calendar.viewMode.unit === "month" ? "secondary" : "outline"
+                }
+                size="sm"
+              >
+                Month
+              </Button>
+              <Button
+                onClick={() =>
+                  calendar.changeViewMode({ value: 1, unit: "week" })
+                }
+                variant={
+                  calendar.viewMode.unit === "week" ? "secondary" : "outline"
+                }
+                size="sm"
+              >
+                Week
+              </Button>
+              <Button
+                onClick={() =>
+                  calendar.changeViewMode({ value: 1, unit: "day" })
+                }
+                variant={
+                  calendar.viewMode.unit === "day" ? "secondary" : "outline"
+                }
+                size="sm"
+              >
+                Day
+              </Button>
+            </div>
           </div>
-        </div>
 
-        {isScheduleView && (
+          {isScheduleView && (
+            <div className="mb-4 rounded-lg border border-neutral-800 bg-neutral-950 px-4 py-3">
+              <div className="mb-2 text-xs uppercase tracking-wide text-neutral-500">
+                Overlap Layout
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {(Object.keys(overlapModes) as Array<OverlapMode>).map(
+                  (mode) => (
+                    <Button
+                      key={mode}
+                      onClick={() => setOverlapMode(mode)}
+                      variant={overlapMode === mode ? "secondary" : "outline"}
+                      size="sm"
+                    >
+                      {overlapModeLabels[mode]}
+                    </Button>
+                  ),
+                )}
+                <span className="ml-2 text-xs text-neutral-500">
+                  {overlapMode === "focus"
+                    ? "Custom strategy: reads layout.concurrency / layout.depth"
+                    : `Built-in "${overlapModes[overlapMode] as string}" strategy`}
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div className="mb-4 rounded-lg border border-neutral-800 bg-neutral-950 px-4 py-3">
+            <div className="mb-2 flex flex-wrap items-center gap-3">
+              <span className="text-xs uppercase tracking-wide text-neutral-500">
+                Calendars
+              </span>
+              <span className="text-xs text-neutral-500">
+                {hiddenEventCount === 0
+                  ? "Showing every calendar"
+                  : `${hiddenEventCount} of ${loadedEventCount} events filtered out`}
+              </span>
+              {hiddenEventCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    setVisibleCategoryIds(
+                      new Set(eventCategories.map((category) => category.id)),
+                    )
+                  }
+                >
+                  Show all
+                </Button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {eventCategories.map((category) => {
+                const isVisible = visibleCategoryIds.has(category.id);
+                return (
+                  <button
+                    key={category.id}
+                    type="button"
+                    aria-pressed={isVisible}
+                    onClick={() => toggleCategory(category.id)}
+                    className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${
+                      isVisible
+                        ? "border-neutral-700 bg-black text-neutral-200"
+                        : "border-neutral-900 bg-neutral-950 text-neutral-600 line-through"
+                    }`}
+                  >
+                    <span
+                      className="h-3 w-3 rounded-sm border border-white/20"
+                      style={{
+                        backgroundColor: isVisible
+                          ? category.swatch
+                          : "transparent",
+                      }}
+                    />
+                    {category.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="mb-4 rounded-lg border border-neutral-800 bg-neutral-950 px-4 py-3">
             <div className="mb-2 text-xs uppercase tracking-wide text-neutral-500">
-              Overlap Layout
+              Capacity Controls
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {(Object.keys(overlapModes) as Array<OverlapMode>).map((mode) => (
-                <Button
-                  key={mode}
-                  onClick={() => setOverlapMode(mode)}
-                  variant={overlapMode === mode ? "secondary" : "outline"}
-                  size="sm"
-                >
-                  {overlapModeLabels[mode]}
-                </Button>
-              ))}
-              <span className="ml-2 text-xs text-neutral-500">
-                {overlapMode === "focus"
-                  ? "Custom strategy: reads layout.concurrency / layout.depth"
-                  : `Built-in "${overlapModes[overlapMode] as string}" strategy`}
-              </span>
+            <div className="flex flex-wrap gap-3">
+              {resources.map((resource) => {
+                const currentCapacity = resource.capacity?.[0] ?? 1;
+                return (
+                  <div
+                    key={resource.id}
+                    className="flex items-center gap-2 rounded-md border border-neutral-800 bg-black px-3 py-2"
+                  >
+                    <span className="text-sm text-neutral-300">
+                      {resource.label}
+                    </span>
+                    <Input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={currentCapacity}
+                      onChange={(e) => {
+                        const nextCapacity = Math.max(
+                          1,
+                          Number(e.target.value) || 1,
+                        );
+                        setResources((prev) =>
+                          prev.map((r) =>
+                            r.id === resource.id
+                              ? { ...r, capacity: [nextCapacity] }
+                              : r,
+                          ),
+                        );
+                      }}
+                      className="h-8 w-24"
+                    />
+                  </div>
+                );
+              })}
             </div>
           </div>
-        )}
 
-        <div className="mb-4 rounded-lg border border-neutral-800 bg-neutral-950 px-4 py-3">
-          <div className="mb-2 text-xs uppercase tracking-wide text-neutral-500">
-            Capacity Controls
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {resources.map((resource) => {
-              const currentCapacity = resource.capacity?.[0] ?? 1;
-              return (
-                <div
-                  key={resource.id}
-                  className="flex items-center gap-2 rounded-md border border-neutral-800 bg-black px-3 py-2"
-                >
-                  <span className="text-sm text-neutral-300">
-                    {resource.label}
-                  </span>
-                  <Input
-                    type="number"
-                    min={1}
-                    step={1}
-                    value={currentCapacity}
-                    onChange={(e) => {
-                      const nextCapacity = Math.max(
-                        1,
-                        Number(e.target.value) || 1,
-                      );
-                      setResources((prev) =>
-                        prev.map((r) =>
-                          r.id === resource.id
-                            ? { ...r, capacity: [nextCapacity] }
-                            : r,
-                        ),
-                      );
-                    }}
-                    className="h-8 w-24"
-                  />
-                </div>
-              );
-            })}
+          <div className="text-lg font-medium text-neutral-400">
+            {visibleMonth}
           </div>
         </div>
 
-        <div className="text-lg font-medium text-neutral-400">
-          {visibleMonth}
-        </div>
-      </div>
-
-      {isScheduleView ? (
-        <ScheduleView
-          calendar={calendar}
-          days={bufferedScheduleDays}
-          resources={resources}
-          onEventClick={handleEventClick}
-          scrollRef={scheduleScrollRef}
-          leftSentinelRef={scheduleLeftRef}
-          rightSentinelRef={scheduleRightRef}
-          periodDayCount={periodDayCount}
-          overlapMode={overlapMode}
-        />
-      ) : (
-        <div className="border border-neutral-800 rounded-lg overflow-hidden bg-black">
-          <div
-            className="grid border-b border-neutral-800 bg-neutral-950 sticky top-0 z-10"
-            style={{
-              gridTemplateColumns: `repeat(${dayNames.length}, minmax(0, 1fr))`,
-            }}
-          >
-            {dayNames.map((dayName: string, index: number) => (
-              <div
-                key={index}
-                className={`py-3 text-center font-semibold text-sm text-neutral-500 ${
-                  index < dayNames.length - 1
-                    ? "border-r border-neutral-800"
-                    : ""
-                }`}
-              >
-                {dayName}
-              </div>
-            ))}
-          </div>
-
-          <ScrollArea
-            viewportRef={monthScrollRef}
-            className="h-[calc(100vh-260px)]"
-          >
-            <div ref={monthTopRef} style={{ height: 1 }} aria-hidden />
-
+        {isScheduleView ? (
+          <ScheduleView
+            calendar={calendar}
+            days={bufferedScheduleDays}
+            resources={resources}
+            onEventClick={handleEventClick}
+            scrollRef={scheduleScrollRef}
+            leftSentinelRef={scheduleLeftRef}
+            rightSentinelRef={scheduleRightRef}
+            periodDayCount={periodDayCount}
+            overlapMode={overlapMode}
+          />
+        ) : (
+          <div className="border border-neutral-800 rounded-lg overflow-hidden bg-black">
             <div
-              className="grid"
+              className="grid border-b border-neutral-800 bg-neutral-950 sticky top-0 z-10"
               style={{
                 gridTemplateColumns: `repeat(${dayNames.length}, minmax(0, 1fr))`,
               }}
             >
-              {bufferedWeekGroups.map(
-                (
-                  week: Array<Day<Resource, Event<Resource>> | null>,
-                  weekIndex: number,
-                ) => {
-                  const weekKey =
-                    week.find((d) => d !== null)?.isoDate ?? `w-${weekIndex}`;
-                  return week.map((day, dayIndex) => {
-                    if (!day) {
+              {dayNames.map((dayName: string, index: number) => (
+                <div
+                  key={index}
+                  className={`py-3 text-center font-semibold text-sm text-neutral-500 ${
+                    index < dayNames.length - 1
+                      ? "border-r border-neutral-800"
+                      : ""
+                  }`}
+                >
+                  {dayName}
+                </div>
+              ))}
+            </div>
+
+            <ScrollArea
+              viewportRef={monthScrollRef}
+              className="h-[calc(100vh-260px)]"
+            >
+              <div ref={monthTopRef} style={{ height: 1 }} aria-hidden />
+
+              <div
+                className="grid"
+                style={{
+                  gridTemplateColumns: `repeat(${dayNames.length}, minmax(0, 1fr))`,
+                }}
+              >
+                {bufferedWeekGroups.map(
+                  (
+                    week: Array<Day<Resource, DemoEvent> | null>,
+                    weekIndex: number,
+                  ) => {
+                    const weekKey =
+                      week.find((d) => d !== null)?.isoDate ?? `w-${weekIndex}`;
+                    return week.map((day, dayIndex) => {
+                      if (!day) {
+                        return (
+                          <div
+                            key={`empty-${weekKey}-${dayIndex}`}
+                            className={`min-h-[120px] bg-neutral-950/50 ${
+                              dayIndex < dayNames.length - 1
+                                ? "border-r border-neutral-800"
+                                : ""
+                            } border-b border-neutral-800`}
+                          />
+                        );
+                      }
+
+                      const isToday = day.isToday;
+                      const isInCurrentPeriod = day.isInCurrentPeriod;
+
                       return (
-                        <div
-                          key={`empty-${weekKey}-${dayIndex}`}
-                          className={`min-h-[120px] bg-neutral-950/50 ${
+                        <DayDropZone
+                          key={day.isoDate}
+                          isoDate={day.isoDate}
+                          data-day-date={day.isoDate}
+                          className={`min-h-[120px] p-2 relative flex flex-col ${
                             dayIndex < dayNames.length - 1
                               ? "border-r border-neutral-800"
                               : ""
-                          } border-b border-neutral-800`}
-                        />
-                      );
-                    }
-
-                    const isToday = day.isToday;
-                    const isInCurrentPeriod = day.isInCurrentPeriod;
-
-                    return (
-                      <div
-                        key={day.isoDate}
-                        data-day-date={day.isoDate}
-                        className={`min-h-[120px] p-2 relative flex flex-col ${
-                          dayIndex < dayNames.length - 1
-                            ? "border-r border-neutral-800"
-                            : ""
-                        } border-b border-neutral-800 ${
-                          isToday
-                            ? "bg-neutral-900"
-                            : isInCurrentPeriod
-                              ? "bg-black"
-                              : "bg-neutral-950/50"
-                        }`}
-                      >
-                        <div
-                          className={`text-sm mb-1 shrink-0 ${
+                          } border-b border-neutral-800 ${
                             isToday
-                              ? "font-bold text-white"
+                              ? "bg-neutral-900"
                               : isInCurrentPeriod
-                                ? "font-medium text-neutral-200"
-                                : "font-medium text-neutral-500"
+                                ? "bg-black"
+                                : "bg-neutral-950/50"
                           }`}
                         >
-                          {Number(day.isoDate.slice(8, 10))}
-                        </div>
-                        <div className="flex flex-col gap-1 flex-1 min-h-0">
-                          {day.allDayEvents.map((event) => (
-                            <Badge
-                              key={`ad-${event.id}`}
-                              className="cursor-pointer bg-amber-700/70 hover:bg-amber-600/80 text-amber-50 border border-amber-600/40 flex items-center gap-1.5 max-w-full shrink-0 w-full"
-                              title={event.title}
-                              onClick={() => handleEventClick(event)}
-                            >
-                              <span className="truncate">{event.title}</span>
-                            </Badge>
-                          ))}
-                          {day.events.map((event) => (
-                            <ContextMenu key={event.id}>
-                              <ContextMenuTrigger className="contents">
-                                <Badge
-                                  variant="secondary"
-                                  className="cursor-pointer hover:bg-muted flex items-center gap-1.5 max-w-full shrink-0 w-full"
-                                  title={event.title}
-                                  onClick={() => handleEventClick(event)}
+                          <div
+                            className={`text-sm mb-1 shrink-0 ${
+                              isToday
+                                ? "font-bold text-white"
+                                : isInCurrentPeriod
+                                  ? "font-medium text-neutral-200"
+                                  : "font-medium text-neutral-500"
+                            }`}
+                          >
+                            {Number(day.isoDate.slice(8, 10))}
+                          </div>
+                          <div className="flex flex-col gap-1 flex-1 min-h-0">
+                            {day.allDayEvents.map((event) => {
+                              const segment =
+                                calendar.getEventSegmentInfo(event);
+                              return (
+                                <EventDragSource
+                                  key={`ad-${event.id}`}
+                                  id={`month-all-day-${event.id}-${day.isoDate}`}
+                                  data={{
+                                    event,
+                                    dayDate: day.isoDate,
+                                    granularity: "day",
+                                    originalStart: segment.originalStart,
+                                    originalEnd: segment.originalEnd,
+                                    occurrenceStart:
+                                      event._occurrenceOriginalStart,
+                                  }}
                                 >
-                                  <span className="flex items-center gap-1 min-w-0">
-                                    {event.recurrence && (
-                                      <span
-                                        className="opacity-60 shrink-0"
-                                        title="Recurring event"
-                                      >
-                                        ↻
+                                  {(drag) => (
+                                    <Badge
+                                      ref={drag.ref}
+                                      className={`group cursor-pointer text-white border flex items-center gap-1.5 max-w-full shrink-0 w-full ${eventClassOf(event)} ${
+                                        drag.isDragging ? "opacity-40" : ""
+                                      }`}
+                                      title={event.title}
+                                      onClick={() => handleEventClick(event)}
+                                    >
+                                      <DragGrip handleRef={drag.handleRef} />
+                                      <span className="truncate">
+                                        {event.title}
                                       </span>
-                                    )}
-                                    <span className="truncate">
-                                      {event.title}
-                                    </span>
-                                  </span>
-                                  {event.consumption &&
-                                    event.consumption.length > 0 && (
-                                      <span
-                                        className="text-[10px] leading-none rounded bg-black/40 px-1 py-0.5 font-semibold shrink-0"
-                                        title="Consumption"
-                                      >
-                                        {event.consumption.reduce(
-                                          (a, b) => a + b,
-                                          0,
+                                    </Badge>
+                                  )}
+                                </EventDragSource>
+                              );
+                            })}
+                            {day.events.map((event) => {
+                              const segment =
+                                calendar.getEventSegmentInfo(event);
+                              return (
+                                <EventDragSource
+                                  key={event.id}
+                                  id={`month-event-${event.id}-${day.isoDate}`}
+                                  data={{
+                                    event,
+                                    dayDate: day.isoDate,
+                                    granularity: "day",
+                                    originalStart: segment.originalStart,
+                                    originalEnd: segment.originalEnd,
+                                    occurrenceStart:
+                                      event._occurrenceOriginalStart,
+                                  }}
+                                >
+                                  {(drag) => (
+                                    <ContextMenu>
+                                      <ContextMenuTrigger className="contents">
+                                        <Badge
+                                          ref={drag.ref}
+                                          variant="secondary"
+                                          className={`group cursor-pointer text-white border flex items-center gap-1.5 max-w-full shrink-0 w-full ${eventClassOf(event)} ${
+                                            drag.isDragging ? "opacity-40" : ""
+                                          }`}
+                                          title={event.title}
+                                          onClick={() =>
+                                            handleEventClick(event)
+                                          }
+                                        >
+                                          <DragGrip
+                                            handleRef={drag.handleRef}
+                                          />
+                                          <span className="flex items-center gap-1 min-w-0">
+                                            {event.recurrence && (
+                                              <span
+                                                className="opacity-60 shrink-0"
+                                                title="Recurring event"
+                                              >
+                                                ↻
+                                              </span>
+                                            )}
+                                            <span className="truncate">
+                                              {event.title}
+                                            </span>
+                                          </span>
+                                          {event.consumption &&
+                                            event.consumption.length > 0 && (
+                                              <span
+                                                className="text-[10px] leading-none rounded bg-black/40 px-1 py-0.5 font-semibold shrink-0"
+                                                title="Consumption"
+                                              >
+                                                {event.consumption.reduce(
+                                                  (a, b) => a + b,
+                                                  0,
+                                                )}
+                                              </span>
+                                            )}
+                                        </Badge>
+                                      </ContextMenuTrigger>
+                                      <ContextMenuContent>
+                                        <ContextMenuItem
+                                          onClick={() => openEditModal(event)}
+                                        >
+                                          {event.recurrence
+                                            ? "Edit this occurrence"
+                                            : "Edit event"}
+                                        </ContextMenuItem>
+                                        {event.recurrence && (
+                                          <>
+                                            <ContextMenuItem
+                                              onClick={() =>
+                                                openEditModal(
+                                                  event,
+                                                  "thisAndFollowing",
+                                                )
+                                              }
+                                            >
+                                              Edit this and following
+                                            </ContextMenuItem>
+                                            <ContextMenuItem
+                                              onClick={() =>
+                                                openEditModal(event, "all")
+                                              }
+                                            >
+                                              Edit series
+                                            </ContextMenuItem>
+                                          </>
                                         )}
-                                      </span>
-                                    )}
-                                </Badge>
-                              </ContextMenuTrigger>
-                              <ContextMenuContent>
-                                <ContextMenuItem
-                                  onClick={() => openEditModal(event)}
-                                >
-                                  {event.recurrence
-                                    ? "Edit this occurrence"
-                                    : "Edit event"}
-                                </ContextMenuItem>
-                                {event.recurrence && (
-                                  <>
-                                    <ContextMenuItem
-                                      onClick={() =>
-                                        openEditModal(event, "thisAndFollowing")
-                                      }
-                                    >
-                                      Edit this and following
-                                    </ContextMenuItem>
-                                    <ContextMenuItem
-                                      onClick={() =>
-                                        openEditModal(event, "all")
-                                      }
-                                    >
-                                      Edit series
-                                    </ContextMenuItem>
-                                  </>
-                                )}
-                                {event.recurrence && (
-                                  <>
-                                    <ContextMenuSeparator />
-                                    <ContextMenuItem
-                                      onClick={() =>
-                                        calendar.goToPreviousOccurrence(
-                                          event.id,
-                                          event.start,
-                                        )
-                                      }
-                                    >
-                                      ← Previous occurrence
-                                    </ContextMenuItem>
-                                    <ContextMenuItem
-                                      onClick={() =>
-                                        calendar.goToNextOccurrence(
-                                          event.id,
-                                          event.start,
-                                        )
-                                      }
-                                    >
-                                      Next occurrence →
-                                    </ContextMenuItem>
-                                  </>
-                                )}
-                              </ContextMenuContent>
-                            </ContextMenu>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  });
-                },
-              )}
-            </div>
+                                        {event.recurrence && (
+                                          <>
+                                            <ContextMenuSeparator />
+                                            <ContextMenuItem
+                                              onClick={() =>
+                                                calendar.goToPreviousOccurrence(
+                                                  event.id,
+                                                  event.start,
+                                                )
+                                              }
+                                            >
+                                              ← Previous occurrence
+                                            </ContextMenuItem>
+                                            <ContextMenuItem
+                                              onClick={() =>
+                                                calendar.goToNextOccurrence(
+                                                  event.id,
+                                                  event.start,
+                                                )
+                                              }
+                                            >
+                                              Next occurrence →
+                                            </ContextMenuItem>
+                                          </>
+                                        )}
+                                      </ContextMenuContent>
+                                    </ContextMenu>
+                                  )}
+                                </EventDragSource>
+                              );
+                            })}
+                          </div>
+                        </DayDropZone>
+                      );
+                    });
+                  },
+                )}
+              </div>
 
-            <div ref={monthBottomRef} style={{ height: 1 }} aria-hidden />
-          </ScrollArea>
-        </div>
-      )}
+              <div ref={monthBottomRef} style={{ height: 1 }} aria-hidden />
+            </ScrollArea>
+          </div>
+        )}
 
-      {calendar.isPending && (
-        <div className="fixed top-5 right-5 px-5 py-3 bg-card border border-border text-foreground rounded-md text-sm font-medium">
-          Loading...
-        </div>
-      )}
+        {calendar.isPending && (
+          <div className="fixed top-5 right-5 px-5 py-3 bg-card border border-border text-foreground rounded-md text-sm font-medium">
+            Loading...
+          </div>
+        )}
 
-      <ScopeChoiceModal
-        event={scopeChoiceEvent}
-        isOpen={!!scopeChoiceEvent}
-        onSelect={(scope) => {
-          if (scopeChoiceEvent) {
-            openEditModal(scopeChoiceEvent, scope);
-          }
-          setScopeChoiceEvent(null);
-        }}
-        onClose={() => setScopeChoiceEvent(null)}
-      />
-
-      <ScopeChoiceModal
-        event={null}
-        title="Resize recurring event"
-        isOpen={!!resizeScopeChoice}
-        onSelect={(scope) => {
-          const pending = resizeScopeChoice;
-          setResizeScopeChoice(null);
-          if (!pending) return;
-          void calendar
-            .editRecurringEvent(
-              pending.eventId,
-              { start: pending.newStart, end: pending.newEnd },
-              { scope, occurrenceStart: pending.occurrenceStart },
-            )
-            .then((result) => {
-              if (!result.success) setResizeError(result.error);
-            });
-        }}
-        onClose={() => setResizeScopeChoice(null)}
-      />
-
-      <EventModal
-        isOpen={modalState.isOpen}
-        onClose={closeModal}
-        onSave={handleSave}
-        onDelete={modalState.mode === "edit" ? handleDelete : undefined}
-        initialData={modalState.initialData}
-        mode={modalState.mode}
-        isRecurring={modalState.isRecurring}
-        isSaving={isSaving}
-        resources={resources}
-      />
-
-      {resizeError && (
-        <ResizeErrorToast
-          error={resizeError}
-          onDismiss={() => setResizeError(null)}
+        <ScopeChoiceModal
+          event={scopeChoiceEvent}
+          isOpen={!!scopeChoiceEvent}
+          onSelect={(scope) => {
+            if (scopeChoiceEvent) {
+              openEditModal(scopeChoiceEvent, scope);
+            }
+            setScopeChoiceEvent(null);
+          }}
+          onClose={() => setScopeChoiceEvent(null)}
         />
-      )}
-    </div>
+
+        <ScopeChoiceModal
+          event={null}
+          title="Resize recurring event"
+          isOpen={!!resizeScopeChoice}
+          onSelect={(scope) => {
+            const pending = resizeScopeChoice;
+            setResizeScopeChoice(null);
+            if (!pending) return;
+            void calendar
+              .editRecurringEvent(
+                pending.eventId,
+                { start: pending.newStart, end: pending.newEnd },
+                { scope, occurrenceStart: pending.occurrenceStart },
+              )
+              .then((result) => {
+                if (!result.success) setResizeError(result.error);
+              });
+          }}
+          onClose={() => setResizeScopeChoice(null)}
+        />
+
+        <EventModal
+          isOpen={modalState.isOpen}
+          onClose={closeModal}
+          onSave={handleSave}
+          onDelete={modalState.mode === "edit" ? handleDelete : undefined}
+          initialData={modalState.initialData}
+          mode={modalState.mode}
+          isRecurring={modalState.isRecurring}
+          isSaving={isSaving}
+          resources={resources}
+        />
+
+        <ScopeChoiceModal
+          event={moveScopeChoice?.event ?? null}
+          title="Move recurring event"
+          isOpen={!!moveScopeChoice}
+          onSelect={(scope) => {
+            const pending = moveScopeChoice;
+            setMoveScopeChoice(null);
+            if (!pending) return;
+            void calendar
+              .editRecurringEvent(
+                pending.eventId,
+                { start: pending.newStart, end: pending.newEnd },
+                { scope, occurrenceStart: pending.occurrenceStart },
+              )
+              .then((result) => {
+                if (!result.success) setMoveError(result.error);
+              });
+          }}
+          onClose={() => setMoveScopeChoice(null)}
+        />
+
+        {resizeError && (
+          <ResizeErrorToast
+            error={resizeError}
+            onDismiss={() => setResizeError(null)}
+          />
+        )}
+
+        {moveError && (
+          <ResizeErrorToast
+            error={moveError}
+            title="Cannot Move Event"
+            onDismiss={() => setMoveError(null)}
+          />
+        )}
+
+        {activeDrag && (
+          <DragOverlay dropAnimation={null}>
+            <div className="rounded border border-neutral-600 bg-neutral-800 px-2 py-1 text-xs font-medium text-white shadow-lg">
+              <div className="truncate">{activeDrag.event.title}</div>
+              <div className="opacity-70">
+                {
+                  formatEventTimeRange(
+                    activeDrag.originalStart,
+                    activeDrag.originalEnd,
+                  ).rangeFormatted
+                }
+              </div>
+            </div>
+          </DragOverlay>
+        )}
+      </div>
+    </DragDropProvider>
   );
 }
 

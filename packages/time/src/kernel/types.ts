@@ -82,6 +82,7 @@ export type ValidateStage<E extends KernelEvent> = (
 export type ProjectionStageName =
   | "recurrence-expand"
   | "clip-to-viewport"
+  | "filter"
   | "layout";
 
 export type WriteTransformStageName =
@@ -105,6 +106,7 @@ export type ProjectionModuleStageName = Exclude<
 export const PROJECTION_ORDER: ReadonlyArray<ProjectionStageName> = [
   "recurrence-expand",
   "clip-to-viewport",
+  "filter",
   "layout",
 ];
 

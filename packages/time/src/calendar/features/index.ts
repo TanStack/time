@@ -8,6 +8,7 @@ export * from "./availability";
 export * from "./constraint";
 export * from "./dependency";
 export * from "./duration";
+export * from "./filter";
 export * from "./recurrence";
 export * from "./resize";
 export * from "./dayLayout";
