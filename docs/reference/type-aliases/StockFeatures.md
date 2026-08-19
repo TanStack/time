@@ -9,4 +9,4 @@ title: StockFeatures
 type StockFeatures = typeof stockFeatures;
 ```
 
-Defined in: [calendar/features/stockFeatures.ts:25](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/stockFeatures.ts#L25)
+Defined in: [calendar/features/stockFeatures.ts:27](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/stockFeatures.ts#L27)

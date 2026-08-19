@@ -9,7 +9,7 @@ title: FEATURE_API_OWNERS
 const FEATURE_API_OWNERS: object;
 ```
 
-Defined in: [calendar/features/registry.ts:81](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L81)
+Defined in: [calendar/features/registry.ts:83](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L83)
 
 ## Type Declaration
 
@@ -41,6 +41,12 @@ readonly checkEventConstraint: "schedulingConstraintFeature" = "schedulingConstr
 
 ```ts
 readonly checkEventDuration: "eventDurationFeature" = "eventDurationFeature";
+```
+
+### clearEventFilters
+
+```ts
+readonly clearEventFilters: "eventFilterFeature" = "eventFilterFeature";
 ```
 
 ### createDependency
@@ -97,6 +103,12 @@ readonly getDependentShifts: "eventDependencyFeature" = "eventDependencyFeature"
 readonly getEffectiveCalendar: "workingTimeFeature" = "workingTimeFeature";
 ```
 
+### getEventFilterIds
+
+```ts
+readonly getEventFilterIds: "eventFilterFeature" = "eventFilterFeature";
+```
+
 ### getEventProps
 
 ```ts
@@ -113,6 +125,12 @@ readonly getEventsByResource: "timelineFeature" = "timelineFeature";
 
 ```ts
 readonly getEventSegmentInfo: "eventResizeFeature" = "eventResizeFeature";
+```
+
+### getHiddenEvents
+
+```ts
+readonly getHiddenEvents: "eventFilterFeature" = "eventFilterFeature";
 ```
 
 ### getMasterEvent
@@ -187,6 +205,12 @@ readonly goToNextOccurrence: "eventRecurrenceFeature" = "eventRecurrenceFeature"
 readonly goToPreviousOccurrence: "eventRecurrenceFeature" = "eventRecurrenceFeature";
 ```
 
+### isEventVisible
+
+```ts
+readonly isEventVisible: "eventFilterFeature" = "eventFilterFeature";
+```
+
 ### isWorkingTime
 
 ```ts
@@ -209,6 +233,12 @@ readonly removeRecurringEvent: "eventRecurrenceFeature" = "eventRecurrenceFeatur
 
 ```ts
 readonly resolveOccurrence: "eventRecurrenceFeature" = "eventRecurrenceFeature";
+```
+
+### setEventFilter
+
+```ts
+readonly setEventFilter: "eventFilterFeature" = "eventFilterFeature";
 ```
 
 ### undo
