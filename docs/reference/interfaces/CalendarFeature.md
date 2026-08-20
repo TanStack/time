@@ -5,7 +5,7 @@ title: CalendarFeature
 
 # Interface: CalendarFeature\<TResource, TEvent, TModuleApi, TApi, TName, TPeers\>
 
-Defined in: [calendar/features/types.ts:81](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L81)
+Defined in: [calendar/features/types.ts:82](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L82)
 
 ## Type Parameters
 
@@ -41,7 +41,7 @@ Defined in: [calendar/features/types.ts:81](https://github.com/TanStack/time/blo
 optional api: (host, module, peers) => TApi;
 ```
 
-Defined in: [calendar/features/types.ts:94](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L94)
+Defined in: [calendar/features/types.ts:95](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L95)
 
 #### Parameters
 
@@ -69,7 +69,7 @@ Defined in: [calendar/features/types.ts:94](https://github.com/TanStack/time/blo
 optional module: (ctx) => Module<TEvent & KernelEvent, TModuleApi>;
 ```
 
-Defined in: [calendar/features/types.ts:91](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L91)
+Defined in: [calendar/features/types.ts:92](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L92)
 
 #### Parameters
 
@@ -89,7 +89,7 @@ Defined in: [calendar/features/types.ts:91](https://github.com/TanStack/time/blo
 name: TName;
 ```
 
-Defined in: [calendar/features/types.ts:89](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L89)
+Defined in: [calendar/features/types.ts:90](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L90)
 
 ***
 
@@ -99,4 +99,4 @@ Defined in: [calendar/features/types.ts:89](https://github.com/TanStack/time/blo
 optional requires: readonly string[];
 ```
 
-Defined in: [calendar/features/types.ts:90](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L90)
+Defined in: [calendar/features/types.ts:91](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L91)
