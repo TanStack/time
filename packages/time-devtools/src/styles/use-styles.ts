@@ -1,12 +1,12 @@
 import { useTheme } from "@tanstack/devtools-ui";
 import * as goober from "goober";
 import { createEffect, createSignal } from "solid-js";
-import { tokens } from './tokens'
+import { tokens } from "./tokens";
 
-const stylesFactory = (theme: 'light' | 'dark') => {
+const stylesFactory = (theme: "light" | "dark") => {
   const css = goober.css;
-  const t = (light: string, dark: string) => (theme === 'light' ? light : dark)
-  const { colors, size } = tokens
+  const t = (light: string, dark: string) => (theme === "light" ? light : dark);
+  const { colors, size } = tokens;
 
   return {
     connectedStatus: css`
@@ -190,7 +190,7 @@ const stylesFactory = (theme: 'light' | 'dark') => {
 };
 
 export function useStyles() {
-    const { theme } = useTheme()
+  const { theme } = useTheme();
   const [styles, setStyles] = createSignal(stylesFactory(theme()));
   createEffect(() => {
     setStyles(stylesFactory(theme()));

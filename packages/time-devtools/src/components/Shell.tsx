@@ -380,7 +380,7 @@ function DevtoolsContent() {
         </div>
 
         <div
-          class={`${styles().dragHandle} ${isDragging() ? 'dragging' : ''}`}
+          class={`${styles().dragHandle} ${isDragging() ? "dragging" : ""}`}
           onMouseDown={handleMouseDown}
         />
 
