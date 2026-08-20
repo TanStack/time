@@ -13,7 +13,6 @@ export interface ActivityLogEntry {
 
 interface TimeStoreState {
   activityLog: Array<ActivityLogEntry>;
-  isConnected: boolean;
   events: Record<
     string,
     { id: string; title: string; start: string; end: string }
@@ -42,7 +41,6 @@ function generateId(): string {
 export const TimeProvider: ParentComponent = (props) => {
   const [state, setState] = createStore<TimeStoreState>({
     activityLog: [],
-    isConnected: false,
     events: {},
   });
 
@@ -52,8 +50,6 @@ export const TimeProvider: ParentComponent = (props) => {
 
   onMount(() => {
     const client = getTimeClient();
-
-    setState("isConnected", true);
 
     const unsubscribe = client.onAllPluginEvents((event) => {
       const entry: ActivityLogEntry = {
@@ -149,7 +145,6 @@ export const TimeProvider: ParentComponent = (props) => {
 
     onCleanup(() => {
       unsubscribe();
-      setState("isConnected", false);
       setState("events", {});
     });
   });

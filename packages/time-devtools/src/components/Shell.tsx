@@ -1,4 +1,11 @@
-import { For, Show, createMemo, createSignal } from "solid-js";
+import {
+  For,
+  Show,
+  createMemo,
+  createSignal,
+  onCleanup,
+  onMount,
+} from "solid-js";
 import {
   Button,
   Header,
@@ -128,6 +135,8 @@ const getEventDescription = (entry: ActivityLogEntry): string => {
 function DevtoolsContent() {
   const { state, clearLog } = useTimeStore();
   const styles = useStyles();
+  const [leftPanelWidth, setLeftPanelWidth] = createSignal(300);
+  const [isDragging, setIsDragging] = createSignal(false);
   const [activeTab, setActiveTab] = createSignal<"log" | "events">("log");
 
   const [selectedId, setSelectedId] = createSignal<string | null>(null);
@@ -142,6 +151,44 @@ function DevtoolsContent() {
         getEventDescription(entry).toLowerCase().includes(s)
       );
     });
+  });
+
+  let dragStartX = 0;
+  let dragStartWidth = 0;
+
+  const handleMouseDown = (e: MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    dragStartX = e.clientX;
+    dragStartWidth = leftPanelWidth();
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isDragging()) return;
+
+    e.preventDefault();
+    const deltaX = e.clientX - dragStartX;
+    const newWidth = Math.max(150, Math.min(800, dragStartWidth + deltaX));
+    setLeftPanelWidth(newWidth);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+  };
+
+  onMount(() => {
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  });
+
+  onCleanup(() => {
+    document.removeEventListener("mousemove", handleMouseMove);
+    document.removeEventListener("mouseup", handleMouseUp);
   });
 
   const filteredEvents = createMemo(() => {
@@ -170,7 +217,7 @@ function DevtoolsContent() {
     <MainPanel class={styles().shellRoot}>
       <Header>
         <HeaderLogo flavor={{ light: "#9dec48", dark: "#9dec48" }}>
-          TanStack Time v0
+          TanStack Time
         </HeaderLogo>
         <div
           style={{
@@ -240,7 +287,14 @@ function DevtoolsContent() {
       </Header>
 
       <div class={styles().container}>
-        <div class={styles().sidebar}>
+        <div
+          class={styles().sidebar}
+          style={{
+            width: `${leftPanelWidth()}px`,
+            "min-width": "150px",
+            "max-width": "800px",
+          }}
+        >
           <div class={styles().searchArea}>
             <Input
               placeholder={`Filter ${
@@ -324,6 +378,11 @@ function DevtoolsContent() {
             </Show>
           </div>
         </div>
+
+        <div
+          class={`${styles().dragHandle} ${isDragging() ? 'dragging' : ''}`}
+          onMouseDown={handleMouseDown}
+        />
 
         <div class={styles().details}>
           <Show

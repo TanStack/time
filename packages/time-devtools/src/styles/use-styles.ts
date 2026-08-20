@@ -1,8 +1,12 @@
+import { useTheme } from "@tanstack/devtools-ui";
 import * as goober from "goober";
 import { createEffect, createSignal } from "solid-js";
+import { tokens } from './tokens'
 
-const stylesFactory = () => {
+const stylesFactory = (theme: 'light' | 'dark') => {
   const css = goober.css;
+  const t = (light: string, dark: string) => (theme === 'light' ? light : dark)
+  const { colors, size } = tokens
 
   return {
     connectedStatus: css`
@@ -17,7 +21,7 @@ const stylesFactory = () => {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background-color: #22c55e;
+      /*background-color: #22c55e;*/
     `,
 
     sectionHeader: css`
@@ -26,7 +30,7 @@ const stylesFactory = () => {
       align-items: center;
       padding: 8px 12px;
       border-bottom: 1px solid #374151;
-      background-color: #111827;
+      /*background-color: #111827;*/
     `,
 
     emptyState: css`
@@ -42,7 +46,7 @@ const stylesFactory = () => {
       height: 100%;
       overflow: hidden;
       flex: 1;
-      background-color: #0b0f1a;
+      /*background-color: #0b0f1a;*/
     `,
 
     shellRoot: css`
@@ -57,7 +61,47 @@ const stylesFactory = () => {
       min-width: 250px;
       border-right: 1px solid #1f2937;
       height: 100%;
-      background-color: #111827;
+      /*background-color: #111827;*/
+    `,
+
+    dragHandle: css`
+      width: 8px;
+      background: ${t(colors.gray[300], colors.darkGray[600])};
+      cursor: col-resize;
+      position: relative;
+      transition: all 0.2s ease;
+      user-select: none;
+      pointer-events: all;
+      margin: 0 ${size[1]};
+      border-radius: 2px;
+
+      &:hover {
+        background: ${t(colors.blue[600], colors.blue[500])};
+        margin: 0 ${size[1]};
+      }
+
+      &.dragging {
+        background: ${t(colors.blue[700], colors.blue[600])};
+        margin: 0 ${size[1]};
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 2px;
+        height: 20px;
+        background: ${t(colors.gray[400], colors.darkGray[400])};
+        border-radius: 1px;
+        pointer-events: none;
+      }
+
+      &:hover::after,
+      &.dragging::after {
+        background: ${t(colors.blue[500], colors.blue[300])};
+      }
     `,
 
     details: css`
@@ -67,13 +111,13 @@ const stylesFactory = () => {
       height: 100%;
       min-height: 0;
       overflow-y: auto;
-      background-color: #0b0f1a;
+      /*background-color: #0b0f1a;*/
     `,
 
     searchArea: css`
       padding: 8px;
       border-bottom: 1px solid #1f2937;
-      background-color: #111827;
+      /*background-color: #111827;*/
     `,
 
     list: css`
@@ -91,15 +135,15 @@ const stylesFactory = () => {
       border-bottom: 1px solid #1f2937;
       cursor: pointer;
       font-size: 12px;
-      transition: background-color 0.2s;
+      /*transition: background-color 0.2s;*/
       user-select: none;
 
       &:hover {
-        background-color: #1f2937;
+        /*background-color: #1f2937;*/
       }
 
       &.active {
-        background-color: #374151;
+        /*background-color: #374151;*/
         border-left: 3px solid #9dec48;
       }
     `,
@@ -125,7 +169,7 @@ const stylesFactory = () => {
       justify-content: space-between;
       padding: 12px;
       border-bottom: 1px solid #1f2937;
-      background-color: #111827;
+      /*background-color: #111827;*/
     `,
 
     detailsContent: css`
@@ -136,7 +180,7 @@ const stylesFactory = () => {
     `,
 
     jsonTreeContainer: css`
-      background-color: #111827;
+      /*background-color: #111827;*/
       padding: 12px;
       border-radius: 8px;
       margin-top: 12px;
@@ -146,9 +190,10 @@ const stylesFactory = () => {
 };
 
 export function useStyles() {
-  const [styles, setStyles] = createSignal(stylesFactory());
+    const { theme } = useTheme()
+  const [styles, setStyles] = createSignal(stylesFactory(theme()));
   createEffect(() => {
-    setStyles(stylesFactory());
+    setStyles(stylesFactory(theme()));
   });
   return styles;
 }

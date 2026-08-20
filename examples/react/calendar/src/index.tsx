@@ -24,6 +24,17 @@ import ReactDOM from "react-dom/client";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { timeDevtoolsPlugin } from "@tanstack/react-time-devtools";
+import { formDevtoolsPlugin } from "@tanstack/react-form-devtools";
+import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
+import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  Outlet,
+  RouterProvider,
+  createRootRoute,
+  createRoute,
+  createRouter,
+} from "@tanstack/react-router";
 import { useInfiniteScroll } from "./lib/useInfiniteScroll";
 import type {
   Day,
@@ -1575,7 +1586,11 @@ function CalendarView() {
 
   const dayNames = calendar.getDaysNames("short");
 
-  const { setEventFilter } = calendar;
+  const { setEventFilter, setResources: setCalendarResources } = calendar;
+
+  useEffect(() => {
+    setCalendarResources(resources);
+  }, [setCalendarResources, resources]);
 
   useEffect(() => {
     const showsEveryCalendar =
@@ -2793,12 +2808,44 @@ function CalendarView() {
   );
 }
 
+const queryClient = new QueryClient();
+
+const rootRoute = createRootRoute({
+  component: () => (
+    <>
+      <Outlet />
+      <TanStackDevtools
+        plugins={[
+          timeDevtoolsPlugin(),
+          formDevtoolsPlugin(),
+          {
+            name: "TanStack Query",
+            render: <ReactQueryDevtoolsPanel />,
+          },
+          {
+            name: "TanStack Router",
+            render: <TanStackRouterDevtools />,
+          },
+        ]}
+      />
+    </>
+  ),
+});
+
+const indexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/",
+  component: CalendarView,
+});
+
+const routeTree = rootRoute.addChildren([indexRoute]);
+const router = createRouter({ routeTree });
+
 function App() {
   return (
-    <>
-      <TanStackDevtools plugins={[timeDevtoolsPlugin()]} />
-      <CalendarView />
-    </>
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
   );
 }
 

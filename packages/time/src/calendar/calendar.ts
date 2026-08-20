@@ -1335,7 +1335,7 @@ export class CalendarCore<
   setResources(resources: Array<TResource> | null) {
     this.options.resources = resources;
 
-    this._bumpMapVersion();
+    this._invalidateEvents();
   }
 
   setEvents(events: Array<TEvent> | null) {
@@ -1343,9 +1343,9 @@ export class CalendarCore<
     this._eventMap.clear();
     this._dependentsMap.clear();
     this._dateIndex.clear();
-    this._bumpMapVersion();
     this._seedKernel(next);
     next.forEach((e) => this._indexAddEvent(e));
+    this._invalidateEvents();
   }
 }
 
