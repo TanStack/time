@@ -330,6 +330,28 @@ type DemoCalendar = ReturnType<
   typeof useCalendar<typeof features, Resource, DemoEvent>
 >;
 
+/**
+ * Grows a range out to whole weeks so the month grid can be built from real
+ * `getDaysInRange` days. Without this the grid's leading/trailing days come
+ * from `groupDaysBy`'s filler, which always reports zero events.
+ */
+function weekAlignedRange(
+  calendar: Pick<DemoCalendar, "getDaysInRange" | "groupDaysBy">,
+  range: { start: string; end: string },
+): { start: string; end: string } {
+  const weeks = calendar.groupDaysBy({
+    days: calendar.getDaysInRange(range.start, range.end),
+    unit: "week",
+    fillMissingDays: true,
+  });
+  const firstWeek = weeks[0];
+  const lastWeek = weeks[weeks.length - 1];
+  return {
+    start: firstWeek?.[0]?.isoDate ?? range.start,
+    end: lastWeek?.[lastWeek.length - 1]?.isoDate ?? range.end,
+  };
+}
+
 const overlayCalendars = [
   {
     id: "chinese",
@@ -1806,10 +1828,10 @@ function CalendarView() {
   const monthScrollRef = useRef<HTMLDivElement>(null);
   const monthBufferRef = useRef<{ start: string; end: string } | null>(null);
   if (monthBufferRef.current === null && calendar.days.length > 0) {
-    monthBufferRef.current = {
+    monthBufferRef.current = weekAlignedRange(calendar, {
       start: calendar.days[0].isoDate,
       end: calendar.days[calendar.days.length - 1].isoDate,
-    };
+    });
   }
 
   const navDirectionRef = useRef<"none" | "forward" | "backward">("none");
@@ -1898,23 +1920,32 @@ function CalendarView() {
     const newEnd = calendar.days[calendar.days.length - 1].isoDate;
 
     if (direction === "none" || !monthBufferRef.current) {
-      monthBufferRef.current = { start: newStart, end: newEnd };
+      monthBufferRef.current = weekAlignedRange(calendar, {
+        start: newStart,
+        end: newEnd,
+      });
       needsScrollResetRef.current = true;
     } else {
       const previous = monthBufferRef.current;
       monthAnchorRef.current = captureScrollAnchor(monthScrollRef.current, "y");
       monthBufferRef.current = clampIsoRange(
-        {
+        weekAlignedRange(calendar, {
           start: newStart < previous.start ? newStart : previous.start,
           end: newEnd > previous.end ? newEnd : previous.end,
-        },
+        }),
         MAX_BUFFERED_WEEKS * 7,
         direction === "backward" ? "start" : "end",
       );
     }
 
     setBufferVersion((v) => v + 1);
-  }, [calendar.currentPeriod, calendar.days, isScheduleView]);
+  }, [
+    calendar.currentPeriod,
+    calendar.days,
+    calendar.getDaysInRange,
+    calendar.groupDaysBy,
+    isScheduleView,
+  ]);
 
   useLayoutEffect(() => {
     const el = monthScrollRef.current;
@@ -1941,10 +1972,10 @@ function CalendarView() {
     scheduleBufferRef.current = null;
     monthBufferRef.current =
       calendar.days.length > 0
-        ? {
+        ? weekAlignedRange(calendar, {
             start: calendar.days[0].isoDate,
             end: calendar.days[calendar.days.length - 1].isoDate,
-          }
+          })
         : null;
   }
 
@@ -2094,6 +2125,21 @@ function CalendarView() {
     scheduleDays,
     calendar.days,
     calendar.getDaysInRange,
+  ]);
+
+  const { fetchEventsForRange } = calendar;
+
+  useEffect(() => {
+    const buffered = isScheduleView
+      ? scheduleBufferRef.current
+      : monthBufferRef.current;
+    if (!buffered) return;
+    void fetchEventsForRange(buffered.start, shiftIsoDate(buffered.end, 1));
+  }, [
+    fetchEventsForRange,
+    isScheduleView,
+    bufferVersion,
+    scheduleBufferVersion,
   ]);
 
   const periodDayCount =
