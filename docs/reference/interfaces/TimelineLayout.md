@@ -5,7 +5,7 @@ title: TimelineLayout
 
 # Interface: TimelineLayout\<TResource, TEvent\>
 
-Defined in: [calendar/types.ts:255](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L255)
+Defined in: [calendar/types.ts:266](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L266)
 
 ## Type Parameters
 
@@ -25,7 +25,7 @@ Defined in: [calendar/types.ts:255](https://github.com/TanStack/time/blob/main/p
 currentTimePosition: number | null;
 ```
 
-Defined in: [calendar/types.ts:260](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L260)
+Defined in: [calendar/types.ts:271](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L271)
 
 ***
 
@@ -35,4 +35,4 @@ Defined in: [calendar/types.ts:260](https://github.com/TanStack/time/blob/main/p
 rows: TimelineResourceRow<TResource, TEvent>[];
 ```
 
-Defined in: [calendar/types.ts:259](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L259)
+Defined in: [calendar/types.ts:270](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L270)

@@ -9,7 +9,7 @@ title: GetEventProps
 type GetEventProps<TResource, TEvent> = (event, layoutOptions?) => EventProps<TResource, TEvent>;
 ```
 
-Defined in: [calendar/types.ts:142](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L142)
+Defined in: [calendar/types.ts:147](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L147)
 
 ## Type Parameters
 

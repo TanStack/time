@@ -9,4 +9,4 @@ title: EventDateTimeInput
 type EventDateTimeInput = string | Date | number;
 ```
 
-Defined in: [calendar/types.ts:5](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L5)
+Defined in: [calendar/types.ts:6](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L6)

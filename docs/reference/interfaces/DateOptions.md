@@ -31,6 +31,7 @@ Defined in: [date/types.ts:10](https://github.com/TanStack/time/blob/main/packag
 - [`IsBetweenOptions`](IsBetweenOptions.md)
 - [`IntersectsOptions`](IntersectsOptions.md)
 - [`FormatDateOptions`](FormatDateOptions.md)
+- [`GetDatePartsOptions`](GetDatePartsOptions.md)
 
 ## Properties
 

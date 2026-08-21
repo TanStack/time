@@ -5,7 +5,7 @@ title: CalendarCoreOptions
 
 # Interface: CalendarCoreOptions\<TFeatures, TResource, TEvent\>
 
-Defined in: [calendar/calendar.ts:56](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L56)
+Defined in: [calendar/calendar.ts:59](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L59)
 
 ## Extends
 
@@ -33,7 +33,7 @@ Defined in: [calendar/calendar.ts:56](https://github.com/TanStack/time/blob/main
 optional calendar: CalendarLike;
 ```
 
-Defined in: [calendar/date-core.ts:60](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L60)
+Defined in: [calendar/date-core.ts:70](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L70)
 
 #### Inherited from
 
@@ -47,7 +47,7 @@ Defined in: [calendar/date-core.ts:60](https://github.com/TanStack/time/blob/mai
 optional calendars: WorkingCalendar[] | null;
 ```
 
-Defined in: [calendar/calendar.ts:67](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L67)
+Defined in: [calendar/calendar.ts:70](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L70)
 
 ***
 
@@ -57,7 +57,7 @@ Defined in: [calendar/calendar.ts:67](https://github.com/TanStack/time/blob/main
 optional dateFormatter: DateTimeFormat;
 ```
 
-Defined in: [calendar/date-core.ts:64](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L64)
+Defined in: [calendar/date-core.ts:74](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L74)
 
 #### Inherited from
 
@@ -71,7 +71,7 @@ Defined in: [calendar/date-core.ts:64](https://github.com/TanStack/time/blob/mai
 optional dateTimeFormatter: DateTimeFormat;
 ```
 
-Defined in: [calendar/date-core.ts:68](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L68)
+Defined in: [calendar/date-core.ts:78](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L78)
 
 #### Inherited from
 
@@ -85,7 +85,7 @@ Defined in: [calendar/date-core.ts:68](https://github.com/TanStack/time/blob/mai
 optional defaultCalendarId: string;
 ```
 
-Defined in: [calendar/calendar.ts:69](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L69)
+Defined in: [calendar/calendar.ts:72](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L72)
 
 ***
 
@@ -95,7 +95,7 @@ Defined in: [calendar/calendar.ts:69](https://github.com/TanStack/time/blob/main
 optional events: NoInfer<TEvent>[] | null;
 ```
 
-Defined in: [calendar/calendar.ts:63](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L63)
+Defined in: [calendar/calendar.ts:66](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L66)
 
 ***
 
@@ -105,7 +105,7 @@ Defined in: [calendar/calendar.ts:63](https://github.com/TanStack/time/blob/main
 features: TFeatures;
 ```
 
-Defined in: [calendar/calendar.ts:61](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L61)
+Defined in: [calendar/calendar.ts:64](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L64)
 
 ***
 
@@ -115,7 +115,7 @@ Defined in: [calendar/calendar.ts:61](https://github.com/TanStack/time/blob/main
 optional fetchEvents: (range) => Promise<NoInfer<TEvent>[]>;
 ```
 
-Defined in: [calendar/calendar.ts:73](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L73)
+Defined in: [calendar/calendar.ts:76](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L76)
 
 #### Parameters
 
@@ -141,7 +141,7 @@ Defined in: [calendar/calendar.ts:73](https://github.com/TanStack/time/blob/main
 optional layout: LayoutOptions;
 ```
 
-Defined in: [calendar/calendar.ts:78](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L78)
+Defined in: [calendar/calendar.ts:81](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L81)
 
 ***
 
@@ -151,7 +151,7 @@ Defined in: [calendar/calendar.ts:78](https://github.com/TanStack/time/blob/main
 optional locale: string;
 ```
 
-Defined in: [calendar/date-core.ts:56](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L56)
+Defined in: [calendar/date-core.ts:66](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L66)
 
 #### Inherited from
 
@@ -165,7 +165,7 @@ Defined in: [calendar/date-core.ts:56](https://github.com/TanStack/time/blob/mai
 optional multiResource: "intersection" | "union";
 ```
 
-Defined in: [calendar/calendar.ts:71](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L71)
+Defined in: [calendar/calendar.ts:74](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L74)
 
 ***
 
@@ -175,7 +175,7 @@ Defined in: [calendar/calendar.ts:71](https://github.com/TanStack/time/blob/main
 optional range: DateRange;
 ```
 
-Defined in: [calendar/date-core.ts:62](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L62)
+Defined in: [calendar/date-core.ts:72](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L72)
 
 #### Inherited from
 
@@ -189,7 +189,7 @@ Defined in: [calendar/date-core.ts:62](https://github.com/TanStack/time/blob/mai
 optional resources: TResource[] | null;
 ```
 
-Defined in: [calendar/calendar.ts:65](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L65)
+Defined in: [calendar/calendar.ts:68](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L68)
 
 ***
 
@@ -199,7 +199,7 @@ Defined in: [calendar/calendar.ts:65](https://github.com/TanStack/time/blob/main
 optional timeFormatter: DateTimeFormat;
 ```
 
-Defined in: [calendar/date-core.ts:66](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L66)
+Defined in: [calendar/date-core.ts:76](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L76)
 
 #### Inherited from
 
@@ -213,7 +213,7 @@ Defined in: [calendar/date-core.ts:66](https://github.com/TanStack/time/blob/mai
 optional timeZone: TimeZoneLike;
 ```
 
-Defined in: [calendar/date-core.ts:58](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L58)
+Defined in: [calendar/date-core.ts:68](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L68)
 
 #### Inherited from
 
@@ -227,7 +227,7 @@ Defined in: [calendar/date-core.ts:58](https://github.com/TanStack/time/blob/mai
 viewMode: ViewMode;
 ```
 
-Defined in: [calendar/date-core.ts:54](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L54)
+Defined in: [calendar/date-core.ts:64](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L64)
 
 #### Inherited from
 

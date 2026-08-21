@@ -131,7 +131,7 @@ Defined in: [calendar/resizeController.ts:62](https://github.com/TanStack/time/b
 
 ##### error
 
-[`ResizeError`](ResizeError.md)
+[`EventMutationError`](EventMutationError.md)
 
 #### Returns
 

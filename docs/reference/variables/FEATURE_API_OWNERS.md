@@ -9,7 +9,7 @@ title: FEATURE_API_OWNERS
 const FEATURE_API_OWNERS: object;
 ```
 
-Defined in: [calendar/features/registry.ts:83](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L83)
+Defined in: [calendar/features/registry.ts:85](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L85)
 
 ## Type Declaration
 
@@ -53,6 +53,12 @@ readonly clearEventFilters: "eventFilterFeature" = "eventFilterFeature";
 
 ```ts
 readonly createDependency: "eventDependencyFeature" = "eventDependencyFeature";
+```
+
+### createMoveController
+
+```ts
+readonly createMoveController: "eventMoveFeature" = "eventMoveFeature";
 ```
 
 ### createResizeController
@@ -251,6 +257,12 @@ readonly undo: "historyFeature" = "historyFeature";
 
 ```ts
 readonly validateEventDependencies: "eventDependencyFeature" = "eventDependencyFeature";
+```
+
+### validateEventMove
+
+```ts
+readonly validateEventMove: "eventMoveFeature" = "eventMoveFeature";
 ```
 
 ### validateEventPlacement

@@ -5,7 +5,7 @@ title: SchedulingConstraint
 
 # Interface: SchedulingConstraint
 
-Defined in: [calendar/types.ts:26](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L26)
+Defined in: [calendar/types.ts:27](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L27)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/types.ts:26](https://github.com/TanStack/time/blob/main/pa
 date: string;
 ```
 
-Defined in: [calendar/types.ts:29](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L29)
+Defined in: [calendar/types.ts:30](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L30)
 
 ***
 
@@ -25,4 +25,4 @@ Defined in: [calendar/types.ts:29](https://github.com/TanStack/time/blob/main/pa
 type: ConstraintType;
 ```
 
-Defined in: [calendar/types.ts:27](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L27)
+Defined in: [calendar/types.ts:28](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L28)
