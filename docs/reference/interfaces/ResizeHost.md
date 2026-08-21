@@ -426,7 +426,7 @@ Defined in: [calendar/features/types.ts:61](https://github.com/TanStack/time/blo
 ##### error?
 
 ```ts
-optional error: ResizeError;
+optional error: EventMutationError;
 ```
 
 ##### valid

@@ -9,7 +9,7 @@ title: Day
 type Day<TResource, TEvent> = object;
 ```
 
-Defined in: [calendar/types.ts:116](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L116)
+Defined in: [calendar/types.ts:117](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L117)
 
 ## Type Parameters
 
@@ -29,7 +29,17 @@ Defined in: [calendar/types.ts:116](https://github.com/TanStack/time/blob/main/p
 allDayEvents: TEvent[];
 ```
 
-Defined in: [calendar/types.ts:124](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L124)
+Defined in: [calendar/types.ts:129](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L129)
+
+***
+
+### dayOfMonth
+
+```ts
+dayOfMonth: number;
+```
+
+Defined in: [calendar/types.ts:125](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L125)
 
 ***
 
@@ -39,7 +49,7 @@ Defined in: [calendar/types.ts:124](https://github.com/TanStack/time/blob/main/p
 events: TEvent[];
 ```
 
-Defined in: [calendar/types.ts:122](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L122)
+Defined in: [calendar/types.ts:127](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L127)
 
 ***
 
@@ -49,7 +59,7 @@ Defined in: [calendar/types.ts:122](https://github.com/TanStack/time/blob/main/p
 isInCurrentPeriod: boolean;
 ```
 
-Defined in: [calendar/types.ts:126](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L126)
+Defined in: [calendar/types.ts:131](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L131)
 
 ***
 
@@ -59,7 +69,17 @@ Defined in: [calendar/types.ts:126](https://github.com/TanStack/time/blob/main/p
 isoDate: string;
 ```
 
-Defined in: [calendar/types.ts:120](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L120)
+Defined in: [calendar/types.ts:121](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L121)
+
+***
+
+### isoMonth
+
+```ts
+isoMonth: string;
+```
+
+Defined in: [calendar/types.ts:123](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L123)
 
 ***
 
@@ -69,4 +89,4 @@ Defined in: [calendar/types.ts:120](https://github.com/TanStack/time/blob/main/p
 isToday: boolean;
 ```
 
-Defined in: [calendar/types.ts:125](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L125)
+Defined in: [calendar/types.ts:130](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L130)

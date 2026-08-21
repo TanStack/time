@@ -79,9 +79,7 @@ function applyEvent(
     details: payload as Record<string, unknown>,
   };
 
-  setState("activityLog", (prev) =>
-    [entry, ...prev].slice(0, MAX_LOG_ENTRIES),
-  );
+  setState("activityLog", (prev) => [entry, ...prev].slice(0, MAX_LOG_ENTRIES));
 
   if (type === "time:event:added" || type === "time:event:updated") {
     const event = payload as TimeEventInfoPayload;

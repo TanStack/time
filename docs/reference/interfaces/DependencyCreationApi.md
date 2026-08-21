@@ -48,5 +48,5 @@ blocked: boolean;
 ##### error?
 
 ```ts
-optional error: ResizeError;
+optional error: EventMutationError;
 ```

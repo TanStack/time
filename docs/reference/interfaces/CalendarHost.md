@@ -10,6 +10,7 @@ Defined in: [calendar/features/types.ts:21](https://github.com/TanStack/time/blo
 ## Extended by
 
 - [`ResizeHost`](ResizeHost.md)
+- [`MoveHost`](MoveHost.md)
 
 ## Type Parameters
 
@@ -340,7 +341,7 @@ Defined in: [calendar/features/types.ts:61](https://github.com/TanStack/time/blo
 ##### error?
 
 ```ts
-optional error: ResizeError;
+optional error: EventMutationError;
 ```
 
 ##### valid

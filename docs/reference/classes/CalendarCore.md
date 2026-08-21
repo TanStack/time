@@ -5,7 +5,7 @@ title: CalendarCore
 
 # Class: CalendarCore\<TFeatures, TResource, TEvent\>
 
-Defined in: [calendar/calendar.ts:196](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L196)
+Defined in: [calendar/calendar.ts:203](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L203)
 
 ## Extends
 
@@ -37,7 +37,7 @@ Defined in: [calendar/calendar.ts:196](https://github.com/TanStack/time/blob/mai
 new CalendarCore<TFeatures, TResource, TEvent>(options): CalendarCore<TFeatures, TResource, TEvent>;
 ```
 
-Defined in: [calendar/calendar.ts:244](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L244)
+Defined in: [calendar/calendar.ts:251](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L251)
 
 #### Parameters
 
@@ -55,13 +55,27 @@ Defined in: [calendar/calendar.ts:244](https://github.com/TanStack/time/blob/mai
 
 ## Properties
 
+### calendarId
+
+```ts
+calendarId: string;
+```
+
+Defined in: [calendar/date-core.ts:107](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L107)
+
+#### Inherited from
+
+[`DateCore`](DateCore.md).[`calendarId`](DateCore.md#calendarid)
+
+***
+
 ### formatters
 
 ```ts
 formatters: object;
 ```
 
-Defined in: [calendar/date-core.ts:83](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L83)
+Defined in: [calendar/date-core.ts:109](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L109)
 
 #### date
 
@@ -93,7 +107,7 @@ time: DateTimeFormat;
 options: ParsedCalendarCoreOptions<TFeatures, TResource, TEvent>;
 ```
 
-Defined in: [calendar/calendar.ts:204](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L204)
+Defined in: [calendar/calendar.ts:211](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L211)
 
 #### Overrides
 
@@ -107,11 +121,25 @@ Defined in: [calendar/calendar.ts:204](https://github.com/TanStack/time/blob/mai
 store: Store<CalendarStore>;
 ```
 
-Defined in: [calendar/date-core.ts:80](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L80)
+Defined in: [calendar/date-core.ts:104](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L104)
 
 #### Inherited from
 
 [`DateCore`](DateCore.md).[`store`](DateCore.md#store)
+
+***
+
+### timeZoneId
+
+```ts
+timeZoneId: string;
+```
+
+Defined in: [calendar/date-core.ts:108](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L108)
+
+#### Inherited from
+
+[`DateCore`](DateCore.md).[`timeZoneId`](DateCore.md#timezoneid)
 
 ## Accessors
 
@@ -123,7 +151,7 @@ Defined in: [calendar/date-core.ts:80](https://github.com/TanStack/time/blob/mai
 get protected activeDatePlain(): PlainDate;
 ```
 
-Defined in: [calendar/date-core.ts:138](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L138)
+Defined in: [calendar/date-core.ts:170](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L170)
 
 ##### Returns
 
@@ -143,7 +171,7 @@ Defined in: [calendar/date-core.ts:138](https://github.com/TanStack/time/blob/ma
 get protected currentPeriodPlain(): PlainDate;
 ```
 
-Defined in: [calendar/date-core.ts:142](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L142)
+Defined in: [calendar/date-core.ts:174](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L174)
 
 ##### Returns
 
@@ -163,7 +191,7 @@ Defined in: [calendar/date-core.ts:142](https://github.com/TanStack/time/blob/ma
 get featureApi(): ComposedApi<TFeatures, TResource, TEvent>;
 ```
 
-Defined in: [calendar/calendar.ts:218](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L218)
+Defined in: [calendar/calendar.ts:225](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L225)
 
 ##### Returns
 
@@ -177,7 +205,7 @@ Defined in: [calendar/calendar.ts:218](https://github.com/TanStack/time/blob/mai
 addEvent(event, options?): Promise<SaveEventResult>;
 ```
 
-Defined in: [calendar/calendar.ts:1144](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1144)
+Defined in: [calendar/calendar.ts:1143](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1143)
 
 #### Parameters
 
@@ -209,7 +237,7 @@ CalendarActions.addEvent
 canGoNextPeriod(): boolean;
 ```
 
-Defined in: [calendar/date-core.ts:466](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L466)
+Defined in: [calendar/date-core.ts:523](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L523)
 
 #### Returns
 
@@ -233,7 +261,7 @@ CalendarActions.canGoNextPeriod
 canGoPreviousPeriod(): boolean;
 ```
 
-Defined in: [calendar/date-core.ts:435](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L435)
+Defined in: [calendar/date-core.ts:492](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L492)
 
 #### Returns
 
@@ -257,7 +285,7 @@ CalendarActions.canGoPreviousPeriod
 changeViewMode(newViewMode): void;
 ```
 
-Defined in: [calendar/date-core.ts:286](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L286)
+Defined in: [calendar/date-core.ts:343](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L343)
 
 #### Parameters
 
@@ -287,7 +315,7 @@ CalendarActions.changeViewMode
 commitAdd(event): void;
 ```
 
-Defined in: [calendar/calendar.ts:928](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L928)
+Defined in: [calendar/calendar.ts:927](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L927)
 
 #### Parameters
 
@@ -307,7 +335,7 @@ Defined in: [calendar/calendar.ts:928](https://github.com/TanStack/time/blob/mai
 commitUpdate(id, updates): void;
 ```
 
-Defined in: [calendar/calendar.ts:949](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L949)
+Defined in: [calendar/calendar.ts:948](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L948)
 
 #### Parameters
 
@@ -334,7 +362,7 @@ editEvent(
 options?): Promise<SaveEventResult>;
 ```
 
-Defined in: [calendar/calendar.ts:1208](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1208)
+Defined in: [calendar/calendar.ts:1207](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1207)
 
 #### Parameters
 
@@ -370,7 +398,7 @@ CalendarActions.editEvent
 ensureRangeLoaded(): void;
 ```
 
-Defined in: [calendar/calendar.ts:756](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L756)
+Defined in: [calendar/calendar.ts:763](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L763)
 
 #### Returns
 
@@ -384,7 +412,7 @@ Defined in: [calendar/calendar.ts:756](https://github.com/TanStack/time/blob/mai
 fetchEventsForRange(start, end): Promise<void>;
 ```
 
-Defined in: [calendar/calendar.ts:814](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L814)
+Defined in: [calendar/calendar.ts:823](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L823)
 
 #### Parameters
 
@@ -414,7 +442,7 @@ CalendarActions.fetchEventsForRange
 formatCurrentPeriod(options?): string;
 ```
 
-Defined in: [calendar/calendar.ts:837](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L837)
+Defined in: [calendar/calendar.ts:841](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L841)
 
 #### Parameters
 
@@ -442,7 +470,7 @@ CalendarActions.formatCurrentPeriod
 formatDate(date): string;
 ```
 
-Defined in: [calendar/date-core.ts:146](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L146)
+Defined in: [calendar/date-core.ts:203](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L203)
 
 #### Parameters
 
@@ -466,7 +494,7 @@ Defined in: [calendar/date-core.ts:146](https://github.com/TanStack/time/blob/ma
 formatDateTime(date): string;
 ```
 
-Defined in: [calendar/date-core.ts:154](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L154)
+Defined in: [calendar/date-core.ts:211](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L211)
 
 #### Parameters
 
@@ -484,13 +512,47 @@ Defined in: [calendar/date-core.ts:154](https://github.com/TanStack/time/blob/ma
 
 ***
 
+### formatPeriod()
+
+```ts
+formatPeriod(date?, options?): string;
+```
+
+Defined in: [calendar/date-core.ts:186](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L186)
+
+#### Parameters
+
+##### date?
+
+[`DateInput`](../type-aliases/DateInput.md)
+
+##### options?
+
+[`FormatPeriodOptions`](../interfaces/FormatPeriodOptions.md)
+
+#### Returns
+
+`string`
+
+#### Implementation of
+
+```ts
+CalendarActions.formatPeriod
+```
+
+#### Inherited from
+
+[`DateCore`](DateCore.md).[`formatPeriod`](DateCore.md#formatperiod)
+
+***
+
 ### formatPeriodLabel()
 
 ```ts
 formatPeriodLabel(options?): string;
 ```
 
-Defined in: [calendar/calendar.ts:818](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L818)
+Defined in: [calendar/calendar.ts:827](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L827)
 
 #### Parameters
 
@@ -518,7 +580,7 @@ CalendarActions.formatPeriodLabel
 formatTime(date): string;
 ```
 
-Defined in: [calendar/date-core.ts:150](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L150)
+Defined in: [calendar/date-core.ts:207](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L207)
 
 #### Parameters
 
@@ -542,7 +604,7 @@ Defined in: [calendar/date-core.ts:150](https://github.com/TanStack/time/blob/ma
 getAllDayEventsByDate(date): TEvent[];
 ```
 
-Defined in: [calendar/calendar.ts:884](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L884)
+Defined in: [calendar/calendar.ts:883](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L883)
 
 #### Parameters
 
@@ -568,7 +630,7 @@ CalendarActions.getAllDayEventsByDate
 protected getCalendarDays(): PlainDate[];
 ```
 
-Defined in: [calendar/calendar.ts:641](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L641)
+Defined in: [calendar/calendar.ts:648](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L648)
 
 #### Returns
 
@@ -580,13 +642,47 @@ Defined in: [calendar/calendar.ts:641](https://github.com/TanStack/time/blob/mai
 
 ***
 
+### getDateParts()
+
+```ts
+getDateParts(date, options?): DateParts;
+```
+
+Defined in: [calendar/date-core.ts:178](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L178)
+
+#### Parameters
+
+##### date
+
+[`DateInput`](../type-aliases/DateInput.md)
+
+##### options?
+
+[`GetDatePartsOptions`](../interfaces/GetDatePartsOptions.md)
+
+#### Returns
+
+[`DateParts`](../interfaces/DateParts.md)
+
+#### Implementation of
+
+```ts
+CalendarActions.getDateParts
+```
+
+#### Inherited from
+
+[`DateCore`](DateCore.md).[`getDateParts`](DateCore.md#getdateparts)
+
+***
+
 ### getDaysInRange()
 
 ```ts
 getDaysInRange(start, end): object[];
 ```
 
-Defined in: [calendar/calendar.ts:772](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L772)
+Defined in: [calendar/calendar.ts:779](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L779)
 
 #### Parameters
 
@@ -616,7 +712,7 @@ CalendarActions.getDaysInRange
 getDaysNames(weekday): string[];
 ```
 
-Defined in: [calendar/date-core.ts:269](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L269)
+Defined in: [calendar/date-core.ts:326](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L326)
 
 #### Parameters
 
@@ -646,7 +742,7 @@ CalendarActions.getDaysNames
 getDaysWithEvents(): object[];
 ```
 
-Defined in: [calendar/calendar.ts:768](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L768)
+Defined in: [calendar/calendar.ts:775](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L775)
 
 #### Returns
 
@@ -660,7 +756,7 @@ Defined in: [calendar/calendar.ts:768](https://github.com/TanStack/time/blob/mai
 getEvents(): TEvent[];
 ```
 
-Defined in: [calendar/calendar.ts:1013](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1013)
+Defined in: [calendar/calendar.ts:1012](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1012)
 
 #### Returns
 
@@ -680,7 +776,7 @@ CalendarActions.getEvents
 getEventsByDate(date): TEvent[];
 ```
 
-Defined in: [calendar/calendar.ts:872](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L872)
+Defined in: [calendar/calendar.ts:871](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L871)
 
 #### Parameters
 
@@ -706,7 +802,7 @@ CalendarActions.getEventsByDate
 protected getFirstDayOfMonth(): PlainDate;
 ```
 
-Defined in: [calendar/date-core.ts:158](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L158)
+Defined in: [calendar/date-core.ts:215](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L215)
 
 #### Returns
 
@@ -724,7 +820,7 @@ Defined in: [calendar/date-core.ts:158](https://github.com/TanStack/time/blob/ma
 protected getFirstDayOfWeek(): PlainDate;
 ```
 
-Defined in: [calendar/date-core.ts:166](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L166)
+Defined in: [calendar/date-core.ts:223](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L223)
 
 #### Returns
 
@@ -742,7 +838,7 @@ Defined in: [calendar/date-core.ts:166](https://github.com/TanStack/time/blob/ma
 getLoadedRanges(): readonly object[];
 ```
 
-Defined in: [calendar/calendar.ts:810](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L810)
+Defined in: [calendar/calendar.ts:819](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L819)
 
 #### Returns
 
@@ -756,7 +852,7 @@ readonly `object`[]
 getTimeSlots(options?): TimeSlot[];
 ```
 
-Defined in: [calendar/calendar.ts:868](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L868)
+Defined in: [calendar/calendar.ts:867](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L867)
 
 #### Parameters
 
@@ -782,7 +878,7 @@ CalendarActions.getTimeSlots
 getWeekStartsOn(): number;
 ```
 
-Defined in: [calendar/date-core.ts:173](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L173)
+Defined in: [calendar/date-core.ts:230](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L230)
 
 #### Returns
 
@@ -800,7 +896,7 @@ Defined in: [calendar/date-core.ts:173](https://github.com/TanStack/time/blob/ma
 goToCurrentPeriod(): void;
 ```
 
-Defined in: [calendar/date-core.ts:396](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L396)
+Defined in: [calendar/date-core.ts:453](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L453)
 
 #### Returns
 
@@ -824,7 +920,7 @@ CalendarActions.goToCurrentPeriod
 goToNextPeriod(): void;
 ```
 
-Defined in: [calendar/date-core.ts:348](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L348)
+Defined in: [calendar/date-core.ts:405](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L405)
 
 #### Returns
 
@@ -848,7 +944,7 @@ CalendarActions.goToNextPeriod
 goToPreviousPeriod(): void;
 ```
 
-Defined in: [calendar/date-core.ts:300](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L300)
+Defined in: [calendar/date-core.ts:357](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L357)
 
 #### Returns
 
@@ -872,7 +968,7 @@ CalendarActions.goToPreviousPeriod
 goToSpecificPeriod(date): void;
 ```
 
-Defined in: [calendar/date-core.ts:414](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L414)
+Defined in: [calendar/date-core.ts:471](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L471)
 
 #### Parameters
 
@@ -902,7 +998,7 @@ CalendarActions.goToSpecificPeriod
 groupDaysBy(__namedParameters): (Day<TResource, TEvent> | null)[][];
 ```
 
-Defined in: [calendar/calendar.ts:850](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L850)
+Defined in: [calendar/calendar.ts:848](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L848)
 
 #### Parameters
 
@@ -938,7 +1034,7 @@ CalendarActions.groupDaysBy
 hasFeature(name): boolean;
 ```
 
-Defined in: [calendar/calendar.ts:222](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L222)
+Defined in: [calendar/calendar.ts:229](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L229)
 
 #### Parameters
 
@@ -958,7 +1054,7 @@ Defined in: [calendar/calendar.ts:222](https://github.com/TanStack/time/blob/mai
 removeEvent(id): void;
 ```
 
-Defined in: [calendar/calendar.ts:1321](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1321)
+Defined in: [calendar/calendar.ts:1320](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1320)
 
 #### Parameters
 
@@ -984,7 +1080,7 @@ CalendarActions.removeEvent
 setEvents(events): void;
 ```
 
-Defined in: [calendar/calendar.ts:1341](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1341)
+Defined in: [calendar/calendar.ts:1340](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1340)
 
 #### Parameters
 
@@ -1010,7 +1106,7 @@ CalendarActions.setEvents
 setResources(resources): void;
 ```
 
-Defined in: [calendar/calendar.ts:1335](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1335)
+Defined in: [calendar/calendar.ts:1334](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1334)
 
 #### Parameters
 
@@ -1036,7 +1132,7 @@ CalendarActions.setResources
 protected toPlainDate(isoDate): PlainDate;
 ```
 
-Defined in: [calendar/date-core.ts:134](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L134)
+Defined in: [calendar/date-core.ts:166](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L166)
 
 #### Parameters
 
@@ -1065,7 +1161,7 @@ validateMove(
    newConsumption?): object;
 ```
 
-Defined in: [calendar/calendar.ts:1023](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1023)
+Defined in: [calendar/calendar.ts:1022](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1022)
 
 #### Parameters
 

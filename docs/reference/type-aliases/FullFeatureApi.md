@@ -9,7 +9,7 @@ title: FullFeatureApi
 type FullFeatureApi<TResource, TEvent> = UnionToIntersection<FeatureApiRegistry<TResource, TEvent>[keyof FeatureApiRegistry<TResource, TEvent>]>;
 ```
 
-Defined in: [calendar/features/registry.ts:63](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L63)
+Defined in: [calendar/features/registry.ts:65](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L65)
 
 ## Type Parameters
 
