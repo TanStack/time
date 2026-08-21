@@ -8,6 +8,7 @@ import {
 } from "react";
 import { useStore } from "@tanstack/react-store";
 import { createCalendar } from "@tanstack/time";
+import { inertMoveController } from "./inertMoveController";
 import { inertResizeController } from "./inertResizeController";
 import type {
   CalendarApi,
@@ -15,6 +16,11 @@ import type {
   CalendarFeatureList,
   FeatureName,
   FullFeatureApi,
+  MoveController,
+  MoveControllerOptions,
+  MoveStartArgs,
+  MoveState,
+  MoveToArgs,
   RecurrenceEditScope,
   Event,
   EventDateTimeInput,
@@ -25,9 +31,11 @@ import type {
   Resource,
 } from "@tanstack/time";
 
-export type { ResizeState } from "@tanstack/time";
+export type { MoveState, ResizeState } from "@tanstack/time";
 
 export type ResizeOptions = ResizeControllerOptions;
+
+export type MoveOptions = MoveControllerOptions;
 
 interface ResizeHandleHandlers {
   onMouseDown: (e: React.MouseEvent) => void;
@@ -48,6 +56,7 @@ export interface UseCalendarOptions<
   TEvent extends Event<TResource> = Event<TResource>,
 > extends CalendarCoreOptions<TFeatures, TResource, TEvent> {
   resize?: ResizeOptions;
+  move?: MoveOptions;
 }
 
 interface ResizeHookApi {
@@ -65,13 +74,25 @@ interface ResizeHookApi {
 type ComposedResizeHookApi<TFeatures extends CalendarFeatureList> =
   "resize" extends FeatureName<TFeatures[number]> ? ResizeHookApi : object;
 
+interface MoveHookApi {
+  moveState: MoveState;
+  startEventMove: (args: MoveStartArgs) => boolean;
+  updateEventMove: (args: MoveToArgs) => void;
+  endEventMove: () => void;
+  cancelEventMove: () => void;
+}
+
+type ComposedMoveHookApi<TFeatures extends CalendarFeatureList> =
+  "move" extends FeatureName<TFeatures[number]> ? MoveHookApi : object;
+
 type UseCalendarResult<
   TFeatures extends CalendarFeatureList,
   TResource extends Resource,
   TEvent extends Event<TResource>,
 > = CalendarApi<TFeatures, TResource, TEvent> & {
   isPending: boolean;
-} & ComposedResizeHookApi<TFeatures>;
+} & ComposedResizeHookApi<TFeatures> &
+  ComposedMoveHookApi<TFeatures>;
 
 export const useCalendar = <
   const TFeatures extends CalendarFeatureList,
@@ -80,7 +101,7 @@ export const useCalendar = <
 >(
   options: UseCalendarOptions<TFeatures, TResource, TEvent>,
 ): UseCalendarResult<TFeatures, TResource, TEvent> => {
-  const { resize, ...calendarOptions } = options;
+  const { resize, move, ...calendarOptions } = options;
 
   const [calendarCore] = useState(() =>
     createCalendar<TFeatures, TResource, TEvent>(calendarOptions),
@@ -116,6 +137,50 @@ export const useCalendar = <
     resizeController.getSnapshot,
     resizeController.getSnapshot,
   );
+
+  const [moveController] = useState<MoveController<TResource, TEvent>>(() =>
+    calendarCore.hasFeature("move")
+      ? (
+          calendarCore as unknown as FullFeatureApi<TResource, TEvent>
+        ).createMoveController(move)
+      : inertMoveController<TResource, TEvent>(),
+  );
+
+  useEffect(() => {
+    moveController.setOptions(move ?? {});
+  }, [moveController, move]);
+
+  useEffect(() => {
+    return () => {
+      moveController.destroy();
+    };
+  }, [moveController]);
+
+  const moveState = useSyncExternalStore(
+    moveController.subscribe,
+    moveController.getSnapshot,
+    moveController.getSnapshot,
+  );
+
+  const startEventMove = useCallback(
+    (args: MoveStartArgs) => moveController.start(args),
+    [moveController],
+  );
+
+  const updateEventMove = useCallback(
+    (args: MoveToArgs) => {
+      moveController.moveTo(args);
+    },
+    [moveController],
+  );
+
+  const endEventMove = useCallback(() => {
+    moveController.end();
+  }, [moveController]);
+
+  const cancelEventMove = useCallback(() => {
+    moveController.cancel();
+  }, [moveController]);
 
   const resizeHandlePropsCacheRef = useRef(
     new Map<string, ResizeHandleHandlers>(),
@@ -288,6 +353,16 @@ export const useCalendar = <
     [calendarCore],
   );
 
+  const formatPeriod = useCallback<typeof calendarCore.formatPeriod>(
+    (date, periodOptions) => calendarCore.formatPeriod(date, periodOptions),
+    [calendarCore],
+  );
+
+  const getDateParts = useCallback<typeof calendarCore.getDateParts>(
+    (date, partsOptions) => calendarCore.getDateParts(date, partsOptions),
+    [calendarCore],
+  );
+
   const daysKey = `${state.currentPeriod}|${state.activeDate}|${state.viewMode.value}|${state.viewMode.unit}|${state.eventsVersion}`;
 
   const days = useMemo(() => {
@@ -336,11 +411,18 @@ export const useCalendar = <
     resizeState,
     getResizeHandleProps,
     getDayColumnProps,
+    moveState,
+    startEventMove,
+    updateEventMove,
+    endEventMove,
+    cancelEventMove,
     getEvents,
     validateMove,
     fetchEventsForRange,
     formatPeriodLabel,
     formatCurrentPeriod,
+    formatPeriod,
+    getDateParts,
     setResources,
     setEvents,
   } as unknown as UseCalendarResult<TFeatures, TResource, TEvent>;

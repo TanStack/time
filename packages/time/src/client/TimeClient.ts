@@ -54,12 +54,35 @@ export interface TimeEventMap {
   };
 }
 
+export interface TimeEventRecord {
+  type: keyof TimeEventMap;
+  payload: TimeEventMap[keyof TimeEventMap];
+  timestamp: number;
+}
+
+const MAX_EVENT_HISTORY = 100;
+
 class TimeClient extends EventClient<TimeEventMap> {
   private static instance: TimeClient | null = null;
+  private eventHistory: Array<TimeEventRecord> = [];
 
   private constructor() {
     super({
       pluginId: "time",
+    });
+
+    this.onAllPluginEvents((event) => {
+      this.eventHistory.push({
+        type: event.type,
+        payload: event.payload,
+        timestamp: Date.now(),
+      });
+      if (this.eventHistory.length > MAX_EVENT_HISTORY) {
+        this.eventHistory.splice(
+          0,
+          this.eventHistory.length - MAX_EVENT_HISTORY,
+        );
+      }
     });
   }
 
@@ -68,6 +91,10 @@ class TimeClient extends EventClient<TimeEventMap> {
       TimeClient.instance = new TimeClient();
     }
     return TimeClient.instance;
+  }
+
+  getEventHistory(): ReadonlyArray<TimeEventRecord> {
+    return this.eventHistory;
   }
 }
 

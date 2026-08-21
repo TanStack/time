@@ -12,6 +12,7 @@ import type {
   RecurrenceNavigationApi,
   RecurrenceReadApi,
 } from "./recurrence";
+import type { MoveFeatureApi } from "./move";
 import type { ResizeFeatureApi } from "./resize";
 import type { TimelineApi } from "./timeline";
 import type { CalendarFeatureFactory, FeatureName } from "./types";
@@ -34,6 +35,7 @@ export interface BuiltInFeatureApiRegistry<
   duration: DurationApi<TResource, TEvent>;
   filter: EventFilterApi<TResource, TEvent>;
   resize: ResizeFeatureApi<TResource, TEvent>;
+  move: MoveFeatureApi<TResource, TEvent>;
   dayLayout: DayLayoutApi<TResource, TEvent>;
   timeline: TimelineApi<TResource, TEvent>;
 }
@@ -109,6 +111,8 @@ export const FEATURE_API_OWNERS = {
   createResizeController: "eventResizeFeature",
   getEventSegmentInfo: "eventResizeFeature",
   validateResize: "eventResizeFeature",
+  createMoveController: "eventMoveFeature",
+  validateEventMove: "eventMoveFeature",
   getEffectiveCalendar: "workingTimeFeature",
   getWorkingIntervals: "workingTimeFeature",
   getWorkingMinutes: "workingTimeFeature",

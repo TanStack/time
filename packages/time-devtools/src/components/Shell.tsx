@@ -156,6 +156,10 @@ function DevtoolsContent() {
   let dragStartX = 0;
   let dragStartWidth = 0;
 
+  const handleDragHandleDoubleClick = () => {
+    setLeftPanelWidth(300);
+  };
+
   const handleMouseDown = (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -278,12 +282,6 @@ function DevtoolsContent() {
             </Button>
           </Show>
         </div>
-        <Show when={state.isConnected}>
-          <span class={styles().connectedStatus}>
-            <span class={styles().connectedDot} />
-            Connected
-          </span>
-        </Show>
       </Header>
 
       <div class={styles().container}>

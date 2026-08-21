@@ -20,6 +20,7 @@ export * from "./isSameOrAfter";
 export * from "./isBetween";
 export * from "./intersects";
 export * from "./format";
+export * from "./getDateParts";
 export * from "./isLeapYear";
 export * from "./isWeekend";
 export * from "./range";

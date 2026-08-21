@@ -1,4 +1,4 @@
-import { createContext, onCleanup, onMount, useContext } from "solid-js";
+import { createContext, useContext } from "solid-js";
 import { createStore } from "solid-js/store";
 import { getTimeClient } from "@tanstack/time";
 import type { TimeEventMap } from "@tanstack/time";
@@ -11,12 +11,16 @@ export interface ActivityLogEntry {
   details: Record<string, unknown>;
 }
 
+interface CalendarEventSnapshot {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+}
+
 interface TimeStoreState {
   activityLog: Array<ActivityLogEntry>;
-  events: Record<
-    string,
-    { id: string; title: string; start: string; end: string }
-  >;
+  events: Record<string, CalendarEventSnapshot>;
 }
 
 interface TimeContextValue {
@@ -34,128 +38,111 @@ export function useTimeStore(): TimeContextValue {
   return context;
 }
 
+const MAX_LOG_ENTRIES = 100;
+
+let entryCounter = 0;
 function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  entryCounter += 1;
+  return `entry-${entryCounter}`;
 }
 
-export const TimeProvider: ParentComponent = (props) => {
-  const [state, setState] = createStore<TimeStoreState>({
-    activityLog: [],
-    events: {},
-  });
+const [state, setState] = createStore<TimeStoreState>({
+  activityLog: [],
+  events: {},
+});
 
+type TimeEventInfoPayload = {
+  eventId: string;
+  eventTitle: string;
+  start: string;
+  end: string;
+};
+
+function toSnapshot(event: TimeEventInfoPayload): CalendarEventSnapshot {
+  return {
+    id: event.eventId,
+    title: event.eventTitle,
+    start: event.start,
+    end: event.end,
+  };
+}
+
+function applyEvent(
+  type: keyof TimeEventMap,
+  payload: unknown,
+  timestamp: number,
+) {
+  const entry: ActivityLogEntry = {
+    id: generateId(),
+    timestamp,
+    type,
+    details: payload as Record<string, unknown>,
+  };
+
+  setState("activityLog", (prev) =>
+    [entry, ...prev].slice(0, MAX_LOG_ENTRIES),
+  );
+
+  if (type === "time:event:added" || type === "time:event:updated") {
+    const event = payload as TimeEventInfoPayload;
+    setState("events", event.eventId, toSnapshot(event));
+    return;
+  }
+
+  if (type === "time:event:removed") {
+    const { eventId } = payload as { eventId: string };
+    setState("events", eventId, undefined!);
+    return;
+  }
+
+  if (type === "time:event:undo" || type === "time:event:redo") {
+    const { added, removed, updated } = payload as {
+      added: Array<TimeEventInfoPayload>;
+      removed: Array<TimeEventInfoPayload>;
+      updated: Array<TimeEventInfoPayload>;
+    };
+    setState("events", (prev) => {
+      const next = { ...prev };
+      for (const event of removed) {
+        delete next[event.eventId];
+      }
+      for (const event of [...added, ...updated]) {
+        next[event.eventId] = toSnapshot(event);
+      }
+      return next;
+    });
+    return;
+  }
+
+  if (type === "time:events:set") {
+    const { events } = payload as { events: Array<TimeEventInfoPayload> };
+    setState("events", (prev) => {
+      const next = { ...prev };
+      for (const event of events) {
+        next[event.eventId] = toSnapshot(event);
+      }
+      return next;
+    });
+  }
+}
+
+const client = getTimeClient();
+
+for (const record of client.getEventHistory()) {
+  applyEvent(record.type, record.payload, record.timestamp);
+}
+
+client.onAllPluginEvents((event) => {
+  applyEvent(event.type, event.payload, Date.now());
+});
+
+export const TimeProvider: ParentComponent = (props) => {
   const clearLog = () => {
     setState("activityLog", []);
   };
 
-  onMount(() => {
-    const client = getTimeClient();
-
-    const unsubscribe = client.onAllPluginEvents((event) => {
-      const entry: ActivityLogEntry = {
-        id: generateId(),
-        timestamp: Date.now(),
-        type: event.type,
-        details: event.payload as unknown as Record<string, unknown>,
-      };
-
-      setState("activityLog", (prev) => [entry, ...prev].slice(0, 100));
-
-      if (
-        event.type === "time:event:added" ||
-        event.type === "time:event:updated"
-      ) {
-        const payload = event.payload as {
-          eventId: string;
-          eventTitle: string;
-          start: string;
-          end: string;
-        };
-        setState("events", payload.eventId, {
-          id: payload.eventId,
-          title: payload.eventTitle,
-          start: payload.start,
-          end: payload.end,
-        });
-      } else if (event.type === "time:event:removed") {
-        const payload = event.payload as { eventId: string };
-        setState("events", payload.eventId, undefined!);
-      } else if (
-        event.type === "time:event:undo" ||
-        event.type === "time:event:redo"
-      ) {
-        const payload = event.payload as {
-          added: Array<{
-            eventId: string;
-            eventTitle: string;
-            start: string;
-            end: string;
-          }>;
-          removed: Array<{
-            eventId: string;
-            eventTitle: string;
-            start: string;
-            end: string;
-          }>;
-          updated: Array<{
-            eventId: string;
-            eventTitle: string;
-            start: string;
-            end: string;
-          }>;
-        };
-        setState("events", (prev) => {
-          const next = { ...prev };
-          for (const ev of payload.removed) {
-            delete next[ev.eventId];
-          }
-          for (const ev of [...payload.added, ...payload.updated]) {
-            next[ev.eventId] = {
-              id: ev.eventId,
-              title: ev.eventTitle,
-              start: ev.start,
-              end: ev.end,
-            };
-          }
-          return next;
-        });
-      } else if (event.type === "time:events:set") {
-        const payload = event.payload as {
-          events: Array<{
-            eventId: string;
-            eventTitle: string;
-            start: string;
-            end: string;
-          }>;
-        };
-        setState("events", (prev) => {
-          const next = { ...prev };
-          for (const ev of payload.events) {
-            next[ev.eventId] = {
-              id: ev.eventId,
-              title: ev.eventTitle,
-              start: ev.start,
-              end: ev.end,
-            };
-          }
-          return next;
-        });
-      }
-    });
-
-    onCleanup(() => {
-      unsubscribe();
-      setState("events", {});
-    });
-  });
-
-  const contextValue: TimeContextValue = {
-    state,
-    clearLog,
-  };
-
   return (
-    <TimeContext.Provider value={contextValue}>
+    <TimeContext.Provider value={{ state, clearLog }}>
       {props.children}
     </TimeContext.Provider>
   );

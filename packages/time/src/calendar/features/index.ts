@@ -11,5 +11,6 @@ export * from "./duration";
 export * from "./filter";
 export * from "./recurrence";
 export * from "./resize";
+export * from "./move";
 export * from "./dayLayout";
 export * from "./timeline";

@@ -8,6 +8,7 @@ import {
   calendarFeatures,
   dayEventLayoutFeature,
   eventFilterFeature,
+  eventMoveFeature,
   eventRecurrenceFeature,
   eventResizeFeature,
   historyFeature,
@@ -22,6 +23,7 @@ import {
 } from "@dnd-kit/react";
 import ReactDOM from "react-dom/client";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useForm } from "@tanstack/react-form";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { timeDevtoolsPlugin } from "@tanstack/react-time-devtools";
 import { formDevtoolsPlugin } from "@tanstack/react-form-devtools";
@@ -37,10 +39,12 @@ import {
 } from "@tanstack/react-router";
 import { useInfiniteScroll } from "./lib/useInfiniteScroll";
 import type {
+  DateParts,
   Day,
   Event,
   EventDateTimeInput,
   LayoutStrategyFn,
+  MoveGranularity,
   OverlapStrategy,
   RecurrenceEditScope,
   RecurrenceFrequency,
@@ -49,7 +53,11 @@ import type {
   Resource,
   WorkingCalendar,
 } from "@tanstack/time";
-import type { DragEndEvent, DragMoveEvent } from "@dnd-kit/react";
+import type {
+  DragEndEvent,
+  DragMoveEvent,
+  DragStartEvent,
+} from "@dnd-kit/react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -77,6 +85,7 @@ const features = calendarFeatures([
   resourceAvailabilityFeature,
   eventRecurrenceFeature,
   eventResizeFeature,
+  eventMoveFeature,
   eventFilterFeature,
   dayEventLayoutFeature,
 ]);
@@ -133,14 +142,10 @@ function getResourceId(resource: Resource | string): string {
   return typeof resource === "string" ? resource : resource.id;
 }
 
-const DRAG_SNAP_MINUTES = 15;
-
-type DragGranularity = "time" | "day";
-
 type EventDragData = {
   event: DemoEvent;
   dayDate: string;
-  granularity: DragGranularity;
+  granularity: MoveGranularity;
   originalStart: string;
   originalEnd: string;
   occurrenceStart?: EventDateTimeInput;
@@ -158,47 +163,6 @@ function dragGroupSiblings(eventId: string): Array<HTMLElement> {
       `[${DRAG_GROUP_ATTRIBUTE}="${eventId}"]:not([data-dnd-dragging]):not([data-dnd-placeholder])`,
     ),
   );
-}
-
-function formatDateTimeToISO(date: Date): string {
-  return `${formatDateToISO(date)}T${padTimePart(date.getHours())}:${padTimePart(date.getMinutes())}:${padTimePart(date.getSeconds())}`;
-}
-
-function shiftPlainDateTime(
-  plainDateTime: string,
-  dayShift: number,
-  minuteShift: number,
-): string {
-  const date = new Date(plainDateTime);
-  date.setDate(date.getDate() + dayShift);
-  date.setMinutes(date.getMinutes() + minuteShift);
-  return formatDateTimeToISO(date);
-}
-
-function isoDayDiff(fromIsoDate: string, toIsoDate: string): number {
-  const from = new Date(`${fromIsoDate}T00:00:00`).getTime();
-  const to = new Date(`${toIsoDate}T00:00:00`).getTime();
-  return Math.round((to - from) / 86_400_000);
-}
-
-function pixelsToSnappedMinutes(deltaY: number): number {
-  return Math.round(deltaY / DRAG_SNAP_MINUTES) * DRAG_SNAP_MINUTES;
-}
-
-function resolveDropTimes(
-  source: EventDragData,
-  target: DayDropData | undefined,
-  transformY: number,
-): { start: string; end: string; moved: boolean } {
-  const dayShift = target ? isoDayDiff(source.dayDate, target.isoDate) : 0;
-  const minuteShift =
-    source.granularity === "time" ? pixelsToSnappedMinutes(transformY) : 0;
-
-  return {
-    start: shiftPlainDateTime(source.originalStart, dayShift, minuteShift),
-    end: shiftPlainDateTime(source.originalEnd, dayShift, minuteShift),
-    moved: dayShift !== 0 || minuteShift !== 0,
-  };
 }
 
 const eventDragSensors = [
@@ -296,6 +260,57 @@ const overlapModeLabels: Record<OverlapMode, string> = {
   cascade: "Cascade",
   focus: "Focus first",
 };
+
+type DemoCalendar = ReturnType<
+  typeof useCalendar<typeof features, Resource, DemoEvent>
+>;
+
+const overlayCalendars = [
+  {
+    id: "chinese",
+    label: "Lunar",
+    locale: "zh-CN",
+    render: (parts: DateParts) => `${parts.monthLong}${parts.dayOfMonth}`,
+  },
+  {
+    id: "hebrew",
+    label: "Hebrew",
+    locale: "he-IL",
+    render: (parts: DateParts) => `${parts.dayOfMonth} ${parts.monthLong}`,
+  },
+  {
+    id: "islamic-umalqura",
+    label: "Hijri",
+    locale: "ar-SA",
+    render: (parts: DateParts) => `${parts.dayOfMonth} ${parts.monthLong}`,
+  },
+];
+
+function OverlayDayParts({
+  calendar,
+  isoDate,
+  calendarIds,
+}: {
+  calendar: DemoCalendar;
+  isoDate: string;
+  calendarIds: Array<string>;
+}) {
+  return overlayCalendars
+    .filter((system) => calendarIds.includes(system.id))
+    .map((system) => (
+      <span
+        key={system.id}
+        className="block text-xs font-normal text-amber-500/80"
+      >
+        {system.render(
+          calendar.getDateParts(isoDate, {
+            calendar: system.id,
+            locale: system.locale,
+          }),
+        )}
+      </span>
+    ));
+}
 
 const workingCalendars: Array<WorkingCalendar> = [
   {
@@ -596,21 +611,14 @@ function EventModal({
   isSaving?: boolean;
   resources: Array<Resource>;
 }) {
-  const [formData, setFormData] = useState<EventFormData>(initialData);
+  const form = useForm({
+    formId: "event-modal",
+    defaultValues: initialData,
+  });
 
   useEffect(() => {
-    setFormData(initialData);
+    form.reset(initialData);
   }, [initialData]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await onSave(formData);
-    } catch {
-      return;
-    }
-    onClose();
-  };
 
   const recurrencyOptions: Array<{
     value: RecurrenceFrequency | "none";
@@ -640,207 +648,277 @@ function EventModal({
             {mode === "add" ? "Add Event" : "Edit Event"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              type="text"
-              value={formData.title}
-              onChange={(e) =>
-                setFormData({ ...formData, title: e.target.value })
-              }
-              placeholder="Event title"
-              required
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            try {
+              await onSave(form.state.values);
+              onClose();
+            } catch {
+              return;
+            }
+          }}
+          className="space-y-4 mt-4"
+        >
+          <form.Field
+            name="title"
+            children={(field) => (
+              <div className="space-y-2">
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  type="text"
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="Event title"
+                  required
+                />
+              </div>
+            )}
+          />
+          <form.Field
+            name="allDay"
+            children={(field) => (
+              <div className="flex items-center gap-2">
+                <input
+                  id="allDay"
+                  type="checkbox"
+                  checked={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.checked)}
+                  className="h-4 w-4"
+                />
+                <Label htmlFor="allDay" className="cursor-pointer">
+                  All-day
+                </Label>
+              </div>
+            )}
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <form.Field
+              name="startDate"
+              children={(field) => (
+                <div className="space-y-2">
+                  <Label htmlFor="startDate">Start Date</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
+            />
+            <form.Subscribe
+              selector={(s) => s.values.allDay}
+              children={(allDay) => (
+                <form.Field
+                  name="startTime"
+                  children={(field) => (
+                    <div className="space-y-2">
+                      <Label htmlFor="startTime">Start Time</Label>
+                      <Input
+                        id="startTime"
+                        type="time"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        disabled={allDay}
+                        required={!allDay}
+                      />
+                    </div>
+                  )}
+                />
+              )}
             />
           </div>
-          <div className="flex items-center gap-2">
-            <input
-              id="allDay"
-              type="checkbox"
-              checked={formData.allDay}
-              onChange={(e) =>
-                setFormData({ ...formData, allDay: e.target.checked })
-              }
-              className="h-4 w-4"
+
+          <form.Field
+            name="categoryId"
+            children={(field) => (
+              <div className="space-y-2">
+                <Label htmlFor="categoryId">Calendar</Label>
+                <select
+                  id="categoryId"
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  required
+                >
+                  {eventCategories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <form.Field
+              name="resourceId"
+              children={(field) => (
+                <div className="space-y-2">
+                  <Label htmlFor="resourceId">Resource</Label>
+                  <select
+                    id="resourceId"
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    required
+                  >
+                    {resources.map((resource) => (
+                      <option key={resource.id} value={resource.id}>
+                        {resource.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             />
-            <Label htmlFor="allDay" className="cursor-pointer">
-              All-day
-            </Label>
+            <form.Field
+              name="consumption"
+              children={(field) => (
+                <div className="space-y-2">
+                  <Label htmlFor="consumption">Consumption</Label>
+                  <Input
+                    id="consumption"
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) =>
+                      field.handleChange(
+                        Math.max(1, Number(e.target.value) || 1),
+                      )
+                    }
+                    required
+                  />
+                </div>
+              )}
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="startDate">Start Date</Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={formData.startDate}
-                onChange={(e) =>
-                  setFormData({ ...formData, startDate: e.target.value })
-                }
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="startTime">Start Time</Label>
-              <Input
-                id="startTime"
-                type="time"
-                value={formData.startTime}
-                onChange={(e) =>
-                  setFormData({ ...formData, startTime: e.target.value })
-                }
-                disabled={formData.allDay}
-                required={!formData.allDay}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="categoryId">Calendar</Label>
-            <select
-              id="categoryId"
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
-              value={formData.categoryId}
-              onChange={(e) =>
-                setFormData({ ...formData, categoryId: e.target.value })
-              }
-              required
-            >
-              {eventCategories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="resourceId">Resource</Label>
-              <select
-                id="resourceId"
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
-                value={formData.resourceId}
-                onChange={(e) =>
-                  setFormData({ ...formData, resourceId: e.target.value })
-                }
-                required
-              >
-                {resources.map((resource) => (
-                  <option key={resource.id} value={resource.id}>
-                    {resource.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="consumption">Consumption</Label>
-              <Input
-                id="consumption"
-                type="number"
-                min={1}
-                step={1}
-                value={formData.consumption}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    consumption: Math.max(1, Number(e.target.value) || 1),
-                  })
-                }
-                required
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="endDate">End Date</Label>
-              <Input
-                id="endDate"
-                type="date"
-                value={formData.endDate}
-                onChange={(e) =>
-                  setFormData({ ...formData, endDate: e.target.value })
-                }
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="endTime">End Time</Label>
-              <Input
-                id="endTime"
-                type="time"
-                value={formData.endTime}
-                onChange={(e) =>
-                  setFormData({ ...formData, endTime: e.target.value })
-                }
-                disabled={formData.allDay}
-                required={!formData.allDay}
-              />
-            </div>
+            <form.Field
+              name="endDate"
+              children={(field) => (
+                <div className="space-y-2">
+                  <Label htmlFor="endDate">End Date</Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
+            />
+            <form.Subscribe
+              selector={(s) => s.values.allDay}
+              children={(allDay) => (
+                <form.Field
+                  name="endTime"
+                  children={(field) => (
+                    <div className="space-y-2">
+                      <Label htmlFor="endTime">End Time</Label>
+                      <Input
+                        id="endTime"
+                        type="time"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        disabled={allDay}
+                        required={!allDay}
+                      />
+                    </div>
+                  )}
+                />
+              )}
+            />
           </div>
 
           {mode === "edit" && isRecurring && (
-            <div className="space-y-2 rounded-md border border-neutral-800 bg-neutral-950/60 p-3">
-              <Label htmlFor="recurrenceEditScope">Apply changes to</Label>
-              <select
-                id="recurrenceEditScope"
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
-                value={formData.recurrenceEditScope}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    recurrenceEditScope: e.target.value as RecurrenceEditScope,
-                  })
-                }
-              >
-                {recurrenceEditScopeOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-neutral-500">
-                Save or Delete uses selected recurring-event scope.
-              </p>
-            </div>
+            <form.Field
+              name="recurrenceEditScope"
+              children={(field) => (
+                <div className="space-y-2 rounded-md border border-neutral-800 bg-neutral-950/60 p-3">
+                  <Label htmlFor="recurrenceEditScope">Apply changes to</Label>
+                  <select
+                    id="recurrenceEditScope"
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) =>
+                      field.handleChange(e.target.value as RecurrenceEditScope)
+                    }
+                  >
+                    {recurrenceEditScopeOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-neutral-500">
+                    Save or Delete uses selected recurring-event scope.
+                  </p>
+                </div>
+              )}
+            />
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="recurrenceFrequency">Repeat</Label>
-            <select
-              id="recurrenceFrequency"
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
-              value={formData.recurrenceFrequency}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  recurrenceFrequency: e.target.value as
-                    | RecurrenceFrequency
-                    | "none",
-                })
-              }
-            >
-              {recurrencyOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <form.Field
+            name="recurrenceFrequency"
+            children={(field) => (
+              <div className="space-y-2">
+                <Label htmlFor="recurrenceFrequency">Repeat</Label>
+                <select
+                  id="recurrenceFrequency"
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) =>
+                    field.handleChange(
+                      e.target.value as RecurrenceFrequency | "none",
+                    )
+                  }
+                >
+                  {recurrencyOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          />
 
-          {formData.recurrenceFrequency !== "none" && (
-            <div className="space-y-2">
-              <Label htmlFor="recurrenceUntil">Repeat until (optional)</Label>
-              <Input
-                id="recurrenceUntil"
-                type="date"
-                value={formData.recurrenceUntil}
-                onChange={(e) =>
-                  setFormData({ ...formData, recurrenceUntil: e.target.value })
-                }
-              />
-            </div>
+          {form.state.values.recurrenceFrequency !== "none" && (
+            <form.Field
+              name="recurrenceUntil"
+              children={(field) => (
+                <div className="space-y-2">
+                  <Label htmlFor="recurrenceUntil">
+                    Repeat until (optional)
+                  </Label>
+                  <Input
+                    id="recurrenceUntil"
+                    type="date"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                  />
+                </div>
+              )}
+            />
           )}
 
           <div className="flex justify-between pt-4">
@@ -850,16 +928,17 @@ function EventModal({
                   type="button"
                   variant="destructive"
                   onClick={() => {
-                    onDelete(formData);
+                    onDelete(form.store.state.values);
                     onClose();
                   }}
                 >
                   Delete
                   {isRecurring
                     ? ` ${
-                        formData.recurrenceEditScope === "this"
+                        form.state.values.recurrenceEditScope === "this"
                           ? "this event"
-                          : formData.recurrenceEditScope === "thisAndFollowing"
+                          : form.state.values.recurrenceEditScope ===
+                              "thisAndFollowing"
                             ? "this and following"
                             : "series"
                       }`
@@ -922,10 +1001,9 @@ function ScheduleView({
   periodDayCount,
   overlapMode,
   dragPreview,
+  overlayCalendarIds,
 }: {
-  calendar: ReturnType<
-    typeof useCalendar<typeof features, Resource, DemoEvent>
-  >;
+  calendar: DemoCalendar;
   days: Array<Day<Resource, DemoEvent>>;
   resources: Array<Resource>;
   onEventClick: (event: DemoEvent, scope?: RecurrenceEditScope) => void;
@@ -935,6 +1013,7 @@ function ScheduleView({
   periodDayCount: number;
   overlapMode: OverlapMode;
   dragPreview: DragTimePreview | null;
+  overlayCalendarIds: Array<string>;
 }) {
   const timeSlots = calendar.getTimeSlots();
   const {
@@ -991,7 +1070,7 @@ function ScheduleView({
           {timeSlots.map((slot) => (
             <div
               key={`${slot.hour}-${slot.minute}`}
-              className="h-[60px] border-b border-neutral-800/50 px-2 py-1 text-xs text-neutral-500"
+              className="h-15 border-b border-neutral-800/50 px-2 py-1 text-xs text-neutral-500"
             >
               {slot.label}
             </div>
@@ -1010,9 +1089,7 @@ function ScheduleView({
             <div className="contents">
               {days.map((day) => {
                 const dayDate = day.isoDate;
-                const dayName = new Intl.DateTimeFormat("en-US", {
-                  weekday: "short",
-                }).format(new Date(`${day.isoDate}T00:00:00`));
+                const dayParts = calendar.getDateParts(dayDate);
                 return (
                   <DayDropZone
                     key={day.isoDate}
@@ -1020,13 +1097,16 @@ function ScheduleView({
                     className="border-r border-neutral-800 last:border-r-0"
                     columnRef={getDayColumnProps(dayDate).ref}
                   >
-                    <div className="h-12 border-b border-neutral-800 bg-neutral-950 px-3 py-2 text-center">
+                    <div className="h-12 border-b border-neutral-800 bg-neutral-950 px-3 py-1 text-center">
                       <div className="text-sm font-semibold text-neutral-200">
-                        {dayName}
+                        {dayParts.weekdayShort} - {dayParts.dayOfMonth}{" "}
+                        {dayParts.monthShort}
                       </div>
-                      <div className="text-xs text-neutral-500">
-                        {Number(day.isoDate.slice(8, 10))}
-                      </div>
+                      <OverlayDayParts
+                        calendar={calendar}
+                        isoDate={dayDate}
+                        calendarIds={overlayCalendarIds}
+                      />
                     </div>
                     <div
                       className="border-b border-neutral-800 bg-neutral-950/60 px-1 py-1 flex flex-col gap-1 overflow-hidden"
@@ -1069,7 +1149,7 @@ function ScheduleView({
                         );
                       })}
                     </div>
-                    <div className="relative h-[1440px] bg-neutral-950/30">
+                    <div className="relative h-360 bg-neutral-950/30">
                       {resources.map((resource, resourceIdx) => {
                         const resourceRanges = getUnavailableRanges(dayDate, {
                           resourceIds: [resource.id],
@@ -1181,7 +1261,7 @@ function ScheduleView({
                                 <ContextMenuTrigger
                                   ref={drag.ref}
                                   data-drag-group={event.id}
-                                  className={`@container/event [container-type:size] group absolute z-10 text-white rounded text-xs font-medium transition-colors border ${eventClassOf(
+                                  className={`@container/event @container-size group absolute z-10 text-white rounded text-xs font-medium transition-colors border ${eventClassOf(
                                     event,
                                   )} ${
                                     isActivelyResized
@@ -1528,7 +1608,17 @@ function CalendarView() {
   } | null>(null);
 
   const [resizeError, setResizeError] = useState<ResizeError | null>(null);
+  const [moveError, setMoveError] = useState<ResizeError | null>(null);
+  const [moveScopeChoice, setMoveScopeChoice] = useState<{
+    eventId: string;
+    occurrenceStart: EventDateTimeInput;
+    newStart: string;
+    newEnd: string;
+  } | null>(null);
   const [overlapMode, setOverlapMode] = useState<OverlapMode>("columns");
+  const [overlayCalendarIds, setOverlayCalendarIds] = useState<Array<string>>([
+    "chinese",
+  ]);
   const [visibleCategoryIds, setVisibleCategoryIds] = useState(
     () => new Set(eventCategories.map((category) => category.id)),
   );
@@ -1541,6 +1631,7 @@ function CalendarView() {
     calendars: workingCalendars,
     defaultCalendarId: "office",
     timeZone: "UTC",
+    locale: "en-US",
     fetchEvents: async ({ start, end }) => {
       await new Promise((resolve) => setTimeout(resolve, 300));
 
@@ -1582,6 +1673,22 @@ function CalendarView() {
         });
       },
     },
+    move: {
+      enabled: true,
+      containerHeight: 1440,
+      constraints: { snapToMinutes: 15 },
+      onMoveError: (error) => {
+        setMoveError(error);
+      },
+      onRecurringMoveEnd: (move) => {
+        setMoveScopeChoice({
+          eventId: move.eventId,
+          occurrenceStart: move.occurrenceStart,
+          newStart: move.newStart,
+          newEnd: move.newEnd,
+        });
+      },
+    },
   });
 
   const dayNames = calendar.getDaysNames("short");
@@ -1602,6 +1709,14 @@ function CalendarView() {
         : (event) => visibleCategoryIds.has(event.categoryId),
     );
   }, [setEventFilter, visibleCategoryIds]);
+
+  const toggleOverlayCalendar = (calendarId: string) => {
+    setOverlayCalendarIds((prev) =>
+      prev.includes(calendarId)
+        ? prev.filter((id) => id !== calendarId)
+        : [...prev, calendarId],
+    );
+  };
 
   const toggleCategory = (categoryId: string) => {
     setVisibleCategoryIds((prev) => {
@@ -1652,12 +1767,12 @@ function CalendarView() {
   const prevViewModeUnitRef = useRef(calendar.viewMode.unit);
 
   const [visibleMonth, setVisibleMonth] = useState(() =>
-    calendar.formatCurrentPeriod(),
+    calendar.currentPeriod.slice(0, 7),
   );
   const rafRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
-    setVisibleMonth(calendar.formatCurrentPeriod());
+    setVisibleMonth(calendar.currentPeriod.slice(0, 7));
   }, [calendar.currentPeriod]);
 
   useEffect(() => {
@@ -1697,12 +1812,7 @@ function CalendarView() {
         }
         if (!dominantMonth) return;
 
-        setVisibleMonth(
-          new Date(`${dominantMonth}-01T00:00:00`).toLocaleDateString(
-            undefined,
-            { month: "long", year: "numeric" },
-          ),
-        );
+        setVisibleMonth(dominantMonth);
       });
     };
 
@@ -2129,15 +2239,34 @@ function CalendarView() {
     calendar.removeEvent(modalState.eventId);
   };
 
-  const [moveError, setMoveError] = useState<ResizeError | null>(null);
-  const [dragPreview, setDragPreview] = useState<DragTimePreview | null>(null);
-  const [moveScopeChoice, setMoveScopeChoice] = useState<{
-    event: DemoEvent;
-    eventId: string;
-    occurrenceStart: EventDateTimeInput;
-    newStart: string;
-    newEnd: string;
-  } | null>(null);
+  const moveState = calendar.moveState;
+  const dragPreview: DragTimePreview | null =
+    moveState.isMoving &&
+    moveState.eventId &&
+    moveState.previewStart &&
+    moveState.previewEnd
+      ? {
+          eventId: moveState.eventId,
+          start: moveState.previewStart,
+          end: moveState.previewEnd,
+        }
+      : null;
+
+  const handleDragStart = (e: Parameters<DragStartEvent>[0]) => {
+    const source = e.operation.source?.data as EventDragData | undefined;
+    if (!source) return;
+
+    calendar.startEventMove({
+      eventId: source.event.id,
+      originalStart: source.originalStart,
+      originalEnd: source.originalEnd,
+      dayDate: source.dayDate,
+      granularity: source.granularity,
+      ...(source.event.recurrence
+        ? { occurrenceStart: source.occurrenceStart ?? source.originalStart }
+        : {}),
+    });
+  };
 
   const handleDragMove = (e: Parameters<DragMoveEvent>[0]) => {
     const source = e.operation.source?.data as EventDragData | undefined;
@@ -2149,24 +2278,13 @@ function CalendarView() {
       element.style.zIndex = "40";
     }
 
-    const { start, end } = resolveDropTimes(
-      source,
-      e.operation.target?.data as DayDropData | undefined,
-      y,
-    );
-
-    setDragPreview((prev) =>
-      prev?.eventId === source.event.id &&
-      prev.start === start &&
-      prev.end === end
-        ? prev
-        : { eventId: source.event.id, start, end },
-    );
+    calendar.updateEventMove({
+      dayDate: (e.operation.target?.data as DayDropData | undefined)?.isoDate,
+      deltaPixels: y,
+    });
   };
 
-  const handleDragEnd = async (e: Parameters<DragEndEvent>[0]) => {
-    setDragPreview(null);
-
+  const handleDragEnd = (e: Parameters<DragEndEvent>[0]) => {
     const source = e.operation.source?.data as EventDragData | undefined;
     if (source) {
       for (const element of dragGroupSiblings(source.event.id)) {
@@ -2174,64 +2292,21 @@ function CalendarView() {
         element.style.removeProperty("z-index");
       }
     }
-    if (e.canceled || !source) return;
 
-    const {
-      start: newStart,
-      end: newEnd,
-      moved,
-    } = resolveDropTimes(
-      source,
-      e.operation.target?.data as DayDropData | undefined,
-      e.operation.transform.y,
-    );
-    if (!moved) return;
-
-    const { event } = source;
-
-    if (event.recurrence) {
-      setMoveScopeChoice({
-        event,
-        eventId: event.id,
-        occurrenceStart: source.occurrenceStart ?? source.originalStart,
-        newStart,
-        newEnd,
-      });
+    if (e.canceled) {
+      calendar.cancelEventMove();
       return;
     }
 
-    const eventId = calendar.getMasterEvent(event).id;
-    const validation = calendar.validateMove(
-      eventId,
-      newStart,
-      newEnd,
-      event.resources,
-      event.consumption,
-    );
-
-    if (validation.blocked) {
-      setMoveError({
-        eventId,
-        eventTitle: validation.blockedEventTitle ?? event.title,
-        reason: "unavailable-time",
-        message: validation.message ?? "This move is blocked.",
-        originalStart: source.originalStart,
-        originalEnd: source.originalEnd,
-        attemptedStart: newStart,
-        attemptedEnd: newEnd,
-      });
-      return;
-    }
-
-    const result = await calendar.editEvent(eventId, {
-      start: newStart,
-      end: newEnd,
-    });
-    if (!result.success) setMoveError(result.error);
+    calendar.endEventMove();
   };
 
   return (
-    <DragDropProvider onDragMove={handleDragMove} onDragEnd={handleDragEnd}>
+    <DragDropProvider
+      onDragStart={handleDragStart}
+      onDragMove={handleDragMove}
+      onDragEnd={handleDragEnd}
+    >
       <div className="p-5 max-w-[1200px] mx-auto min-h-screen">
         <div className="mb-6">
           <h1 className="m-0 mb-4 text-[28px] font-semibold text-white">
@@ -2347,6 +2422,32 @@ function CalendarView() {
           )}
 
           <div className="mb-4 rounded-lg border border-neutral-800 bg-neutral-950 px-4 py-3">
+            <div className="mb-2 text-xs uppercase tracking-wide text-neutral-500">
+              Calendar systems
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {overlayCalendars.map((system) => (
+                <Button
+                  key={system.id}
+                  onClick={() => toggleOverlayCalendar(system.id)}
+                  variant={
+                    overlayCalendarIds.includes(system.id)
+                      ? "secondary"
+                      : "outline"
+                  }
+                  size="sm"
+                >
+                  {system.label}
+                </Button>
+              ))}
+              <span className="ml-2 text-xs text-neutral-500">
+                Overlaid via getDateParts(date, {"{ calendar }"}) — no calendar
+                config needed
+              </span>
+            </div>
+          </div>
+
+          <div className="mb-4 rounded-lg border border-neutral-800 bg-neutral-950 px-4 py-3">
             <div className="mb-2 flex flex-wrap items-center gap-3">
               <span className="text-xs uppercase tracking-wide text-neutral-500">
                 Calendars
@@ -2441,8 +2542,20 @@ function CalendarView() {
             </div>
           </div>
 
-          <div className="text-lg font-medium text-neutral-400">
-            {visibleMonth}
+          <div className="text-right">
+            <div className="text-lg font-medium text-neutral-400">
+              {calendar.formatPeriod(visibleMonth)}
+            </div>
+            {overlayCalendars
+              .filter((system) => overlayCalendarIds.includes(system.id))
+              .map((system) => (
+                <div key={system.id} className="text-xs text-amber-500/80">
+                  {calendar.formatPeriod(visibleMonth, {
+                    calendar: system.id,
+                    locale: system.locale,
+                  })}
+                </div>
+              ))}
           </div>
         </div>
 
@@ -2458,6 +2571,7 @@ function CalendarView() {
             periodDayCount={periodDayCount}
             overlapMode={overlapMode}
             dragPreview={dragPreview}
+            overlayCalendarIds={overlayCalendarIds}
           />
         ) : (
           <div className="border border-neutral-800 rounded-lg overflow-hidden bg-black">
@@ -2543,7 +2657,12 @@ function CalendarView() {
                                   : "font-medium text-neutral-500"
                             }`}
                           >
-                            {Number(day.isoDate.slice(8, 10))}
+                            {day.dayOfMonth}
+                            <OverlayDayParts
+                              calendar={calendar}
+                              isoDate={day.isoDate}
+                              calendarIds={overlayCalendarIds}
+                            />
                           </div>
                           <div className="flex flex-col gap-1 flex-1 min-h-0">
                             {day.allDayEvents.map((event) => {
@@ -2769,7 +2888,7 @@ function CalendarView() {
         />
 
         <ScopeChoiceModal
-          event={moveScopeChoice?.event ?? null}
+          event={null}
           title="Move recurring event"
           isOpen={!!moveScopeChoice}
           onSelect={(scope) => {

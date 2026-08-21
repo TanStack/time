@@ -6,5 +6,7 @@ export * from "./groupDaysBy";
 export * from "./getTimeSlots";
 export * from "./getResizeProps";
 export * from "./resizeController";
+export * from "./getMoveProps";
+export * from "./moveController";
 export * from "./calendar";
 export * from "./features";

@@ -35,6 +35,8 @@ import { getTimeSlots } from "./getTimeSlots";
 import { DateCore } from "./date-core";
 import { generateDateRange } from "./generateDateRange";
 import type { DateCoreOptions, ParsedDateCoreOptions } from "./date-core";
+import type { FormatPeriodOptions } from "./date-core";
+import type { DateInput, DateParts, GetDatePartsOptions } from "~/date";
 import type {
   AvailabilityConflict,
   Day,
@@ -47,6 +49,7 @@ import type {
 } from "./types";
 import type { CalendarStore } from "./types";
 import { toPlainDateTimeString } from "~/date/parse";
+import { toCalendarDate } from "~/date/getDateParts/getDateParts";
 
 export type * from "./types";
 export * from "./date-core";
@@ -128,6 +131,10 @@ interface CalendarActions<
   formatPeriodLabel: (options?: { locale?: string }) => string;
 
   formatCurrentPeriod: (options?: { locale?: string }) => string;
+
+  formatPeriod: (date?: DateInput, options?: FormatPeriodOptions) => string;
+
+  getDateParts: (date: DateInput, options?: GetDatePartsOptions) => DateParts;
 
   getDaysInRange: (start: string, end: string) => Array<Day<TResource, TEvent>>;
 
@@ -799,6 +806,8 @@ export class CalendarCore<
       const isInCurrentPeriod = currentMonthRange.includes(day.month);
       return {
         isoDate,
+        isoMonth: isoDate.slice(0, 7),
+        dayOfMonth: toCalendarDate(isoDate, this.calendarId).day,
         events: timedEvents,
         allDayEvents,
         isToday: Temporal.PlainDate.compare(day, today) === 0,
@@ -819,31 +828,20 @@ export class CalendarCore<
     const days = this.getDaysWithEvents();
     if (days.length === 0) return "";
 
-    const locale = options?.locale ?? this.options.locale;
     const first = days[0]!;
     const last = days[days.length - 1]!;
 
     const fmt = (isoDate: string) =>
-      new Date(`${isoDate}T00:00:00`).toLocaleDateString(locale, {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
+      this.formatPeriod(isoDate, { unit: "day", locale: options?.locale });
 
     if (days.length === 1) return fmt(first.isoDate);
     return `${fmt(first.isoDate)} \u2014 ${fmt(last.isoDate)}`;
   }
 
   formatCurrentPeriod(options?: { locale?: string }): string {
-    const period = this.currentPeriodPlain;
-    const locale = options?.locale ?? this.options.locale;
-    return new Date(
-      period.year,
-      period.month - 1,
-      period.day,
-    ).toLocaleDateString(locale, {
-      month: "long",
-      year: "numeric",
+    return this.formatPeriod(undefined, {
+      unit: "month",
+      locale: options?.locale,
     });
   }
 
@@ -862,6 +860,7 @@ export class CalendarCore<
       fillMissingDays,
       weekStartsOn: this.getWeekStartsOn(),
       locale: this.options.locale,
+      calendar: this.calendarId,
     });
   }
 

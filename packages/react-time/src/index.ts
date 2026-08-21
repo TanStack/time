@@ -1,11 +1,15 @@
 export { useCalendar } from "./useCalendar";
 export type {
+  MoveOptions,
+  MoveState,
   ResizeState,
   ResizeOptions,
   UseCalendarOptions,
 } from "./useCalendar";
 
 export type {
+  EventMutationError,
+  EventMutationKind,
   ResizeError,
   AvailabilityConflict,
   UnavailabilityReason,
@@ -13,6 +17,9 @@ export type {
 } from "@tanstack/time";
 
 export {
+  getDateParts,
+  calculateDayShift,
+  calculateMovedEvent,
   calculateGhostPreviewStyle,
   calculateSegmentResizePreview,
   calculateTimelineResizePreview,
@@ -23,6 +30,14 @@ export {
 } from "@tanstack/time";
 
 export type {
+  DateParts,
+  GetDatePartsOptions,
+  FormatPeriodOptions,
+  MoveConstraints,
+  MoveGranularity,
+  MoveStartArgs,
+  MoveToArgs,
+  MovedEventResult,
   EventTimeRange,
   FormatEventTimeOptions,
   FormattedEventTime,

@@ -1,5 +1,6 @@
 import type { DateInput } from "~/date";
 import type { EventLayout, LayoutOptions, LayoutStyle } from "~/projection";
+import type { MoveConstraints, MoveGranularity } from "./getMoveProps";
 import type { ResizeConstraints, ResizeEdge } from "./getResizeProps";
 
 export type EventDateTimeInput = string | Date | number;
@@ -119,6 +120,10 @@ export type Day<
 > = {
   isoDate: string;
 
+  isoMonth: string;
+
+  dayOfMonth: number;
+
   events: Array<TEvent>;
 
   allDayEvents: Array<TEvent>;
@@ -201,7 +206,9 @@ export interface AvailabilityConflict {
   description: string;
 }
 
-export interface ResizeError {
+export type EventMutationKind = "resize" | "move";
+
+export interface EventMutationError {
   eventId: string;
   eventTitle: string;
   reason: "unavailable-time" | "invalid-time" | "min-duration" | "blocked";
@@ -211,8 +218,12 @@ export interface ResizeError {
   attemptedStart?: string;
   attemptedEnd?: string;
 
+  kind?: EventMutationKind;
+
   conflicts?: Array<AvailabilityConflict>;
 }
+
+export type ResizeError = EventMutationError;
 
 export interface ResizeValidationResult {
   valid: boolean;
@@ -283,6 +294,35 @@ export interface ValidateResizeResult {
     start: string;
     end: string;
     durationMinutes: number;
+  };
+  targetDayDate: string;
+}
+
+export interface ValidateMoveOptions {
+  eventId: string;
+  originalStart: string;
+  originalEnd: string;
+  originalDayDate: string;
+  targetDayDate: string;
+  minuteShift: number;
+  granularity?: MoveGranularity;
+  occurrenceStart?: EventDateTimeInput;
+  constraints?: MoveConstraints;
+}
+
+export interface ValidateMoveResult {
+  blocked: boolean;
+  error?: {
+    reason: EventMutationError["reason"];
+    message: string;
+    eventTitle?: string;
+    conflicts: Array<AvailabilityConflict>;
+  };
+  result: {
+    start: string;
+    end: string;
+    durationMinutes: number;
+    moved: boolean;
   };
   targetDayDate: string;
 }

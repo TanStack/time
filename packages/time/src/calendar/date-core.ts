@@ -13,6 +13,16 @@ import { buildDateTimeFormatter } from "../formatter/buildDateTimeFormatter";
 import { buildTimeFormatter } from "../formatter/buildTimeFormatter";
 import { getTimeClient } from "../client";
 import { generateDateRange } from "./generateDateRange";
+import {
+  getDateFormatter,
+  getDateParts,
+  resolveCalendarId,
+  toIsoDateString,
+} from "~/date/getDateParts/getDateParts";
+import type {
+  DateParts,
+  GetDatePartsOptions,
+} from "~/date/getDateParts/getDateParts";
 import type { ParsedDateRange } from "../utils/dateRange";
 import type { CalendarStore, DateRange, ViewMode } from "./types";
 import type { DateInput } from "~/date";
@@ -76,10 +86,26 @@ export interface ParsedDateCoreOptions
   range: ParsedDateRange;
 }
 
+export type PeriodUnit = "day" | "month" | "year";
+
+export interface FormatPeriodOptions {
+  unit?: PeriodUnit;
+  locale?: Intl.UnicodeBCP47LocaleIdentifier;
+  calendar?: string;
+}
+
+const periodFormatOptions: Record<PeriodUnit, Intl.DateTimeFormatOptions> = {
+  day: { year: "numeric", month: "long", day: "numeric" },
+  month: { year: "numeric", month: "long" },
+  year: { year: "numeric" },
+};
+
 export abstract class DateCore {
   store: Store<CalendarStore>;
   options: ParsedDateCoreOptions;
   private _dayNamesCache = new Map<string, Array<string>>();
+  calendarId: string;
+  timeZoneId: string;
   formatters: {
     date: Intl.DateTimeFormat;
     time: Intl.DateTimeFormat;
@@ -97,6 +123,12 @@ export abstract class DateCore {
       ...options,
       range: parsedRange,
     };
+
+    this.calendarId = resolveCalendarId(this.options.calendar);
+    this.timeZoneId =
+      typeof this.options.timeZone === "string"
+        ? this.options.timeZone
+        : this.options.timeZone.timeZoneId;
 
     this.formatters = {
       date:
@@ -141,6 +173,31 @@ export abstract class DateCore {
 
   protected get currentPeriodPlain(): Temporal.PlainDate {
     return this.toPlainDate(this.store.state.currentPeriod);
+  }
+
+  getDateParts(date: DateInput, options?: GetDatePartsOptions): DateParts {
+    return getDateParts(date, {
+      locale: options?.locale ?? this.options.locale,
+      calendar: options?.calendar ?? this.calendarId,
+      timeZone: options?.timeZone ?? this.timeZoneId,
+    });
+  }
+
+  formatPeriod(date?: DateInput, options?: FormatPeriodOptions): string {
+    const isoDate =
+      date === undefined
+        ? this.store.state.currentPeriod
+        : toIsoDateString(date, this.timeZoneId);
+    const unit = options?.unit ?? "month";
+    const locale = options?.locale ?? this.options.locale;
+    const calendarId = options?.calendar ?? this.calendarId;
+
+    return getDateFormatter(
+      locale,
+      calendarId,
+      `period-${unit}`,
+      periodFormatOptions[unit],
+    ).format(new Date(`${isoDate}T00:00:00Z`));
   }
 
   formatDate(date: DateInput) {
