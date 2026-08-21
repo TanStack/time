@@ -98,9 +98,71 @@ function formatDateToISO(date: Date): string {
 }
 
 function shiftIsoDate(isoDate: string, days: number): string {
-  const date = new Date(`${isoDate}T00:00:00`);
-  date.setDate(date.getDate() + days);
-  return formatDateToISO(date);
+  const date = new Date(`${isoDate}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function isoDaySpan(start: string, end: string): number {
+  const msPerDay = 86_400_000;
+  const diff =
+    Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`);
+  return Math.round(diff / msPerDay) + 1;
+}
+
+function clampIsoRange(
+  range: { start: string; end: string },
+  maxDays: number,
+  keep: "start" | "end",
+): { start: string; end: string } {
+  if (isoDaySpan(range.start, range.end) <= maxDays) return range;
+  return keep === "end"
+    ? { start: shiftIsoDate(range.end, -(maxDays - 1)), end: range.end }
+    : { start: range.start, end: shiftIsoDate(range.start, maxDays - 1) };
+}
+
+interface ScrollAnchor {
+  isoDate: string;
+  offset: number;
+}
+
+function captureScrollAnchor(
+  container: HTMLElement | null,
+  axis: "x" | "y",
+): ScrollAnchor | null {
+  if (!container) return null;
+  const bounds = container.getBoundingClientRect();
+  const edge = axis === "y" ? bounds.top : bounds.left;
+  const cells = container.querySelectorAll<HTMLElement>("[data-day-date]");
+  for (const cell of cells) {
+    const rect = cell.getBoundingClientRect();
+    if ((axis === "y" ? rect.bottom : rect.right) <= edge) continue;
+    const isoDate = cell.dataset.dayDate;
+    if (!isoDate) continue;
+    return { isoDate, offset: (axis === "y" ? rect.top : rect.left) - edge };
+  }
+  return null;
+}
+
+function restoreScrollAnchor(
+  container: HTMLElement,
+  axis: "x" | "y",
+  anchor: ScrollAnchor,
+): boolean {
+  const cell = container.querySelector<HTMLElement>(
+    `[data-day-date="${anchor.isoDate}"]`,
+  );
+  if (!cell) return false;
+  const bounds = container.getBoundingClientRect();
+  const rect = cell.getBoundingClientRect();
+  const delta =
+    axis === "y"
+      ? rect.top - bounds.top - anchor.offset
+      : rect.left - bounds.left - anchor.offset;
+  if (Math.abs(delta) < 0.5) return false;
+  if (axis === "y") container.scrollTop += delta;
+  else container.scrollLeft += delta;
+  return true;
 }
 
 function padTimePart(n: number): string {
@@ -228,6 +290,9 @@ function DayDropZone({
     </div>
   );
 }
+
+const MAX_BUFFERED_WEEKS = 16;
+const MAX_BUFFERED_SCHEDULE_PERIODS = 5;
 
 const LEAD_SHARE = 0.6;
 
@@ -1094,6 +1159,7 @@ function ScheduleView({
                   <DayDropZone
                     key={day.isoDate}
                     isoDate={dayDate}
+                    data-day-date={dayDate}
                     className="border-r border-neutral-800 last:border-r-0"
                     columnRef={getDayColumnProps(dayDate).ref}
                   >
@@ -1748,8 +1814,7 @@ function CalendarView() {
 
   const navDirectionRef = useRef<"none" | "forward" | "backward">("none");
   const prevPeriodRef = useRef(calendar.currentPeriod);
-  const prevScrollHeightRef = useRef(0);
-  const needsScrollAdjRef = useRef(false);
+  const monthAnchorRef = useRef<ScrollAnchor | null>(null);
   const needsScrollResetRef = useRef(false);
   const [bufferVersion, setBufferVersion] = useState(0);
 
@@ -1759,8 +1824,7 @@ function CalendarView() {
     "none",
   );
   const prevSchedulePeriodRef = useRef(calendar.currentPeriod);
-  const prevScheduleScrollWidthRef = useRef(0);
-  const needsScheduleScrollAdjRef = useRef(false);
+  const scheduleAnchorRef = useRef<ScrollAnchor | null>(null);
   const needsScheduleScrollResetRef = useRef(false);
   const scheduleScrollRatioRef = useRef(0);
   const [scheduleBufferVersion, setScheduleBufferVersion] = useState(0);
@@ -1837,21 +1901,16 @@ function CalendarView() {
       monthBufferRef.current = { start: newStart, end: newEnd };
       needsScrollResetRef.current = true;
     } else {
-      monthBufferRef.current = {
-        start:
-          newStart < monthBufferRef.current.start
-            ? newStart
-            : monthBufferRef.current.start,
-        end:
-          newEnd > monthBufferRef.current.end
-            ? newEnd
-            : monthBufferRef.current.end,
-      };
-
-      if (direction === "backward") {
-        prevScrollHeightRef.current = monthScrollRef.current?.scrollHeight ?? 0;
-        needsScrollAdjRef.current = true;
-      }
+      const previous = monthBufferRef.current;
+      monthAnchorRef.current = captureScrollAnchor(monthScrollRef.current, "y");
+      monthBufferRef.current = clampIsoRange(
+        {
+          start: newStart < previous.start ? newStart : previous.start,
+          end: newEnd > previous.end ? newEnd : previous.end,
+        },
+        MAX_BUFFERED_WEEKS * 7,
+        direction === "backward" ? "start" : "end",
+      );
     }
 
     setBufferVersion((v) => v + 1);
@@ -1863,15 +1922,16 @@ function CalendarView() {
 
     if (needsScrollResetRef.current) {
       needsScrollResetRef.current = false;
+      monthAnchorRef.current = null;
       el.scrollTop = 0;
       markMonthScroll();
       return;
     }
 
-    if (!needsScrollAdjRef.current) return;
-    needsScrollAdjRef.current = false;
-    el.scrollTop += el.scrollHeight - prevScrollHeightRef.current;
-    markMonthScroll();
+    const anchor = monthAnchorRef.current;
+    if (!anchor) return;
+    monthAnchorRef.current = null;
+    if (restoreScrollAnchor(el, "y", anchor)) markMonthScroll();
   });
 
   if (prevViewModeUnitRef.current !== calendar.viewMode.unit) {
@@ -1968,8 +2028,11 @@ function CalendarView() {
     const newStart = currentDays[0].isoDate;
     const newEnd = currentDays[currentDays.length - 1].isoDate;
 
-    if (scheduleNavDirectionRef.current === "none") {
-      const periodDays = currentDays.length;
+    const direction = scheduleNavDirectionRef.current;
+    scheduleNavDirectionRef.current = "none";
+    const periodDays = currentDays.length;
+
+    if (direction === "none" || !scheduleBufferRef.current) {
       scheduleBufferRef.current = {
         start: shiftIsoDate(newStart, -periodDays),
         end: shiftIsoDate(newEnd, periodDays),
@@ -1977,21 +2040,19 @@ function CalendarView() {
       scheduleScrollRatioRef.current = 1 / 3;
       needsScheduleScrollResetRef.current = true;
     } else {
-      const direction = scheduleNavDirectionRef.current;
-      scheduleNavDirectionRef.current = "none";
-      const prev = scheduleBufferRef.current ?? {
-        start: newStart,
-        end: newEnd,
-      };
-      scheduleBufferRef.current = {
-        start: newStart < prev.start ? newStart : prev.start,
-        end: newEnd > prev.end ? newEnd : prev.end,
-      };
-      if (direction === "backward") {
-        prevScheduleScrollWidthRef.current =
-          scheduleScrollRef.current?.scrollWidth ?? 0;
-        needsScheduleScrollAdjRef.current = true;
-      }
+      const previous = scheduleBufferRef.current;
+      scheduleAnchorRef.current = captureScrollAnchor(
+        scheduleScrollRef.current,
+        "x",
+      );
+      scheduleBufferRef.current = clampIsoRange(
+        {
+          start: newStart < previous.start ? newStart : previous.start,
+          end: newEnd > previous.end ? newEnd : previous.end,
+        },
+        periodDays * MAX_BUFFERED_SCHEDULE_PERIODS,
+        direction === "backward" ? "start" : "end",
+      );
     }
 
     setScheduleBufferVersion((v) => v + 1);
@@ -2008,15 +2069,16 @@ function CalendarView() {
 
     if (needsScheduleScrollResetRef.current) {
       needsScheduleScrollResetRef.current = false;
+      scheduleAnchorRef.current = null;
       el.scrollLeft = el.scrollWidth * scheduleScrollRatioRef.current;
       markScheduleScroll();
       return;
     }
 
-    if (!needsScheduleScrollAdjRef.current) return;
-    needsScheduleScrollAdjRef.current = false;
-    el.scrollLeft += el.scrollWidth - prevScheduleScrollWidthRef.current;
-    markScheduleScroll();
+    const anchor = scheduleAnchorRef.current;
+    if (!anchor) return;
+    scheduleAnchorRef.current = null;
+    if (restoreScrollAnchor(el, "x", anchor)) markScheduleScroll();
   });
 
   const bufferedScheduleDays = useMemo(() => {
