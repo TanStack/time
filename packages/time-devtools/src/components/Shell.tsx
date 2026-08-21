@@ -219,6 +219,14 @@ function DevtoolsContent() {
 
   return (
     <MainPanel class={styles().shellRoot}>
+      <div
+        style={{
+          display: "flex",
+          "flex-direction": "column",
+          height: "100%",
+          overflow: "hidden",
+        }}
+      >
       <Header>
         <HeaderLogo flavor={{ light: "#9dec48", dark: "#9dec48" }}>
           TanStack Time
@@ -284,9 +292,9 @@ function DevtoolsContent() {
         </div>
       </Header>
 
-      <div class={styles().container}>
+      <div class={styles().mainContainer}>
         <div
-          class={styles().sidebar}
+          class={styles().leftPanel}
           style={{
             width: `${leftPanelWidth()}px`,
             "min-width": "150px",
@@ -303,35 +311,59 @@ function DevtoolsContent() {
             />
           </div>
 
-          <div class={styles().list}>
+          <Show when={activeTab() === "log"}>
+            <div
+              class={styles().panelHeader}
+              style={{
+                display: "flex",
+                "justify-content": "space-between",
+                "align-items": "center",
+              }}
+            >
+              <span class={styles().infoLabel}>
+                {filteredLog().length} Entries
+              </span>
+              <Button onClick={clearLog} variant="secondary">
+                Clear
+              </Button>
+            </div>
+          </Show>
+          <Show when={activeTab() === "events"}>
+            <div
+              class={styles().panelHeader}
+              style={{
+                display: "flex",
+                "justify-content": "space-between",
+                "align-items": "center",
+              }}
+            >
+              <span class={styles().infoLabel}>
+                {filteredEvents().length} Events
+              </span>
+            </div>
+          </Show>
+
+          <div class={styles().utilList}>
             <Show when={activeTab() === "log"}>
-              <div class={styles().sectionHeader}>
-                <span style={{ "font-size": "11px", color: "#9ca3af" }}>
-                  {filteredLog().length} Entries
-                </span>
-                <Button onClick={clearLog} variant="secondary">
-                  Clear
-                </Button>
-              </div>
               <For
                 each={filteredLog()}
                 fallback={
-                  <div class={styles().emptyState}>No activity found.</div>
+                  <div class={styles().sectionEmpty}>No activity found.</div>
                 }
               >
                 {(entry) => {
                   const label = getEventTypeLabel(entry.type);
                   return (
                     <div
-                      class={styles().listItem}
-                      classList={{ active: selectedId() === entry.id }}
+                      class={styles().utilRow}
+                      classList={{ [styles().utilRowSelected]: selectedId() === entry.id }}
                       onClick={() => setSelectedId(entry.id)}
                     >
-                      <span class={styles().timestamp}>
+                      <span class={styles().stateKey}>
                         {formatTime(entry.timestamp)}
                       </span>
                       <Tag color={label.color} label={label.text} />
-                      <span class={styles().description}>
+                      <span class={styles().utilKey}>
                         {getEventDescription(entry)}
                       </span>
                     </div>
@@ -341,21 +373,16 @@ function DevtoolsContent() {
             </Show>
 
             <Show when={activeTab() === "events"}>
-              <div class={styles().sectionHeader}>
-                <span style={{ "font-size": "11px", color: "#9ca3af" }}>
-                  {filteredEvents().length} Events
-                </span>
-              </div>
               <For
                 each={filteredEvents()}
                 fallback={
-                  <div class={styles().emptyState}>No events found.</div>
+                  <div class={styles().sectionEmpty}>No events found.</div>
                 }
               >
                 {(event) => (
                   <div
-                    class={styles().listItem}
-                    classList={{ active: selectedId() === event.id }}
+                    class={styles().utilRow}
+                    classList={{ [styles().utilRowSelected]: selectedId() === event.id }}
                     onClick={() => setSelectedId(event.id)}
                   >
                     <div
@@ -365,10 +392,10 @@ function DevtoolsContent() {
                         gap: "2px",
                       }}
                     >
-                      <div style={{ "font-weight": 600 }}>{event.title}</div>
-                      <div style={{ "font-size": "10px", color: "#9ca3af" }}>
+                      <span class={styles().utilKey}>{event.title}</span>
+                      <span class={styles().stateKey}>
                         {event.start.split("T")[0]} → {event.end.split("T")[0]}
-                      </div>
+                      </span>
                     </div>
                   </div>
                 )}
@@ -383,11 +410,11 @@ function DevtoolsContent() {
           onDblClick={handleDragHandleDoubleClick}
         />
 
-        <div class={styles().details}>
+        <div class={styles().rightPanel}>
           <Show
             when={selectedEntry()}
             fallback={
-              <div class={styles().emptyState}>
+              <div class={styles().noSelection}>
                 Select an item to view details
               </div>
             }
@@ -428,56 +455,46 @@ function DevtoolsContent() {
                     <X />
                   </Button>
                 </div>
-                <div class={styles().detailsContent}>
-                  <div style={{ "margin-bottom": "16px" }}>
-                    <div
-                      style={{
-                        "font-size": "11px",
-                        color: "#9ca3af",
-                        "margin-bottom": "4px",
-                      }}
-                    >
-                      Raw Data
+                <div class={styles().stateDetails}>
+                  <div class={styles().detailsGrid}>
+                    <div class={styles().detailSection}>
+                      <div class={styles().detailSectionHeader}>Raw Data</div>
+                      <div class={styles().stateContent}>
+                        <JsonTree
+                          value={
+                            activeTab() === "log"
+                              ? (entry() as ActivityLogEntry).details
+                              : entry()
+                          }
+                          defaultExpansionDepth={1}
+                        />
+                      </div>
                     </div>
-                    <div class={styles().jsonTreeContainer}>
-                      <JsonTree
-                        value={
-                          activeTab() === "log"
-                            ? (entry() as ActivityLogEntry).details
-                            : entry()
-                        }
-                        defaultExpansionDepth={1}
-                      />
-                    </div>
-                  </div>
 
-                  <Show when={activeTab() === "log"}>
-                    <div
-                      style={{
-                        "font-size": "11px",
-                        color: "#9ca3af",
-                        "margin-bottom": "4px",
-                      }}
-                    >
-                      Metadata
-                    </div>
-                    <div class={styles().jsonTreeContainer}>
-                      <JsonTree
-                        value={{
-                          id: (entry() as ActivityLogEntry).id,
-                          timestamp: (entry() as ActivityLogEntry).timestamp,
-                          formattedTime: formatTime(
-                            (entry() as ActivityLogEntry).timestamp,
-                          ),
-                        }}
-                      />
-                    </div>
-                  </Show>
+                    <Show when={activeTab() === "log"}>
+                      <div class={styles().detailSection}>
+                        <div class={styles().detailSectionHeader}>Metadata</div>
+                        <div class={styles().stateContent}>
+                          <JsonTree
+                            value={{
+                              id: (entry() as ActivityLogEntry).id,
+                              timestamp: (entry() as ActivityLogEntry)
+                                .timestamp,
+                              formattedTime: formatTime(
+                                (entry() as ActivityLogEntry).timestamp,
+                              ),
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </Show>
+                  </div>
                 </div>
               </>
             )}
           </Show>
         </div>
+      </div>
       </div>
     </MainPanel>
   );
