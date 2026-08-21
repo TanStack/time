@@ -1,13 +1,13 @@
-import * as goober from 'goober'
-import { createEffect, createSignal } from 'solid-js'
-import { useTheme } from '@tanstack/devtools-ui'
-import { tokens } from './tokens'
+import * as goober from "goober";
+import { createEffect, createSignal } from "solid-js";
+import { useTheme } from "@tanstack/devtools-ui";
+import { tokens } from "./tokens";
 
-const stylesFactory = (theme: 'light' | 'dark') => {
-  const { colors, font, size, alpha, border } = tokens
-  const { fontFamily, size: fontSize } = font
-  const css = goober.css
-  const t = (light: string, dark: string) => (theme === 'light' ? light : dark)
+const stylesFactory = (theme: "light" | "dark") => {
+  const { colors, font, size, alpha, border } = tokens;
+  const { fontFamily, size: fontSize } = font;
+  const css = goober.css;
+  const t = (light: string, dark: string) => (theme === "light" ? light : dark);
 
   return {
     mainContainer: css`
@@ -374,14 +374,14 @@ const stylesFactory = (theme: 'light' | 'dark') => {
       padding: 12px;
       border-bottom: 1px solid #1f2937;
     `,
-  }
-}
+  };
+};
 
 export function useStyles() {
-  const { theme } = useTheme()
-  const [styles, setStyles] = createSignal(stylesFactory(theme()))
+  const { theme } = useTheme();
+  const [styles, setStyles] = createSignal(stylesFactory(theme()));
   createEffect(() => {
-    setStyles(stylesFactory(theme()))
-  })
-  return styles
+    setStyles(stylesFactory(theme()));
+  });
+  return styles;
 }

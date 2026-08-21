@@ -227,274 +227,283 @@ function DevtoolsContent() {
           overflow: "hidden",
         }}
       >
-      <Header>
-        <HeaderLogo flavor={{ light: "#9dec48", dark: "#9dec48" }}>
-          TanStack Time
-        </HeaderLogo>
-        <div
-          style={{
-            display: "flex",
-            gap: "0.5rem",
-            "margin-left": "1.5rem",
-            flex: 1,
-          }}
-        >
-          <Show
-            when={activeTab() === "log"}
-            fallback={
+        <Header>
+          <HeaderLogo flavor={{ light: "#9dec48", dark: "#9dec48" }}>
+            TanStack Time
+          </HeaderLogo>
+          <div
+            style={{
+              display: "flex",
+              gap: "0.5rem",
+              "margin-left": "1.5rem",
+              flex: 1,
+            }}
+          >
+            <Show
+              when={activeTab() === "log"}
+              fallback={
+                <Button
+                  onClick={() => {
+                    setActiveTab("log");
+                    setSelectedId(null);
+                  }}
+                  variant="primary"
+                  outline
+                >
+                  Activity
+                </Button>
+              }
+            >
               <Button
                 onClick={() => {
                   setActiveTab("log");
                   setSelectedId(null);
                 }}
                 variant="primary"
-                outline
               >
                 Activity
               </Button>
-            }
-          >
-            <Button
-              onClick={() => {
-                setActiveTab("log");
-                setSelectedId(null);
-              }}
-              variant="primary"
+            </Show>
+            <Show
+              when={activeTab() === "events"}
+              fallback={
+                <Button
+                  onClick={() => {
+                    setActiveTab("events");
+                    setSelectedId(null);
+                  }}
+                  variant="primary"
+                  outline
+                >
+                  Events
+                </Button>
+              }
             >
-              Activity
-            </Button>
-          </Show>
-          <Show
-            when={activeTab() === "events"}
-            fallback={
               <Button
                 onClick={() => {
                   setActiveTab("events");
                   setSelectedId(null);
                 }}
                 variant="primary"
-                outline
               >
                 Events
               </Button>
-            }
-          >
-            <Button
-              onClick={() => {
-                setActiveTab("events");
-                setSelectedId(null);
-              }}
-              variant="primary"
-            >
-              Events
-            </Button>
-          </Show>
-        </div>
-      </Header>
-
-      <div class={styles().mainContainer}>
-        <div
-          class={styles().leftPanel}
-          style={{
-            width: `${leftPanelWidth()}px`,
-            "min-width": "150px",
-            "max-width": "800px",
-          }}
-        >
-          <div class={styles().searchArea}>
-            <Input
-              placeholder={`Filter ${
-                activeTab() === "log" ? "activity" : "events"
-              }...`}
-              value={search()}
-              onChange={(val) => setSearch(val)}
-            />
+            </Show>
           </div>
+        </Header>
 
-          <Show when={activeTab() === "log"}>
-            <div
-              class={styles().panelHeader}
-              style={{
-                display: "flex",
-                "justify-content": "space-between",
-                "align-items": "center",
-              }}
-            >
-              <span class={styles().infoLabel}>
-                {filteredLog().length} Entries
-              </span>
-              <Button onClick={clearLog} variant="secondary">
-                Clear
-              </Button>
+        <div class={styles().mainContainer}>
+          <div
+            class={styles().leftPanel}
+            style={{
+              width: `${leftPanelWidth()}px`,
+              "min-width": "150px",
+              "max-width": "800px",
+            }}
+          >
+            <div class={styles().searchArea}>
+              <Input
+                placeholder={`Filter ${
+                  activeTab() === "log" ? "activity" : "events"
+                }...`}
+                value={search()}
+                onChange={(val) => setSearch(val)}
+              />
             </div>
-          </Show>
-          <Show when={activeTab() === "events"}>
-            <div
-              class={styles().panelHeader}
-              style={{
-                display: "flex",
-                "justify-content": "space-between",
-                "align-items": "center",
-              }}
-            >
-              <span class={styles().infoLabel}>
-                {filteredEvents().length} Events
-              </span>
-            </div>
-          </Show>
 
-          <div class={styles().utilList}>
             <Show when={activeTab() === "log"}>
-              <For
-                each={filteredLog()}
-                fallback={
-                  <div class={styles().sectionEmpty}>No activity found.</div>
-                }
-              >
-                {(entry) => {
-                  const label = getEventTypeLabel(entry.type);
-                  return (
-                    <div
-                      class={styles().utilRow}
-                      classList={{ [styles().utilRowSelected]: selectedId() === entry.id }}
-                      onClick={() => setSelectedId(entry.id)}
-                    >
-                      <span class={styles().stateKey}>
-                        {formatTime(entry.timestamp)}
-                      </span>
-                      <Tag color={label.color} label={label.text} />
-                      <span class={styles().utilKey}>
-                        {getEventDescription(entry)}
-                      </span>
-                    </div>
-                  );
+              <div
+                class={styles().panelHeader}
+                style={{
+                  display: "flex",
+                  "justify-content": "space-between",
+                  "align-items": "center",
                 }}
-              </For>
+              >
+                <span class={styles().infoLabel}>
+                  {filteredLog().length} Entries
+                </span>
+                <Button onClick={clearLog} variant="secondary">
+                  Clear
+                </Button>
+              </div>
+            </Show>
+            <Show when={activeTab() === "events"}>
+              <div
+                class={styles().panelHeader}
+                style={{
+                  display: "flex",
+                  "justify-content": "space-between",
+                  "align-items": "center",
+                }}
+              >
+                <span class={styles().infoLabel}>
+                  {filteredEvents().length} Events
+                </span>
+              </div>
             </Show>
 
-            <Show when={activeTab() === "events"}>
-              <For
-                each={filteredEvents()}
-                fallback={
-                  <div class={styles().sectionEmpty}>No events found.</div>
-                }
-              >
-                {(event) => (
-                  <div
-                    class={styles().utilRow}
-                    classList={{ [styles().utilRowSelected]: selectedId() === event.id }}
-                    onClick={() => setSelectedId(event.id)}
-                  >
+            <div class={styles().utilList}>
+              <Show when={activeTab() === "log"}>
+                <For
+                  each={filteredLog()}
+                  fallback={
+                    <div class={styles().sectionEmpty}>No activity found.</div>
+                  }
+                >
+                  {(entry) => {
+                    const label = getEventTypeLabel(entry.type);
+                    return (
+                      <div
+                        class={styles().utilRow}
+                        classList={{
+                          [styles().utilRowSelected]: selectedId() === entry.id,
+                        }}
+                        onClick={() => setSelectedId(entry.id)}
+                      >
+                        <span class={styles().stateKey}>
+                          {formatTime(entry.timestamp)}
+                        </span>
+                        <Tag color={label.color} label={label.text} />
+                        <span class={styles().utilKey}>
+                          {getEventDescription(entry)}
+                        </span>
+                      </div>
+                    );
+                  }}
+                </For>
+              </Show>
+
+              <Show when={activeTab() === "events"}>
+                <For
+                  each={filteredEvents()}
+                  fallback={
+                    <div class={styles().sectionEmpty}>No events found.</div>
+                  }
+                >
+                  {(event) => (
+                    <div
+                      class={styles().utilRow}
+                      classList={{
+                        [styles().utilRowSelected]: selectedId() === event.id,
+                      }}
+                      onClick={() => setSelectedId(event.id)}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          "flex-direction": "column",
+                          gap: "2px",
+                        }}
+                      >
+                        <span class={styles().utilKey}>{event.title}</span>
+                        <span class={styles().stateKey}>
+                          {event.start.split("T")[0]} →{" "}
+                          {event.end.split("T")[0]}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </For>
+              </Show>
+            </div>
+          </div>
+
+          <div
+            class={`${styles().dragHandle} ${isDragging() ? "dragging" : ""}`}
+            onMouseDown={handleMouseDown}
+            onDblClick={handleDragHandleDoubleClick}
+          />
+
+          <div class={styles().rightPanel}>
+            <Show
+              when={selectedEntry()}
+              fallback={
+                <div class={styles().noSelection}>
+                  Select an item to view details
+                </div>
+              }
+            >
+              {(entry) => (
+                <>
+                  <div class={styles().detailsHeader}>
                     <div
                       style={{
                         display: "flex",
-                        "flex-direction": "column",
-                        gap: "2px",
+                        "align-items": "center",
+                        gap: "8px",
                       }}
                     >
-                      <span class={styles().utilKey}>{event.title}</span>
-                      <span class={styles().stateKey}>
-                        {event.start.split("T")[0]} → {event.end.split("T")[0]}
+                      <Show when={activeTab() === "log"}>
+                        <Tag
+                          label={
+                            getEventTypeLabel(
+                              (entry() as ActivityLogEntry).type,
+                            ).text
+                          }
+                          color={
+                            getEventTypeLabel(
+                              (entry() as ActivityLogEntry).type,
+                            ).color
+                          }
+                        />
+                      </Show>
+                      <span style={{ "font-weight": 600 }}>
+                        {activeTab() === "log"
+                          ? (entry() as ActivityLogEntry).type
+                          : (entry() as any).title}
                       </span>
                     </div>
+                    <Button
+                      onClick={() => setSelectedId(null)}
+                      variant="secondary"
+                      style={{ padding: "4px" }}
+                    >
+                      <X />
+                    </Button>
                   </div>
-                )}
-              </For>
-            </Show>
-          </div>
-        </div>
-
-        <div
-          class={`${styles().dragHandle} ${isDragging() ? "dragging" : ""}`}
-          onMouseDown={handleMouseDown}
-          onDblClick={handleDragHandleDoubleClick}
-        />
-
-        <div class={styles().rightPanel}>
-          <Show
-            when={selectedEntry()}
-            fallback={
-              <div class={styles().noSelection}>
-                Select an item to view details
-              </div>
-            }
-          >
-            {(entry) => (
-              <>
-                <div class={styles().detailsHeader}>
-                  <div
-                    style={{
-                      display: "flex",
-                      "align-items": "center",
-                      gap: "8px",
-                    }}
-                  >
-                    <Show when={activeTab() === "log"}>
-                      <Tag
-                        label={
-                          getEventTypeLabel((entry() as ActivityLogEntry).type)
-                            .text
-                        }
-                        color={
-                          getEventTypeLabel((entry() as ActivityLogEntry).type)
-                            .color
-                        }
-                      />
-                    </Show>
-                    <span style={{ "font-weight": 600 }}>
-                      {activeTab() === "log"
-                        ? (entry() as ActivityLogEntry).type
-                        : (entry() as any).title}
-                    </span>
-                  </div>
-                  <Button
-                    onClick={() => setSelectedId(null)}
-                    variant="secondary"
-                    style={{ padding: "4px" }}
-                  >
-                    <X />
-                  </Button>
-                </div>
-                <div class={styles().stateDetails}>
-                  <div class={styles().detailsGrid}>
-                    <div class={styles().detailSection}>
-                      <div class={styles().detailSectionHeader}>Raw Data</div>
-                      <div class={styles().stateContent}>
-                        <JsonTree
-                          value={
-                            activeTab() === "log"
-                              ? (entry() as ActivityLogEntry).details
-                              : entry()
-                          }
-                          defaultExpansionDepth={1}
-                        />
-                      </div>
-                    </div>
-
-                    <Show when={activeTab() === "log"}>
+                  <div class={styles().stateDetails}>
+                    <div class={styles().detailsGrid}>
                       <div class={styles().detailSection}>
-                        <div class={styles().detailSectionHeader}>Metadata</div>
+                        <div class={styles().detailSectionHeader}>Raw Data</div>
                         <div class={styles().stateContent}>
                           <JsonTree
-                            value={{
-                              id: (entry() as ActivityLogEntry).id,
-                              timestamp: (entry() as ActivityLogEntry)
-                                .timestamp,
-                              formattedTime: formatTime(
-                                (entry() as ActivityLogEntry).timestamp,
-                              ),
-                            }}
+                            value={
+                              activeTab() === "log"
+                                ? (entry() as ActivityLogEntry).details
+                                : entry()
+                            }
+                            defaultExpansionDepth={1}
                           />
                         </div>
                       </div>
-                    </Show>
+
+                      <Show when={activeTab() === "log"}>
+                        <div class={styles().detailSection}>
+                          <div class={styles().detailSectionHeader}>
+                            Metadata
+                          </div>
+                          <div class={styles().stateContent}>
+                            <JsonTree
+                              value={{
+                                id: (entry() as ActivityLogEntry).id,
+                                timestamp: (entry() as ActivityLogEntry)
+                                  .timestamp,
+                                formattedTime: formatTime(
+                                  (entry() as ActivityLogEntry).timestamp,
+                                ),
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </Show>
+                    </div>
                   </div>
-                </div>
-              </>
-            )}
-          </Show>
+                </>
+              )}
+            </Show>
+          </div>
         </div>
-      </div>
       </div>
     </MainPanel>
   );
