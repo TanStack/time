@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 87%;
+
+    --card: 0 0% 20.5%;
+    --card-foreground: 0 0% 87%;
+
+    --popover: 0 0% 20.5%;
+    --popover-foreground: 0 0% 87%;
+
+    --primary: 0 0% 87%;
+    --primary-foreground: 0 0% 20.5%;
+
+    --secondary: 0 0% 26.9%;
+    --secondary-foreground: 0 0% 87%;
+
+    --muted: 0 0% 26.9%;
+    --muted-foreground: 0 0% 70.8%;
+
+    --accent: 0 0% 26.9%;
+    --accent-foreground: 0 0% 87%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 100% / 10%;
+    --input: 0 0% 100% / 15%;
+    --ring: 0 0% 55.6%;
+
+    --radius: 0.625rem;
+
+    --font-sans: 'Geist Variable', sans-serif;
+    --font-heading: var(--font-sans);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-family: var(--font-sans), system-ui, sans-serif;
+  }
+
+  html {
+    font-family: var(--font-sans), system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .bg-background {
+    background-color: hsl(var(--background));
+  }
+  .text-foreground {
+    color: hsl(var(--foreground));
+  }
+  .bg-card {
+    background-color: hsl(var(--card));
+  }
+  .text-card-foreground {
+    color: hsl(var(--card-foreground));
+  }
+  .bg-primary {
+    background-color: hsl(var(--primary));
+  }
+  .text-primary-foreground {
+    color: hsl(var(--primary-foreground));
+  }
+  .bg-secondary {
+    background-color: hsl(var(--secondary));
+  }
+  .text-secondary-foreground {
+    color: hsl(var(--secondary-foreground));
+  }
+  .text-muted-foreground {
+    color: hsl(var(--muted-foreground));
+  }
+  .border-border {
+    border-color: hsl(var(--border));
+  }
+  .bg-input {
+    background-color: hsl(var(--input));
+  }
+  .ring-ring {
+    --tw-ring-color: hsl(var(--ring));
+  }
+  .outline-ring {
+    outline-color: hsl(var(--ring));
+  }
+}

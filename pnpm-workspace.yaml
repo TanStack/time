@@ -1,0 +1,30 @@
+cleanupUnusedCatalogs: true
+linkWorkspacePackages: true
+preferWorkspacePackages: true
+blockExoticSubdeps: true
+trustPolicy: 'no-downgrade'
+trustPolicyExclude:
+  - 'reselect@5.1.1' # Socket.dev score 100; status popular/healthy; evidence: 37M weekly downloads, 6 maintainers, source reduxjs/reselect.
+  - 'semver@6.3.1' # Socket.dev score 100; status popular/healthy; evidence: 673M weekly downloads, 6 maintainers, source npm/node-semver.
+minimumReleaseAge: 1440
+
+packages:
+  - 'examples/**/*'
+  - 'packages/*'
+
+allowBuilds:
+  # root dependency
+  nx: true
+  unrs-resolver: false # not directly required for build
+  esbuild: true
+
+  # vitest
+  msw: false
+
+overrides:
+  '@tanstack/time': 'workspace:*'
+  '@tanstack/time-devtools': 'workspace:*'
+  '@tanstack/react-time': 'workspace:*'
+  '@tanstack/react-time-devtools': 'workspace:*'
+  '@tanstack/solid-time': 'workspace:*'
+  '@tanstack/solid-time-devtools': 'workspace:*'
