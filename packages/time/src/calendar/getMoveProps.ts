@@ -62,9 +62,13 @@ export function calculateMovedEvent(
       ? 0
       : snapToInterval(options.minuteShift ?? 0, snapToMinutes);
 
-  const shift = { days: dayShift, minutes: minuteShift };
-  const start = Temporal.PlainDateTime.from(originalStart).add(shift);
-  const end = Temporal.PlainDateTime.from(originalEnd).add(shift);
+  const shift = (value: string): Temporal.PlainDateTime =>
+    Temporal.PlainDateTime.from(value)
+      .add({ days: dayShift })
+      .add({ minutes: minuteShift });
+
+  const start = shift(originalStart);
+  const end = shift(originalEnd);
 
   const durationMs =
     end.toZonedDateTime(timeZone).epochMilliseconds -

@@ -60,6 +60,25 @@ describe("calculateMovedEvent", () => {
     expect(result.moved).toBe(true);
   });
 
+  test("accepts a day and minute shift of opposite signs", () => {
+    const result = calculateMovedEvent({
+      ...base,
+      dayShift: 1,
+      minuteShift: -30,
+    });
+
+    expect(result.start).toBe("2025-06-03T08:30:00");
+    expect(result.end).toBe("2025-06-03T10:00:00");
+
+    const back = calculateMovedEvent({
+      ...base,
+      dayShift: -1,
+      minuteShift: 30,
+    });
+
+    expect(back.start).toBe("2025-06-01T09:30:00");
+  });
+
   test("snaps the minute shift", () => {
     const result = calculateMovedEvent({ ...base, minuteShift: 37 });
 
