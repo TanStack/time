@@ -451,7 +451,9 @@ export abstract class DateCore {
   }
 
   goToCurrentPeriod() {
-    const now = Temporal.Now.plainDateISO().withCalendar(this.options.calendar);
+    const now = Temporal.Now.zonedDateTimeISO(this.options.timeZone)
+      .toPlainDate()
+      .withCalendar(this.options.calendar);
     const constrainedDate = constrainDateToRange({
       date: now,
       range: this.options.range,
