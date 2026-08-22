@@ -34,12 +34,12 @@
   "types": "./dist/index.d.cts",
   "exports": {
     ".": {
-      "require": "./dist/index.cjs",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     },
     "./production": {
-      "require": "./dist/production.cjs",
-      "import": "./dist/production.js"
+      "import": "./dist/production.js",
+      "require": "./dist/production.cjs"
     },
     "./package.json": "./package.json"
   },
@@ -61,5 +61,8 @@
   "devDependencies": {
     "@tanstack/devtools": "^0.14.1",
     "rolldown-plugin-solid": "^0.2.1"
+  },
+  "inlinedDependencies": {
+    "@tanstack/devtools": "0.14.1"
   }
 }

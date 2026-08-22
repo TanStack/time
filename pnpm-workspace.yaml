@@ -24,3 +24,4 @@ overrides:
   '@tanstack/react-time-devtools': 'workspace:*'
   '@tanstack/solid-time': 'workspace:*'
   '@tanstack/solid-time-devtools': 'workspace:*'
+  semver: '^7.7.4'
