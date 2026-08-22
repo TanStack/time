@@ -57,7 +57,7 @@
     "knip": "^5.86.0",
     "markdown-link-extractor": "^4.0.3",
     "nx": "^22.7.8",
-    "oxfmt": "^0.4.0",
+    "oxfmt": "^0.64.0",
     "oxlint": "^0.16.0",
     "premove": "^4.0.0",
     "publint": "^0.3.16",
