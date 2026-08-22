@@ -1804,7 +1804,7 @@ function TimelineDemo() {
         resourceId:
           typeof event.resources?.[0] === "string"
             ? event.resources[0]
-            : event.resources?.[0]?.id ?? resourceDesign.id,
+            : (event.resources?.[0]?.id ?? resourceDesign.id),
         consumption: event.consumption?.[0] ?? 1,
         manuallyScheduled: event.manuallyScheduled ?? false,
         constraintType: event.constraint?.type ?? "none",
