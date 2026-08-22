@@ -237,7 +237,7 @@ CalendarActions.addEvent
 canGoNextPeriod(): boolean;
 ```
 
-Defined in: [calendar/date-core.ts:523](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L523)
+Defined in: [calendar/date-core.ts:525](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L525)
 
 #### Returns
 
@@ -261,7 +261,7 @@ CalendarActions.canGoNextPeriod
 canGoPreviousPeriod(): boolean;
 ```
 
-Defined in: [calendar/date-core.ts:492](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L492)
+Defined in: [calendar/date-core.ts:494](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L494)
 
 #### Returns
 
@@ -968,7 +968,7 @@ CalendarActions.goToPreviousPeriod
 goToSpecificPeriod(date): void;
 ```
 
-Defined in: [calendar/date-core.ts:471](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L471)
+Defined in: [calendar/date-core.ts:473](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L473)
 
 #### Parameters
 
