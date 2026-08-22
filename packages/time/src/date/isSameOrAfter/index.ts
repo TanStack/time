@@ -1,2 +1,2 @@
-export { isSameOrAfter } from "./isSameOrAfter";
-export type { IsSameOrAfterOptions, IsSameOrAfterUnit } from "./isSameOrAfter";
+export { isSameOrAfter } from './isSameOrAfter'
+export type { IsSameOrAfterOptions, IsSameOrAfterUnit } from './isSameOrAfter'

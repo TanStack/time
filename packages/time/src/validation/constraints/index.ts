@@ -1,1 +1,1 @@
-export * from "./checkConstraint";
+export * from './checkConstraint'

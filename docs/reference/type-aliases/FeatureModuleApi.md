@@ -9,7 +9,7 @@ title: FeatureModuleApi
 type FeatureModuleApi<TFeature> = TFeature extends object ? ModuleApi<TModule> : object;
 ```
 
-Defined in: [calendar/features/types.ts:135](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L135)
+Defined in: [calendar/features/types.ts:105](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L105)
 
 ## Type Parameters
 

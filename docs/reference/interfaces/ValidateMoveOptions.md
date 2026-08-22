@@ -5,7 +5,7 @@ title: ValidateMoveOptions
 
 # Interface: ValidateMoveOptions
 
-Defined in: [calendar/types.ts:301](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L301)
+Defined in: [calendar/types.ts:296](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L296)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/types.ts:301](https://github.com/TanStack/time/blob/main/p
 optional constraints: MoveConstraints;
 ```
 
-Defined in: [calendar/types.ts:310](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L310)
+Defined in: [calendar/types.ts:305](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L305)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [calendar/types.ts:310](https://github.com/TanStack/time/blob/main/p
 eventId: string;
 ```
 
-Defined in: [calendar/types.ts:302](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L302)
+Defined in: [calendar/types.ts:297](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L297)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [calendar/types.ts:302](https://github.com/TanStack/time/blob/main/p
 optional granularity: MoveGranularity;
 ```
 
-Defined in: [calendar/types.ts:308](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L308)
+Defined in: [calendar/types.ts:303](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L303)
 
 ***
 
@@ -45,7 +45,7 @@ Defined in: [calendar/types.ts:308](https://github.com/TanStack/time/blob/main/p
 minuteShift: number;
 ```
 
-Defined in: [calendar/types.ts:307](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L307)
+Defined in: [calendar/types.ts:302](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L302)
 
 ***
 
@@ -55,7 +55,7 @@ Defined in: [calendar/types.ts:307](https://github.com/TanStack/time/blob/main/p
 optional occurrenceStart: EventDateTimeInput;
 ```
 
-Defined in: [calendar/types.ts:309](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L309)
+Defined in: [calendar/types.ts:304](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L304)
 
 ***
 
@@ -65,7 +65,7 @@ Defined in: [calendar/types.ts:309](https://github.com/TanStack/time/blob/main/p
 originalDayDate: string;
 ```
 
-Defined in: [calendar/types.ts:305](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L305)
+Defined in: [calendar/types.ts:300](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L300)
 
 ***
 
@@ -75,7 +75,7 @@ Defined in: [calendar/types.ts:305](https://github.com/TanStack/time/blob/main/p
 originalEnd: string;
 ```
 
-Defined in: [calendar/types.ts:304](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L304)
+Defined in: [calendar/types.ts:299](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L299)
 
 ***
 
@@ -85,7 +85,7 @@ Defined in: [calendar/types.ts:304](https://github.com/TanStack/time/blob/main/p
 originalStart: string;
 ```
 
-Defined in: [calendar/types.ts:303](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L303)
+Defined in: [calendar/types.ts:298](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L298)
 
 ***
 
@@ -95,4 +95,4 @@ Defined in: [calendar/types.ts:303](https://github.com/TanStack/time/blob/main/p
 targetDayDate: string;
 ```
 
-Defined in: [calendar/types.ts:306](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L306)
+Defined in: [calendar/types.ts:301](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L301)

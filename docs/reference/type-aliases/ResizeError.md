@@ -9,4 +9,4 @@ title: ResizeError
 type ResizeError = EventMutationError;
 ```
 
-Defined in: [calendar/types.ts:226](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L226)
+Defined in: [calendar/types.ts:223](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L223)

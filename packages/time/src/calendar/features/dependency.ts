@@ -1,6 +1,6 @@
-import { Temporal } from "@js-temporal/polyfill";
-import { toPlainDateTimeString } from "~/date/parse";
-import { dependencyModule } from "~/kernel/modules";
+import { Temporal } from '@js-temporal/polyfill'
+import { toPlainDateTimeString } from '~/date/parse'
+import { dependencyModule } from '~/kernel/modules'
 import {
   computeCascade,
   findAnchoredViolations,
@@ -10,56 +10,41 @@ import {
   propagateToPredecessors,
   requiredForwardShiftMs,
   shiftToSatisfyLink,
-} from "~/validation/dependency";
-import type { KernelEvent } from "~/kernel";
-import type { DependencyApi } from "~/kernel/modules";
-import type {
-  DependencyConflict,
-  DependencyGraphEvent,
-} from "~/validation/dependency";
-import type {
-  DependencyType,
-  Event,
-  EventDependency,
-  Resource,
-  ResizeError,
-} from "../types";
-import type { CalendarFeature, CalendarHost } from "./types";
+} from '~/validation/dependency'
+import type { KernelEvent } from '~/kernel'
+import type { DependencyApi } from '~/kernel/modules'
+import type { DependencyConflict, DependencyGraphEvent } from '~/validation/dependency'
+import type { DependencyType, Event, EventDependency, Resource, ResizeError } from '../types'
+import type { CalendarFeature, CalendarHost } from './types'
 
 export interface DependencyShift<TEvent> {
-  event: TEvent;
-  newStart: string;
-  newEnd: string;
+  event: TEvent
+  newStart: string
+  newEnd: string
 }
 
-export interface DependencyGraphApi<
-  TResource extends Resource,
-  TEvent extends Event<TResource>,
-> {
+export interface DependencyGraphApi<TResource extends Resource, TEvent extends Event<TResource>> {
   getPredecessorShifts: (
     eventId: string,
     newStart: string,
     newEnd: string,
-  ) => Array<DependencyShift<TEvent>>;
+  ) => Array<DependencyShift<TEvent>>
   getDependentShifts: (
     eventId: string,
     newStart: string,
     newEnd: string,
-  ) => Array<DependencyShift<TEvent>>;
-  getAffectedByDelta: (
-    eventId: string,
-    deltaMs: number,
-  ) => Array<DependencyShift<TEvent>>;
+  ) => Array<DependencyShift<TEvent>>
+  getAffectedByDelta: (eventId: string, deltaMs: number) => Array<DependencyShift<TEvent>>
   findViolatedDependency: (
     event: TEvent,
     proposedStartMs: number,
     proposedEndMs: number,
-  ) => { dependency: EventDependency; predecessor: TEvent } | null;
+  ) => { dependency: EventDependency; predecessor: TEvent } | null
   getAnchorConflicts: (
     eventId: string,
     newStart: string,
     newEnd: string,
-  ) => Array<DependencyConflict>;
+  ) => Array<DependencyConflict>
 }
 
 export interface DependencyCreationApi {
@@ -68,7 +53,7 @@ export interface DependencyCreationApi {
     targetId: string,
     type?: DependencyType,
     lag?: number,
-  ) => { blocked: boolean; error?: ResizeError };
+  ) => { blocked: boolean; error?: ResizeError }
 }
 
 export function eventDependencyFeature<
@@ -79,65 +64,52 @@ export function eventDependencyFeature<
   TEvent,
   DependencyApi,
   DependencyCreationApi & DependencyApi & DependencyGraphApi<TResource, TEvent>,
-  "dependency"
+  'dependency'
 > {
-  const epochMs = (
-    host: CalendarHost<TResource, TEvent>,
-    value: string,
-  ): number =>
-    Temporal.PlainDateTime.from(value).toZonedDateTime(
-      host.getOptions().timeZone,
-    ).epochMilliseconds;
+  const epochMs = (host: CalendarHost<TResource, TEvent>, value: string): number =>
+    Temporal.PlainDateTime.from(value).toZonedDateTime(host.getOptions().timeZone).epochMilliseconds
 
   const resolveShifts = (
     host: CalendarHost<TResource, TEvent>,
     shifts: Array<{ id: string; newStart: string; newEnd: string }>,
   ): Array<DependencyShift<TEvent>> => {
-    const resolved: Array<DependencyShift<TEvent>> = [];
+    const resolved: Array<DependencyShift<TEvent>> = []
     for (const shift of shifts) {
-      const event = host.getEvent(shift.id);
-      if (!event) continue;
-      resolved.push({ event, newStart: shift.newStart, newEnd: shift.newEnd });
+      const event = host.getEvent(shift.id)
+      if (!event) continue
+      resolved.push({ event, newStart: shift.newStart, newEnd: shift.newEnd })
     }
-    return resolved;
-  };
+    return resolved
+  }
 
   const graphOf = (
     host: CalendarHost<TResource, TEvent>,
     override?: { id: string; start: string; end: string },
-  ): Array<DependencyGraphEvent> => host.getEvents().map((event) => ({
+  ): Array<DependencyGraphEvent> =>
+    host.getEvents().map((event) => ({
       id: event.id,
       title: event.title,
-      start:
-        override?.id === event.id
-          ? override.start
-          : toPlainDateTimeString(event.start),
-      end:
-        override?.id === event.id
-          ? override.end
-          : toPlainDateTimeString(event.end),
+      start: override?.id === event.id ? override.start : toPlainDateTimeString(event.start),
+      end: override?.id === event.id ? override.end : toPlainDateTimeString(event.end),
       dependsOn: event.dependsOn,
       manuallyScheduled: event.manuallyScheduled,
-    }));
+    }))
 
   const applyShifts = (
     graph: Array<DependencyGraphEvent>,
     shifts: Array<{ id: string; newStart: string; newEnd: string }>,
   ): Array<DependencyGraphEvent> => {
-    if (shifts.length === 0) return graph;
-    const byId = new Map(shifts.map((shift) => [shift.id, shift]));
+    if (shifts.length === 0) return graph
+    const byId = new Map(shifts.map((shift) => [shift.id, shift]))
     return graph.map((event) => {
-      const shift = byId.get(event.id);
-      return shift
-        ? { ...event, start: shift.newStart, end: shift.newEnd }
-        : event;
-    });
-  };
+      const shift = byId.get(event.id)
+      return shift ? { ...event, start: shift.newStart, end: shift.newEnd } : event
+    })
+  }
 
   return {
-    name: "dependency",
-    module: (ctx) =>
-      dependencyModule<TEvent & KernelEvent>({ timeZone: ctx.timeZone }),
+    name: 'dependency',
+    module: (ctx) => dependencyModule<TEvent & KernelEvent>({ timeZone: ctx.timeZone }),
     api: (host, module) => ({
       validateEventDependencies: (event, dependsOn) =>
         module.validateEventDependencies(event, dependsOn),
@@ -181,13 +153,13 @@ export function eventDependencyFeature<
           }),
         ),
       getAnchorConflicts: (eventId, newStart, newEnd) => {
-        const timeZone = host.getOptions().timeZone;
+        const timeZone = host.getOptions().timeZone
         const moved = graphOf(host, {
           id: eventId,
           start: newStart,
           end: newEnd,
-        });
-        const visited = new Set([eventId]);
+        })
+        const visited = new Set([eventId])
         const shifts = [
           ...propagateToPredecessors({
             sourceId: eventId,
@@ -195,7 +167,7 @@ export function eventDependencyFeature<
             timeZone,
             visited,
           }),
-        ];
+        ]
         shifts.push(
           ...propagateToDependents({
             sourceId: eventId,
@@ -203,18 +175,18 @@ export function eventDependencyFeature<
             timeZone,
             visited,
           }),
-        );
+        )
 
         return findAnchoredViolations({
           events: applyShifts(moved, shifts),
           changedIds: [eventId, ...shifts.map((shift) => shift.id)],
           timeZone,
-        });
+        })
       },
       findViolatedDependency: (event, proposedStartMs, proposedEndMs) => {
         for (const dependency of event.dependsOn ?? []) {
-          const predecessor = host.getEvent(dependency.id);
-          if (!predecessor) continue;
+          const predecessor = host.getEvent(dependency.id)
+          if (!predecessor) continue
 
           const shortfall = requiredForwardShiftMs(
             dependency.type,
@@ -223,51 +195,48 @@ export function eventDependencyFeature<
             proposedStartMs,
             proposedEndMs,
             lagMs(dependency),
-          );
-          if (shortfall > 0) return { dependency, predecessor };
+          )
+          if (shortfall > 0) return { dependency, predecessor }
         }
-        return null;
+        return null
       },
-      createDependency: (sourceId, targetId, type = "FS", lag) => {
-        const sourceEvent = host.getEvent(sourceId);
-        const targetEvent = host.getEvent(targetId);
-        if (!sourceEvent || !targetEvent) return { blocked: false };
+      createDependency: (sourceId, targetId, type = 'FS', lag) => {
+        const sourceEvent = host.getEvent(sourceId)
+        const targetEvent = host.getEvent(targetId)
+        if (!sourceEvent || !targetEvent) return { blocked: false }
 
-        const currentDeps = targetEvent.dependsOn ?? [];
+        const currentDeps = targetEvent.dependsOn ?? []
         if (
           currentDeps.some(
-            (d) =>
-              d.id === sourceId &&
-              d.type === type &&
-              (d.lag ?? 0) === (lag ?? 0),
+            (d) => d.id === sourceId && d.type === type && (d.lag ?? 0) === (lag ?? 0),
           )
         ) {
-          return { blocked: false };
+          return { blocked: false }
         }
 
-        const targetStartStr = toPlainDateTimeString(targetEvent.start);
-        const targetEndStr = toPlainDateTimeString(targetEvent.end);
+        const targetStartStr = toPlainDateTimeString(targetEvent.start)
+        const targetEndStr = toPlainDateTimeString(targetEvent.end)
 
         const cycle = (message: string) => ({
           blocked: true,
           error: {
             eventId: targetId,
             eventTitle: targetEvent.title,
-            reason: "blocked" as const,
+            reason: 'blocked' as const,
             message,
             originalStart: targetStartStr,
             originalEnd: targetEndStr,
           },
-        });
+        })
 
         if (sourceId === targetId) {
-          return cycle("circular dependency: an event cannot depend on itself");
+          return cycle('circular dependency: an event cannot depend on itself')
         }
 
         if (hasDependencyPath(graphOf(host), sourceId, targetId)) {
           return cycle(
             `circular dependency: ${sourceId} already depends on ${targetId} (directly or indirectly)`,
-          );
+          )
         }
 
         const rescheduled = shiftToSatisfyLink({
@@ -279,7 +248,7 @@ export function eventDependencyFeature<
           successor: { start: targetStartStr, end: targetEndStr },
           timeZone: host.getOptions().timeZone,
           lag,
-        });
+        })
 
         if (rescheduled && targetEvent.manuallyScheduled) {
           return {
@@ -287,29 +256,25 @@ export function eventDependencyFeature<
             error: {
               eventId: targetId,
               eventTitle: targetEvent.title,
-              reason: "blocked" as const,
+              reason: 'blocked' as const,
               message: `Cannot connect (${type}): "${targetEvent.title}" is manually scheduled and would have to move.`,
               originalStart: targetStartStr,
               originalEnd: targetEndStr,
               attemptedStart: rescheduled.start,
               attemptedEnd: rescheduled.end,
             },
-          };
+          }
         }
 
         if (rescheduled) {
-          const validation = host.validateMove(
-            targetId,
-            rescheduled.start,
-            rescheduled.end,
-          );
+          const validation = host.validateMove(targetId, rescheduled.start, rescheduled.end)
           if (validation.blocked) {
             return {
               blocked: true,
               error: {
                 eventId: targetId,
                 eventTitle: validation.blockedEventTitle ?? targetEvent.title,
-                reason: "unavailable-time",
+                reason: 'unavailable-time',
                 message:
                   validation.message ??
                   `Cannot connect (${type}): the resulting schedule would fall in unavailable time.`,
@@ -318,23 +283,20 @@ export function eventDependencyFeature<
                 attemptedStart: rescheduled.start,
                 attemptedEnd: rescheduled.end,
               },
-            };
+            }
           }
         }
 
         host.commitUpdate(targetId, {
-          dependsOn: [
-            ...currentDeps,
-            lag ? { id: sourceId, type, lag } : { id: sourceId, type },
-          ],
+          dependsOn: [...currentDeps, lag ? { id: sourceId, type, lag } : { id: sourceId, type }],
           ...(rescheduled && {
             start: rescheduled.start,
             end: rescheduled.end,
           }),
-        } as Partial<Omit<TEvent, "id">>);
+        } as Partial<Omit<TEvent, 'id'>>)
 
-        return { blocked: false };
+        return { blocked: false }
       },
     }),
-  };
+  }
 }

@@ -1,9 +1,4 @@
-import type {
-  Event,
-  ResizeController,
-  ResizeState,
-  Resource,
-} from "@tanstack/time";
+import type { Event, ResizeController, ResizeState, Resource } from '@tanstack/time'
 
 const INERT_STATE: ResizeState = {
   isResizing: false,
@@ -15,7 +10,7 @@ const INERT_STATE: ResizeState = {
   lastValidPreviewEnd: null,
   targetDayDate: null,
   blocked: false,
-};
+}
 
 export function inertResizeController<
   TResource extends Resource,
@@ -34,5 +29,5 @@ export function inertResizeController<
     destroy: () => {},
     handleMouseMove: () => {},
     handleMouseUp: () => {},
-  } as unknown as ResizeController<TResource, TEvent>;
+  } as unknown as ResizeController<TResource, TEvent>
 }

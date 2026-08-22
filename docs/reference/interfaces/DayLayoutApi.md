@@ -25,4 +25,4 @@ Defined in: [calendar/features/dayLayout.ts:8](https://github.com/TanStack/time/
 getEventProps: GetEventProps<TResource, TEvent>;
 ```
 
-Defined in: [calendar/features/dayLayout.ts:12](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dayLayout.ts#L12)
+Defined in: [calendar/features/dayLayout.ts:9](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dayLayout.ts#L9)

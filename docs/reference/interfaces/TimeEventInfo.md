@@ -5,7 +5,7 @@ title: TimeEventInfo
 
 # Interface: TimeEventInfo
 
-Defined in: [client/TimeClient.ts:7](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L7)
+Defined in: [client/TimeClient.ts:4](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L4)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [client/TimeClient.ts:7](https://github.com/TanStack/time/blob/main/
 end: string;
 ```
 
-Defined in: [client/TimeClient.ts:11](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L11)
+Defined in: [client/TimeClient.ts:8](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L8)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [client/TimeClient.ts:11](https://github.com/TanStack/time/blob/main
 eventId: string;
 ```
 
-Defined in: [client/TimeClient.ts:8](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L8)
+Defined in: [client/TimeClient.ts:5](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L5)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [client/TimeClient.ts:8](https://github.com/TanStack/time/blob/main/
 eventTitle: string;
 ```
 
-Defined in: [client/TimeClient.ts:9](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L9)
+Defined in: [client/TimeClient.ts:6](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L6)
 
 ***
 
@@ -45,4 +45,4 @@ Defined in: [client/TimeClient.ts:9](https://github.com/TanStack/time/blob/main/
 start: string;
 ```
 
-Defined in: [client/TimeClient.ts:10](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L10)
+Defined in: [client/TimeClient.ts:7](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L7)

@@ -9,7 +9,7 @@ title: workingTimeFeature
 function workingTimeFeature<TResource, TEvent>(): CalendarFeature<TResource, TEvent, object, WorkingTimeApi<TResource>, "workingTime">;
 ```
 
-Defined in: [calendar/features/workingTime.ts:44](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/workingTime.ts#L44)
+Defined in: [calendar/features/workingTime.ts:29](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/workingTime.ts#L29)
 
 ## Type Parameters
 

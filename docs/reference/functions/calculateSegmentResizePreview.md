@@ -9,7 +9,7 @@ title: calculateSegmentResizePreview
 function calculateSegmentResizePreview(options): SegmentResizePreview;
 ```
 
-Defined in: [calendar/getResizeProps.ts:284](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L284)
+Defined in: [calendar/getResizeProps.ts:261](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L261)
 
 ## Parameters
 

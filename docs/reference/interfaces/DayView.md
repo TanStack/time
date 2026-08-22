@@ -5,7 +5,7 @@ title: DayView
 
 # Interface: DayView\<E\>
 
-Defined in: [projection/bucketByDay.ts:31](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L31)
+Defined in: [projection/bucketByDay.ts:29](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L29)
 
 ## Type Parameters
 
@@ -21,7 +21,7 @@ Defined in: [projection/bucketByDay.ts:31](https://github.com/TanStack/time/blob
 allDayEvents: E[];
 ```
 
-Defined in: [projection/bucketByDay.ts:34](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L34)
+Defined in: [projection/bucketByDay.ts:32](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L32)
 
 ***
 
@@ -31,7 +31,7 @@ Defined in: [projection/bucketByDay.ts:34](https://github.com/TanStack/time/blob
 events: E[];
 ```
 
-Defined in: [projection/bucketByDay.ts:33](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L33)
+Defined in: [projection/bucketByDay.ts:31](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L31)
 
 ***
 
@@ -41,7 +41,7 @@ Defined in: [projection/bucketByDay.ts:33](https://github.com/TanStack/time/blob
 isInCurrentPeriod: boolean;
 ```
 
-Defined in: [projection/bucketByDay.ts:36](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L36)
+Defined in: [projection/bucketByDay.ts:34](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L34)
 
 ***
 
@@ -51,7 +51,7 @@ Defined in: [projection/bucketByDay.ts:36](https://github.com/TanStack/time/blob
 isoDate: string;
 ```
 
-Defined in: [projection/bucketByDay.ts:32](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L32)
+Defined in: [projection/bucketByDay.ts:30](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L30)
 
 ***
 
@@ -61,4 +61,4 @@ Defined in: [projection/bucketByDay.ts:32](https://github.com/TanStack/time/blob
 isToday: boolean;
 ```
 
-Defined in: [projection/bucketByDay.ts:35](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L35)
+Defined in: [projection/bucketByDay.ts:33](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L33)

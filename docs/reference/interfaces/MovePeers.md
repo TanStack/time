@@ -5,7 +5,7 @@ title: MovePeers
 
 # Interface: MovePeers\<TResource, TEvent\>
 
-Defined in: [calendar/features/move.ts:24](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/move.ts#L24)
+Defined in: [calendar/features/move.ts:14](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/move.ts#L14)
 
 ## Type Parameters
 
@@ -25,7 +25,7 @@ Defined in: [calendar/features/move.ts:24](https://github.com/TanStack/time/blob
 optional availability: AvailabilityApi<TResource, TEvent>;
 ```
 
-Defined in: [calendar/features/move.ts:30](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/move.ts#L30)
+Defined in: [calendar/features/move.ts:16](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/move.ts#L16)
 
 ***
 
@@ -35,4 +35,4 @@ Defined in: [calendar/features/move.ts:30](https://github.com/TanStack/time/blob
 recurrence: RecurrenceReadApi<TResource, TEvent> & RecurrenceEditApi<TResource, TEvent>;
 ```
 
-Defined in: [calendar/features/move.ts:28](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/move.ts#L28)
+Defined in: [calendar/features/move.ts:15](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/move.ts#L15)

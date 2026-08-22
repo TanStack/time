@@ -1,9 +1,5 @@
-import type {
-  DateFormatterOptions,
-  DateTimeFormatterOptions,
-  TimeFormatterOptions,
-} from "./shared";
-import { getDateTimeDefaults } from "~/utils";
+import type { DateFormatterOptions, DateTimeFormatterOptions, TimeFormatterOptions } from './shared'
+import { getDateTimeDefaults } from '~/utils'
 
 export function extractLocaleOptions({
   localeMatcher,
@@ -22,5 +18,5 @@ export function extractLocaleOptions({
     hourCycle,
     timeZone,
     formatOptions,
-  };
+  }
 }

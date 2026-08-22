@@ -9,7 +9,7 @@ title: buildDays
 function buildDays<E>(input): DayView<E>[];
 ```
 
-Defined in: [projection/bucketByDay.ts:47](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L47)
+Defined in: [projection/bucketByDay.ts:45](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L45)
 
 ## Type Parameters
 

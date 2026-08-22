@@ -25,7 +25,7 @@ Defined in: [calendar/features/duration.ts:9](https://github.com/TanStack/time/b
 checkEventDuration: (event, newStart?, newEnd?, newResources?) => DurationConflict[];
 ```
 
-Defined in: [calendar/features/duration.ts:18](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/duration.ts#L18)
+Defined in: [calendar/features/duration.ts:11](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/duration.ts#L11)
 
 #### Parameters
 
@@ -57,7 +57,7 @@ Defined in: [calendar/features/duration.ts:18](https://github.com/TanStack/time/
 getWorkingDuration: (event, newStart?, newEnd?) => number;
 ```
 
-Defined in: [calendar/features/duration.ts:13](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/duration.ts#L13)
+Defined in: [calendar/features/duration.ts:10](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/duration.ts#L10)
 
 #### Parameters
 

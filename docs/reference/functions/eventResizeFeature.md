@@ -9,7 +9,7 @@ title: eventResizeFeature
 function eventResizeFeature<TResource, TEvent>(): CalendarFeature<TResource, TEvent, object, ResizeFeatureApi<TResource, TEvent>, "resize", ResizePeers<TResource, TEvent>>;
 ```
 
-Defined in: [calendar/features/resize.ts:47](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L47)
+Defined in: [calendar/features/resize.ts:38](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L38)
 
 ## Type Parameters
 

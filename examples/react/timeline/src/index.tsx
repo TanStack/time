@@ -1,10 +1,7 @@
-import {
-  calculateTimelineResizePreview,
-  useCalendar,
-} from "@tanstack/react-time";
-import { TanStackDevtools } from "@tanstack/react-devtools";
-import { timeDevtoolsPlugin } from "@tanstack/react-time-devtools";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { calculateTimelineResizePreview, useCalendar } from '@tanstack/react-time'
+import { TanStackDevtools } from '@tanstack/react-devtools'
+import { timeDevtoolsPlugin } from '@tanstack/react-time-devtools'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
   calendarFeatures,
   eventDependencyFeature,
@@ -18,13 +15,8 @@ import {
   toPlainDateString,
   toPlainDateTimeString,
   toPlainTimeString,
-} from "@tanstack/time";
-import {
-  DragDropProvider,
-  DragOverlay,
-  useDraggable,
-  useDroppable,
-} from "@dnd-kit/react";
+} from '@tanstack/time'
+import { DragDropProvider, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/react'
 import {
   Handle,
   MarkerType,
@@ -32,20 +24,13 @@ import {
   ReactFlow,
   useEdgesState,
   useNodesState,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-import ReactDOM from "react-dom/client";
-import React, {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
-import { useVirtualizer } from "@tanstack/react-virtual";
-import { X } from "lucide-react";
+} from '@xyflow/react'
+import '@xyflow/react/dist/style.css'
+import ReactDOM from 'react-dom/client'
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { X } from 'lucide-react'
 
 import type {
   ConstraintType,
@@ -57,11 +42,11 @@ import type {
   TimelineLayout,
   TimelineResourceRow,
   WorkingCalendar,
-} from "@tanstack/time";
-import type { Connection, Edge, Node, NodeProps } from "@xyflow/react";
+} from '@tanstack/time'
+import type { Connection, Edge, Node, NodeProps } from '@xyflow/react'
 
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Dialog,
   DialogContent,
@@ -69,20 +54,20 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+} from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 
-import "./index.css";
+import './index.css'
 
 const features = calendarFeatures([
   historyFeature,
@@ -92,158 +77,150 @@ const features = calendarFeatures([
   eventDependencyFeature,
   eventResizeFeature,
   timelineFeature,
-]);
+])
 
 const DEP_TYPE_STYLES: Record<
   DependencyType,
   {
-    label: string;
-    description: string;
-    color: string;
-    strokeDasharray?: string;
-    badgeBg: string;
+    label: string
+    description: string
+    color: string
+    strokeDasharray?: string
+    badgeBg: string
   }
 > = {
   FS: {
-    label: "FS",
-    description: "Finish → Start (successor starts after predecessor ends)",
-    color: "#f59e0b",
-    badgeBg: "bg-amber-500",
+    label: 'FS',
+    description: 'Finish → Start (successor starts after predecessor ends)',
+    color: '#f59e0b',
+    badgeBg: 'bg-amber-500',
   },
   SS: {
-    label: "SS",
-    description: "Start → Start (successor starts after predecessor starts)",
-    color: "#3b82f6",
-    strokeDasharray: "6 4",
-    badgeBg: "bg-blue-500",
+    label: 'SS',
+    description: 'Start → Start (successor starts after predecessor starts)',
+    color: '#3b82f6',
+    strokeDasharray: '6 4',
+    badgeBg: 'bg-blue-500',
   },
   FF: {
-    label: "FF",
-    description: "Finish → Finish (successor ends after predecessor ends)",
-    color: "#10b981",
-    strokeDasharray: "6 4",
-    badgeBg: "bg-emerald-500",
+    label: 'FF',
+    description: 'Finish → Finish (successor ends after predecessor ends)',
+    color: '#10b981',
+    strokeDasharray: '6 4',
+    badgeBg: 'bg-emerald-500',
   },
   SF: {
-    label: "SF",
-    description: "Start → Finish (successor ends after predecessor starts)",
-    color: "#a855f7",
-    strokeDasharray: "2 3",
-    badgeBg: "bg-purple-500",
+    label: 'SF',
+    description: 'Start → Finish (successor ends after predecessor starts)',
+    color: '#a855f7',
+    strokeDasharray: '2 3',
+    badgeBg: 'bg-purple-500',
   },
-};
+}
 
-const ALL_DEP_TYPES: Array<DependencyType> = ["FS", "SS", "FF", "SF"];
+const ALL_DEP_TYPES: Array<DependencyType> = ['FS', 'SS', 'FF', 'SF']
 
 const EVENT_COLORS = [
   {
-    bg: "bg-indigo-500/80",
-    border: "border-indigo-400",
-    text: "text-indigo-50",
+    bg: 'bg-indigo-500/80',
+    border: 'border-indigo-400',
+    text: 'text-indigo-50',
   },
   {
-    bg: "bg-emerald-500/80",
-    border: "border-emerald-400",
-    text: "text-emerald-50",
+    bg: 'bg-emerald-500/80',
+    border: 'border-emerald-400',
+    text: 'text-emerald-50',
   },
-  { bg: "bg-amber-500/80", border: "border-amber-400", text: "text-amber-50" },
-  { bg: "bg-rose-500/80", border: "border-rose-400", text: "text-rose-50" },
-  { bg: "bg-cyan-500/80", border: "border-cyan-400", text: "text-cyan-50" },
+  { bg: 'bg-amber-500/80', border: 'border-amber-400', text: 'text-amber-50' },
+  { bg: 'bg-rose-500/80', border: 'border-rose-400', text: 'text-rose-50' },
+  { bg: 'bg-cyan-500/80', border: 'border-cyan-400', text: 'text-cyan-50' },
   {
-    bg: "bg-violet-500/80",
-    border: "border-violet-400",
-    text: "text-violet-50",
+    bg: 'bg-violet-500/80',
+    border: 'border-violet-400',
+    text: 'text-violet-50',
   },
   {
-    bg: "bg-orange-500/80",
-    border: "border-orange-400",
-    text: "text-orange-50",
+    bg: 'bg-orange-500/80',
+    border: 'border-orange-400',
+    text: 'text-orange-50',
   },
-  { bg: "bg-teal-500/80", border: "border-teal-400", text: "text-teal-50" },
-];
+  { bg: 'bg-teal-500/80', border: 'border-teal-400', text: 'text-teal-50' },
+]
 
-const RESOURCE_ZONE_COLORS = [
-  "#6366f155",
-  "#10b98155",
-  "#f59e0b55",
-  "#f43f5e55",
-  "#06b6d455",
-];
+const RESOURCE_ZONE_COLORS = ['#6366f155', '#10b98155', '#f59e0b55', '#f43f5e55', '#06b6d455']
 
 const shift = (
   id: string,
   ...slots: Array<{
-    weekdays: Array<number>;
-    startTime: string;
-    endTime: string;
+    weekdays: Array<number>
+    startTime: string
+    endTime: string
   }>
 ): WorkingCalendar => ({
   id,
-  parentId: "company",
+  parentId: 'company',
   intervals: slots.map((recurrent) => ({ isWorking: true, recurrent })),
-});
+})
 
 const workingCalendars: Array<WorkingCalendar> = [
   {
-    id: "company",
-    label: "Company",
-    intervals: [
-      { isWorking: false, startDate: "2026-12-24", endDate: "2026-12-31" },
-    ],
+    id: 'company',
+    label: 'Company',
+    intervals: [{ isWorking: false, startDate: '2026-12-24', endDate: '2026-12-31' }],
   },
   shift(
-    "shift-design",
-    { weekdays: [1, 2, 3, 4], startTime: "09:00", endTime: "17:00" },
-    { weekdays: [5], startTime: "09:00", endTime: "13:00" },
+    'shift-design',
+    { weekdays: [1, 2, 3, 4], startTime: '09:00', endTime: '17:00' },
+    { weekdays: [5], startTime: '09:00', endTime: '13:00' },
   ),
-  shift("shift-frontend", {
+  shift('shift-frontend', {
     weekdays: [1, 2, 3, 4, 5],
-    startTime: "08:00",
-    endTime: "24:00",
+    startTime: '08:00',
+    endTime: '24:00',
   }),
   shift(
-    "shift-backend",
-    { weekdays: [1, 2, 3], startTime: "10:00", endTime: "19:00" },
-    { weekdays: [4, 5], startTime: "00:00", endTime: "24:00" },
+    'shift-backend',
+    { weekdays: [1, 2, 3], startTime: '10:00', endTime: '19:00' },
+    { weekdays: [4, 5], startTime: '00:00', endTime: '24:00' },
   ),
   shift(
-    "shift-qa",
-    { weekdays: [1, 2, 3], startTime: "09:00", endTime: "17:00" },
-    { weekdays: [4, 5], startTime: "10:00", endTime: "15:00" },
+    'shift-qa',
+    { weekdays: [1, 2, 3], startTime: '09:00', endTime: '17:00' },
+    { weekdays: [4, 5], startTime: '10:00', endTime: '15:00' },
   ),
   shift(
-    "shift-devops",
-    { weekdays: [1, 2, 3, 4, 5], startTime: "07:00", endTime: "16:00" },
-    { weekdays: [6, 7], startTime: "10:00", endTime: "14:00" },
+    'shift-devops',
+    { weekdays: [1, 2, 3, 4, 5], startTime: '07:00', endTime: '16:00' },
+    { weekdays: [6, 7], startTime: '10:00', endTime: '14:00' },
   ),
-];
+]
 
 const resourceDesign: Resource = {
-  id: "design",
-  label: "Design",
-  calendarId: "shift-design",
-};
+  id: 'design',
+  label: 'Design',
+  calendarId: 'shift-design',
+}
 const resourceFrontend: Resource = {
-  id: "frontend",
-  label: "Frontend",
-  calendarId: "shift-frontend",
-};
+  id: 'frontend',
+  label: 'Frontend',
+  calendarId: 'shift-frontend',
+}
 const resourceBackend: Resource = {
-  id: "backend",
-  label: "Backend",
+  id: 'backend',
+  label: 'Backend',
   capacity: [2, 3, 5],
-  calendarId: "shift-backend",
-};
+  calendarId: 'shift-backend',
+}
 const resourceQA: Resource = {
-  id: "qa",
-  label: "QA",
-  calendarId: "shift-qa",
-};
+  id: 'qa',
+  label: 'QA',
+  calendarId: 'shift-qa',
+}
 const resourceDevOps: Resource = {
-  id: "devops",
-  label: "DevOps",
-  calendarId: "shift-devops",
-};
+  id: 'devops',
+  label: 'DevOps',
+  calendarId: 'shift-devops',
+}
 
 const sampleResources: Array<Resource> = [
   resourceDesign,
@@ -251,167 +228,163 @@ const sampleResources: Array<Resource> = [
   resourceBackend,
   resourceQA,
   resourceDevOps,
-];
+]
 
 function workWeekMonday(): Date {
-  const today = new Date();
-  const day = today.getDay();
-  const monday = new Date(today);
+  const today = new Date()
+  const day = today.getDay()
+  const monday = new Date(today)
 
   if (day === 0 || day === 6) {
-    monday.setDate(today.getDate() + (day === 0 ? 1 : 2));
+    monday.setDate(today.getDate() + (day === 0 ? 1 : 2))
   } else {
-    monday.setDate(today.getDate() + (1 - day));
+    monday.setDate(today.getDate() + (1 - day))
   }
-  monday.setHours(0, 0, 0, 0);
-  return monday;
+  monday.setHours(0, 0, 0, 0)
+  return monday
 }
 
-function weekdayAt(
-  isoWeekday: 1 | 2 | 3 | 4 | 5,
-  hour: number,
-  minute = 0,
-): Date {
-  const monday = workWeekMonday();
-  const date = new Date(monday);
-  date.setDate(monday.getDate() + isoWeekday - 1);
-  date.setHours(hour, minute, 0, 0);
-  return date;
+function weekdayAt(isoWeekday: 1 | 2 | 3 | 4 | 5, hour: number, minute = 0): Date {
+  const monday = workWeekMonday()
+  const date = new Date(monday)
+  date.setDate(monday.getDate() + isoWeekday - 1)
+  date.setHours(hour, minute, 0, 0)
+  return date
 }
 
 function getSampleEvents(): Array<Event<Resource>> {
   return [
     {
-      id: "1",
-      title: "UI Mockups",
+      id: '1',
+      title: 'UI Mockups',
       start: weekdayAt(1, 10, 0),
       end: weekdayAt(1, 12, 30),
       resources: [resourceDesign],
     },
     {
-      id: "2",
-      title: "Component Library",
+      id: '2',
+      title: 'Component Library',
       start: weekdayAt(2, 9, 0),
       end: weekdayAt(2, 17, 0),
       resources: [resourceFrontend],
-      dependsOn: [{ id: "1", type: "FS", lag: 60 }],
+      dependsOn: [{ id: '1', type: 'FS', lag: 60 }],
     },
     {
-      id: "3",
-      title: "API Development",
+      id: '3',
+      title: 'API Development',
       start: weekdayAt(2, 11, 0),
       end: weekdayAt(2, 18, 0),
       resources: [resourceBackend],
       consumption: [3],
-      dependsOn: [{ id: "2", type: "SS" }],
+      dependsOn: [{ id: '2', type: 'SS' }],
     },
     {
-      id: "4",
-      title: "Database Schema",
+      id: '4',
+      title: 'Database Schema',
       start: weekdayAt(1, 11, 0),
       end: weekdayAt(1, 16, 0),
       resources: [resourceBackend],
       consumption: [5],
     },
     {
-      id: "5",
-      title: "Integration Tests",
+      id: '5',
+      title: 'Integration Tests',
       start: weekdayAt(3, 10, 0),
       end: weekdayAt(3, 15, 0),
       resources: [resourceQA],
-      dependsOn: [{ id: "3", type: "FF" }],
+      dependsOn: [{ id: '3', type: 'FF' }],
       manuallyScheduled: true,
     },
     {
-      id: "6",
-      title: "CI/CD Pipeline",
+      id: '6',
+      title: 'CI/CD Pipeline',
       start: weekdayAt(1, 8, 0),
       end: weekdayAt(1, 14, 0),
       resources: [resourceDevOps],
     },
     {
-      id: "7",
-      title: "Design Review",
+      id: '7',
+      title: 'Design Review',
       start: weekdayAt(3, 10, 0),
       end: weekdayAt(3, 12, 30),
       resources: [resourceDesign],
     },
     {
-      id: "8",
-      title: "Auth Module",
+      id: '8',
+      title: 'Auth Module',
       start: weekdayAt(5, 6, 0),
       end: weekdayAt(5, 10, 0),
       resources: [resourceBackend],
     },
     {
-      id: "9",
-      title: "Load Testing",
+      id: '9',
+      title: 'Load Testing',
       start: weekdayAt(4, 10, 30),
       end: weekdayAt(4, 14, 30),
       resources: [resourceQA],
-      dependsOn: [{ id: "4", type: "SF" }],
+      dependsOn: [{ id: '4', type: 'SF' }],
     },
     {
-      id: "10",
-      title: "Deployment",
+      id: '10',
+      title: 'Deployment',
       start: weekdayAt(5, 7, 30),
       end: weekdayAt(5, 13, 0),
       resources: [resourceDevOps],
-      dependsOn: [{ id: "8", type: "FS" }],
+      dependsOn: [{ id: '8', type: 'FS' }],
       constraint: {
-        type: "finish-no-later-than",
+        type: 'finish-no-later-than',
         date: toPlainDateString(weekdayAt(5, 0, 0)),
       },
     },
-  ];
+  ]
 }
 
-const MOCK_DB = getSampleEvents();
+const MOCK_DB = getSampleEvents()
 
 function getEventColor(eventId: string) {
   const hash = String(eventId)
-    .split("")
-    .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const colorIdx = hash % EVENT_COLORS.length;
-  return EVENT_COLORS[colorIdx] ?? EVENT_COLORS[0];
+    .split('')
+    .reduce((acc, char) => acc + char.charCodeAt(0), 0)
+  const colorIdx = hash % EVENT_COLORS.length
+  return EVENT_COLORS[colorIdx] ?? EVENT_COLORS[0]
 }
 
 interface EventFormData {
-  title: string;
-  startDate: string;
-  startTime: string;
-  endDate: string;
-  endTime: string;
-  resourceId: string;
-  consumption: number;
-  manuallyScheduled: boolean;
-  constraintType: ConstraintType | "none";
-  constraintDate: string;
-  dependsOn: Array<{ id: string; type: DependencyType; lag?: number }>;
+  title: string
+  startDate: string
+  startTime: string
+  endDate: string
+  endTime: string
+  resourceId: string
+  consumption: number
+  manuallyScheduled: boolean
+  constraintType: ConstraintType | 'none'
+  constraintDate: string
+  dependsOn: Array<{ id: string; type: DependencyType; lag?: number }>
 }
 
 const CONSTRAINT_TYPES: Array<ConstraintType> = [
-  "start-no-earlier-than",
-  "start-no-later-than",
-  "finish-no-earlier-than",
-  "finish-no-later-than",
-  "must-start-on",
-  "must-finish-on",
-];
+  'start-no-earlier-than',
+  'start-no-later-than',
+  'finish-no-earlier-than',
+  'finish-no-later-than',
+  'must-start-on',
+  'must-finish-on',
+]
 
 const emptyFormData: EventFormData = {
-  title: "",
+  title: '',
   startDate: toPlainDateString(new Date()),
-  startTime: "09:00",
+  startTime: '09:00',
   endDate: toPlainDateString(new Date()),
-  endTime: "10:00",
+  endTime: '10:00',
   resourceId: resourceDesign.id,
   consumption: 1,
   manuallyScheduled: false,
-  constraintType: "none",
+  constraintType: 'none',
   constraintDate: toPlainDateString(new Date()),
   dependsOn: [],
-};
+}
 
 function DependencyTypeModal({
   isOpen,
@@ -420,11 +393,11 @@ function DependencyTypeModal({
   onChoose,
   onCancel,
 }: {
-  isOpen: boolean;
-  sourceTitle: string;
-  targetTitle: string;
-  onChoose: (type: DependencyType) => void;
-  onCancel: () => void;
+  isOpen: boolean
+  sourceTitle: string
+  targetTitle: string
+  onChoose: (type: DependencyType) => void
+  onCancel: () => void
 }) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
@@ -432,15 +405,13 @@ function DependencyTypeModal({
         <DialogHeader>
           <DialogTitle>Link dependency</DialogTitle>
           <DialogDescription>
-            Choose how{" "}
-            <span className="font-semibold">&ldquo;{targetTitle}&rdquo;</span>{" "}
-            depends on{" "}
+            Choose how <span className="font-semibold">&ldquo;{targetTitle}&rdquo;</span> depends on{' '}
             <span className="font-semibold">&ldquo;{sourceTitle}&rdquo;</span>.
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 gap-2 py-2">
           {ALL_DEP_TYPES.map((type) => {
-            const style = DEP_TYPE_STYLES[type];
+            const style = DEP_TYPE_STYLES[type]
             return (
               <button
                 key={type}
@@ -453,11 +424,9 @@ function DependencyTypeModal({
                 >
                   {style.label}
                 </span>
-                <span className="text-sm text-neutral-200">
-                  {style.description}
-                </span>
+                <span className="text-sm text-neutral-200">{style.description}</span>
               </button>
-            );
+            )
           })}
         </div>
         <DialogFooter>
@@ -467,7 +436,7 @@ function DependencyTypeModal({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
+  )
 }
 
 function EventModal({
@@ -481,44 +450,42 @@ function EventModal({
   allEvents,
   editingEventId,
 }: {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (data: EventFormData) => Promise<void>;
-  onDelete?: () => void;
-  initialData: EventFormData;
-  mode: "add" | "edit";
-  isSaving?: boolean;
-  allEvents: Array<Event<Resource>>;
-  editingEventId?: string;
+  isOpen: boolean
+  onClose: () => void
+  onSave: (data: EventFormData) => Promise<void>
+  onDelete?: () => void
+  initialData: EventFormData
+  mode: 'add' | 'edit'
+  isSaving?: boolean
+  allEvents: Array<Event<Resource>>
+  editingEventId?: string
 }) {
-  const [formData, setFormData] = useState<EventFormData>(initialData);
+  const [formData, setFormData] = useState<EventFormData>(initialData)
 
   useEffect(() => {
-    setFormData(initialData);
-  }, [initialData, isOpen]);
+    setFormData(initialData)
+  }, [initialData, isOpen])
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     try {
-      await onSave(formData);
+      await onSave(formData)
     } catch {
-      return;
+      return
     }
-    onClose();
-  };
+    onClose()
+  }
 
-  const dependableEvents = allEvents.filter((e) => e.id !== editingEventId);
+  const dependableEvents = allEvents.filter((e) => e.id !== editingEventId)
 
   const addDependency = () => {
-    const candidate = dependableEvents.find(
-      (e) => !formData.dependsOn.some((d) => d.id === e.id),
-    );
-    if (!candidate) return;
+    const candidate = dependableEvents.find((e) => !formData.dependsOn.some((d) => d.id === e.id))
+    if (!candidate) return
     setFormData({
       ...formData,
-      dependsOn: [...formData.dependsOn, { id: candidate.id, type: "FS" }],
-    });
-  };
+      dependsOn: [...formData.dependsOn, { id: candidate.id, type: 'FS' }],
+    })
+  }
 
   const updateDependency = (
     index: number,
@@ -526,30 +493,26 @@ function EventModal({
   ) => {
     setFormData({
       ...formData,
-      dependsOn: formData.dependsOn.map((d, i) =>
-        i === index ? { ...d, ...patch } : d,
-      ),
-    });
-  };
+      dependsOn: formData.dependsOn.map((d, i) => (i === index ? { ...d, ...patch } : d)),
+    })
+  }
 
   const removeDependency = (index: number) => {
     setFormData({
       ...formData,
       dependsOn: formData.dependsOn.filter((_, i) => i !== index),
-    });
-  };
+    })
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>
-            {mode === "add" ? "Add Event" : "Edit Event"}
-          </DialogTitle>
+          <DialogTitle>{mode === 'add' ? 'Add Event' : 'Edit Event'}</DialogTitle>
           <DialogDescription>
-            {mode === "add"
-              ? "Create a new event on the timeline."
-              : "Make changes to your event here."}
+            {mode === 'add'
+              ? 'Create a new event on the timeline.'
+              : 'Make changes to your event here.'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -559,9 +522,7 @@ function EventModal({
               id="title"
               type="text"
               value={formData.title}
-              onChange={(e) =>
-                setFormData({ ...formData, title: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="Event title"
               required
             />
@@ -571,22 +532,20 @@ function EventModal({
               <Label htmlFor="resource">Resource</Label>
               <Select
                 value={formData.resourceId}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, resourceId: value })
-                }
+                onValueChange={(value) => setFormData({ ...formData, resourceId: value })}
               >
                 <SelectTrigger id="resource">
                   <SelectValue placeholder="Select a resource" />
                 </SelectTrigger>
                 <SelectContent>
                   {sampleResources.map((r) => {
-                    const cap = r.capacity?.reduce((a, b) => a + b, 0);
+                    const cap = r.capacity?.reduce((a, b) => a + b, 0)
                     return (
                       <SelectItem key={r.id} value={r.id}>
                         {r.label}
-                        {cap ? ` (cap ${cap})` : ""}
+                        {cap ? ` (cap ${cap})` : ''}
                       </SelectItem>
-                    );
+                    )
                   })}
                 </SelectContent>
               </Select>
@@ -634,7 +593,7 @@ function EventModal({
                 onValueChange={(value) =>
                   setFormData({
                     ...formData,
-                    constraintType: value as ConstraintType | "none",
+                    constraintType: value as ConstraintType | 'none',
                   })
                 }
               >
@@ -656,11 +615,9 @@ function EventModal({
               <Input
                 id="constraintDate"
                 type="date"
-                disabled={formData.constraintType === "none"}
+                disabled={formData.constraintType === 'none'}
                 value={formData.constraintDate}
-                onChange={(e) =>
-                  setFormData({ ...formData, constraintDate: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, constraintDate: e.target.value })}
               />
             </div>
           </div>
@@ -671,9 +628,7 @@ function EventModal({
                 id="startDate"
                 type="date"
                 value={formData.startDate}
-                onChange={(e) =>
-                  setFormData({ ...formData, startDate: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                 required
               />
             </div>
@@ -683,9 +638,7 @@ function EventModal({
                 id="startTime"
                 type="time"
                 value={formData.startTime}
-                onChange={(e) =>
-                  setFormData({ ...formData, startTime: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
                 required
               />
             </div>
@@ -695,9 +648,7 @@ function EventModal({
                 id="endDate"
                 type="date"
                 value={formData.endDate}
-                onChange={(e) =>
-                  setFormData({ ...formData, endDate: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                 required
               />
             </div>
@@ -707,9 +658,7 @@ function EventModal({
                 id="endTime"
                 type="time"
                 value={formData.endTime}
-                onChange={(e) =>
-                  setFormData({ ...formData, endTime: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
                 required
               />
             </div>
@@ -730,8 +679,7 @@ function EventModal({
             </div>
             {formData.dependsOn.length === 0 ? (
               <div className="text-xs text-neutral-500 italic">
-                No dependencies. Add one to constrain when this event can be
-                scheduled.
+                No dependencies. Add one to constrain when this event can be scheduled.
               </div>
             ) : (
               <div className="space-y-2">
@@ -739,9 +687,7 @@ function EventModal({
                   <div key={idx} className="flex items-center gap-2">
                     <Select
                       value={dep.id}
-                      onValueChange={(value) =>
-                        updateDependency(idx, { id: value })
-                      }
+                      onValueChange={(value) => updateDependency(idx, { id: value })}
                     >
                       <SelectTrigger className="flex-1">
                         <SelectValue />
@@ -801,13 +747,13 @@ function EventModal({
 
           <DialogFooter className="flex justify-between pt-4">
             <div>
-              {mode === "edit" && onDelete && (
+              {mode === 'edit' && onDelete && (
                 <Button
                   type="button"
                   variant="destructive"
                   onClick={() => {
-                    onDelete();
-                    onClose();
+                    onDelete()
+                    onClose()
                   }}
                 >
                   Delete
@@ -819,57 +765,48 @@ function EventModal({
                 Cancel
               </Button>
               <Button type="submit" disabled={isSaving}>
-                {isSaving ? "Saving…" : mode === "add" ? "Add" : "Save"}
+                {isSaving ? 'Saving…' : mode === 'add' ? 'Add' : 'Save'}
               </Button>
             </div>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  );
+  )
 }
 
 interface HorizontalResizeHandleProps {
-  edge: "left" | "right";
-  onMouseDown: (e: React.MouseEvent) => void;
+  edge: 'left' | 'right'
+  onMouseDown: (e: React.MouseEvent) => void
 }
 
-function HorizontalResizeHandle({
-  edge,
-  onMouseDown,
-}: HorizontalResizeHandleProps) {
+function HorizontalResizeHandle({ edge, onMouseDown }: HorizontalResizeHandleProps) {
   return (
     <div
       data-resize-handle
       className={`absolute top-0 bottom-0 w-3 cursor-ew-resize z-30 bg-transparent hover:bg-neutral-500/30 pointer-events-auto ${
-        edge === "left" ? "left-0" : "right-0"
+        edge === 'left' ? 'left-0' : 'right-0'
       }`}
       onMouseDown={onMouseDown}
       onClick={(e) => {
-        e.stopPropagation();
+        e.stopPropagation()
       }}
-      style={{ touchAction: "none" }}
+      style={{ touchAction: 'none' }}
     >
       <div
         className={`absolute top-1/2 -translate-y-1/2 h-8 w-1 bg-neutral-400 rounded opacity-50 group-hover:opacity-100 transition-opacity ${
-          edge === "left" ? "left-1" : "right-1"
+          edge === 'left' ? 'left-1' : 'right-1'
         }`}
       />
     </div>
-  );
+  )
 }
 
-function ResizeErrorToast({
-  error,
-  onDismiss,
-}: {
-  error: ResizeError;
-  onDismiss: () => void;
-}) {
+function ResizeErrorToast({ error, onDismiss }: { error: ResizeError; onDismiss: () => void }) {
   useEffect(() => {
-    const timer = setTimeout(onDismiss, 5000);
-    return () => clearTimeout(timer);
-  }, [onDismiss]);
+    const timer = setTimeout(onDismiss, 5000)
+    return () => clearTimeout(timer)
+  }, [onDismiss])
 
   return (
     <div className="fixed bottom-5 right-5 z-50 animate-in slide-in-from-bottom-2 fade-in duration-200">
@@ -879,12 +816,9 @@ function ResizeErrorToast({
             <div className="text-destructive text-lg">!</div>
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-destructive-foreground mb-1">
-                Cannot Resize{" "}
-                <span className="italic">&ldquo;{error.eventTitle}&rdquo;</span>
+                Cannot Resize <span className="italic">&ldquo;{error.eventTitle}&rdquo;</span>
               </div>
-              <div className="text-sm text-destructive-foreground/80 mb-2">
-                {error.message}
-              </div>
+              <div className="text-sm text-destructive-foreground/80 mb-2">{error.message}</div>
               {error.conflicts && error.conflicts.length > 0 && (
                 <div className="mt-2 space-y-1">
                   <div className="text-xs text-destructive-foreground/70 font-medium uppercase tracking-wide">
@@ -896,10 +830,9 @@ function ResizeErrorToast({
                       className="text-xs text-destructive-foreground/70 bg-destructive/20 rounded px-2 py-1.5 border border-destructive/30"
                     >
                       <div className="font-medium text-destructive-foreground/90">
-                        {conflict.date}{" "}
+                        {conflict.date}{' '}
                         <span className="text-destructive">
-                          {conflict.conflictRange.start}–
-                          {conflict.conflictRange.end}
+                          {conflict.conflictRange.start}–{conflict.conflictRange.end}
                         </span>
                       </div>
                       <div className="text-destructive-foreground/50 mt-0.5">
@@ -922,41 +855,41 @@ function ResizeErrorToast({
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }
 
-const EVENT_GAP_PX = 3;
+const EVENT_GAP_PX = 3
 const DEP_HANDLE_STYLE: React.CSSProperties = {
   width: 10,
   height: 10,
-  background: "#f59e0b",
-  border: "2px solid #78350f",
-  borderRadius: "50%",
-  pointerEvents: "all",
-  cursor: "crosshair",
+  background: '#f59e0b',
+  border: '2px solid #78350f',
+  borderRadius: '50%',
+  pointerEvents: 'all',
+  cursor: 'crosshair',
   opacity: 0.85,
   zIndex: 40,
-};
+}
 
 interface HandlePosition {
-  eventId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  eventId: string
+  x: number
+  y: number
+  width: number
+  height: number
 }
 
 function DepCanvasNode({ data }: NodeProps) {
   const { handlePositions } = data as {
-    handlePositions: Array<HandlePosition>;
-  };
+    handlePositions: Array<HandlePosition>
+  }
   return (
     <div
       style={{
-        position: "relative",
-        width: "100%",
-        height: "100%",
-        pointerEvents: "none",
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
       }}
     >
       {handlePositions.map(({ eventId, x, y, width, height }) => (
@@ -967,12 +900,12 @@ function DepCanvasNode({ data }: NodeProps) {
             id={`${eventId}-target-start`}
             style={{
               ...DEP_HANDLE_STYLE,
-              position: "absolute",
+              position: 'absolute',
               left: x,
-              right: "auto",
+              right: 'auto',
               top: y + height / 2,
-              bottom: "auto",
-              transform: "translate(-50%, -50%)",
+              bottom: 'auto',
+              transform: 'translate(-50%, -50%)',
             }}
           />
           <Handle
@@ -981,12 +914,12 @@ function DepCanvasNode({ data }: NodeProps) {
             id={`${eventId}-source-start`}
             style={{
               ...DEP_HANDLE_STYLE,
-              position: "absolute",
+              position: 'absolute',
               left: x,
-              right: "auto",
+              right: 'auto',
               top: y + height / 2,
-              bottom: "auto",
-              transform: "translate(-50%, -50%)",
+              bottom: 'auto',
+              transform: 'translate(-50%, -50%)',
               opacity: 0,
             }}
           />
@@ -996,12 +929,12 @@ function DepCanvasNode({ data }: NodeProps) {
             id={`${eventId}-target-end`}
             style={{
               ...DEP_HANDLE_STYLE,
-              position: "absolute",
+              position: 'absolute',
               left: x + width,
-              right: "auto",
+              right: 'auto',
               top: y + height / 2,
-              bottom: "auto",
-              transform: "translate(-50%, -50%)",
+              bottom: 'auto',
+              transform: 'translate(-50%, -50%)',
               opacity: 0,
             }}
           />
@@ -1011,48 +944,44 @@ function DepCanvasNode({ data }: NodeProps) {
             id={`${eventId}-source-end`}
             style={{
               ...DEP_HANDLE_STYLE,
-              position: "absolute",
+              position: 'absolute',
               left: x + width,
-              right: "auto",
+              right: 'auto',
               top: y + height / 2,
-              bottom: "auto",
-              transform: "translate(-50%, -50%)",
+              bottom: 'auto',
+              transform: 'translate(-50%, -50%)',
             }}
           />
         </React.Fragment>
       ))}
     </div>
-  );
+  )
 }
 
-const DEP_CANVAS_NODE_TYPES = { depCanvas: DepCanvasNode };
-const CANVAS_NODE_ID = "__dep_canvas__";
+const DEP_CANVAS_NODE_TYPES = { depCanvas: DepCanvasNode }
+const CANVAS_NODE_ID = '__dep_canvas__'
 
 function buildTimelineEdges(events: Array<Event<Resource>>): Array<Edge> {
-  const visibleEventIds = new Set(events.map((e) => e.id));
+  const visibleEventIds = new Set(events.map((e) => e.id))
 
   return events.flatMap((event) => {
-    const deps = (event.dependsOn ?? []).filter((d) =>
-      visibleEventIds.has(d.id),
-    );
+    const deps = (event.dependsOn ?? []).filter((d) => visibleEventIds.has(d.id))
 
     return deps.map((dep) => {
-      const style = DEP_TYPE_STYLES[dep.type];
-      const sourceAnchor =
-        dep.type === "SS" || dep.type === "SF" ? "start" : "end";
-      const targetAnchor =
-        dep.type === "FF" || dep.type === "SF" ? "end" : "start";
+      const style = DEP_TYPE_STYLES[dep.type]
+      const sourceAnchor = dep.type === 'SS' || dep.type === 'SF' ? 'start' : 'end'
+      const targetAnchor = dep.type === 'FF' || dep.type === 'SF' ? 'end' : 'start'
       return {
         id: `dep-${dep.id}-${event.id}-${dep.type}`,
         source: CANVAS_NODE_ID,
         sourceHandle: `${dep.id}-source-${sourceAnchor}`,
         target: CANVAS_NODE_ID,
         targetHandle: `${event.id}-target-${targetAnchor}`,
-        type: "smoothstep",
+        type: 'smoothstep',
         animated: true,
         label: dep.type,
         labelStyle: {
-          fill: "#fff",
+          fill: '#fff',
           fontSize: 10,
           fontWeight: 700,
         },
@@ -1068,28 +997,28 @@ function buildTimelineEdges(events: Array<Event<Resource>>): Array<Edge> {
           strokeWidth: 2,
           strokeDasharray: style.strokeDasharray,
         },
-      };
-    });
-  });
+      }
+    })
+  })
 }
 
 interface TimelineDependencyOverlayProps {
-  timelineLayout: TimelineLayout<Resource, Event<Resource>>;
-  eventBarRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
-  rowsContainerRef: React.RefObject<HTMLDivElement | null>;
+  timelineLayout: TimelineLayout<Resource, Event<Resource>>
+  eventBarRefs: React.MutableRefObject<Map<string, HTMLDivElement>>
+  rowsContainerRef: React.RefObject<HTMLDivElement | null>
   resizeState: {
-    isResizing: boolean;
-    eventId: string | null;
-    previewStart: string | null;
-    previewEnd: string | null;
-  };
-  activeDragEvent: any;
+    isResizing: boolean
+    eventId: string | null
+    previewStart: string | null
+    previewEnd: string | null
+  }
+  activeDragEvent: any
   onDependencyCreate: (
     sourceId: string,
     targetId: string,
-    sourceAnchor: "start" | "end",
-    targetAnchor: "start" | "end",
-  ) => void;
+    sourceAnchor: 'start' | 'end',
+    targetAnchor: 'start' | 'end',
+  ) => void
 }
 
 function TimelineDependencyOverlay({
@@ -1100,55 +1029,53 @@ function TimelineDependencyOverlay({
   onDependencyCreate,
   eventBarRefs,
 }: TimelineDependencyOverlayProps) {
-  const [rfNodes, setRfNodes, onNodesChangeBase] = useNodesState<Node>([]);
-  const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState<Edge>([]);
-  const isConnectingRef = useRef(false);
+  const [rfNodes, setRfNodes, onNodesChangeBase] = useNodesState<Node>([])
+  const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState<Edge>([])
+  const isConnectingRef = useRef(false)
 
   const lockScroll = useCallback(() => {
-    isConnectingRef.current = true;
-  }, []);
+    isConnectingRef.current = true
+  }, [])
 
   const unlockScroll = useCallback(() => {
-    isConnectingRef.current = false;
-  }, []);
+    isConnectingRef.current = false
+  }, [])
 
   const onNodesChange = useCallback(
     (changes: Parameters<typeof onNodesChangeBase>[0]) => {
-      const filtered = changes.filter(
-        (c) => !("id" in c && c.id === CANVAS_NODE_ID),
-      );
-      if (filtered.length > 0) onNodesChangeBase(filtered);
+      const filtered = changes.filter((c) => !('id' in c && c.id === CANVAS_NODE_ID))
+      if (filtered.length > 0) onNodesChangeBase(filtered)
     },
     [onNodesChangeBase],
-  );
+  )
 
   const updatePositions = useCallback(() => {
-    const container = rowsContainerRef.current;
-    if (!container) return;
+    const container = rowsContainerRef.current
+    if (!container) return
 
-    const containerRect = container.getBoundingClientRect();
-    const positions: Array<HandlePosition> = [];
+    const containerRect = container.getBoundingClientRect()
+    const positions: Array<HandlePosition> = []
 
     timelineLayout.rows.forEach((row: TimelineResourceRow) => {
       row.events.forEach((e: any) => {
-        const el = eventBarRefs.current.get(e.event.id);
-        if (!el) return;
+        const el = eventBarRefs.current.get(e.event.id)
+        if (!el) return
 
-        const rect = el.getBoundingClientRect();
+        const rect = el.getBoundingClientRect()
         positions.push({
           eventId: e.event.id,
           x: rect.left - containerRect.left,
           y: rect.top - containerRect.top,
           width: rect.width,
           height: rect.height,
-        });
-      });
-    });
+        })
+      })
+    })
 
     setRfNodes([
       {
         id: CANVAS_NODE_ID,
-        type: "depCanvas",
+        type: 'depCanvas',
         position: { x: 0, y: 0 },
         width: containerRect.width,
         height: containerRect.height,
@@ -1157,55 +1084,46 @@ function TimelineDependencyOverlay({
         selectable: false,
         draggable: false,
       },
-    ]);
+    ])
     const allEvents = Array.from(
       new Map(
         timelineLayout.rows
           .flatMap((r: any) => r.events.map((e: any) => e.event))
           .map((e: any) => [e.id, e]),
       ).values(),
-    );
-    setRfEdges(buildTimelineEdges(allEvents));
-  }, [timelineLayout, rowsContainerRef, eventBarRefs, setRfNodes, setRfEdges]);
+    )
+    setRfEdges(buildTimelineEdges(allEvents))
+  }, [timelineLayout, rowsContainerRef, eventBarRefs, setRfNodes, setRfEdges])
 
   useLayoutEffect(() => {
-    updatePositions();
-  }, [updatePositions, resizeState, activeDragEvent]);
+    updatePositions()
+  }, [updatePositions, resizeState, activeDragEvent])
 
   useEffect(() => {
-    const container = rowsContainerRef.current;
-    if (!container) return;
+    const container = rowsContainerRef.current
+    if (!container) return
 
-    const observer = new ResizeObserver(() => updatePositions());
-    observer.observe(container);
-    return () => observer.disconnect();
-  }, [rowsContainerRef, updatePositions]);
+    const observer = new ResizeObserver(() => updatePositions())
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [rowsContainerRef, updatePositions])
 
   const handleConnect = useCallback(
     (connection: Connection) => {
-      const sourceMatch = connection.sourceHandle?.match(
-        /^(.+)-source-(start|end)$/,
-      );
-      const targetMatch = connection.targetHandle?.match(
-        /^(.+)-target-(start|end)$/,
-      );
-      if (!sourceMatch || !targetMatch) return;
+      const sourceMatch = connection.sourceHandle?.match(/^(.+)-source-(start|end)$/)
+      const targetMatch = connection.targetHandle?.match(/^(.+)-target-(start|end)$/)
+      if (!sourceMatch || !targetMatch) return
 
-      const sourceEventId = sourceMatch[1];
-      const sourceAnchor = sourceMatch[2] as "start" | "end";
-      const targetEventId = targetMatch[1];
-      const targetAnchor = targetMatch[2] as "start" | "end";
+      const sourceEventId = sourceMatch[1]
+      const sourceAnchor = sourceMatch[2] as 'start' | 'end'
+      const targetEventId = targetMatch[1]
+      const targetAnchor = targetMatch[2] as 'start' | 'end'
 
-      if (sourceEventId === targetEventId) return;
-      onDependencyCreate(
-        sourceEventId,
-        targetEventId,
-        sourceAnchor,
-        targetAnchor,
-      );
+      if (sourceEventId === targetEventId) return
+      onDependencyCreate(sourceEventId, targetEventId, sourceAnchor, targetAnchor)
     },
     [onDependencyCreate],
-  );
+  )
 
   return (
     <>
@@ -1231,21 +1149,21 @@ function TimelineDependencyOverlay({
         preventScrolling={false}
         autoPanOnConnect={false}
         style={{
-          background: "transparent",
-          overflow: "hidden",
-          pointerEvents: "none",
+          background: 'transparent',
+          overflow: 'hidden',
+          pointerEvents: 'none',
         }}
         proOptions={{ hideAttribution: true }}
         autoPanOnNodeDrag={false}
       />
     </>
-  );
+  )
 }
 
 function timeStringToFraction(time: string): number {
-  const parts = time.split(":");
-  const totalHours = Number(parts[0]) + Number(parts[1]) / 60;
-  return Math.min(totalHours, 24) / 24;
+  const parts = time.split(':')
+  const totalHours = Number(parts[0]) + Number(parts[1]) / 60
+  return Math.min(totalHours, 24) / 24
 }
 
 const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
@@ -1261,20 +1179,20 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
   onEventClick,
   getResizeHandleProps,
 }: {
-  event: Event<Resource>;
-  left: number;
-  width: number;
-  lane: number;
-  laneCount: number;
-  isStartClipped: boolean;
-  isEndClipped: boolean;
-  color: any;
-  registerEventBar: (eventId: string) => (el: HTMLDivElement | null) => void;
-  onEventClick: (event: Event<Resource>) => void;
-  getResizeHandleProps: ReturnType<typeof useCalendar>["getResizeHandleProps"];
+  event: Event<Resource>
+  left: number
+  width: number
+  lane: number
+  laneCount: number
+  isStartClipped: boolean
+  isEndClipped: boolean
+  color: any
+  registerEventBar: (eventId: string) => (el: HTMLDivElement | null) => void
+  onEventClick: (event: Event<Resource>) => void
+  getResizeHandleProps: ReturnType<typeof useCalendar>['getResizeHandleProps']
 }) {
-  const laneHeightPct = 100 / laneCount;
-  const topPct = lane * laneHeightPct;
+  const laneHeightPct = 100 / laneCount
+  const topPct = lane * laneHeightPct
 
   const {
     ref: setDraggableRef,
@@ -1283,29 +1201,29 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
   } = useDraggable({
     id: `event-${event.id}`,
     data: { event, left, width, laneHeightPct, topPct, lane, color },
-  });
+  })
 
-  const depCount = event.dependsOn?.length ?? 0;
+  const depCount = event.dependsOn?.length ?? 0
 
   return (
     <div
       ref={(el) => {
-        registerEventBar(event.id)(el);
-        setDraggableRef(el);
+        registerEventBar(event.id)(el)
+        setDraggableRef(el)
       }}
       data-event-id={event.id}
       data-left={left}
       data-width={width}
       className={`group absolute border ${color.bg} ${color.border} ${color.text} flex items-center text-xs font-medium overflow-hidden shadow-xs z-30 cursor-pointer hover:brightness-110 transition-[filter] pointer-events-auto ${
-        isDragging ? "opacity-40 shadow-xl z-50" : ""
+        isDragging ? 'opacity-40 shadow-xl z-50' : ''
       } ${
         !isStartClipped && !isEndClipped
-          ? "rounded-md"
+          ? 'rounded-md'
           : !isStartClipped
-            ? "rounded-l-md"
+            ? 'rounded-l-md'
             : !isEndClipped
-              ? "rounded-r-md"
-              : ""
+              ? 'rounded-r-md'
+              : ''
       }`}
       style={{
         left: `${left}%`,
@@ -1316,11 +1234,11 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
       title={`${event.title} (${toPlainDateString(event.start)}T${toPlainTimeString(event.start)} \u2192 ${toPlainDateString(event.end)}T${toPlainTimeString(event.end)})`}
       onClick={(e) => {
         if (
-          !(e.target as HTMLElement).closest("[data-drag-handle]") &&
-          !(e.target as HTMLElement).closest("[data-resize-handle]")
+          !(e.target as HTMLElement).closest('[data-drag-handle]') &&
+          !(e.target as HTMLElement).closest('[data-resize-handle]')
         ) {
-          e.stopPropagation();
-          onEventClick(event);
+          e.stopPropagation()
+          onEventClick(event)
         }
       }}
     >
@@ -1329,7 +1247,7 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
           edge="left"
           {...getResizeHandleProps(
             event.id,
-            "left",
+            'left',
             toPlainDateTimeString(event.start),
             toPlainDateTimeString(event.end),
           )}
@@ -1358,7 +1276,7 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
         {depCount > 0 && (
           <span
             className="shrink-0 text-[10px] leading-none rounded bg-amber-500/40 border border-amber-300/60 px-1 py-0.5 font-semibold"
-            title={`${depCount} dependenc${depCount === 1 ? "y" : "ies"}`}
+            title={`${depCount} dependenc${depCount === 1 ? 'y' : 'ies'}`}
           >
             ↳{depCount}
           </span>
@@ -1393,15 +1311,15 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
           edge="right"
           {...getResizeHandleProps(
             event.id,
-            "right",
+            'right',
             toPlainDateTimeString(event.start),
             toPlainDateTimeString(event.end),
           )}
         />
       )}
     </div>
-  );
-});
+  )
+})
 
 const HorizontalTimelineRow = React.memo(function HorizontalTimelineRow({
   row,
@@ -1415,60 +1333,60 @@ const HorizontalTimelineRow = React.memo(function HorizontalTimelineRow({
   rowWidthPx,
   style,
 }: {
-  row: TimelineResourceRow<Resource, Event<Resource>>;
-  days: Array<Day<Resource, Event<Resource>>>;
-  resourceColorIndex: number;
-  onEventClick: (event: Event<Resource>) => void;
+  row: TimelineResourceRow<Resource, Event<Resource>>
+  days: Array<Day<Resource, Event<Resource>>>
+  resourceColorIndex: number
+  onEventClick: (event: Event<Resource>) => void
   getResizeHandleProps: ReturnType<
     typeof useCalendar<typeof features, Resource, Event<Resource>>
-  >["getResizeHandleProps"];
+  >['getResizeHandleProps']
   getDayColumnProps: ReturnType<
     typeof useCalendar<typeof features, Resource, Event<Resource>>
-  >["getDayColumnProps"];
+  >['getDayColumnProps']
   getUnavailableRanges: ReturnType<
     typeof useCalendar<typeof features, Resource, Event<Resource>>
-  >["getUnavailableRanges"];
-  eventBarRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
-  rowWidthPx: number;
-  style?: React.CSSProperties;
+  >['getUnavailableRanges']
+  eventBarRefs: React.MutableRefObject<Map<string, HTMLDivElement>>
+  rowWidthPx: number
+  style?: React.CSSProperties
 }) {
   const { ref: setDroppableRef } = useDroppable({
     id: `resource-${row.resource.id}`,
     data: { resource: row.resource },
-  });
+  })
 
-  const dayPercentage = 100 / days.length;
+  const dayPercentage = 100 / days.length
   const zoneColor =
     RESOURCE_ZONE_COLORS[resourceColorIndex % RESOURCE_ZONE_COLORS.length] ??
-    RESOURCE_ZONE_COLORS[0];
+    RESOURCE_ZONE_COLORS[0]
 
   const registerEventBar = useCallback(
     (eventId: string) => (el: HTMLDivElement | null) => {
       if (el) {
-        eventBarRefs.current.set(eventId, el);
+        eventBarRefs.current.set(eventId, el)
       } else {
-        eventBarRefs.current.delete(eventId);
+        eventBarRefs.current.delete(eventId)
       }
     },
     [eventBarRefs],
-  );
+  )
 
   return (
     <div
       ref={setDroppableRef}
       className="relative border-b border-neutral-800/50"
-      style={{ minHeight: "56px", width: rowWidthPx, ...style }}
+      style={{ minHeight: '56px', width: rowWidthPx, ...style }}
     >
       {days.map((day, i) => {
         const unavailableRanges = getUnavailableRanges(day.isoDate, {
           resourceIds: [row.resource.id],
-        });
+        })
 
         return (
           <div
             key={day.isoDate}
             className={`absolute top-0 bottom-0 border-r border-neutral-800/30 ${
-              day.isToday ? "bg-neutral-800/20" : ""
+              day.isToday ? 'bg-neutral-800/20' : ''
             }`}
             style={{
               left: `${i * dayPercentage}%`,
@@ -1484,8 +1402,8 @@ const HorizontalTimelineRow = React.memo(function HorizontalTimelineRow({
               />
             ))}
             {unavailableRanges.map((range, rangeIdx) => {
-              const startFraction = timeStringToFraction(range.startTime);
-              const endFraction = timeStringToFraction(range.endTime);
+              const startFraction = timeStringToFraction(range.startTime)
+              const endFraction = timeStringToFraction(range.endTime)
               return (
                 <div
                   key={rangeIdx}
@@ -1497,165 +1415,152 @@ const HorizontalTimelineRow = React.memo(function HorizontalTimelineRow({
                   }}
                   title={`Unavailable — ${row.resource.label}: ${range.startTime}–${range.endTime}`}
                 />
-              );
+              )
             })}
           </div>
-        );
+        )
       })}
-      {row.events.map(
-        ({ event, left, width, lane, isStartClipped, isEndClipped }) => {
-          const color = getEventColor(event.id);
+      {row.events.map(({ event, left, width, lane, isStartClipped, isEndClipped }) => {
+        const color = getEventColor(event.id)
 
-          return (
-            <DraggableTimelineEvent
-              key={event.id}
-              event={event}
-              left={left}
-              width={width}
-              lane={lane}
-              laneCount={row.laneCount}
-              isStartClipped={isStartClipped}
-              isEndClipped={isEndClipped}
-              color={color}
-              registerEventBar={registerEventBar}
-              onEventClick={onEventClick}
-              getResizeHandleProps={getResizeHandleProps}
-            />
-          );
-        },
-      )}
+        return (
+          <DraggableTimelineEvent
+            key={event.id}
+            event={event}
+            left={left}
+            width={width}
+            lane={lane}
+            laneCount={row.laneCount}
+            isStartClipped={isStartClipped}
+            isEndClipped={isEndClipped}
+            color={color}
+            registerEventBar={registerEventBar}
+            onEventClick={onEventClick}
+            getResizeHandleProps={getResizeHandleProps}
+          />
+        )
+      })}
     </div>
-  );
-});
+  )
+})
 
 function TimelineDemo() {
   const [modalState, setModalState] = useState<{
-    isOpen: boolean;
-    mode: "add" | "edit";
-    eventId?: string;
-    initialData: EventFormData;
-  }>({ isOpen: false, mode: "add", initialData: emptyFormData });
+    isOpen: boolean
+    mode: 'add' | 'edit'
+    eventId?: string
+    initialData: EventFormData
+  }>({ isOpen: false, mode: 'add', initialData: emptyFormData })
 
-  const [resizeError, setResizeError] = useState<ResizeError | null>(null);
+  const [resizeError, setResizeError] = useState<ResizeError | null>(null)
 
   const [pendingDep, setPendingDep] = useState<{
-    sourceId: string;
-    targetId: string;
-    sourceAnchor: "start" | "end";
-    targetAnchor: "start" | "end";
-    sourceTitle: string;
-    targetTitle: string;
-    suggestedType: DependencyType;
-  } | null>(null);
+    sourceId: string
+    targetId: string
+    sourceAnchor: 'start' | 'end'
+    targetAnchor: 'start' | 'end'
+    sourceTitle: string
+    targetTitle: string
+    suggestedType: DependencyType
+  } | null>(null)
 
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const timelineContentRef = useRef<HTMLDivElement>(null);
-  const containerWidthRef = useRef(0);
-  const MIN_DAY_WIDTH_PX = 1600;
-  const ROW_HEIGHT_PX = 56;
-  const [viewportWidth, setViewportWidth] = useState(0);
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const timelineContentRef = useRef<HTMLDivElement>(null)
+  const containerWidthRef = useRef(0)
+  const MIN_DAY_WIDTH_PX = 1600
+  const ROW_HEIGHT_PX = 56
+  const [viewportWidth, setViewportWidth] = useState(0)
 
   useEffect(() => {
     const measure = () => {
-      const el = scrollContainerRef.current;
-      if (el) setViewportWidth(el.clientWidth);
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    if (scrollContainerRef.current)
-      observer.observe(scrollContainerRef.current);
-    return () => observer.disconnect();
-  }, []);
+      const el = scrollContainerRef.current
+      if (el) setViewportWidth(el.clientWidth)
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    if (scrollContainerRef.current) observer.observe(scrollContainerRef.current)
+    return () => observer.disconnect()
+  }, [])
 
   const calendar = useCalendar({
     features,
-    viewMode: { value: 1, unit: "week" },
+    viewMode: { value: 1, unit: 'week' },
     events: [],
     resources: sampleResources,
     calendars: workingCalendars,
-    timeZone: "UTC",
+    timeZone: 'UTC',
     fetchEvents: async ({ start, end }) => {
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      await new Promise((resolve) => setTimeout(resolve, 800))
 
-      const startDate = new Date(start);
-      const endDate = new Date(end);
+      const startDate = new Date(start)
+      const endDate = new Date(end)
 
       return MOCK_DB.filter((e) => {
-        const eStart = new Date(e.start as string);
-        const eEnd = new Date(e.end as string);
-        return eStart <= endDate && eEnd >= startDate;
-      });
+        const eStart = new Date(e.start as string)
+        const eEnd = new Date(e.end as string)
+        return eStart <= endDate && eEnd >= startDate
+      })
     },
     resize: {
       enabled: true,
       get containerWidth() {
-        return containerWidthRef.current;
+        return containerWidthRef.current
       },
-      orientation: "horizontal",
+      orientation: 'horizontal',
       constraints: {
         minDurationMinutes: 15,
         snapToMinutes: 15,
       },
       onResizeError: (error) => {
-        setResizeError(error);
+        setResizeError(error)
       },
     },
-  });
+  })
 
-  const horizNavCooldownRef = useRef(false);
+  const horizNavCooldownRef = useRef(false)
 
   useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
+    const container = scrollContainerRef.current
+    if (!container) return
 
     const onScroll = () => {
-      if (horizNavCooldownRef.current) return;
-      const { scrollLeft, scrollWidth, clientWidth } = container;
+      if (horizNavCooldownRef.current) return
+      const { scrollLeft, scrollWidth, clientWidth } = container
 
-      if (
-        scrollLeft + clientWidth >= scrollWidth - 8 &&
-        calendar.canGoNextPeriod()
-      ) {
-        horizNavCooldownRef.current = true;
-        calendar.goToNextPeriod();
+      if (scrollLeft + clientWidth >= scrollWidth - 8 && calendar.canGoNextPeriod()) {
+        horizNavCooldownRef.current = true
+        calendar.goToNextPeriod()
         requestAnimationFrame(() => {
-          container.scrollLeft = 0;
+          container.scrollLeft = 0
           setTimeout(() => {
-            horizNavCooldownRef.current = false;
-          }, 1000);
-        });
-      } else if (
-        scrollLeft <= 8 &&
-        scrollWidth > clientWidth &&
-        calendar.canGoPreviousPeriod()
-      ) {
-        horizNavCooldownRef.current = true;
-        calendar.goToPreviousPeriod();
+            horizNavCooldownRef.current = false
+          }, 1000)
+        })
+      } else if (scrollLeft <= 8 && scrollWidth > clientWidth && calendar.canGoPreviousPeriod()) {
+        horizNavCooldownRef.current = true
+        calendar.goToPreviousPeriod()
         requestAnimationFrame(() => {
-          container.scrollLeft = container.scrollWidth - container.clientWidth;
+          container.scrollLeft = container.scrollWidth - container.clientWidth
           setTimeout(() => {
-            horizNavCooldownRef.current = false;
-          }, 1000);
-        });
+            horizNavCooldownRef.current = false
+          }, 1000)
+        })
       }
-    };
+    }
 
-    container.addEventListener("scroll", onScroll, { passive: true });
-    return () => container.removeEventListener("scroll", onScroll);
-  }, [calendar]);
+    container.addEventListener('scroll', onScroll, { passive: true })
+    return () => container.removeEventListener('scroll', onScroll)
+  }, [calendar])
 
-  const timelineLayout = useMemo(
-    () => calendar.getTimelineLayout(),
-    [calendar.days],
-  );
+  const timelineLayout = useMemo(() => calendar.getTimelineLayout(), [calendar.days])
 
   const dayWidthPx = Math.max(
     MIN_DAY_WIDTH_PX,
     viewportWidth > 0 && calendar.days.length > 0
       ? viewportWidth / calendar.days.length
       : MIN_DAY_WIDTH_PX,
-  );
-  const totalContentWidthPx = calendar.days.length * dayWidthPx;
+  )
+  const totalContentWidthPx = calendar.days.length * dayWidthPx
 
   const columnVirtualizer = useVirtualizer({
     horizontal: true,
@@ -1663,49 +1568,41 @@ function TimelineDemo() {
     getScrollElement: () => scrollContainerRef.current,
     estimateSize: () => dayWidthPx,
     overscan: 2,
-  });
+  })
 
   useLayoutEffect(() => {
-    columnVirtualizer.measure();
-  }, [dayWidthPx, columnVirtualizer]);
+    columnVirtualizer.measure()
+  }, [dayWidthPx, columnVirtualizer])
 
   const rowVirtualizer = useVirtualizer({
     count: timelineLayout.rows.length,
     getScrollElement: () => scrollContainerRef.current,
     estimateSize: () => ROW_HEIGHT_PX,
     overscan: 3,
-  });
+  })
 
   useEffect(() => {
-    containerWidthRef.current = totalContentWidthPx;
-  }, [totalContentWidthPx]);
+    containerWidthRef.current = totalContentWidthPx
+  }, [totalContentWidthPx])
 
-  const eventBarRefsMap = useRef<Map<string, HTMLDivElement>>(new Map());
-  const rowsContainerRef = useRef<HTMLDivElement>(null);
+  const eventBarRefsMap = useRef<Map<string, HTMLDivElement>>(new Map())
+  const rowsContainerRef = useRef<HTMLDivElement>(null)
 
-  const firstDayIso = useMemo(
-    () => calendar.days[0]?.isoDate ?? "",
-    [calendar.days],
-  );
+  const firstDayIso = useMemo(() => calendar.days[0]?.isoDate ?? '', [calendar.days])
 
-  const totalDays = calendar.days.length;
-  const { resizeState } = calendar;
-  const prevResizedIdRef = useRef<string | null>(null);
+  const totalDays = calendar.days.length
+  const { resizeState } = calendar
+  const prevResizedIdRef = useRef<string | null>(null)
 
   useLayoutEffect(() => {
-    const prevId = prevResizedIdRef.current;
+    const prevId = prevResizedIdRef.current
 
     if (prevId && (!resizeState.isResizing || resizeState.eventId !== prevId)) {
-      const prevEl = eventBarRefsMap.current.get(prevId);
+      const prevEl = eventBarRefsMap.current.get(prevId)
       if (prevEl) {
-        prevEl.classList.remove(
-          "ring-2",
-          "ring-neutral-500",
-          "z-20",
-          "brightness-110",
-        );
+        prevEl.classList.remove('ring-2', 'ring-neutral-500', 'z-20', 'brightness-110')
       }
-      prevResizedIdRef.current = null;
+      prevResizedIdRef.current = null
     }
 
     if (
@@ -1715,48 +1612,45 @@ function TimelineDemo() {
       !resizeState.previewEnd ||
       !firstDayIso
     ) {
-      return;
+      return
     }
 
-    const el = eventBarRefsMap.current.get(resizeState.eventId);
-    if (!el) return;
+    const el = eventBarRefsMap.current.get(resizeState.eventId)
+    if (!el) return
 
     const preview = calculateTimelineResizePreview({
       previewStart: resizeState.previewStart,
       previewEnd: resizeState.previewEnd,
       firstDayIso,
       totalDays,
-    });
+    })
 
-    el.style.left = preview.left;
-    el.style.width = preview.width;
-    el.classList.add("ring-2", "ring-neutral-500", "z-20", "brightness-110");
-    prevResizedIdRef.current = resizeState.eventId;
-  }, [resizeState, firstDayIso, totalDays]);
+    el.style.left = preview.left
+    el.style.width = preview.width
+    el.classList.add('ring-2', 'ring-neutral-500', 'z-20', 'brightness-110')
+    prevResizedIdRef.current = resizeState.eventId
+  }, [resizeState, firstDayIso, totalDays])
 
   const inferDepType = useCallback(
-    (
-      sourceAnchor: "start" | "end",
-      targetAnchor: "start" | "end",
-    ): DependencyType => {
-      if (sourceAnchor === "end" && targetAnchor === "start") return "FS";
-      if (sourceAnchor === "start" && targetAnchor === "start") return "SS";
-      if (sourceAnchor === "end" && targetAnchor === "end") return "FF";
-      return "SF";
+    (sourceAnchor: 'start' | 'end', targetAnchor: 'start' | 'end'): DependencyType => {
+      if (sourceAnchor === 'end' && targetAnchor === 'start') return 'FS'
+      if (sourceAnchor === 'start' && targetAnchor === 'start') return 'SS'
+      if (sourceAnchor === 'end' && targetAnchor === 'end') return 'FF'
+      return 'SF'
     },
     [],
-  );
+  )
 
   const handleDependencyDragged = useCallback(
     (
       sourceId: string,
       targetId: string,
-      sourceAnchor: "start" | "end",
-      targetAnchor: "start" | "end",
+      sourceAnchor: 'start' | 'end',
+      targetAnchor: 'start' | 'end',
     ) => {
-      const sourceEvent = calendar.getEvents().find((e) => e.id === sourceId);
-      const targetEvent = calendar.getEvents().find((e) => e.id === targetId);
-      if (!sourceEvent || !targetEvent) return;
+      const sourceEvent = calendar.getEvents().find((e) => e.id === sourceId)
+      const targetEvent = calendar.getEvents().find((e) => e.id === targetId)
+      if (!sourceEvent || !targetEvent) return
 
       setPendingDep({
         sourceId,
@@ -1766,34 +1660,30 @@ function TimelineDemo() {
         sourceTitle: sourceEvent.title,
         targetTitle: targetEvent.title,
         suggestedType: inferDepType(sourceAnchor, targetAnchor),
-      });
+      })
     },
     [calendar, inferDepType],
-  );
+  )
 
   const finalizeDependency = useCallback(
     (type: DependencyType) => {
-      if (!pendingDep) return;
-      const result = calendar.createDependency(
-        pendingDep.sourceId,
-        pendingDep.targetId,
-        type,
-      );
+      if (!pendingDep) return
+      const result = calendar.createDependency(pendingDep.sourceId, pendingDep.targetId, type)
       if (result.blocked && result.error) {
-        setResizeError(result.error);
+        setResizeError(result.error)
       }
-      setPendingDep(null);
+      setPendingDep(null)
     },
     [calendar, pendingDep],
-  );
+  )
 
   const openAddModal = () =>
-    setModalState({ isOpen: true, mode: "add", initialData: emptyFormData });
+    setModalState({ isOpen: true, mode: 'add', initialData: emptyFormData })
 
   const openEditModal = useCallback((event: Event<Resource>) => {
     setModalState({
       isOpen: true,
-      mode: "edit",
+      mode: 'edit',
       eventId: event.id,
       initialData: {
         title: event.title,
@@ -1802,36 +1692,35 @@ function TimelineDemo() {
         endDate: toPlainDateString(event.end),
         endTime: toPlainTimeString(event.end),
         resourceId:
-          typeof event.resources?.[0] === "string"
+          typeof event.resources?.[0] === 'string'
             ? event.resources[0]
             : (event.resources?.[0]?.id ?? resourceDesign.id),
         consumption: event.consumption?.[0] ?? 1,
         manuallyScheduled: event.manuallyScheduled ?? false,
-        constraintType: event.constraint?.type ?? "none",
-        constraintDate:
-          event.constraint?.date.slice(0, 10) ?? toPlainDateString(event.start),
+        constraintType: event.constraint?.type ?? 'none',
+        constraintDate: event.constraint?.date.slice(0, 10) ?? toPlainDateString(event.start),
         dependsOn: event.dependsOn ?? [],
       },
-    });
-  }, []);
+    })
+  }, [])
 
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSaving, setIsSaving] = useState(false)
 
   const handleSave = async (data: EventFormData) => {
-    setIsSaving(true);
+    setIsSaving(true)
     try {
-      const start = `${data.startDate}T${data.startTime}:00`;
-      const end = `${data.endDate}T${data.endTime}:00`;
+      const start = `${data.startDate}T${data.startTime}:00`
+      const end = `${data.endDate}T${data.endTime}:00`
 
-      const resource = sampleResources.find((r) => r.id === data.resourceId);
-      const resources = resource ? [resource] : [];
+      const resource = sampleResources.find((r) => r.id === data.resourceId)
+      const resources = resource ? [resource] : []
       const constraint =
-        data.constraintType === "none"
+        data.constraintType === 'none'
           ? undefined
-          : { type: data.constraintType, date: data.constraintDate };
+          : { type: data.constraintType, date: data.constraintDate }
 
       const result =
-        modalState.mode === "edit" && modalState.eventId
+        modalState.mode === 'edit' && modalState.eventId
           ? await calendar.editEvent(
               modalState.eventId,
               {
@@ -1859,116 +1748,107 @@ function TimelineDemo() {
                 dependsOn: data.dependsOn,
               },
               { dependsOn: data.dependsOn },
-            );
+            )
 
       if (!result.success) {
-        setResizeError(result.error);
-        throw new Error("Validation failed");
+        setResizeError(result.error)
+        throw new Error('Validation failed')
       }
     } finally {
-      setIsSaving(false);
+      setIsSaving(false)
     }
-  };
+  }
 
   const handleDelete = () => {
-    if (modalState.eventId) calendar.removeEvent(modalState.eventId);
-  };
+    if (modalState.eventId) calendar.removeEvent(modalState.eventId)
+  }
 
-  const [activeDragEvent, setActiveDragEvent] = useState<any>(null);
+  const [activeDragEvent, setActiveDragEvent] = useState<any>(null)
 
   const handleDragStart = (e: any) => {
-    setActiveDragEvent(e.operation?.source?.data);
-  };
+    setActiveDragEvent(e.operation?.source?.data)
+  }
 
   const handleDragEnd = async (e: any) => {
-    setActiveDragEvent(null);
-    const sourceData = e.operation?.source?.data;
-    const targetData = e.operation?.target?.data;
+    setActiveDragEvent(null)
+    const sourceData = e.operation?.source?.data
+    const targetData = e.operation?.target?.data
 
-    if (!sourceData || !sourceData.event) return;
+    if (!sourceData || !sourceData.event) return
 
-    const draggedEvent = sourceData.event;
-    const newResource = targetData?.resource || draggedEvent.resources?.[0];
+    const draggedEvent = sourceData.event
+    const newResource = targetData?.resource || draggedEvent.resources?.[0]
 
-    const deltaX =
-      e.operation?.transform?.x ??
-      e.operation?.position?.delta?.x ??
-      e.delta?.x ??
-      0;
+    const deltaX = e.operation?.transform?.x ?? e.operation?.position?.delta?.x ?? e.delta?.x ?? 0
 
     if (deltaX !== 0 || targetData?.resource) {
-      const containerW = containerWidthRef.current || 1;
-      const totalDays = calendar.days.length;
-      const totalHours = totalDays * 24;
-      const hoursShift = (deltaX / containerW) * totalHours;
+      const containerW = containerWidthRef.current || 1
+      const totalDays = calendar.days.length
+      const totalHours = totalDays * 24
+      const hoursShift = (deltaX / containerW) * totalHours
 
-      const snapShift = Math.round(hoursShift / 0.25) * 0.25;
-      const msShift = snapShift * 3600 * 1000;
+      const snapShift = Math.round(hoursShift / 0.25) * 0.25
+      const msShift = snapShift * 3600 * 1000
 
       const resourceChanged =
-        targetData?.resource &&
-        targetData.resource.id !== draggedEvent.resources?.[0]?.id;
+        targetData?.resource && targetData.resource.id !== draggedEvent.resources?.[0]?.id
 
-      if (snapShift === 0 && !resourceChanged) return;
+      if (snapShift === 0 && !resourceChanged) return
 
-      const newStart = new Date(
-        new Date(draggedEvent.start).getTime() + msShift,
-      );
-      const newEnd = new Date(new Date(draggedEvent.end).getTime() + msShift);
+      const newStart = new Date(new Date(draggedEvent.start).getTime() + msShift)
+      const newEnd = new Date(new Date(draggedEvent.end).getTime() + msShift)
 
-      const nextStart = `${toPlainDateString(newStart)}T${toPlainTimeString(newStart)}:00`;
-      const nextEnd = `${toPlainDateString(newEnd)}T${toPlainTimeString(newEnd)}:00`;
+      const nextStart = `${toPlainDateString(newStart)}T${toPlainTimeString(newStart)}:00`
+      const nextEnd = `${toPlainDateString(newEnd)}T${toPlainTimeString(newEnd)}:00`
 
       const validation = calendar.validateMove(
         draggedEvent.id,
         nextStart,
         nextEnd,
         newResource ? [newResource] : [],
-      );
+      )
 
       if (validation.blocked) {
-        getTimeClient().emit("event:update:error", {
+        getTimeClient().emit('event:update:error', {
           eventId: draggedEvent.id,
           eventTitle: draggedEvent.title,
-          reason: "unavailable-time",
-          message:
-            validation.message ?? "This move is blocked by availability.",
+          reason: 'unavailable-time',
+          message: validation.message ?? 'This move is blocked by availability.',
           originalStart: draggedEvent.start,
           originalEnd: draggedEvent.end,
           attemptedStart: nextStart,
           attemptedEnd: nextEnd,
-        });
+        })
 
         setResizeError({
           eventId: draggedEvent.id,
           eventTitle: draggedEvent.title,
-          reason: "unavailable-time",
-          message:
-            validation.message ?? "This move is blocked by availability.",
+          reason: 'unavailable-time',
+          message: validation.message ?? 'This move is blocked by availability.',
           originalStart: draggedEvent.start,
           originalEnd: draggedEvent.end,
-        });
-        return;
+        })
+        return
       }
 
       await calendar.editEvent(draggedEvent.id, {
         start: nextStart,
         end: nextEnd,
         resources: newResource ? [newResource] : [],
-      });
+      })
     }
-  };
+  }
 
   const viewModeOptions = [
-    { label: "Week", value: 1, unit: "week" as const },
-    { label: "2 Weeks", value: 2, unit: "week" as const },
-  ];
+    { label: 'Week', value: 1, unit: 'week' as const },
+    { label: '2 Weeks', value: 2, unit: 'week' as const },
+  ]
 
-  const virtualColumns = columnVirtualizer.getVirtualItems();
-  const virtualRows = rowVirtualizer.getVirtualItems();
-  const rowsTotalHeight = rowVirtualizer.getTotalSize();
+  const virtualColumns = columnVirtualizer.getVirtualItems()
+  const virtualRows = rowVirtualizer.getVirtualItems()
+  const rowsTotalHeight = rowVirtualizer.getTotalSize()
 
-  const allEvents = calendar.getEvents();
+  const allEvents = calendar.getEvents()
 
   return (
     <DragDropProvider onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -2022,12 +1902,11 @@ function TimelineDemo() {
             <div className="ml-auto flex gap-2">
               {viewModeOptions.map((opt) => {
                 const isActive =
-                  calendar.viewMode.value === opt.value &&
-                  calendar.viewMode.unit === opt.unit;
+                  calendar.viewMode.value === opt.value && calendar.viewMode.unit === opt.unit
                 return (
                   <Button
                     key={opt.label}
-                    variant={isActive ? "default" : "outline"}
+                    variant={isActive ? 'default' : 'outline'}
                     size="sm"
                     onClick={() =>
                       calendar.changeViewMode({
@@ -2038,14 +1917,12 @@ function TimelineDemo() {
                   >
                     {opt.label}
                   </Button>
-                );
+                )
               })}
             </div>
           </div>
 
-          <div className="text-lg font-medium text-neutral-400">
-            {calendar.formatPeriodLabel()}
-          </div>
+          <div className="text-lg font-medium text-neutral-400">{calendar.formatPeriodLabel()}</div>
         </div>
 
         <div className="border border-neutral-800 rounded-lg overflow-hidden bg-black">
@@ -2059,8 +1936,7 @@ function TimelineDemo() {
               </div>
               {sampleResources.map((resource, idx) => {
                 const zoneColor =
-                  RESOURCE_ZONE_COLORS[idx % RESOURCE_ZONE_COLORS.length] ??
-                  RESOURCE_ZONE_COLORS[0];
+                  RESOURCE_ZONE_COLORS[idx % RESOURCE_ZONE_COLORS.length] ?? RESOURCE_ZONE_COLORS[0]
                 return (
                   <div
                     key={resource.id}
@@ -2085,7 +1961,7 @@ function TimelineDemo() {
                       </span>
                     )}
                   </div>
-                );
+                )
               })}
             </div>
 
@@ -2098,7 +1974,7 @@ function TimelineDemo() {
                 ref={timelineContentRef}
                 style={{
                   width: totalContentWidthPx,
-                  position: "relative",
+                  position: 'relative',
                 }}
               >
                 <div
@@ -2110,42 +1986,35 @@ function TimelineDemo() {
                     style={{ width: totalContentWidthPx }}
                   >
                     {virtualColumns.map((vc) => {
-                      const day = calendar.days[vc.index];
-                      const localDate = new Date(`${day.isoDate}T00:00:00`);
+                      const day = calendar.days[vc.index]
+                      const localDate = new Date(`${day.isoDate}T00:00:00`)
                       const dayName = localDate.toLocaleDateString(undefined, {
-                        weekday: "short",
-                      });
-                      const dayNum = localDate.getDate();
-                      const monthName = localDate.toLocaleDateString(
-                        undefined,
-                        { month: "short" },
-                      );
+                        weekday: 'short',
+                      })
+                      const dayNum = localDate.getDate()
+                      const monthName = localDate.toLocaleDateString(undefined, { month: 'short' })
                       return (
                         <div
                           key={day.isoDate}
                           className={`absolute top-0 bottom-0 border-r border-neutral-800/50 flex items-center justify-center gap-1.5 ${
-                            day.isToday ? "bg-neutral-800/30" : ""
+                            day.isToday ? 'bg-neutral-800/30' : ''
                           }`}
                           style={{
                             left: vc.start,
                             width: vc.size,
                           }}
                         >
-                          <span className="text-[10px] text-neutral-500 uppercase">
-                            {dayName}
-                          </span>
+                          <span className="text-[10px] text-neutral-500 uppercase">{dayName}</span>
                           <span
                             className={`text-sm font-semibold ${
-                              day.isToday ? "text-white" : "text-neutral-300"
+                              day.isToday ? 'text-white' : 'text-neutral-300'
                             }`}
                           >
                             {dayNum}
                           </span>
-                          <span className="text-[10px] text-neutral-600">
-                            {monthName}
-                          </span>
+                          <span className="text-[10px] text-neutral-600">{monthName}</span>
                         </div>
-                      );
+                      )
                     })}
                   </div>
                   <div
@@ -2153,10 +2022,10 @@ function TimelineDemo() {
                     style={{ width: totalContentWidthPx }}
                   >
                     {virtualColumns.map((vc) => {
-                      const day = calendar.days[vc.index];
+                      const day = calendar.days[vc.index]
                       return (
                         <div
-                          key={day.isoDate + "-hours"}
+                          key={day.isoDate + '-hours'}
                           className="absolute top-0 bottom-0 border-r border-neutral-800/50"
                           style={{ left: vc.start, width: vc.size }}
                         >
@@ -2170,12 +2039,12 @@ function TimelineDemo() {
                               }}
                             >
                               <span className="text-[9px] text-neutral-600">
-                                {h.toString().padStart(2, "0")}
+                                {h.toString().padStart(2, '0')}
                               </span>
                             </div>
                           ))}
                         </div>
-                      );
+                      )
                     })}
                   </div>
                 </div>
@@ -2199,7 +2068,7 @@ function TimelineDemo() {
                     </div>
                   )}
                   {virtualRows.map((vr) => {
-                    const row = timelineLayout.rows[vr.index];
+                    const row = timelineLayout.rows[vr.index]
                     return (
                       <HorizontalTimelineRow
                         key={row.resource.id}
@@ -2213,18 +2082,18 @@ function TimelineDemo() {
                         eventBarRefs={eventBarRefsMap}
                         rowWidthPx={totalContentWidthPx}
                         style={{
-                          position: "absolute",
+                          position: 'absolute',
                           top: 0,
                           left: 0,
                           height: vr.size,
                           transform: `translateY(${vr.start}px)`,
                         }}
                       />
-                    );
+                    )
                   })}
                   <div
                     className="absolute inset-0 z-20 pointer-events-none"
-                    style={{ overflow: "hidden" }}
+                    style={{ overflow: 'hidden' }}
                   >
                     <TimelineDependencyOverlay
                       timelineLayout={timelineLayout}
@@ -2247,13 +2116,9 @@ function TimelineDemo() {
               Dependencies:
             </span>
             {ALL_DEP_TYPES.map((type) => {
-              const style = DEP_TYPE_STYLES[type];
+              const style = DEP_TYPE_STYLES[type]
               return (
-                <div
-                  key={type}
-                  className="flex items-center gap-2"
-                  title={style.description}
-                >
+                <div key={type} className="flex items-center gap-2" title={style.description}>
                   <svg width="28" height="10" className="shrink-0">
                     <line
                       x1="0"
@@ -2271,10 +2136,10 @@ function TimelineDemo() {
                     {style.label}
                   </span>
                   <span className="text-xs text-neutral-400">
-                    {style.description.split(" (")[0]}
+                    {style.description.split(' (')[0]}
                   </span>
                 </div>
-              );
+              )
             })}
           </div>
         </div>
@@ -2282,33 +2147,22 @@ function TimelineDemo() {
         <div className="mt-4 flex flex-wrap gap-x-6 gap-y-3">
           <div className="flex flex-wrap gap-2">
             {allEvents.map((event) => {
-              const color = getEventColor(event.id);
+              const color = getEventColor(event.id)
               return (
-                <Badge
-                  key={event.id}
-                  variant="outline"
-                  className="gap-1.5 font-normal"
-                >
-                  <div
-                    className={`w-2.5 h-2.5 rounded-sm ${color.bg} ${color.border} border`}
-                  />
+                <Badge key={event.id} variant="outline" className="gap-1.5 font-normal">
+                  <div className={`w-2.5 h-2.5 rounded-sm ${color.bg} ${color.border} border`} />
                   <span className="text-muted-foreground">{event.title}</span>
                 </Badge>
-              );
+              )
             })}
           </div>
 
           <div className="flex flex-wrap gap-2 border-l border-border pl-6">
             {sampleResources.map((resource, idx) => {
               const zoneColor =
-                RESOURCE_ZONE_COLORS[idx % RESOURCE_ZONE_COLORS.length] ??
-                RESOURCE_ZONE_COLORS[0];
+                RESOURCE_ZONE_COLORS[idx % RESOURCE_ZONE_COLORS.length] ?? RESOURCE_ZONE_COLORS[0]
               return (
-                <Badge
-                  key={resource.id}
-                  variant="secondary"
-                  className="gap-1.5 font-normal"
-                >
+                <Badge key={resource.id} variant="secondary" className="gap-1.5 font-normal">
                   <div
                     className="w-2.5 h-2.5 rounded-sm bg-size-[6px_6px]"
                     style={{
@@ -2316,21 +2170,16 @@ function TimelineDemo() {
                       backgroundColor: zoneColor,
                     }}
                   />
-                  <span className="text-muted-foreground">
-                    {resource.label} — unavailable
-                  </span>
+                  <span className="text-muted-foreground">{resource.label} — unavailable</span>
                 </Badge>
-              );
+              )
             })}
           </div>
         </div>
 
         {calendar.isPending && (
           <div className="fixed top-5 right-5">
-            <Badge
-              variant="secondary"
-              className="px-5 py-3 text-sm font-medium"
-            >
+            <Badge variant="secondary" className="px-5 py-3 text-sm font-medium">
               Loading...
             </Badge>
           </div>
@@ -2340,7 +2189,7 @@ function TimelineDemo() {
           isOpen={modalState.isOpen}
           onClose={() => setModalState((prev) => ({ ...prev, isOpen: false }))}
           onSave={handleSave}
-          onDelete={modalState.mode === "edit" ? handleDelete : undefined}
+          onDelete={modalState.mode === 'edit' ? handleDelete : undefined}
           initialData={modalState.initialData}
           mode={modalState.mode}
           isSaving={isSaving}
@@ -2350,17 +2199,14 @@ function TimelineDemo() {
 
         <DependencyTypeModal
           isOpen={pendingDep !== null}
-          sourceTitle={pendingDep?.sourceTitle ?? ""}
-          targetTitle={pendingDep?.targetTitle ?? ""}
+          sourceTitle={pendingDep?.sourceTitle ?? ''}
+          targetTitle={pendingDep?.targetTitle ?? ''}
           onChoose={finalizeDependency}
           onCancel={() => setPendingDep(null)}
         />
 
         {resizeError && (
-          <ResizeErrorToast
-            error={resizeError}
-            onDismiss={() => setResizeError(null)}
-          />
+          <ResizeErrorToast error={resizeError} onDismiss={() => setResizeError(null)} />
         )}
 
         {activeDragEvent && (
@@ -2378,11 +2224,11 @@ function TimelineDemo() {
         )}
       </div>
     </DragDropProvider>
-  );
+  )
 }
 
 function App() {
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient()
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -2390,14 +2236,14 @@ function App() {
         plugins={[
           timeDevtoolsPlugin(),
           {
-            name: "TanStack Query",
+            name: 'TanStack Query',
             render: <ReactQueryDevtoolsPanel />,
           },
         ]}
       />
       <TimelineDemo />
     </QueryClientProvider>
-  );
+  )
 }
 
-ReactDOM.createRoot(document.getElementById("root")!).render(<App />);
+ReactDOM.createRoot(document.getElementById('root')!).render(<App />)

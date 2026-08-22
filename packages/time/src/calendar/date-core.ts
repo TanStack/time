@@ -1,134 +1,130 @@
-import { Store } from "@tanstack/store";
-import { Temporal } from "@js-temporal/polyfill";
+import { Store } from '@tanstack/store'
+import { Temporal } from '@js-temporal/polyfill'
 import {
   constrainDateToRange,
   getFirstDayOfMonth,
   getFirstDayOfWeek,
   isDateInRange,
   parseDateRange,
-} from "../utils";
-import { getDateTimeDefaults } from "../utils/dateDefaults";
-import { buildDateFormatter } from "../formatter/buildDateFormatter";
-import { buildDateTimeFormatter } from "../formatter/buildDateTimeFormatter";
-import { buildTimeFormatter } from "../formatter/buildTimeFormatter";
-import { getTimeClient } from "../client";
-import { generateDateRange } from "./generateDateRange";
+} from '../utils'
+import { getDateTimeDefaults } from '../utils/dateDefaults'
+import { buildDateFormatter } from '../formatter/buildDateFormatter'
+import { buildDateTimeFormatter } from '../formatter/buildDateTimeFormatter'
+import { buildTimeFormatter } from '../formatter/buildTimeFormatter'
+import { getTimeClient } from '../client'
+import { generateDateRange } from './generateDateRange'
 import {
   getDateFormatter,
   getDateParts,
   resolveCalendarId,
   toIsoDateString,
-} from "~/date/getDateParts/getDateParts";
-import type {
-  DateParts,
-  GetDatePartsOptions,
-} from "~/date/getDateParts/getDateParts";
-import type { ParsedDateRange } from "../utils/dateRange";
-import type { CalendarStore, DateRange, ViewMode } from "./types";
-import type { DateInput } from "~/date";
+} from '~/date/getDateParts/getDateParts'
+import type { DateParts, GetDatePartsOptions } from '~/date/getDateParts/getDateParts'
+import type { ParsedDateRange } from '../utils/dateRange'
+import type { CalendarStore, DateRange, ViewMode } from './types'
+import type { DateInput } from '~/date'
 
 function toTemporalPlainDateString(date: DateInput): string {
   if (date instanceof Temporal.PlainDate) {
-    return date.toString({ calendarName: "never" });
+    return date.toString({ calendarName: 'never' })
   }
   if (date instanceof Temporal.ZonedDateTime) {
-    return date.toPlainDate().toString({ calendarName: "never" });
+    return date.toPlainDate().toString({ calendarName: 'never' })
   }
   if (date instanceof Date) {
-    return date.toISOString().split("T")[0]!;
+    return date.toISOString().split('T')[0]!
   }
-  if (typeof date === "number") {
-    return new Date(date).toISOString().split("T")[0]!;
+  if (typeof date === 'number') {
+    return new Date(date).toISOString().split('T')[0]!
   }
-  return date;
+  return date
 }
 
 function toDate(date: DateInput): Date {
   if (date instanceof Date) {
-    return date;
+    return date
   }
   if (date instanceof Temporal.ZonedDateTime) {
-    return new Date(date.toPlainDate().toString({ calendarName: "auto" }));
+    return new Date(date.toPlainDate().toString({ calendarName: 'auto' }))
   }
   if (date instanceof Temporal.PlainDate) {
-    return new Date(date.year, date.month - 1, date.day);
+    return new Date(date.year, date.month - 1, date.day)
   }
-  return new Date(date);
+  return new Date(date)
 }
 
 function toIsoDate(date: Temporal.PlainDate): string {
-  return date.toString({ calendarName: "never" });
+  return date.toString({ calendarName: 'never' })
 }
 
 export interface DateCoreOptions {
-  viewMode: ViewMode;
+  viewMode: ViewMode
 
-  locale?: Intl.UnicodeBCP47LocaleIdentifier;
+  locale?: Intl.UnicodeBCP47LocaleIdentifier
 
-  timeZone?: Temporal.TimeZoneLike;
+  timeZone?: Temporal.TimeZoneLike
 
-  calendar?: Temporal.CalendarLike;
+  calendar?: Temporal.CalendarLike
 
-  range?: DateRange;
+  range?: DateRange
 
-  dateFormatter?: Intl.DateTimeFormat;
+  dateFormatter?: Intl.DateTimeFormat
 
-  timeFormatter?: Intl.DateTimeFormat;
+  timeFormatter?: Intl.DateTimeFormat
 
-  dateTimeFormatter?: Intl.DateTimeFormat;
+  dateTimeFormatter?: Intl.DateTimeFormat
 }
 
-export interface ParsedDateCoreOptions
-  extends Omit<
-    Required<DateCoreOptions>,
-    "range" | "dateFormatter" | "timeFormatter" | "dateTimeFormatter"
-  > {
-  range: ParsedDateRange;
+export interface ParsedDateCoreOptions extends Omit<
+  Required<DateCoreOptions>,
+  'range' | 'dateFormatter' | 'timeFormatter' | 'dateTimeFormatter'
+> {
+  range: ParsedDateRange
 }
 
-export type PeriodUnit = "day" | "month" | "year";
+export type PeriodUnit = 'day' | 'month' | 'year'
 
 export interface FormatPeriodOptions {
-  unit?: PeriodUnit;
-  locale?: Intl.UnicodeBCP47LocaleIdentifier;
-  calendar?: string;
+  unit?: PeriodUnit
+  locale?: Intl.UnicodeBCP47LocaleIdentifier
+  calendar?: string
 }
 
 const periodFormatOptions: Record<PeriodUnit, Intl.DateTimeFormatOptions> = {
-  day: { year: "numeric", month: "long", day: "numeric" },
-  month: { year: "numeric", month: "long" },
-  year: { year: "numeric" },
-};
+  day: { year: 'numeric', month: 'long', day: 'numeric' },
+  month: { year: 'numeric', month: 'long' },
+  year: { year: 'numeric' },
+}
 
 export abstract class DateCore {
-  store: Store<CalendarStore>;
-  options: ParsedDateCoreOptions;
-  private _dayNamesCache = new Map<string, Array<string>>();
-  calendarId: string;
-  timeZoneId: string;
+  store: Store<CalendarStore>
+  options: ParsedDateCoreOptions
+  private _dayNamesCache = new Map<string, Array<string>>()
+  calendarId: string
+  timeZoneId: string
   formatters: {
-    date: Intl.DateTimeFormat;
-    time: Intl.DateTimeFormat;
-    dateTime: Intl.DateTimeFormat;
-  };
+    date: Intl.DateTimeFormat
+    time: Intl.DateTimeFormat
+    dateTime: Intl.DateTimeFormat
+  }
   constructor(options: DateCoreOptions) {
-    const defaults = getDateTimeDefaults();
+    const defaults = getDateTimeDefaults()
     const parsedRange = parseDateRange({
       range: options.range,
       calendar: defaults.calendar,
-    });
+    })
 
     this.options = {
       ...defaults,
       ...options,
       range: parsedRange,
-    };
+    }
 
-    this.calendarId = resolveCalendarId(this.options.calendar);
+    this.calendarId = resolveCalendarId(this.options.calendar)
     this.timeZoneId =
-      typeof this.options.timeZone === "string"
+      typeof this.options.timeZone === 'string'
         ? this.options.timeZone
-        : this.options.timeZone.timeZoneId;
+        : this.options.timeZone.timeZoneId
 
     this.formatters = {
       date:
@@ -146,13 +142,13 @@ export abstract class DateCore {
         buildDateTimeFormatter({
           locale: this.options.locale,
         }),
-    };
+    }
 
-    const now = Temporal.Now.plainDateISO().withCalendar(this.options.calendar);
+    const now = Temporal.Now.plainDateISO().withCalendar(this.options.calendar)
     const initialDate = constrainDateToRange({
       date: now,
       range: this.options.range,
-    });
+    })
 
     this.store = new Store<CalendarStore>({
       currentPeriod: toIsoDate(initialDate),
@@ -160,19 +156,19 @@ export abstract class DateCore {
       viewMode: options.viewMode,
       eventsVersion: 0,
       isPending: false,
-    });
+    })
   }
 
   protected toPlainDate(isoDate: string): Temporal.PlainDate {
-    return Temporal.PlainDate.from(isoDate).withCalendar(this.options.calendar);
+    return Temporal.PlainDate.from(isoDate).withCalendar(this.options.calendar)
   }
 
   protected get activeDatePlain(): Temporal.PlainDate {
-    return this.toPlainDate(this.store.state.activeDate);
+    return this.toPlainDate(this.store.state.activeDate)
   }
 
   protected get currentPeriodPlain(): Temporal.PlainDate {
-    return this.toPlainDate(this.store.state.currentPeriod);
+    return this.toPlainDate(this.store.state.currentPeriod)
   }
 
   getDateParts(date: DateInput, options?: GetDatePartsOptions): DateParts {
@@ -180,376 +176,354 @@ export abstract class DateCore {
       locale: options?.locale ?? this.options.locale,
       calendar: options?.calendar ?? this.calendarId,
       timeZone: options?.timeZone ?? this.timeZoneId,
-    });
+    })
   }
 
   formatPeriod(date?: DateInput, options?: FormatPeriodOptions): string {
     const isoDate =
-      date === undefined
-        ? this.store.state.currentPeriod
-        : toIsoDateString(date, this.timeZoneId);
-    const unit = options?.unit ?? "month";
-    const locale = options?.locale ?? this.options.locale;
-    const calendarId = options?.calendar ?? this.calendarId;
+      date === undefined ? this.store.state.currentPeriod : toIsoDateString(date, this.timeZoneId)
+    const unit = options?.unit ?? 'month'
+    const locale = options?.locale ?? this.options.locale
+    const calendarId = options?.calendar ?? this.calendarId
 
-    return getDateFormatter(
-      locale,
-      calendarId,
-      `period-${unit}`,
-      periodFormatOptions[unit],
-    ).format(new Date(`${isoDate}T00:00:00Z`));
+    return getDateFormatter(locale, calendarId, `period-${unit}`, periodFormatOptions[unit]).format(
+      new Date(`${isoDate}T00:00:00Z`),
+    )
   }
 
   formatDate(date: DateInput) {
-    return this.formatters.date.format(toDate(date));
+    return this.formatters.date.format(toDate(date))
   }
 
   formatTime(date: DateInput) {
-    return this.formatters.time.format(toDate(date));
+    return this.formatters.time.format(toDate(date))
   }
 
   formatDateTime(date: DateInput) {
-    return this.formatters.dateTime.format(toDate(date));
+    return this.formatters.dateTime.format(toDate(date))
   }
 
   protected getFirstDayOfMonth() {
     return getFirstDayOfMonth(
-      this.currentPeriodPlain
-        .toString({ calendarName: "auto" })
-        .substring(0, 7),
-    );
+      this.currentPeriodPlain.toString({ calendarName: 'auto' }).substring(0, 7),
+    )
   }
 
   protected getFirstDayOfWeek() {
-    return getFirstDayOfWeek(
-      this.currentPeriodPlain.toString(),
-      this.options.locale,
-    );
+    return getFirstDayOfWeek(this.currentPeriodPlain.toString(), this.options.locale)
   }
 
   getWeekStartsOn() {
-    return this.getFirstDayOfWeek().dayOfWeek;
+    return this.getFirstDayOfWeek().dayOfWeek
   }
 
   protected getCalendarDays() {
-    let start: Temporal.PlainDate;
+    let start: Temporal.PlainDate
     switch (this.store.state.viewMode.unit) {
-      case "month":
+      case 'month':
         start = this.getFirstDayOfMonth().subtract({
           days:
-            (this.getFirstDayOfMonth().dayOfWeek -
-              (this.getFirstDayOfWeek().dayOfWeek + 1) +
-              7) %
+            (this.getFirstDayOfMonth().dayOfWeek - (this.getFirstDayOfWeek().dayOfWeek + 1) + 7) %
             7,
-        });
-        break;
-      case "week":
-      case "workWeek":
-        start = this.getFirstDayOfWeek();
-        break;
-      case "day":
+        })
+        break
+      case 'week':
+      case 'workWeek':
+        start = this.getFirstDayOfWeek()
+        break
+      case 'day':
       default:
-        start = this.currentPeriodPlain;
-        break;
+        start = this.currentPeriodPlain
+        break
     }
 
-    let end: Temporal.PlainDate;
+    let end: Temporal.PlainDate
     switch (this.store.state.viewMode.unit) {
-      case "month": {
+      case 'month': {
         const lastDayOfMonth = this.getFirstDayOfMonth()
           .add({ months: this.store.state.viewMode.value })
-          .subtract({ days: 1 });
+          .subtract({ days: 1 })
         const lastDayOfMonthWeekDay =
-          (lastDayOfMonth.dayOfWeek -
-            (this.getFirstDayOfWeek().dayOfWeek + 1) +
-            7) %
-          7;
-        end = lastDayOfMonth.add({ days: 6 - lastDayOfMonthWeekDay });
-        break;
+          (lastDayOfMonth.dayOfWeek - (this.getFirstDayOfWeek().dayOfWeek + 1) + 7) % 7
+        end = lastDayOfMonth.add({ days: 6 - lastDayOfMonthWeekDay })
+        break
       }
-      case "week": {
+      case 'week': {
         end = this.getFirstDayOfWeek().add({
           days: 7 * this.store.state.viewMode.value - 1,
-        });
-        break;
+        })
+        break
       }
-      case "day": {
+      case 'day': {
         end = this.currentPeriodPlain.add({
           days: this.store.state.viewMode.value - 1,
-        });
-        break;
+        })
+        break
       }
-      case "workWeek": {
-        end = start.add({ days: 4 });
-        break;
+      case 'workWeek': {
+        end = start.add({ days: 4 })
+        break
       }
     }
 
-    const allDays = generateDateRange(start.toString(), end.toString());
+    const allDays = generateDateRange(start.toString(), end.toString())
 
-    if (this.store.state.viewMode.unit === "month") {
-      const startMonthDate = this.currentPeriodPlain.with({ day: 1 });
+    if (this.store.state.viewMode.unit === 'month') {
+      const startMonthDate = this.currentPeriodPlain.with({ day: 1 })
       const endMonthDate = this.currentPeriodPlain
         .add({
           months: this.store.state.viewMode.value - 1,
         })
         .with({
-          day: Temporal.PlainDate.from(
-            this.currentPeriodPlain.toString({ calendarName: "auto" }),
-          ).daysInMonth,
-        });
+          day: Temporal.PlainDate.from(this.currentPeriodPlain.toString({ calendarName: 'auto' }))
+            .daysInMonth,
+        })
 
       const filteredDays = allDays.filter(
         (day) =>
           Temporal.PlainDate.compare(day, startMonthDate) >= 0 &&
           Temporal.PlainDate.compare(day, endMonthDate) <= 0,
-      );
+      )
 
       if (this.options.range.start || this.options.range.end) {
-        return filteredDays.filter((day) =>
-          isDateInRange({ date: day, range: this.options.range }),
-        );
+        return filteredDays.filter((day) => isDateInRange({ date: day, range: this.options.range }))
       }
 
-      return filteredDays;
+      return filteredDays
     }
 
     if (this.options.range.start || this.options.range.end) {
-      return allDays.filter((day) =>
-        isDateInRange({ date: day, range: this.options.range }),
-      );
+      return allDays.filter((day) => isDateInRange({ date: day, range: this.options.range }))
     }
 
-    return allDays;
+    return allDays
   }
 
-  getDaysNames(weekday: "long" | "short" = "short") {
-    const firstDayOfWeek = this.getFirstDayOfWeek().dayOfWeek;
-    const cacheKey = `${weekday}|${firstDayOfWeek}`;
-    const cached = this._dayNamesCache.get(cacheKey);
-    if (cached) return cached;
+  getDaysNames(weekday: 'long' | 'short' = 'short') {
+    const firstDayOfWeek = this.getFirstDayOfWeek().dayOfWeek
+    const cacheKey = `${weekday}|${firstDayOfWeek}`
+    const cached = this._dayNamesCache.get(cacheKey)
+    if (cached) return cached
 
-    const baseDate = Temporal.PlainDate.from("2024-01-01");
+    const baseDate = Temporal.PlainDate.from('2024-01-01')
     const names = Array.from({ length: 7 }).map((_, i) =>
       baseDate
         .add({ days: (i + (firstDayOfWeek - 1)) % 7 })
         .toLocaleString(this.options.locale, { weekday: weekday }),
-    );
+    )
 
-    this._dayNamesCache.set(cacheKey, names);
-    return names;
+    this._dayNamesCache.set(cacheKey, names)
+    return names
   }
 
   changeViewMode(newViewMode: ViewMode) {
     this.store.setState((prev) => ({
       ...prev,
       viewMode: newViewMode,
-    }));
+    }))
 
-    getTimeClient().emit("calendar:viewMode:changed", {
+    getTimeClient().emit('calendar:viewMode:changed', {
       viewMode: {
         value: newViewMode.value,
         unit: newViewMode.unit,
       },
-    });
+    })
   }
 
   goToPreviousPeriod() {
-    let newActiveDate: Temporal.PlainDate;
+    let newActiveDate: Temporal.PlainDate
 
     switch (this.store.state.viewMode.unit) {
-      case "month": {
+      case 'month': {
         newActiveDate = this.activeDatePlain.subtract({
           months: this.store.state.viewMode.value,
-        });
-        break;
+        })
+        break
       }
 
-      case "week": {
+      case 'week': {
         newActiveDate = this.activeDatePlain.subtract({
           weeks: this.store.state.viewMode.value,
-        });
-        break;
+        })
+        break
       }
 
-      case "day": {
+      case 'day': {
         newActiveDate = this.activeDatePlain.subtract({
           days: this.store.state.viewMode.value,
-        });
-        break;
+        })
+        break
       }
-      case "workWeek": {
+      case 'workWeek': {
         newActiveDate = this.activeDatePlain.subtract({
           days: 5,
-        });
-        break;
+        })
+        break
       }
     }
 
     const constrainedDate = constrainDateToRange({
       date: newActiveDate,
       range: this.options.range,
-    });
+    })
     this.store.setState((prev) => ({
       ...prev,
       activeDate: toIsoDate(constrainedDate),
       currentPeriod: toIsoDate(constrainedDate),
-    }));
+    }))
 
-    getTimeClient().emit("calendar:navigate", {
-      direction: "previous",
-      targetDate: constrainedDate.toString({ calendarName: "never" }),
-    });
+    getTimeClient().emit('calendar:navigate', {
+      direction: 'previous',
+      targetDate: constrainedDate.toString({ calendarName: 'never' }),
+    })
   }
 
   goToNextPeriod() {
-    let newActiveDate: Temporal.PlainDate;
+    let newActiveDate: Temporal.PlainDate
 
     switch (this.store.state.viewMode.unit) {
-      case "month": {
+      case 'month': {
         newActiveDate = this.activeDatePlain.add({
           months: this.store.state.viewMode.value,
-        });
-        break;
+        })
+        break
       }
 
-      case "week": {
+      case 'week': {
         newActiveDate = this.activeDatePlain.add({
           weeks: this.store.state.viewMode.value,
-        });
-        break;
+        })
+        break
       }
 
-      case "day": {
+      case 'day': {
         newActiveDate = this.activeDatePlain.add({
           days: this.store.state.viewMode.value,
-        });
-        break;
+        })
+        break
       }
-      case "workWeek": {
+      case 'workWeek': {
         newActiveDate = this.activeDatePlain.add({
           days: 5,
-        });
-        break;
+        })
+        break
       }
     }
 
     const constrainedDate = constrainDateToRange({
       date: newActiveDate,
       range: this.options.range,
-    });
+    })
     this.store.setState((prev) => ({
       ...prev,
       activeDate: toIsoDate(constrainedDate),
       currentPeriod: toIsoDate(constrainedDate),
-    }));
+    }))
 
-    getTimeClient().emit("calendar:navigate", {
-      direction: "next",
-      targetDate: constrainedDate.toString({ calendarName: "never" }),
-    });
+    getTimeClient().emit('calendar:navigate', {
+      direction: 'next',
+      targetDate: constrainedDate.toString({ calendarName: 'never' }),
+    })
   }
 
   goToCurrentPeriod() {
     const now = Temporal.Now.zonedDateTimeISO(this.options.timeZone)
       .toPlainDate()
-      .withCalendar(this.options.calendar);
+      .withCalendar(this.options.calendar)
     const constrainedDate = constrainDateToRange({
       date: now,
       range: this.options.range,
-    });
+    })
     this.store.setState((prev) => ({
       ...prev,
       activeDate: toIsoDate(constrainedDate),
       currentPeriod: toIsoDate(constrainedDate),
-    }));
+    }))
 
-    getTimeClient().emit("calendar:navigate", {
-      direction: "current",
-      targetDate: constrainedDate.toString({ calendarName: "never" }),
-    });
+    getTimeClient().emit('calendar:navigate', {
+      direction: 'current',
+      targetDate: constrainedDate.toString({ calendarName: 'never' }),
+    })
   }
 
   goToSpecificPeriod(date: DateInput) {
-    const dateStr = toTemporalPlainDateString(date);
-    const targetDate = Temporal.PlainDate.from(dateStr).withCalendar(
-      this.options.calendar,
-    );
+    const dateStr = toTemporalPlainDateString(date)
+    const targetDate = Temporal.PlainDate.from(dateStr).withCalendar(this.options.calendar)
     const constrainedDate = constrainDateToRange({
       date: targetDate,
       range: this.options.range,
-    });
+    })
     this.store.setState((prev) => ({
       ...prev,
       activeDate: toIsoDate(constrainedDate),
       currentPeriod: toIsoDate(constrainedDate),
-    }));
+    }))
 
-    getTimeClient().emit("calendar:navigate", {
-      direction: "specific",
-      targetDate: constrainedDate.toString({ calendarName: "never" }),
-    });
+    getTimeClient().emit('calendar:navigate', {
+      direction: 'specific',
+      targetDate: constrainedDate.toString({ calendarName: 'never' }),
+    })
   }
 
   canGoPreviousPeriod(): boolean {
-    let previousDate: Temporal.PlainDate;
+    let previousDate: Temporal.PlainDate
 
     switch (this.store.state.viewMode.unit) {
-      case "month": {
+      case 'month': {
         previousDate = this.activeDatePlain.subtract({
           months: this.store.state.viewMode.value,
-        });
-        break;
+        })
+        break
       }
-      case "week": {
+      case 'week': {
         previousDate = this.activeDatePlain.subtract({
           weeks: this.store.state.viewMode.value,
-        });
-        break;
+        })
+        break
       }
-      case "day": {
+      case 'day': {
         previousDate = this.activeDatePlain.subtract({
           days: this.store.state.viewMode.value,
-        });
-        break;
+        })
+        break
       }
-      case "workWeek": {
-        previousDate = this.activeDatePlain.subtract({ days: 5 });
-        break;
+      case 'workWeek': {
+        previousDate = this.activeDatePlain.subtract({ days: 5 })
+        break
       }
     }
 
-    return isDateInRange({ date: previousDate, range: this.options.range });
+    return isDateInRange({ date: previousDate, range: this.options.range })
   }
 
   canGoNextPeriod(): boolean {
-    let nextDate: Temporal.PlainDate;
+    let nextDate: Temporal.PlainDate
 
     switch (this.store.state.viewMode.unit) {
-      case "month": {
+      case 'month': {
         nextDate = this.activeDatePlain.add({
           months: this.store.state.viewMode.value,
-        });
-        break;
+        })
+        break
       }
-      case "week": {
+      case 'week': {
         nextDate = this.activeDatePlain.add({
           weeks: this.store.state.viewMode.value,
-        });
-        break;
+        })
+        break
       }
-      case "day": {
+      case 'day': {
         nextDate = this.activeDatePlain.add({
           days: this.store.state.viewMode.value,
-        });
-        break;
+        })
+        break
       }
-      case "workWeek": {
-        nextDate = this.activeDatePlain.add({ days: 5 });
-        break;
+      case 'workWeek': {
+        nextDate = this.activeDatePlain.add({ days: 5 })
+        break
       }
     }
 
-    return isDateInRange({ date: nextDate, range: this.options.range });
+    return isDateInRange({ date: nextDate, range: this.options.range })
   }
 }

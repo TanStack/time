@@ -5,7 +5,7 @@ title: EventFilterApi
 
 # Interface: EventFilterApi\<TResource, TEvent\>
 
-Defined in: [calendar/features/filter.ts:11](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/filter.ts#L11)
+Defined in: [calendar/features/filter.ts:10](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/filter.ts#L10)
 
 ## Type Parameters
 
@@ -25,7 +25,7 @@ Defined in: [calendar/features/filter.ts:11](https://github.com/TanStack/time/bl
 clearEventFilters: () => void;
 ```
 
-Defined in: [calendar/features/filter.ts:20](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/filter.ts#L20)
+Defined in: [calendar/features/filter.ts:13](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/filter.ts#L13)
 
 #### Returns
 
@@ -39,7 +39,7 @@ Defined in: [calendar/features/filter.ts:20](https://github.com/TanStack/time/bl
 getEventFilterIds: () => string[];
 ```
 
-Defined in: [calendar/features/filter.ts:22](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/filter.ts#L22)
+Defined in: [calendar/features/filter.ts:15](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/filter.ts#L15)
 
 #### Returns
 
@@ -53,7 +53,7 @@ Defined in: [calendar/features/filter.ts:22](https://github.com/TanStack/time/bl
 getHiddenEvents: () => TEvent[];
 ```
 
-Defined in: [calendar/features/filter.ts:26](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/filter.ts#L26)
+Defined in: [calendar/features/filter.ts:19](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/filter.ts#L19)
 
 #### Returns
 
@@ -67,7 +67,7 @@ Defined in: [calendar/features/filter.ts:26](https://github.com/TanStack/time/bl
 isEventVisible: (event) => boolean;
 ```
 
-Defined in: [calendar/features/filter.ts:24](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/filter.ts#L24)
+Defined in: [calendar/features/filter.ts:17](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/filter.ts#L17)
 
 #### Parameters
 
@@ -87,7 +87,7 @@ Defined in: [calendar/features/filter.ts:24](https://github.com/TanStack/time/bl
 setEventFilter: (id, predicate) => void;
 ```
 
-Defined in: [calendar/features/filter.ts:15](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/filter.ts#L15)
+Defined in: [calendar/features/filter.ts:11](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/filter.ts#L11)
 
 #### Parameters
 

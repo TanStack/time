@@ -5,7 +5,7 @@ title: AnyCalendarFeature
 
 # Interface: AnyCalendarFeature\<TResource, TEvent\>
 
-Defined in: [calendar/features/types.ts:102](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L102)
+Defined in: [calendar/features/types.ts:84](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L84)
 
 ## Type Parameters
 
@@ -25,7 +25,7 @@ Defined in: [calendar/features/types.ts:102](https://github.com/TanStack/time/bl
 optional api: (host, module, peers) => object | undefined;
 ```
 
-Defined in: [calendar/features/types.ts:111](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L111)
+Defined in: [calendar/features/types.ts:88](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L88)
 
 #### Parameters
 
@@ -53,7 +53,7 @@ Defined in: [calendar/features/types.ts:111](https://github.com/TanStack/time/bl
 optional module: (ctx) => Module<TEvent & KernelEvent, unknown>;
 ```
 
-Defined in: [calendar/features/types.ts:108](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L108)
+Defined in: [calendar/features/types.ts:87](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L87)
 
 #### Parameters
 
@@ -73,7 +73,7 @@ Defined in: [calendar/features/types.ts:108](https://github.com/TanStack/time/bl
 name: string;
 ```
 
-Defined in: [calendar/features/types.ts:106](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L106)
+Defined in: [calendar/features/types.ts:85](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L85)
 
 ***
 
@@ -83,4 +83,4 @@ Defined in: [calendar/features/types.ts:106](https://github.com/TanStack/time/bl
 optional requires: readonly string[];
 ```
 
-Defined in: [calendar/features/types.ts:107](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L107)
+Defined in: [calendar/features/types.ts:86](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L86)

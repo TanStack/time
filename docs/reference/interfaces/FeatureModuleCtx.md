@@ -5,7 +5,7 @@ title: FeatureModuleCtx
 
 # Interface: FeatureModuleCtx\<TResource\>
 
-Defined in: [calendar/features/types.ts:76](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L76)
+Defined in: [calendar/features/types.ts:64](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L64)
 
 ## Type Parameters
 
@@ -21,7 +21,7 @@ Defined in: [calendar/features/types.ts:76](https://github.com/TanStack/time/blo
 getResources: () => TResource[];
 ```
 
-Defined in: [calendar/features/types.ts:78](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L78)
+Defined in: [calendar/features/types.ts:66](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L66)
 
 #### Returns
 
@@ -35,7 +35,7 @@ Defined in: [calendar/features/types.ts:78](https://github.com/TanStack/time/blo
 getWorkingTime: () => WorkingTimeConfig;
 ```
 
-Defined in: [calendar/features/types.ts:79](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L79)
+Defined in: [calendar/features/types.ts:67](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L67)
 
 #### Returns
 
@@ -49,4 +49,4 @@ Defined in: [calendar/features/types.ts:79](https://github.com/TanStack/time/blo
 timeZone: TimeZoneLike;
 ```
 
-Defined in: [calendar/features/types.ts:77](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L77)
+Defined in: [calendar/features/types.ts:65](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/types.ts#L65)

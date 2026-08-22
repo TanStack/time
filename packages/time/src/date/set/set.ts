@@ -1,25 +1,25 @@
-import { withDateOperation } from "../withDateOperation";
-import type { DateOperationOptions } from "../withDateOperation";
-import type { DateInput } from "../types";
+import { withDateOperation } from '../withDateOperation'
+import type { DateOperationOptions } from '../withDateOperation'
+import type { DateInput } from '../types'
 
 export interface SetFields {
-  year?: number;
-  month?: number;
-  day?: number;
-  hour?: number;
-  minute?: number;
-  second?: number;
-  millisecond?: number;
-  microsecond?: number;
-  nanosecond?: number;
+  year?: number
+  month?: number
+  day?: number
+  hour?: number
+  minute?: number
+  second?: number
+  millisecond?: number
+  microsecond?: number
+  nanosecond?: number
 }
 
 export interface SetOptions extends DateOperationOptions {
-  fields: SetFields;
+  fields: SetFields
 }
 
 export function set(input: DateInput, options: SetOptions): Date {
   return withDateOperation<SetOptions>((zdt, { fields }) => {
-    return zdt.with(fields);
-  })(input, options);
+    return zdt.with(fields)
+  })(input, options)
 }

@@ -1,5 +1,5 @@
-const defaults = new Intl.DateTimeFormat().resolvedOptions();
+const defaults = new Intl.DateTimeFormat().resolvedOptions()
 
 export function getDateTimeDefaults() {
-  return defaults;
+  return defaults
 }

@@ -19,7 +19,7 @@ Defined in: [date/add/add.ts:5](https://github.com/TanStack/time/blob/main/packa
 optional calendar: string;
 ```
 
-Defined in: [date/types.ts:11](https://github.com/TanStack/time/blob/main/packages/time/src/date/types.ts#L11)
+Defined in: [date/types.ts:6](https://github.com/TanStack/time/blob/main/packages/time/src/date/types.ts#L6)
 
 #### Inherited from
 
@@ -45,7 +45,7 @@ Defined in: [date/add/add.ts:6](https://github.com/TanStack/time/blob/main/packa
 optional timeZone: string;
 ```
 
-Defined in: [date/types.ts:12](https://github.com/TanStack/time/blob/main/packages/time/src/date/types.ts#L12)
+Defined in: [date/types.ts:7](https://github.com/TanStack/time/blob/main/packages/time/src/date/types.ts#L7)
 
 #### Inherited from
 

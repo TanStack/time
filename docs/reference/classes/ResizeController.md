@@ -25,7 +25,7 @@ Defined in: [calendar/resizeController.ts:94](https://github.com/TanStack/time/b
 new ResizeController<TResource, TEvent>(host, options): ResizeController<TResource, TEvent>;
 ```
 
-Defined in: [calendar/resizeController.ts:133](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L133)
+Defined in: [calendar/resizeController.ts:130](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L130)
 
 #### Parameters
 
@@ -49,7 +49,7 @@ Defined in: [calendar/resizeController.ts:133](https://github.com/TanStack/time/
 cancel(): void;
 ```
 
-Defined in: [calendar/resizeController.ts:231](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L231)
+Defined in: [calendar/resizeController.ts:225](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L225)
 
 #### Returns
 
@@ -63,7 +63,7 @@ Defined in: [calendar/resizeController.ts:231](https://github.com/TanStack/time/
 destroy(): void;
 ```
 
-Defined in: [calendar/resizeController.ts:241](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L241)
+Defined in: [calendar/resizeController.ts:235](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L235)
 
 #### Returns
 
@@ -77,7 +77,7 @@ Defined in: [calendar/resizeController.ts:241](https://github.com/TanStack/time/
 getDayFromElement(element): string | null;
 ```
 
-Defined in: [calendar/resizeController.ts:184](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L184)
+Defined in: [calendar/resizeController.ts:178](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L178)
 
 #### Parameters
 
@@ -97,7 +97,7 @@ Defined in: [calendar/resizeController.ts:184](https://github.com/TanStack/time/
 getDayFromPoint(clientX): string | null;
 ```
 
-Defined in: [calendar/resizeController.ts:169](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L169)
+Defined in: [calendar/resizeController.ts:163](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L163)
 
 #### Parameters
 
@@ -117,7 +117,7 @@ Defined in: [calendar/resizeController.ts:169](https://github.com/TanStack/time/
 getOptions(): ResizeControllerOptions;
 ```
 
-Defined in: [calendar/resizeController.ts:157](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L157)
+Defined in: [calendar/resizeController.ts:151](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L151)
 
 #### Returns
 
@@ -131,7 +131,7 @@ Defined in: [calendar/resizeController.ts:157](https://github.com/TanStack/time/
 getSnapshot(): ResizeState;
 ```
 
-Defined in: [calendar/resizeController.ts:151](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L151)
+Defined in: [calendar/resizeController.ts:145](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L145)
 
 #### Returns
 
@@ -145,7 +145,7 @@ Defined in: [calendar/resizeController.ts:151](https://github.com/TanStack/time/
 handleMouseMove(e): void;
 ```
 
-Defined in: [calendar/resizeController.ts:253](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L253)
+Defined in: [calendar/resizeController.ts:247](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L247)
 
 #### Parameters
 
@@ -165,7 +165,7 @@ Defined in: [calendar/resizeController.ts:253](https://github.com/TanStack/time/
 handleMouseUp(): void;
 ```
 
-Defined in: [calendar/resizeController.ts:264](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L264)
+Defined in: [calendar/resizeController.ts:258](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L258)
 
 #### Returns
 
@@ -179,7 +179,7 @@ Defined in: [calendar/resizeController.ts:264](https://github.com/TanStack/time/
 registerDayColumn(date, element): void;
 ```
 
-Defined in: [calendar/resizeController.ts:161](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L161)
+Defined in: [calendar/resizeController.ts:155](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L155)
 
 #### Parameters
 
@@ -203,7 +203,7 @@ Defined in: [calendar/resizeController.ts:161](https://github.com/TanStack/time/
 setOptions(options): void;
 ```
 
-Defined in: [calendar/resizeController.ts:153](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L153)
+Defined in: [calendar/resizeController.ts:147](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L147)
 
 #### Parameters
 
@@ -223,7 +223,7 @@ Defined in: [calendar/resizeController.ts:153](https://github.com/TanStack/time/
 start(args): boolean;
 ```
 
-Defined in: [calendar/resizeController.ts:191](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L191)
+Defined in: [calendar/resizeController.ts:185](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L185)
 
 #### Parameters
 
@@ -243,7 +243,7 @@ Defined in: [calendar/resizeController.ts:191](https://github.com/TanStack/time/
 subscribe(listener): () => void;
 ```
 
-Defined in: [calendar/resizeController.ts:144](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L144)
+Defined in: [calendar/resizeController.ts:138](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/resizeController.ts#L138)
 
 #### Parameters
 

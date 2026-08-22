@@ -9,7 +9,7 @@ title: calculateGhostPreviewStyle
 function calculateGhostPreviewStyle(options): PositionStyle | null;
 ```
 
-Defined in: [calendar/getResizeProps.ts:358](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L358)
+Defined in: [calendar/getResizeProps.ts:329](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L329)
 
 ## Parameters
 

@@ -1,5 +1,5 @@
-import { describe, expectTypeOf, test } from "vitest";
-import { createCalendar } from "../calendar";
+import { describe, expectTypeOf, test } from 'vitest'
+import { createCalendar } from '../calendar'
 import {
   calendarFeatures,
   FEATURE_API_OWNERS,
@@ -7,86 +7,76 @@ import {
   eventRecurrenceFeature,
   historyFeature,
   workingTimeFeature,
-} from "../features";
-import type { CalendarApi } from "../calendar";
-import type {
-  BuiltInFeatureApi,
-  ComposedApi,
-  StockFeatures,
-} from "../features";
-import type { Event, EventProps, Resource } from "../types";
-import type { WorkingTimeRange } from "~/workingTime";
+} from '../features'
+import type { CalendarApi } from '../calendar'
+import type { BuiltInFeatureApi, ComposedApi, StockFeatures } from '../features'
+import type { Event, EventProps, Resource } from '../types'
+import type { WorkingTimeRange } from '~/workingTime'
 
-type TestEvent = Event<Resource>;
+type TestEvent = Event<Resource>
 
-describe("CalendarApi is the intersection of what was composed", () => {
-  test("a composed feature contributes its methods", () => {
-    const features = calendarFeatures([historyFeature, dayEventLayoutFeature]);
-    type Api = CalendarApi<typeof features, Resource, TestEvent>;
+describe('CalendarApi is the intersection of what was composed', () => {
+  test('a composed feature contributes its methods', () => {
+    const features = calendarFeatures([historyFeature, dayEventLayoutFeature])
+    type Api = CalendarApi<typeof features, Resource, TestEvent>
 
-    expectTypeOf<Api>().toHaveProperty("undo");
-    expectTypeOf<Api>().toHaveProperty("canUndo");
-    expectTypeOf<Api["getEventProps"]>().returns.toEqualTypeOf<
-      EventProps<Resource, TestEvent>
-    >();
-  });
+    expectTypeOf<Api>().toHaveProperty('undo')
+    expectTypeOf<Api>().toHaveProperty('canUndo')
+    expectTypeOf<Api['getEventProps']>().returns.toEqualTypeOf<EventProps<Resource, TestEvent>>()
+  })
 
-  test("an uncomposed feature contributes nothing", () => {
-    const features = calendarFeatures([dayEventLayoutFeature]);
-    type Api = CalendarApi<typeof features, Resource, TestEvent>;
+  test('an uncomposed feature contributes nothing', () => {
+    const features = calendarFeatures([dayEventLayoutFeature])
+    type Api = CalendarApi<typeof features, Resource, TestEvent>
 
-    expectTypeOf<Api>().not.toHaveProperty("undo");
-    expectTypeOf<Api>().not.toHaveProperty("canUndo");
-    expectTypeOf<Api>().not.toHaveProperty("editRecurringEvent");
-    expectTypeOf<Api>().not.toHaveProperty("getTimelineLayout");
-    expectTypeOf<Api>().not.toHaveProperty("getWorkingIntervals");
-  });
+    expectTypeOf<Api>().not.toHaveProperty('undo')
+    expectTypeOf<Api>().not.toHaveProperty('canUndo')
+    expectTypeOf<Api>().not.toHaveProperty('editRecurringEvent')
+    expectTypeOf<Api>().not.toHaveProperty('getTimelineLayout')
+    expectTypeOf<Api>().not.toHaveProperty('getWorkingIntervals')
+  })
 
-  test("the working-time feature contributes the resolver surface", () => {
-    const features = calendarFeatures([workingTimeFeature]);
-    type Api = CalendarApi<typeof features, Resource, TestEvent>;
+  test('the working-time feature contributes the resolver surface', () => {
+    const features = calendarFeatures([workingTimeFeature])
+    type Api = CalendarApi<typeof features, Resource, TestEvent>
 
-    expectTypeOf<Api["getEffectiveCalendar"]>().returns.toEqualTypeOf<
-      string | undefined
-    >();
-    expectTypeOf<Api["getWorkingIntervals"]>().returns.toEqualTypeOf<
-      Array<WorkingTimeRange>
-    >();
-    expectTypeOf<Api["isWorkingTime"]>().returns.toEqualTypeOf<boolean>();
-    expectTypeOf<Api>().not.toHaveProperty("getUnavailableRanges");
-  });
+    expectTypeOf<Api['getEffectiveCalendar']>().returns.toEqualTypeOf<string | undefined>()
+    expectTypeOf<Api['getWorkingIntervals']>().returns.toEqualTypeOf<Array<WorkingTimeRange>>()
+    expectTypeOf<Api['isWorkingTime']>().returns.toEqualTypeOf<boolean>()
+    expectTypeOf<Api>().not.toHaveProperty('getUnavailableRanges')
+  })
 
-  test("core methods survive an empty feature list", () => {
-    type Api = CalendarApi<[], Resource, TestEvent>;
+  test('core methods survive an empty feature list', () => {
+    type Api = CalendarApi<[], Resource, TestEvent>
 
-    expectTypeOf<Api>().toHaveProperty("getEvents");
-    expectTypeOf<Api>().toHaveProperty("editEvent");
-    expectTypeOf<Api>().toHaveProperty("goToNextPeriod");
-  });
+    expectTypeOf<Api>().toHaveProperty('getEvents')
+    expectTypeOf<Api>().toHaveProperty('editEvent')
+    expectTypeOf<Api>().toHaveProperty('goToNextPeriod')
+  })
 
   test("recurrence takes the consumer's event type, not the kernel's", () => {
     interface CustomEvent extends Event<Resource> {
-      colour: string;
+      colour: string
     }
-    const features = calendarFeatures([eventRecurrenceFeature]);
+    const features = calendarFeatures([eventRecurrenceFeature])
     const cal = createCalendar<typeof features, Resource, CustomEvent>({
-      viewMode: { value: 1, unit: "week" },
-      timeZone: "UTC",
+      viewMode: { value: 1, unit: 'week' },
+      timeZone: 'UTC',
       features,
-    });
+    })
 
-    expectTypeOf(cal.getMasterEvent).parameter(0).toEqualTypeOf<CustomEvent>();
-  });
+    expectTypeOf(cal.getMasterEvent).parameter(0).toEqualTypeOf<CustomEvent>()
+  })
 
-  test("stockFeatures composes every registered feature", () => {
-    expectTypeOf<
-      ComposedApi<StockFeatures, Resource, TestEvent>
-    >().toEqualTypeOf<BuiltInFeatureApi<Resource, TestEvent>>();
-  });
+  test('stockFeatures composes every registered feature', () => {
+    expectTypeOf<ComposedApi<StockFeatures, Resource, TestEvent>>().toEqualTypeOf<
+      BuiltInFeatureApi<Resource, TestEvent>
+    >()
+  })
 
-  test("the feature owner table covers every registered api key", () => {
+  test('the feature owner table covers every registered api key', () => {
     expectTypeOf<keyof typeof FEATURE_API_OWNERS>().toEqualTypeOf<
       keyof BuiltInFeatureApi<Resource, TestEvent>
-    >();
-  });
-});
+    >()
+  })
+})

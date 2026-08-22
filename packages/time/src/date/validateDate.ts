@@ -1,10 +1,10 @@
-import { isValidDate } from "./isValidDate";
-import { parse as parser } from "./parse";
+import { isValidDate } from './isValidDate'
+import { parse as parser } from './parse'
 
 interface ValidateDateOptions {
-  date: string | number | Date;
-  parse?: (value: string | number | Date) => Date | undefined;
-  errorMessage?: string;
+  date: string | number | Date
+  parse?: (value: string | number | Date) => Date | undefined
+  errorMessage?: string
 }
 
 export function validateDate({
@@ -12,9 +12,9 @@ export function validateDate({
   parse = parser,
   errorMessage = `Invalid Date: "${date}"`,
 }: ValidateDateOptions): Date {
-  const d = parse(date);
+  const d = parse(date)
   if (!isValidDate(d)) {
-    throw new Error(`${errorMessage}: "${date}"`);
+    throw new Error(`${errorMessage}: "${date}"`)
   }
-  return d;
+  return d
 }

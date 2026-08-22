@@ -9,7 +9,7 @@ title: resourceAvailabilityFeature
 function resourceAvailabilityFeature<TResource, TEvent>(): CalendarFeature<TResource, TEvent, AvailabilityModuleApi, AvailabilityApi<TResource, TEvent>, "availability", AvailabilityPeers<TResource>>;
 ```
 
-Defined in: [calendar/features/availability.ts:74](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L74)
+Defined in: [calendar/features/availability.ts:68](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L68)
 
 ## Type Parameters
 

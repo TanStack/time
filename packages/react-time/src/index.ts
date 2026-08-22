@@ -1,11 +1,11 @@
-export { useCalendar } from "./useCalendar";
+export { useCalendar } from './useCalendar'
 export type {
   MoveOptions,
   MoveState,
   ResizeState,
   ResizeOptions,
   UseCalendarOptions,
-} from "./useCalendar";
+} from './useCalendar'
 
 export type {
   EventMutationError,
@@ -14,7 +14,7 @@ export type {
   AvailabilityConflict,
   UnavailabilityReason,
   SaveEventResult,
-} from "@tanstack/time";
+} from '@tanstack/time'
 
 export {
   getDateParts,
@@ -27,7 +27,7 @@ export {
   getEventDisplayTimeRange,
   getSegmentInfo,
   isMultiDayEvent,
-} from "@tanstack/time";
+} from '@tanstack/time'
 
 export type {
   DateParts,
@@ -48,4 +48,4 @@ export type {
   SegmentResizePreview,
   TimelineResizePreviewOptions,
   TimelineResizePreviewStyle,
-} from "@tanstack/time";
+} from '@tanstack/time'

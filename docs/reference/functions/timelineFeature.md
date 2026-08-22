@@ -9,7 +9,7 @@ title: timelineFeature
 function timelineFeature<TResource, TEvent>(): CalendarFeature<TResource, TEvent, object, TimelineApi<TResource, TEvent>, "timeline">;
 ```
 
-Defined in: [calendar/features/timeline.ts:20](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/timeline.ts#L20)
+Defined in: [calendar/features/timeline.ts:11](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/timeline.ts#L11)
 
 ## Type Parameters
 

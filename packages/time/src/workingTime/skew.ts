@@ -1,29 +1,29 @@
-import { Temporal } from "@js-temporal/polyfill";
+import { Temporal } from '@js-temporal/polyfill'
 import {
   formatMinutesToTime,
   mergeMinuteRanges,
   MINUTES_IN_DAY,
   parseHmToMinutes,
   type MinuteRange,
-} from "./minutes";
-import { hasAnyWorkingCalendar, resolveLayeredDayMinutes } from "./resolve";
-import type { WorkingCalendar } from "./types";
+} from './minutes'
+import { hasAnyWorkingCalendar, resolveLayeredDayMinutes } from './resolve'
+import type { WorkingCalendar } from './types'
 
-export const MAX_WORKING_SKEW_DAYS = 366;
+export const MAX_WORKING_SKEW_DAYS = 366
 
 function dayOf(value: string): string {
-  return value.slice(0, 10);
+  return value.slice(0, 10)
 }
 
 function minutesOf(value: string): number {
-  if (value.length < 16) return 0;
-  return parseHmToMinutes(value.slice(11, 16));
+  if (value.length < 16) return 0
+  return parseHmToMinutes(value.slice(11, 16))
 }
 
 function stampFrom(base: Temporal.PlainDate, totalMinutes: number): string {
-  const date = base.add({ days: Math.floor(totalMinutes / MINUTES_IN_DAY) });
-  const time = formatMinutesToTime(totalMinutes % MINUTES_IN_DAY);
-  return `${date.toString({ calendarName: "never" })}T${time}:00`;
+  const date = base.add({ days: Math.floor(totalMinutes / MINUTES_IN_DAY) })
+  const time = formatMinutesToTime(totalMinutes % MINUTES_IN_DAY)
+  return `${date.toString({ calendarName: 'never' })}T${time}:00`
 }
 
 function dayWorkingMinutes(
@@ -33,7 +33,7 @@ function dayWorkingMinutes(
 ): Array<MinuteRange> {
   return mergeMinuteRanges(
     layers.flatMap((stack) => resolveLayeredDayMinutes(stack, day, calendars)),
-  );
+  )
 }
 
 export function nextWorkingInstant(
@@ -41,24 +41,24 @@ export function nextWorkingInstant(
   layers: Array<Array<string | undefined>>,
   calendars: Array<WorkingCalendar> | null | undefined,
 ): string | null {
-  if (!hasAnyWorkingCalendar(layers.flat(), calendars)) return from;
+  if (!hasAnyWorkingCalendar(layers.flat(), calendars)) return from
 
-  const fromMinutes = minutesOf(from);
-  let cursor = Temporal.PlainDate.from(dayOf(from));
+  const fromMinutes = minutesOf(from)
+  let cursor = Temporal.PlainDate.from(dayOf(from))
 
   for (let day = 0; day <= MAX_WORKING_SKEW_DAYS; day++) {
-    const lowerBound = day === 0 ? fromMinutes : 0;
-    const date = cursor.toString({ calendarName: "never" });
+    const lowerBound = day === 0 ? fromMinutes : 0
+    const date = cursor.toString({ calendarName: 'never' })
 
     for (const span of dayWorkingMinutes(layers, date, calendars)) {
-      if (span.endMinutes <= lowerBound) continue;
-      return stampFrom(cursor, Math.max(span.startMinutes, lowerBound));
+      if (span.endMinutes <= lowerBound) continue
+      return stampFrom(cursor, Math.max(span.startMinutes, lowerBound))
     }
 
-    cursor = cursor.add({ days: 1 });
+    cursor = cursor.add({ days: 1 })
   }
 
-  return null;
+  return null
 }
 
 export function addWorkingMinutes(
@@ -68,33 +68,30 @@ export function addWorkingMinutes(
   calendars: Array<WorkingCalendar> | null | undefined,
 ): string | null {
   if (!hasAnyWorkingCalendar(layers.flat(), calendars)) {
-    return stampFrom(
-      Temporal.PlainDate.from(dayOf(start)),
-      minutesOf(start) + Math.max(0, minutes),
-    );
+    return stampFrom(Temporal.PlainDate.from(dayOf(start)), minutesOf(start) + Math.max(0, minutes))
   }
 
-  if (minutes <= 0) return nextWorkingInstant(start, layers, calendars);
+  if (minutes <= 0) return nextWorkingInstant(start, layers, calendars)
 
-  const startMinutes = minutesOf(start);
-  let remaining = minutes;
-  let cursor = Temporal.PlainDate.from(dayOf(start));
+  const startMinutes = minutesOf(start)
+  let remaining = minutes
+  let cursor = Temporal.PlainDate.from(dayOf(start))
 
   for (let day = 0; day <= MAX_WORKING_SKEW_DAYS; day++) {
-    const lowerBound = day === 0 ? startMinutes : 0;
-    const date = cursor.toString({ calendarName: "never" });
+    const lowerBound = day === 0 ? startMinutes : 0
+    const date = cursor.toString({ calendarName: 'never' })
 
     for (const span of dayWorkingMinutes(layers, date, calendars)) {
-      const from = Math.max(span.startMinutes, lowerBound);
-      if (span.endMinutes <= from) continue;
+      const from = Math.max(span.startMinutes, lowerBound)
+      if (span.endMinutes <= from) continue
 
-      const available = span.endMinutes - from;
-      if (remaining <= available) return stampFrom(cursor, from + remaining);
-      remaining -= available;
+      const available = span.endMinutes - from
+      if (remaining <= available) return stampFrom(cursor, from + remaining)
+      remaining -= available
     }
 
-    cursor = cursor.add({ days: 1 });
+    cursor = cursor.add({ days: 1 })
   }
 
-  return null;
+  return null
 }

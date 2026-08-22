@@ -5,7 +5,7 @@ title: TimelineApi
 
 # Interface: TimelineApi\<TResource, TEvent\>
 
-Defined in: [calendar/features/timeline.ts:12](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/timeline.ts#L12)
+Defined in: [calendar/features/timeline.ts:6](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/timeline.ts#L6)
 
 ## Type Parameters
 
@@ -25,7 +25,7 @@ Defined in: [calendar/features/timeline.ts:12](https://github.com/TanStack/time/
 getEventsByResource: () => Map<TResource["id"], TEvent[]>;
 ```
 
-Defined in: [calendar/features/timeline.ts:16](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/timeline.ts#L16)
+Defined in: [calendar/features/timeline.ts:7](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/timeline.ts#L7)
 
 #### Returns
 
@@ -39,7 +39,7 @@ Defined in: [calendar/features/timeline.ts:16](https://github.com/TanStack/time/
 getTimelineLayout: () => TimelineLayout<TResource, TEvent>;
 ```
 
-Defined in: [calendar/features/timeline.ts:17](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/timeline.ts#L17)
+Defined in: [calendar/features/timeline.ts:8](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/timeline.ts#L8)
 
 #### Returns
 

@@ -1,9 +1,4 @@
-import type {
-  Event,
-  MoveController,
-  MoveState,
-  Resource,
-} from "@tanstack/time";
+import type { Event, MoveController, MoveState, Resource } from '@tanstack/time'
 
 const INERT_STATE: MoveState = {
   isMoving: false,
@@ -16,7 +11,7 @@ const INERT_STATE: MoveState = {
   originDayDate: null,
   targetDayDate: null,
   blocked: false,
-};
+}
 
 export function inertMoveController<
   TResource extends Resource,
@@ -32,5 +27,5 @@ export function inertMoveController<
     end: () => {},
     cancel: () => {},
     destroy: () => {},
-  } as unknown as MoveController<TResource, TEvent>;
+  } as unknown as MoveController<TResource, TEvent>
 }

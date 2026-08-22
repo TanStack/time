@@ -9,7 +9,7 @@ title: toUnavailableRanges
 function toUnavailableRanges(ranges): UnavailableRange[];
 ```
 
-Defined in: [projection/unavailability.ts:21](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L21)
+Defined in: [projection/unavailability.ts:17](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L17)
 
 ## Parameters
 

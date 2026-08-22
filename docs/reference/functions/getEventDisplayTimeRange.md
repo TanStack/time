@@ -9,7 +9,7 @@ title: getEventDisplayTimeRange
 function getEventDisplayTimeRange(options): EventTimeRange;
 ```
 
-Defined in: [calendar/getResizeProps.ts:481](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L481)
+Defined in: [calendar/getResizeProps.ts:437](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L437)
 
 ## Parameters
 

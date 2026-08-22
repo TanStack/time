@@ -5,7 +5,7 @@ title: ParsedDateCoreOptions
 
 # Interface: ParsedDateCoreOptions
 
-Defined in: [calendar/date-core.ts:81](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L81)
+Defined in: [calendar/date-core.ts:78](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L78)
 
 ## Extends
 
@@ -19,7 +19,7 @@ Defined in: [calendar/date-core.ts:81](https://github.com/TanStack/time/blob/mai
 calendar: CalendarLike;
 ```
 
-Defined in: [calendar/date-core.ts:70](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L70)
+Defined in: [calendar/date-core.ts:67](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L67)
 
 #### Inherited from
 
@@ -33,7 +33,7 @@ Defined in: [calendar/date-core.ts:70](https://github.com/TanStack/time/blob/mai
 locale: string;
 ```
 
-Defined in: [calendar/date-core.ts:66](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L66)
+Defined in: [calendar/date-core.ts:63](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L63)
 
 #### Inherited from
 
@@ -47,7 +47,7 @@ Defined in: [calendar/date-core.ts:66](https://github.com/TanStack/time/blob/mai
 range: ParsedDateRange;
 ```
 
-Defined in: [calendar/date-core.ts:86](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L86)
+Defined in: [calendar/date-core.ts:82](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L82)
 
 ***
 
@@ -57,7 +57,7 @@ Defined in: [calendar/date-core.ts:86](https://github.com/TanStack/time/blob/mai
 timeZone: TimeZoneLike;
 ```
 
-Defined in: [calendar/date-core.ts:68](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L68)
+Defined in: [calendar/date-core.ts:65](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L65)
 
 #### Inherited from
 
@@ -71,7 +71,7 @@ Defined in: [calendar/date-core.ts:68](https://github.com/TanStack/time/blob/mai
 viewMode: ViewMode;
 ```
 
-Defined in: [calendar/date-core.ts:64](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L64)
+Defined in: [calendar/date-core.ts:61](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L61)
 
 #### Inherited from
 

@@ -1,26 +1,19 @@
-import { toPlainDateTimeString } from "~/date/parse";
-import { durationModule } from "~/kernel/modules";
-import type { KernelEvent } from "~/kernel";
-import type { DurationModuleApi } from "~/kernel/modules";
-import type { DurationConflict } from "~/validation/duration";
-import type { Event, Resource } from "../types";
-import type { CalendarFeature } from "./types";
+import { toPlainDateTimeString } from '~/date/parse'
+import { durationModule } from '~/kernel/modules'
+import type { KernelEvent } from '~/kernel'
+import type { DurationModuleApi } from '~/kernel/modules'
+import type { DurationConflict } from '~/validation/duration'
+import type { Event, Resource } from '../types'
+import type { CalendarFeature } from './types'
 
-export interface DurationApi<
-  TResource extends Resource,
-  TEvent extends Event<TResource>,
-> {
-  getWorkingDuration: (
-    event: TEvent,
-    newStart?: string,
-    newEnd?: string,
-  ) => number;
+export interface DurationApi<TResource extends Resource, TEvent extends Event<TResource>> {
+  getWorkingDuration: (event: TEvent, newStart?: string, newEnd?: string) => number
   checkEventDuration: (
     event: TEvent,
     newStart?: string,
     newEnd?: string,
     newResources?: Array<TResource | string>,
-  ) => Array<DurationConflict>;
+  ) => Array<DurationConflict>
 }
 
 export function eventDurationFeature<
@@ -31,15 +24,15 @@ export function eventDurationFeature<
   TEvent,
   DurationModuleApi,
   DurationApi<TResource, TEvent>,
-  "duration"
+  'duration'
 > {
   const spanOf = (event: TEvent, newStart?: string, newEnd?: string) => ({
     start: newStart ?? toPlainDateTimeString(event.start),
     end: newEnd ?? toPlainDateTimeString(event.end),
-  });
+  })
 
   return {
-    name: "duration",
+    name: 'duration',
     module: (ctx) =>
       durationModule<TEvent & KernelEvent>({
         resources: () => ctx.getResources(),
@@ -63,5 +56,5 @@ export function eventDurationFeature<
           effort: event.effort,
         }),
     }),
-  };
+  }
 }

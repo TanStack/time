@@ -9,7 +9,7 @@ title: createCalendar
 function createCalendar<TFeatures, TResource, TEvent>(options): Calendar<TFeatures, TResource, TEvent>;
 ```
 
-Defined in: [calendar/calendar.ts:1351](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1351)
+Defined in: [calendar/calendar.ts:1258](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L1258)
 
 ## Type Parameters
 

@@ -9,7 +9,7 @@ title: CalendarApi
 type CalendarApi<TFeatures, TResource, TEvent> = CalendarActions<TResource, TEvent> & CalendarState<TResource, TEvent> & ComposedApi<TFeatures, TResource, TEvent>;
 ```
 
-Defined in: [calendar/calendar.ts:170](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L170)
+Defined in: [calendar/calendar.ts:159](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/calendar.ts#L159)
 
 ## Type Parameters
 

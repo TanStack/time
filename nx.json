@@ -13,16 +13,8 @@
       "{workspaceRoot}/package.json",
       "{workspaceRoot}/tsconfig.json"
     ],
-    "default": [
-      "sharedGlobals",
-      "{projectRoot}/**/*",
-      "!{projectRoot}/**/*.md"
-    ],
-    "production": [
-      "default",
-      "!{projectRoot}/tests/**/*",
-      "!{projectRoot}/.oxlintrc.json"
-    ]
+    "default": ["sharedGlobals", "{projectRoot}/**/*", "!{projectRoot}/**/*.md"],
+    "production": ["default", "!{projectRoot}/tests/**/*", "!{projectRoot}/.oxlintrc.json"]
   },
   "targetDefaults": {
     "test:lib": {

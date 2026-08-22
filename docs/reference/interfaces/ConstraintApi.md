@@ -25,7 +25,7 @@ Defined in: [calendar/features/constraint.ts:9](https://github.com/TanStack/time
 checkEventConstraint: (event, newStart?, newEnd?, newConstraint?) => ConstraintConflict | null;
 ```
 
-Defined in: [calendar/features/constraint.ts:13](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/constraint.ts#L13)
+Defined in: [calendar/features/constraint.ts:10](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/constraint.ts#L10)
 
 #### Parameters
 

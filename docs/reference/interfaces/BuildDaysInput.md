@@ -5,7 +5,7 @@ title: BuildDaysInput
 
 # Interface: BuildDaysInput\<E\>
 
-Defined in: [projection/bucketByDay.ts:39](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L39)
+Defined in: [projection/bucketByDay.ts:37](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L37)
 
 ## Type Parameters
 
@@ -21,7 +21,7 @@ Defined in: [projection/bucketByDay.ts:39](https://github.com/TanStack/time/blob
 events: E[];
 ```
 
-Defined in: [projection/bucketByDay.ts:41](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L41)
+Defined in: [projection/bucketByDay.ts:39](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L39)
 
 ***
 
@@ -31,7 +31,7 @@ Defined in: [projection/bucketByDay.ts:41](https://github.com/TanStack/time/blob
 optional isInCurrentPeriod: (isoDate) => boolean;
 ```
 
-Defined in: [projection/bucketByDay.ts:44](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L44)
+Defined in: [projection/bucketByDay.ts:42](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L42)
 
 #### Parameters
 
@@ -51,7 +51,7 @@ Defined in: [projection/bucketByDay.ts:44](https://github.com/TanStack/time/blob
 isoDates: string[];
 ```
 
-Defined in: [projection/bucketByDay.ts:40](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L40)
+Defined in: [projection/bucketByDay.ts:38](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L38)
 
 ***
 
@@ -61,7 +61,7 @@ Defined in: [projection/bucketByDay.ts:40](https://github.com/TanStack/time/blob
 timeZone: TimeZoneLike;
 ```
 
-Defined in: [projection/bucketByDay.ts:42](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L42)
+Defined in: [projection/bucketByDay.ts:40](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L40)
 
 ***
 
@@ -71,4 +71,4 @@ Defined in: [projection/bucketByDay.ts:42](https://github.com/TanStack/time/blob
 optional today: string;
 ```
 
-Defined in: [projection/bucketByDay.ts:43](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L43)
+Defined in: [projection/bucketByDay.ts:41](https://github.com/TanStack/time/blob/main/packages/time/src/projection/bucketByDay.ts#L41)

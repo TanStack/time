@@ -4,7 +4,7 @@ import {
   resolveLayeredDayMinutes,
   type MinuteRange,
   type WorkingCalendar,
-} from "~/workingTime";
+} from '~/workingTime'
 
 export {
   formatMinutesToTime,
@@ -13,29 +13,29 @@ export {
   MINUTES_IN_DAY,
   parseHmToMinutes,
   type MinuteRange,
-} from "~/workingTime";
+} from '~/workingTime'
 
 export interface WorkingTimeConfig {
-  calendars?: Array<WorkingCalendar> | null;
-  defaultCalendarId?: string;
-  multiResource?: "intersection" | "union";
+  calendars?: Array<WorkingCalendar> | null
+  defaultCalendarId?: string
+  multiResource?: 'intersection' | 'union'
 }
 
 interface CalendarReference {
-  calendarId?: string;
+  calendarId?: string
 }
 
 export interface ResourceDayWorkingTime {
-  working: Array<MinuteRange>;
-  nonWorking: Array<MinuteRange>;
-  configured: boolean;
+  working: Array<MinuteRange>
+  nonWorking: Array<MinuteRange>
+  configured: boolean
 }
 
 export function effectiveCalendarId(
   target: CalendarReference,
   config: WorkingTimeConfig,
 ): string | undefined {
-  return target.calendarId ?? config.defaultCalendarId;
+  return target.calendarId ?? config.defaultCalendarId
 }
 
 export function resourceDayWorkingTime(
@@ -44,14 +44,14 @@ export function resourceDayWorkingTime(
   config: WorkingTimeConfig,
   eventCalendarId?: string,
 ): ResourceDayWorkingTime {
-  const layers = [effectiveCalendarId(resource, config), eventCalendarId];
-  const working = resolveLayeredDayMinutes(layers, date, config.calendars);
+  const layers = [effectiveCalendarId(resource, config), eventCalendarId]
+  const working = resolveLayeredDayMinutes(layers, date, config.calendars)
 
   return {
     working,
     nonWorking: invertMinuteRanges(working),
     configured: hasAnyWorkingCalendar(layers, config.calendars),
-  };
+  }
 }
 
 export function applyMultiResourcePolicy<TDetail>(
@@ -59,6 +59,6 @@ export function applyMultiResourcePolicy<TDetail>(
   resourceCount: number,
   config: WorkingTimeConfig,
 ): Array<TDetail> {
-  if (config.multiResource !== "union") return details;
-  return details.length >= resourceCount ? details : [];
+  if (config.multiResource !== 'union') return details
+  return details.length >= resourceCount ? details : []
 }

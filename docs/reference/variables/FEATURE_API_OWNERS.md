@@ -9,270 +9,270 @@ title: FEATURE_API_OWNERS
 const FEATURE_API_OWNERS: object;
 ```
 
-Defined in: [calendar/features/registry.ts:85](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L85)
+Defined in: [calendar/features/registry.ts:71](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L71)
 
 ## Type Declaration
 
 ### canRedo
 
 ```ts
-readonly canRedo: "historyFeature" = "historyFeature";
+readonly canRedo: "historyFeature" = 'historyFeature';
 ```
 
 ### canUndo
 
 ```ts
-readonly canUndo: "historyFeature" = "historyFeature";
+readonly canUndo: "historyFeature" = 'historyFeature';
 ```
 
 ### checkEventAvailability
 
 ```ts
-readonly checkEventAvailability: "resourceAvailabilityFeature" = "resourceAvailabilityFeature";
+readonly checkEventAvailability: "resourceAvailabilityFeature" = 'resourceAvailabilityFeature';
 ```
 
 ### checkEventConstraint
 
 ```ts
-readonly checkEventConstraint: "schedulingConstraintFeature" = "schedulingConstraintFeature";
+readonly checkEventConstraint: "schedulingConstraintFeature" = 'schedulingConstraintFeature';
 ```
 
 ### checkEventDuration
 
 ```ts
-readonly checkEventDuration: "eventDurationFeature" = "eventDurationFeature";
+readonly checkEventDuration: "eventDurationFeature" = 'eventDurationFeature';
 ```
 
 ### clearEventFilters
 
 ```ts
-readonly clearEventFilters: "eventFilterFeature" = "eventFilterFeature";
+readonly clearEventFilters: "eventFilterFeature" = 'eventFilterFeature';
 ```
 
 ### createDependency
 
 ```ts
-readonly createDependency: "eventDependencyFeature" = "eventDependencyFeature";
+readonly createDependency: "eventDependencyFeature" = 'eventDependencyFeature';
 ```
 
 ### createMoveController
 
 ```ts
-readonly createMoveController: "eventMoveFeature" = "eventMoveFeature";
+readonly createMoveController: "eventMoveFeature" = 'eventMoveFeature';
 ```
 
 ### createResizeController
 
 ```ts
-readonly createResizeController: "eventResizeFeature" = "eventResizeFeature";
+readonly createResizeController: "eventResizeFeature" = 'eventResizeFeature';
 ```
 
 ### editRecurringEvent
 
 ```ts
-readonly editRecurringEvent: "eventRecurrenceFeature" = "eventRecurrenceFeature";
+readonly editRecurringEvent: "eventRecurrenceFeature" = 'eventRecurrenceFeature';
 ```
 
 ### findViolatedDependency
 
 ```ts
-readonly findViolatedDependency: "eventDependencyFeature" = "eventDependencyFeature";
+readonly findViolatedDependency: "eventDependencyFeature" = 'eventDependencyFeature';
 ```
 
 ### getAffectedByDelta
 
 ```ts
-readonly getAffectedByDelta: "eventDependencyFeature" = "eventDependencyFeature";
+readonly getAffectedByDelta: "eventDependencyFeature" = 'eventDependencyFeature';
 ```
 
 ### getAnchorConflicts
 
 ```ts
-readonly getAnchorConflicts: "eventDependencyFeature" = "eventDependencyFeature";
+readonly getAnchorConflicts: "eventDependencyFeature" = 'eventDependencyFeature';
 ```
 
 ### getDaySpanConflicts
 
 ```ts
-readonly getDaySpanConflicts: "resourceAvailabilityFeature" = "resourceAvailabilityFeature";
+readonly getDaySpanConflicts: "resourceAvailabilityFeature" = 'resourceAvailabilityFeature';
 ```
 
 ### getDependentShifts
 
 ```ts
-readonly getDependentShifts: "eventDependencyFeature" = "eventDependencyFeature";
+readonly getDependentShifts: "eventDependencyFeature" = 'eventDependencyFeature';
 ```
 
 ### getEffectiveCalendar
 
 ```ts
-readonly getEffectiveCalendar: "workingTimeFeature" = "workingTimeFeature";
+readonly getEffectiveCalendar: "workingTimeFeature" = 'workingTimeFeature';
 ```
 
 ### getEventFilterIds
 
 ```ts
-readonly getEventFilterIds: "eventFilterFeature" = "eventFilterFeature";
+readonly getEventFilterIds: "eventFilterFeature" = 'eventFilterFeature';
 ```
 
 ### getEventProps
 
 ```ts
-readonly getEventProps: "dayEventLayoutFeature" = "dayEventLayoutFeature";
+readonly getEventProps: "dayEventLayoutFeature" = 'dayEventLayoutFeature';
 ```
 
 ### getEventsByResource
 
 ```ts
-readonly getEventsByResource: "timelineFeature" = "timelineFeature";
+readonly getEventsByResource: "timelineFeature" = 'timelineFeature';
 ```
 
 ### getEventSegmentInfo
 
 ```ts
-readonly getEventSegmentInfo: "eventResizeFeature" = "eventResizeFeature";
+readonly getEventSegmentInfo: "eventResizeFeature" = 'eventResizeFeature';
 ```
 
 ### getHiddenEvents
 
 ```ts
-readonly getHiddenEvents: "eventFilterFeature" = "eventFilterFeature";
+readonly getHiddenEvents: "eventFilterFeature" = 'eventFilterFeature';
 ```
 
 ### getMasterEvent
 
 ```ts
-readonly getMasterEvent: "eventRecurrenceFeature" = "eventRecurrenceFeature";
+readonly getMasterEvent: "eventRecurrenceFeature" = 'eventRecurrenceFeature';
 ```
 
 ### getNonWorkingMinutes
 
 ```ts
-readonly getNonWorkingMinutes: "workingTimeFeature" = "workingTimeFeature";
+readonly getNonWorkingMinutes: "workingTimeFeature" = 'workingTimeFeature';
 ```
 
 ### getPredecessorShifts
 
 ```ts
-readonly getPredecessorShifts: "eventDependencyFeature" = "eventDependencyFeature";
+readonly getPredecessorShifts: "eventDependencyFeature" = 'eventDependencyFeature';
 ```
 
 ### getTimelineLayout
 
 ```ts
-readonly getTimelineLayout: "timelineFeature" = "timelineFeature";
+readonly getTimelineLayout: "timelineFeature" = 'timelineFeature';
 ```
 
 ### getUnavailabilityDetails
 
 ```ts
-readonly getUnavailabilityDetails: "resourceAvailabilityFeature" = "resourceAvailabilityFeature";
+readonly getUnavailabilityDetails: "resourceAvailabilityFeature" = 'resourceAvailabilityFeature';
 ```
 
 ### getUnavailableMinuteRanges
 
 ```ts
-readonly getUnavailableMinuteRanges: "resourceAvailabilityFeature" = "resourceAvailabilityFeature";
+readonly getUnavailableMinuteRanges: "resourceAvailabilityFeature" = 'resourceAvailabilityFeature';
 ```
 
 ### getUnavailableRanges
 
 ```ts
-readonly getUnavailableRanges: "resourceAvailabilityFeature" = "resourceAvailabilityFeature";
+readonly getUnavailableRanges: "resourceAvailabilityFeature" = 'resourceAvailabilityFeature';
 ```
 
 ### getWorkingDuration
 
 ```ts
-readonly getWorkingDuration: "eventDurationFeature" = "eventDurationFeature";
+readonly getWorkingDuration: "eventDurationFeature" = 'eventDurationFeature';
 ```
 
 ### getWorkingIntervals
 
 ```ts
-readonly getWorkingIntervals: "workingTimeFeature" = "workingTimeFeature";
+readonly getWorkingIntervals: "workingTimeFeature" = 'workingTimeFeature';
 ```
 
 ### getWorkingMinutes
 
 ```ts
-readonly getWorkingMinutes: "workingTimeFeature" = "workingTimeFeature";
+readonly getWorkingMinutes: "workingTimeFeature" = 'workingTimeFeature';
 ```
 
 ### goToNextOccurrence
 
 ```ts
-readonly goToNextOccurrence: "eventRecurrenceFeature" = "eventRecurrenceFeature";
+readonly goToNextOccurrence: "eventRecurrenceFeature" = 'eventRecurrenceFeature';
 ```
 
 ### goToPreviousOccurrence
 
 ```ts
-readonly goToPreviousOccurrence: "eventRecurrenceFeature" = "eventRecurrenceFeature";
+readonly goToPreviousOccurrence: "eventRecurrenceFeature" = 'eventRecurrenceFeature';
 ```
 
 ### isEventVisible
 
 ```ts
-readonly isEventVisible: "eventFilterFeature" = "eventFilterFeature";
+readonly isEventVisible: "eventFilterFeature" = 'eventFilterFeature';
 ```
 
 ### isWorkingTime
 
 ```ts
-readonly isWorkingTime: "workingTimeFeature" = "workingTimeFeature";
+readonly isWorkingTime: "workingTimeFeature" = 'workingTimeFeature';
 ```
 
 ### redo
 
 ```ts
-readonly redo: "historyFeature" = "historyFeature";
+readonly redo: "historyFeature" = 'historyFeature';
 ```
 
 ### removeRecurringEvent
 
 ```ts
-readonly removeRecurringEvent: "eventRecurrenceFeature" = "eventRecurrenceFeature";
+readonly removeRecurringEvent: "eventRecurrenceFeature" = 'eventRecurrenceFeature';
 ```
 
 ### resolveOccurrence
 
 ```ts
-readonly resolveOccurrence: "eventRecurrenceFeature" = "eventRecurrenceFeature";
+readonly resolveOccurrence: "eventRecurrenceFeature" = 'eventRecurrenceFeature';
 ```
 
 ### setEventFilter
 
 ```ts
-readonly setEventFilter: "eventFilterFeature" = "eventFilterFeature";
+readonly setEventFilter: "eventFilterFeature" = 'eventFilterFeature';
 ```
 
 ### undo
 
 ```ts
-readonly undo: "historyFeature" = "historyFeature";
+readonly undo: "historyFeature" = 'historyFeature';
 ```
 
 ### validateEventDependencies
 
 ```ts
-readonly validateEventDependencies: "eventDependencyFeature" = "eventDependencyFeature";
+readonly validateEventDependencies: "eventDependencyFeature" = 'eventDependencyFeature';
 ```
 
 ### validateEventMove
 
 ```ts
-readonly validateEventMove: "eventMoveFeature" = "eventMoveFeature";
+readonly validateEventMove: "eventMoveFeature" = 'eventMoveFeature';
 ```
 
 ### validateEventPlacement
 
 ```ts
-readonly validateEventPlacement: "resourceAvailabilityFeature" = "resourceAvailabilityFeature";
+readonly validateEventPlacement: "resourceAvailabilityFeature" = 'resourceAvailabilityFeature';
 ```
 
 ### validateResize
 
 ```ts
-readonly validateResize: "eventResizeFeature" = "eventResizeFeature";
+readonly validateResize: "eventResizeFeature" = 'eventResizeFeature';
 ```

@@ -1,21 +1,18 @@
-import { toPlainDateTimeString } from "~/date/parse";
-import { constraintModule } from "~/kernel/modules";
-import type { KernelEvent } from "~/kernel";
-import type { ConstraintModuleApi } from "~/kernel/modules";
-import type { ConstraintConflict } from "~/validation/constraints";
-import type { Event, Resource, SchedulingConstraint } from "../types";
-import type { CalendarFeature } from "./types";
+import { toPlainDateTimeString } from '~/date/parse'
+import { constraintModule } from '~/kernel/modules'
+import type { KernelEvent } from '~/kernel'
+import type { ConstraintModuleApi } from '~/kernel/modules'
+import type { ConstraintConflict } from '~/validation/constraints'
+import type { Event, Resource, SchedulingConstraint } from '../types'
+import type { CalendarFeature } from './types'
 
-export interface ConstraintApi<
-  TResource extends Resource,
-  TEvent extends Event<TResource>,
-> {
+export interface ConstraintApi<TResource extends Resource, TEvent extends Event<TResource>> {
   checkEventConstraint: (
     event: TEvent,
     newStart?: string,
     newEnd?: string,
     newConstraint?: SchedulingConstraint,
-  ) => ConstraintConflict | null;
+  ) => ConstraintConflict | null
 }
 
 export function schedulingConstraintFeature<
@@ -26,10 +23,10 @@ export function schedulingConstraintFeature<
   TEvent,
   ConstraintModuleApi,
   ConstraintApi<TResource, TEvent>,
-  "constraint"
+  'constraint'
 > {
   return {
-    name: "constraint",
+    name: 'constraint',
     module: () => constraintModule<TEvent & KernelEvent>(),
     api: (_host, module) => ({
       checkEventConstraint: (event, newStart, newEnd, newConstraint) =>
@@ -41,5 +38,5 @@ export function schedulingConstraintFeature<
           constraint: newConstraint ?? event.constraint,
         }),
     }),
-  };
+  }
 }

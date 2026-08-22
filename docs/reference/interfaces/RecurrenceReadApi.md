@@ -5,7 +5,7 @@ title: RecurrenceReadApi
 
 # Interface: RecurrenceReadApi\<TResource, TEvent\>
 
-Defined in: [calendar/features/recurrence.ts:78](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/recurrence.ts#L78)
+Defined in: [calendar/features/recurrence.ts:68](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/recurrence.ts#L68)
 
 ## Type Parameters
 
@@ -25,7 +25,7 @@ Defined in: [calendar/features/recurrence.ts:78](https://github.com/TanStack/tim
 getMasterEvent: (event) => TEvent;
 ```
 
-Defined in: [calendar/features/recurrence.ts:82](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/recurrence.ts#L82)
+Defined in: [calendar/features/recurrence.ts:69](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/recurrence.ts#L69)
 
 #### Parameters
 
@@ -45,7 +45,7 @@ Defined in: [calendar/features/recurrence.ts:82](https://github.com/TanStack/tim
 resolveOccurrence: (eventId, occurrenceStart?, fallbackStart?) => TEvent | undefined;
 ```
 
-Defined in: [calendar/features/recurrence.ts:83](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/recurrence.ts#L83)
+Defined in: [calendar/features/recurrence.ts:70](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/recurrence.ts#L70)
 
 #### Parameters
 

@@ -1,1 +1,1 @@
-export * from "./buildTimeFormatter";
+export * from './buildTimeFormatter'

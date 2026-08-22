@@ -5,7 +5,7 @@ title: MoveFeatureApi
 
 # Interface: MoveFeatureApi\<TResource, TEvent\>
 
-Defined in: [calendar/features/move.ts:14](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/move.ts#L14)
+Defined in: [calendar/features/move.ts:9](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/move.ts#L9)
 
 ## Type Parameters
 
@@ -25,7 +25,7 @@ Defined in: [calendar/features/move.ts:14](https://github.com/TanStack/time/blob
 createMoveController: (options?) => MoveController<TResource, TEvent>;
 ```
 
-Defined in: [calendar/features/move.ts:18](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/move.ts#L18)
+Defined in: [calendar/features/move.ts:10](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/move.ts#L10)
 
 #### Parameters
 
@@ -45,7 +45,7 @@ Defined in: [calendar/features/move.ts:18](https://github.com/TanStack/time/blob
 validateEventMove: (options) => ValidateMoveResult;
 ```
 
-Defined in: [calendar/features/move.ts:21](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/move.ts#L21)
+Defined in: [calendar/features/move.ts:11](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/move.ts#L11)
 
 #### Parameters
 

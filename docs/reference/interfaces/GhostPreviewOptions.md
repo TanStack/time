@@ -5,7 +5,7 @@ title: GhostPreviewOptions
 
 # Interface: GhostPreviewOptions
 
-Defined in: [calendar/getResizeProps.ts:350](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L350)
+Defined in: [calendar/getResizeProps.ts:321](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L321)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/getResizeProps.ts:350](https://github.com/TanStack/time/bl
 dayDate: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:351](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L351)
+Defined in: [calendar/getResizeProps.ts:322](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L322)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [calendar/getResizeProps.ts:351](https://github.com/TanStack/time/bl
 previewEnd: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:355](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L355)
+Defined in: [calendar/getResizeProps.ts:326](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L326)
 
 ***
 
@@ -35,4 +35,4 @@ Defined in: [calendar/getResizeProps.ts:355](https://github.com/TanStack/time/bl
 previewStart: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:353](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L353)
+Defined in: [calendar/getResizeProps.ts:324](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L324)

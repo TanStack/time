@@ -9,7 +9,7 @@ title: toDate
 function toDate(value): Date;
 ```
 
-Defined in: [date/parse/parse.ts:152](https://github.com/TanStack/time/blob/main/packages/time/src/date/parse/parse.ts#L152)
+Defined in: [date/parse/parse.ts:148](https://github.com/TanStack/time/blob/main/packages/time/src/date/parse/parse.ts#L148)
 
 ## Parameters
 

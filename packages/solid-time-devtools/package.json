@@ -2,33 +2,30 @@
   "name": "@tanstack/solid-time-devtools",
   "version": "0.0.0",
   "description": "Solid devtools for TanStack Time",
-  "author": "Tanner Linsley",
+  "keywords": [
+    "devtools",
+    "solid",
+    "tanstack",
+    "time"
+  ],
+  "homepage": "https://tanstack.com/time",
   "license": "MIT",
+  "author": "Tanner Linsley",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/TanStack/time.git",
     "directory": "packages/solid-time-devtools"
   },
-  "homepage": "https://tanstack.com/time",
   "funding": {
     "type": "github",
     "url": "https://github.com/sponsors/tannerlinsley"
   },
-  "keywords": [
-    "solid",
-    "tanstack",
-    "time",
-    "devtools"
+  "files": [
+    "dist",
+    "src"
   ],
-  "scripts": {
-    "clean": "premove ./build ./dist",
-    "test:lint": "oxlint ./src",
-    "test:lib": "vitest --passWithNoTests",
-    "test:lib:dev": "pnpm test:lib --watch",
-    "test:types": "tsc",
-    "build": "tsdown"
-  },
   "type": "module",
+  "sideEffects": false,
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.cts",
@@ -43,14 +40,14 @@
     },
     "./package.json": "./package.json"
   },
-  "sideEffects": false,
-  "engines": {
-    "node": ">=18"
+  "scripts": {
+    "clean": "premove ./build ./dist",
+    "test:lint": "oxlint ./src",
+    "test:lib": "vitest --passWithNoTests",
+    "test:lib:dev": "pnpm test:lib --watch",
+    "test:types": "tsc",
+    "build": "tsdown"
   },
-  "files": [
-    "dist",
-    "src"
-  ],
   "dependencies": {
     "@tanstack/devtools-utils": "^0.4.0",
     "@tanstack/time-devtools": "workspace:*"
@@ -62,6 +59,9 @@
   },
   "peerDependencies": {
     "solid-js": ">=1.9.5"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "inlinedDependencies": {
     "@tanstack/devtools": "0.14.1",

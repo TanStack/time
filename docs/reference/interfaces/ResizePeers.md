@@ -5,7 +5,7 @@ title: ResizePeers
 
 # Interface: ResizePeers\<TResource, TEvent\>
 
-Defined in: [calendar/features/resize.ts:37](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L37)
+Defined in: [calendar/features/resize.ts:32](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L32)
 
 ## Type Parameters
 
@@ -25,7 +25,7 @@ Defined in: [calendar/features/resize.ts:37](https://github.com/TanStack/time/bl
 optional availability: AvailabilityApi<TResource, TEvent>;
 ```
 
-Defined in: [calendar/features/resize.ts:43](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L43)
+Defined in: [calendar/features/resize.ts:34](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L34)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [calendar/features/resize.ts:43](https://github.com/TanStack/time/bl
 optional dependency: DependencyGraphApi<TResource, TEvent>;
 ```
 
-Defined in: [calendar/features/resize.ts:44](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L44)
+Defined in: [calendar/features/resize.ts:35](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L35)
 
 ***
 
@@ -45,4 +45,4 @@ Defined in: [calendar/features/resize.ts:44](https://github.com/TanStack/time/bl
 recurrence: RecurrenceReadApi<TResource, TEvent> & RecurrenceEditApi<TResource, TEvent>;
 ```
 
-Defined in: [calendar/features/resize.ts:41](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L41)
+Defined in: [calendar/features/resize.ts:33](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L33)

@@ -1,7 +1,7 @@
-import { createEffect, createMemo, createSignal, onCleanup } from "solid-js";
-import { useStore } from "@tanstack/solid-store";
-import { createCalendar as createCalendarCore } from "@tanstack/time";
-import type { Accessor } from "solid-js";
+import { createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
+import { useStore } from '@tanstack/solid-store'
+import { createCalendar as createCalendarCore } from '@tanstack/time'
+import type { Accessor } from 'solid-js'
 import type {
   Calendar,
   CalendarCoreOptions,
@@ -17,23 +17,23 @@ import type {
   ResizeEdge,
   ResizeState,
   Resource,
-} from "@tanstack/time";
+} from '@tanstack/time'
 
-export type { ResizeState } from "@tanstack/time";
+export type { ResizeState } from '@tanstack/time'
 
-export type ResizeOptions = ResizeControllerOptions;
+export type ResizeOptions = ResizeControllerOptions
 
 interface ResizeHandleHandlers {
-  onMouseDown: (event: MouseEvent) => void;
+  onMouseDown: (event: MouseEvent) => void
 }
 
 interface ResizeHandleOptions {
-  occurrenceStart?: EventDateTimeInput;
-  recurrenceScope?: RecurrenceEditScope;
+  occurrenceStart?: EventDateTimeInput
+  recurrenceScope?: RecurrenceEditScope
 }
 
 interface DayColumnProps {
-  ref: (element: HTMLElement | null) => void;
+  ref: (element: HTMLElement | null) => void
 }
 
 export interface CreateCalendarOptions<
@@ -41,34 +41,34 @@ export interface CreateCalendarOptions<
   TResource extends Resource = Resource,
   TEvent extends Event<TResource> = Event<TResource>,
 > extends CalendarCoreOptions<TFeatures, TResource, TEvent> {
-  resize?: ResizeOptions | Accessor<ResizeOptions>;
+  resize?: ResizeOptions | Accessor<ResizeOptions>
 }
 
 export interface SolidResizeApi {
-  resizeState: Accessor<ResizeState>;
+  resizeState: Accessor<ResizeState>
   getResizeHandleProps: (
     eventId: string,
     edge: ResizeEdge,
     originalStart: string,
     originalEnd: string,
     options?: ResizeHandleOptions,
-  ) => ResizeHandleHandlers;
-  getDayColumnProps: (dayDate: string) => DayColumnProps;
+  ) => ResizeHandleHandlers
+  getDayColumnProps: (dayDate: string) => DayColumnProps
 }
 
 type ComposedResizeApi<TFeatures extends CalendarFeatureList> =
-  "resize" extends FeatureName<TFeatures[number]> ? SolidResizeApi : object;
+  'resize' extends FeatureName<TFeatures[number]> ? SolidResizeApi : object
 
 export type SolidCalendar<
   TFeatures extends CalendarFeatureList,
   TResource extends Resource = Resource,
   TEvent extends Event<TResource> = Event<TResource>,
 > = {
-  calendar: Calendar<TFeatures, TResource, TEvent>;
-  state: Accessor<CalendarStore>;
-  days: Accessor<Array<Day<TResource, TEvent>>>;
-  isPending: Accessor<boolean>;
-} & ComposedResizeApi<TFeatures>;
+  calendar: Calendar<TFeatures, TResource, TEvent>
+  state: Accessor<CalendarStore>
+  days: Accessor<Array<Day<TResource, TEvent>>>
+  isPending: Accessor<boolean>
+} & ComposedResizeApi<TFeatures>
 
 export function createCalendar<
   const TFeatures extends CalendarFeatureList,
@@ -77,61 +77,55 @@ export function createCalendar<
 >(
   options: CreateCalendarOptions<TFeatures, TResource, TEvent>,
 ): SolidCalendar<TFeatures, TResource, TEvent> {
-  const { resize, ...calendarOptions } = options;
-  const calendar = createCalendarCore<TFeatures, TResource, TEvent>(
-    calendarOptions,
-  );
+  const { resize, ...calendarOptions } = options
+  const calendar = createCalendarCore<TFeatures, TResource, TEvent>(calendarOptions)
 
-  const state = useStore(calendar.store);
-  const isPending = useStore(calendar.store, (snapshot) => snapshot.isPending);
+  const state = useStore(calendar.store)
+  const isPending = useStore(calendar.store, (snapshot) => snapshot.isPending)
   const rangeKey = useStore(
     calendar.store,
     (snapshot) =>
       `${snapshot.currentPeriod}|${snapshot.activeDate}|${snapshot.viewMode.value}|${snapshot.viewMode.unit}`,
-  );
+  )
   const daysKey = useStore(
     calendar.store,
     (snapshot) =>
       `${snapshot.currentPeriod}|${snapshot.activeDate}|${snapshot.viewMode.value}|${snapshot.viewMode.unit}|${snapshot.eventsVersion}`,
-  );
+  )
 
   createEffect(() => {
-    rangeKey();
-    calendar.ensureRangeLoaded();
-  });
+    rangeKey()
+    calendar.ensureRangeLoaded()
+  })
 
   const days = createMemo(() => {
-    daysKey();
-    return calendar.getDaysWithEvents();
-  });
+    daysKey()
+    return calendar.getDaysWithEvents()
+  })
 
-  const base = { calendar, state, days, isPending };
-  if (!calendar.hasFeature("resize")) {
-    return base as SolidCalendar<TFeatures, TResource, TEvent>;
+  const base = { calendar, state, days, isPending }
+  if (!calendar.hasFeature('resize')) {
+    return base as SolidCalendar<TFeatures, TResource, TEvent>
   }
 
   const controller = (
     calendar as unknown as {
       createResizeController: (
         options?: ResizeControllerOptions,
-      ) => ResizeController<TResource, TEvent>;
+      ) => ResizeController<TResource, TEvent>
     }
-  ).createResizeController(typeof resize === "function" ? resize() : resize);
+  ).createResizeController(typeof resize === 'function' ? resize() : resize)
 
-  const [resizeState, setResizeState] = createSignal(controller.getSnapshot());
-  onCleanup(
-    controller.subscribe(() => setResizeState(controller.getSnapshot())),
-  );
-  onCleanup(() => controller.destroy());
+  const [resizeState, setResizeState] = createSignal(controller.getSnapshot())
+  onCleanup(controller.subscribe(() => setResizeState(controller.getSnapshot())))
+  onCleanup(() => controller.destroy())
 
   createEffect(() => {
-    controller.setOptions(
-      (typeof resize === "function" ? resize() : resize) ?? {},
-    );
-  });
+    controller.setOptions((typeof resize === 'function' ? resize() : resize) ?? {})
+  })
 
-  const handleCache = new Map<string, ResizeHandleHandlers>();
-  const dayColumnCache = new Map<string, DayColumnProps>();
+  const handleCache = new Map<string, ResizeHandleHandlers>()
+  const dayColumnCache = new Map<string, DayColumnProps>()
 
   const getResizeHandleProps = (
     eventId: string,
@@ -140,9 +134,9 @@ export function createCalendar<
     originalEnd: string,
     handleOptions?: ResizeHandleOptions,
   ): ResizeHandleHandlers => {
-    const key = `${eventId}|${edge}|${originalStart}|${originalEnd}|${handleOptions?.occurrenceStart ?? ""}|${handleOptions?.recurrenceScope ?? ""}`;
-    const cached = handleCache.get(key);
-    if (cached) return cached;
+    const key = `${eventId}|${edge}|${originalStart}|${originalEnd}|${handleOptions?.occurrenceStart ?? ''}|${handleOptions?.recurrenceScope ?? ''}`
+    const cached = handleCache.get(key)
+    if (cached) return cached
 
     const handlers: ResizeHandleHandlers = {
       onMouseDown: (event) => {
@@ -156,35 +150,35 @@ export function createCalendar<
           clientX: event.clientX,
           clientY: event.clientY,
           target: event.target as HTMLElement | null,
-        });
-        if (!started) return;
+        })
+        if (!started) return
 
-        event.preventDefault();
-        event.stopPropagation();
+        event.preventDefault()
+        event.stopPropagation()
       },
-    };
+    }
 
-    handleCache.set(key, handlers);
-    return handlers;
-  };
+    handleCache.set(key, handlers)
+    return handlers
+  }
 
   const getDayColumnProps = (dayDate: string): DayColumnProps => {
-    const cached = dayColumnCache.get(dayDate);
-    if (cached) return cached;
+    const cached = dayColumnCache.get(dayDate)
+    if (cached) return cached
 
     const props: DayColumnProps = {
       ref: (element) => {
-        controller.registerDayColumn(dayDate, element);
+        controller.registerDayColumn(dayDate, element)
       },
-    };
-    dayColumnCache.set(dayDate, props);
-    return props;
-  };
+    }
+    dayColumnCache.set(dayDate, props)
+    return props
+  }
 
   return {
     ...base,
     resizeState,
     getResizeHandleProps,
     getDayColumnProps,
-  } as SolidCalendar<TFeatures, TResource, TEvent>;
+  } as SolidCalendar<TFeatures, TResource, TEvent>
 }

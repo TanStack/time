@@ -118,9 +118,7 @@ An epoch time is a numeric value that represents the number of milliseconds sinc
 const timeZone = 'Asia/Tokyo'
 const calendar = 'japanese'
 const legacy = new Date(1726515625477)
-const zdt = Temporal.ZonedDateTime.from(
-  `${legacy.toJSON()}[${timeZone}][u-ca=${calendar}]`,
-)
+const zdt = Temporal.ZonedDateTime.from(`${legacy.toJSON()}[${timeZone}][u-ca=${calendar}]`)
 ```
 
 ### String parsing
@@ -131,9 +129,7 @@ A string representation must be in the RFC 3339 standard format, or in the ISO 8
 const timeZone = 'Asia/Tokyo'
 const calendar = 'japanese'
 const legacy = '2024-03-05T12:34:56.789Z'
-const zdt = Temporal.ZonedDateTime.from(
-  `${legacy}[${timeZone}][u-ca=${calendar}]`,
-)
+const zdt = Temporal.ZonedDateTime.from(`${legacy}[${timeZone}][u-ca=${calendar}]`)
 ```
 
 This assumes that the timeZone and calendar are not already included in the string. If they are, we can simply pass the string to the Temporal.ZonedDateTime.from() method.
@@ -146,7 +142,5 @@ A Date object is a native object in JavaScript that represents a date/time insta
 const timeZone = 'Asia/Tokyo'
 const calendar = 'japanese'
 const legacy = new Date() // this would be passed into a method, but this is just an example
-const zdt = Temporal.ZonedDateTime.from(
-  `${legacy.toJSON()}[${timeZone}][u-ca=${calendar}]`,
-)
+const zdt = Temporal.ZonedDateTime.from(`${legacy.toJSON()}[${timeZone}][u-ca=${calendar}]`)
 ```
