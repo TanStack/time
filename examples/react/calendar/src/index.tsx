@@ -1581,7 +1581,7 @@ function CalendarView() {
     () => new Set(eventCategories.map((category) => category.id)),
   )
 
-  const calendar = useCalendar({
+  const calendar = useCalendar<typeof features, Resource, DemoEvent>({
     features,
     viewMode: { value: 1, unit: 'month' },
     events: [],
