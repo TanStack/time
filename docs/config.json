@@ -50,6 +50,26 @@
           "label": "Core API",
           "to": "reference"
         }
+      ],
+      "frameworks": [
+        {
+          "label": "react",
+          "children": [
+            {
+              "label": "React API",
+              "to": "framework/react/reference"
+            }
+          ]
+        },
+        {
+          "label": "solid",
+          "children": [
+            {
+              "label": "Solid API",
+              "to": "framework/solid/reference"
+            }
+          ]
+        }
       ]
     }
   ]

@@ -1,45 +1,48 @@
+---
+title: Installation
+id: installation
+---
+
 # Installation
 
-## Core Package
+TanStack Time is published on [NPM](https://npmjs.com). Install only the packages you need for your stack.
+
+## Core
+
+The core package is required for every setup. It contains all date and calendar logic and has no framework dependencies.
 
 ```bash
 npm install @tanstack/time
-# or
-pnpm add @tanstack/time
-# or
-yarn add @tanstack/time
 ```
 
 ## React
 
 ```bash
-npm install @tanstack/react-time
-# or
-pnpm add @tanstack/react-time
-# or
-yarn add @tanstack/react-time
+npm install @tanstack/time @tanstack/react-time
 ```
+
+TanStack Time is compatible with React v16.8+.
 
 ## Solid
 
 ```bash
-npm install @tanstack/solid-time
-# or
-pnpm add @tanstack/solid-time
-# or
-yarn add @tanstack/solid-time
+npm install @tanstack/time @tanstack/solid-time
 ```
+
+TanStack Time is compatible with Solid v1.9.5+.
 
 ## Devtools
 
-### React Devtools
+Optional devtools plugins integrate with TanStack Devtools.
+
+### React
 
 ```bash
-npm install @tanstack/react-time-devtools
+npm install -D @tanstack/react-time-devtools
 ```
 
-### Solid Devtools
+### Solid
 
 ```bash
-npm install @tanstack/solid-time-devtools
+npm install -D @tanstack/solid-time-devtools
 ```
