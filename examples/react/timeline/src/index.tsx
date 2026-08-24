@@ -6,10 +6,12 @@ import { TanStackDevtools } from "@tanstack/react-devtools";
 import { timeDevtoolsPlugin } from "@tanstack/react-time-devtools";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  add,
   calendarFeatures,
   eventDependencyFeature,
   eventRecurrenceFeature,
   eventResizeFeature,
+  getDateParts,
   getTimeClient,
   historyFeature,
   workingTimeFeature,
@@ -1911,10 +1913,12 @@ function TimelineDemo() {
 
       if (snapShift === 0 && !resourceChanged) return;
 
-      const newStart = new Date(
-        new Date(draggedEvent.start).getTime() + msShift,
-      );
-      const newEnd = new Date(new Date(draggedEvent.end).getTime() + msShift);
+      const newStart = add(draggedEvent.start, {
+        duration: { milliseconds: msShift },
+      });
+      const newEnd = add(draggedEvent.end, {
+        duration: { milliseconds: msShift },
+      });
 
       const nextStart = `${toPlainDateString(newStart)}T${toPlainTimeString(newStart)}:00`;
       const nextEnd = `${toPlainDateString(newEnd)}T${toPlainTimeString(newEnd)}:00`;
@@ -2111,15 +2115,12 @@ function TimelineDemo() {
                   >
                     {virtualColumns.map((vc) => {
                       const day = calendar.days[vc.index];
-                      const localDate = new Date(`${day.isoDate}T00:00:00`);
-                      const dayName = localDate.toLocaleDateString(undefined, {
-                        weekday: "short",
+                      const dayParts = getDateParts(day.isoDate, {
+                        timeZone: "UTC",
                       });
-                      const dayNum = localDate.getDate();
-                      const monthName = localDate.toLocaleDateString(
-                        undefined,
-                        { month: "short" },
-                      );
+                      const dayName = dayParts.weekdayShort;
+                      const dayNum = dayParts.day;
+                      const monthName = dayParts.monthShort;
                       return (
                         <div
                           key={day.isoDate}

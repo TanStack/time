@@ -5,15 +5,20 @@ import {
   useCalendar,
 } from "@tanstack/react-time";
 import {
+  add,
   calendarFeatures,
+  count,
   dayEventLayoutFeature,
   eventFilterFeature,
   eventMoveFeature,
   eventRecurrenceFeature,
   eventResizeFeature,
   historyFeature,
-  workingTimeFeature,
   resourceAvailabilityFeature,
+  toPlainDateString,
+  toPlainDateTimeString,
+  toPlainTimeString,
+  workingTimeFeature,
 } from "@tanstack/time";
 import {
   DragDropProvider,
@@ -90,24 +95,12 @@ const features = calendarFeatures([
   dayEventLayoutFeature,
 ]);
 
-function formatDateToISO(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 function shiftIsoDate(isoDate: string, days: number): string {
-  const date = new Date(`${isoDate}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + days);
-  return date.toISOString().slice(0, 10);
+  return toPlainDateString(add(isoDate, { duration: { days } }));
 }
 
 function isoDaySpan(start: string, end: string): number {
-  const msPerDay = 86_400_000;
-  const diff =
-    Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`);
-  return Math.round(diff / msPerDay) + 1;
+  return count(start, end, { unit: "day" }) + 1;
 }
 
 function clampIsoRange(
@@ -165,10 +158,6 @@ function restoreScrollAnchor(
   return true;
 }
 
-function padTimePart(n: number): string {
-  return String(n).padStart(2, "0");
-}
-
 function workWeekMonday(): Date {
   const today = new Date();
   const dow = today.getDay();
@@ -184,10 +173,7 @@ function workWeekMonday(): Date {
 }
 
 function weekdayAt(isoWeekday: 1 | 2 | 3 | 4 | 5): Date {
-  const monday = workWeekMonday();
-  const d = new Date(monday);
-  d.setDate(monday.getDate() + isoWeekday - 1);
-  return d;
+  return add(workWeekMonday(), { duration: { days: isoWeekday - 1 } });
 }
 
 function dateTimeOnWeekday(
@@ -195,9 +181,9 @@ function dateTimeOnWeekday(
   hour: number,
   minute: number,
 ): string {
-  const d = weekdayAt(isoWeekday);
-  d.setHours(hour, minute, 0, 0);
-  return `${formatDateToISO(d)}T${padTimePart(hour)}:${padTimePart(minute)}:00`;
+  return toPlainDateTimeString(
+    add(weekdayAt(isoWeekday), { duration: { hours: hour, minutes: minute } }),
+  );
 }
 
 function getResourceId(resource: Resource | string): string {
@@ -330,11 +316,6 @@ type DemoCalendar = ReturnType<
   typeof useCalendar<typeof features, Resource, DemoEvent>
 >;
 
-/**
- * Grows a range out to whole weeks so the month grid can be built from real
- * `getDaysInRange` days. Without this the grid's leading/trailing days come
- * from `groupDaysBy`'s filler, which always reports zero events.
- */
 function weekAlignedRange(
   calendar: Pick<DemoCalendar, "getDaysInRange" | "groupDaysBy">,
   range: { start: string; end: string },
@@ -629,16 +610,16 @@ function getSampleEvents(): Array<DemoEvent> {
     {
       id: "ad-holiday",
       title: "🎉 Company Holiday",
-      start: `${formatDateToISO(weekdayAt(3))}T00:00:00`,
-      end: `${formatDateToISO(weekdayAt(3))}T23:59:59`,
+      start: `${toPlainDateString(weekdayAt(3))}T00:00:00`,
+      end: `${toPlainDateString(weekdayAt(3))}T23:59:59`,
       allDay: true,
       categoryId: "holiday",
     },
     {
       id: "ad-conf",
       title: "🏢 Offsite Conference",
-      start: `${formatDateToISO(weekdayAt(4))}T00:00:00`,
-      end: `${formatDateToISO(weekdayAt(5))}T23:59:59`,
+      start: `${toPlainDateString(weekdayAt(4))}T00:00:00`,
+      end: `${toPlainDateString(weekdayAt(5))}T23:59:59`,
       allDay: true,
       categoryId: "team",
     },
@@ -664,9 +645,9 @@ interface EventFormData {
 
 const emptyFormData: EventFormData = {
   title: "",
-  startDate: formatDateToISO(new Date()),
+  startDate: toPlainDateString(new Date()),
   startTime: "09:00",
-  endDate: formatDateToISO(new Date()),
+  endDate: toPlainDateString(new Date()),
   endTime: "10:00",
   categoryId: eventCategories[0]?.id ?? "",
   resourceId: sampleResources[0]?.id ?? "",
@@ -1711,7 +1692,7 @@ function CalendarView() {
     () => new Set(eventCategories.map((category) => category.id)),
   );
 
-  const calendar = useCalendar<typeof features, Resource, DemoEvent>({
+  const calendar = useCalendar({
     features,
     viewMode: { value: 1, unit: "month" },
     events: [],
@@ -2241,10 +2222,10 @@ function CalendarView() {
       isRecurring,
       initialData: {
         title: event.title,
-        startDate: formatDateToISO(startDate),
-        startTime: startDate.toTimeString().slice(0, 5),
-        endDate: formatDateToISO(endDate),
-        endTime: endDate.toTimeString().slice(0, 5),
+        startDate: toPlainDateString(startDate),
+        startTime: toPlainTimeString(startDate),
+        endDate: toPlainDateString(endDate),
+        endTime: toPlainTimeString(endDate),
         categoryId:
           event.categoryId ||
           masterEvent.categoryId ||
