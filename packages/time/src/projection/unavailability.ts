@@ -1,31 +1,24 @@
-import {
-  formatMinutesToTime,
-  MINUTES_IN_DAY,
-  type MinuteRange,
-} from "~/validation/availability";
+import { formatMinutesToTime, MINUTES_IN_DAY, type MinuteRange } from '~/validation/availability'
 
 export interface UnavailableRange {
-  startFraction: number;
+  startFraction: number
 
-  endFraction: number;
+  endFraction: number
 
-  top: string;
+  top: string
 
-  height: string;
+  height: string
 
-  startTime: string;
+  startTime: string
 
-  endTime: string;
+  endTime: string
 }
 
-export function toUnavailableRanges(
-  ranges: Array<MinuteRange>,
-): Array<UnavailableRange> {
+export function toUnavailableRanges(ranges: Array<MinuteRange>): Array<UnavailableRange> {
   return ranges.map((range) => {
-    const startFraction = range.startMinutes / MINUTES_IN_DAY;
-    const endFraction = range.endMinutes / MINUTES_IN_DAY;
-    const durationFraction =
-      (range.endMinutes - range.startMinutes) / MINUTES_IN_DAY;
+    const startFraction = range.startMinutes / MINUTES_IN_DAY
+    const endFraction = range.endMinutes / MINUTES_IN_DAY
+    const durationFraction = (range.endMinutes - range.startMinutes) / MINUTES_IN_DAY
     return {
       startFraction,
       endFraction,
@@ -33,6 +26,6 @@ export function toUnavailableRanges(
       height: `${durationFraction * 100}%`,
       startTime: formatMinutesToTime(range.startMinutes),
       endTime: formatMinutesToTime(range.endMinutes),
-    };
-  });
+    }
+  })
 }

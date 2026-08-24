@@ -9,4 +9,4 @@ title: EventMutationKind
 type EventMutationKind = "resize" | "move";
 ```
 
-Defined in: [calendar/types.ts:209](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L209)
+Defined in: [calendar/types.ts:206](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/types.ts#L206)

@@ -25,7 +25,7 @@ Defined in: [calendar/moveController.ts:96](https://github.com/TanStack/time/blo
 new MoveController<TResource, TEvent>(host, options): MoveController<TResource, TEvent>;
 ```
 
-Defined in: [calendar/moveController.ts:124](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/moveController.ts#L124)
+Defined in: [calendar/moveController.ts:121](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/moveController.ts#L121)
 
 #### Parameters
 
@@ -49,7 +49,7 @@ Defined in: [calendar/moveController.ts:124](https://github.com/TanStack/time/bl
 cancel(): void;
 ```
 
-Defined in: [calendar/moveController.ts:309](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/moveController.ts#L309)
+Defined in: [calendar/moveController.ts:299](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/moveController.ts#L299)
 
 #### Returns
 
@@ -63,7 +63,7 @@ Defined in: [calendar/moveController.ts:309](https://github.com/TanStack/time/bl
 destroy(): void;
 ```
 
-Defined in: [calendar/moveController.ts:316](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/moveController.ts#L316)
+Defined in: [calendar/moveController.ts:306](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/moveController.ts#L306)
 
 #### Returns
 
@@ -77,7 +77,7 @@ Defined in: [calendar/moveController.ts:316](https://github.com/TanStack/time/bl
 end(): void;
 ```
 
-Defined in: [calendar/moveController.ts:243](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/moveController.ts#L243)
+Defined in: [calendar/moveController.ts:233](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/moveController.ts#L233)
 
 #### Returns
 
@@ -91,7 +91,7 @@ Defined in: [calendar/moveController.ts:243](https://github.com/TanStack/time/bl
 getOptions(): MoveControllerOptions;
 ```
 
-Defined in: [calendar/moveController.ts:145](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/moveController.ts#L145)
+Defined in: [calendar/moveController.ts:139](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/moveController.ts#L139)
 
 #### Returns
 
@@ -105,7 +105,7 @@ Defined in: [calendar/moveController.ts:145](https://github.com/TanStack/time/bl
 getSnapshot(): MoveState;
 ```
 
-Defined in: [calendar/moveController.ts:139](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/moveController.ts#L139)
+Defined in: [calendar/moveController.ts:133](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/moveController.ts#L133)
 
 #### Returns
 
@@ -119,7 +119,7 @@ Defined in: [calendar/moveController.ts:139](https://github.com/TanStack/time/bl
 moveTo(args): void;
 ```
 
-Defined in: [calendar/moveController.ts:181](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/moveController.ts#L181)
+Defined in: [calendar/moveController.ts:175](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/moveController.ts#L175)
 
 #### Parameters
 
@@ -139,7 +139,7 @@ Defined in: [calendar/moveController.ts:181](https://github.com/TanStack/time/bl
 setOptions(options): void;
 ```
 
-Defined in: [calendar/moveController.ts:141](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/moveController.ts#L141)
+Defined in: [calendar/moveController.ts:135](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/moveController.ts#L135)
 
 #### Parameters
 
@@ -159,7 +159,7 @@ Defined in: [calendar/moveController.ts:141](https://github.com/TanStack/time/bl
 start(args): boolean;
 ```
 
-Defined in: [calendar/moveController.ts:149](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/moveController.ts#L149)
+Defined in: [calendar/moveController.ts:143](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/moveController.ts#L143)
 
 #### Parameters
 
@@ -179,7 +179,7 @@ Defined in: [calendar/moveController.ts:149](https://github.com/TanStack/time/bl
 subscribe(listener): () => void;
 ```
 
-Defined in: [calendar/moveController.ts:132](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/moveController.ts#L132)
+Defined in: [calendar/moveController.ts:126](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/moveController.ts#L126)
 
 #### Parameters
 

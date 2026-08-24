@@ -5,7 +5,7 @@ title: Range
 
 # Interface: Range
 
-Defined in: [date/types.ts:17](https://github.com/TanStack/time/blob/main/packages/time/src/date/types.ts#L17)
+Defined in: [date/types.ts:12](https://github.com/TanStack/time/blob/main/packages/time/src/date/types.ts#L12)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [date/types.ts:17](https://github.com/TanStack/time/blob/main/packag
 end: DateInput;
 ```
 
-Defined in: [date/types.ts:19](https://github.com/TanStack/time/blob/main/packages/time/src/date/types.ts#L19)
+Defined in: [date/types.ts:14](https://github.com/TanStack/time/blob/main/packages/time/src/date/types.ts#L14)
 
 ***
 
@@ -25,4 +25,4 @@ Defined in: [date/types.ts:19](https://github.com/TanStack/time/blob/main/packag
 start: DateInput;
 ```
 
-Defined in: [date/types.ts:18](https://github.com/TanStack/time/blob/main/packages/time/src/date/types.ts#L18)
+Defined in: [date/types.ts:13](https://github.com/TanStack/time/blob/main/packages/time/src/date/types.ts#L13)

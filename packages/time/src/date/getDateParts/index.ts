@@ -1,2 +1,2 @@
-export { getDateParts } from "./getDateParts";
-export type { DateParts, GetDatePartsOptions } from "./getDateParts";
+export { getDateParts } from './getDateParts'
+export type { DateParts, GetDatePartsOptions } from './getDateParts'

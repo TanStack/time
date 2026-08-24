@@ -5,7 +5,7 @@ title: TimeEventRecord
 
 # Interface: TimeEventRecord
 
-Defined in: [client/TimeClient.ts:57](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L57)
+Defined in: [client/TimeClient.ts:54](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L54)
 
 ## Properties
 
@@ -51,7 +51,7 @@ payload:
 };
 ```
 
-Defined in: [client/TimeClient.ts:59](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L59)
+Defined in: [client/TimeClient.ts:56](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L56)
 
 ***
 
@@ -61,7 +61,7 @@ Defined in: [client/TimeClient.ts:59](https://github.com/TanStack/time/blob/main
 timestamp: number;
 ```
 
-Defined in: [client/TimeClient.ts:60](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L60)
+Defined in: [client/TimeClient.ts:57](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L57)
 
 ***
 
@@ -71,4 +71,4 @@ Defined in: [client/TimeClient.ts:60](https://github.com/TanStack/time/blob/main
 type: keyof TimeEventMap;
 ```
 
-Defined in: [client/TimeClient.ts:58](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L58)
+Defined in: [client/TimeClient.ts:55](https://github.com/TanStack/time/blob/main/packages/time/src/client/TimeClient.ts#L55)

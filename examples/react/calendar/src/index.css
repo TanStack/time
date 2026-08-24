@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -35,8 +35,8 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
 
-  --font-sans: "Geist Variable", system-ui, sans-serif;
-  --font-heading: "Geist Variable", system-ui, sans-serif;
+  --font-sans: 'Geist Variable', system-ui, sans-serif;
+  --font-heading: 'Geist Variable', system-ui, sans-serif;
 }
 
 @layer base {
@@ -88,7 +88,7 @@
     font-family: var(--font-sans);
   }
 
-  [data-dnd-placeholder="clone"] {
+  [data-dnd-placeholder='clone'] {
     opacity: 0.35;
   }
 }

@@ -22,24 +22,15 @@
         "getSegmentInfo",
         "isMultiDayEvent"
       ],
-      "dependencies": [
-        "@tanstack/react-store",
-        "@tanstack/time"
-      ],
+      "dependencies": ["@tanstack/react-store", "@tanstack/time"],
       "devDependencies": [
         "@testing-library/react",
         "@types/react",
         "@vitejs/plugin-react",
         "react"
       ],
-      "peerDependencies": [
-        "react",
-        "react-dom"
-      ],
-      "internalDeps": [
-        "@tanstack/react-store",
-        "@tanstack/time"
-      ],
+      "peerDependencies": ["react", "react-dom"],
+      "internalDeps": ["@tanstack/react-store", "@tanstack/time"],
       "files": [
         "packages/react-time/src/index.ts",
         "packages/react-time/src/useCalendar/index.ts",
@@ -51,28 +42,11 @@
     {
       "name": "@tanstack/react-time-devtools",
       "path": "packages/react-time-devtools",
-      "exports": [
-        "TimeDevtoolsPanel",
-        "timeDevtoolsPlugin"
-      ],
-      "dependencies": [
-        "@tanstack/devtools-utils",
-        "@tanstack/time-devtools"
-      ],
-      "devDependencies": [
-        "@types/react",
-        "@vitejs/plugin-react",
-        "react",
-        "solid-js"
-      ],
-      "peerDependencies": [
-        "react",
-        "react-dom"
-      ],
-      "internalDeps": [
-        "@tanstack/devtools-utils",
-        "@tanstack/time-devtools"
-      ],
+      "exports": ["TimeDevtoolsPanel", "timeDevtoolsPlugin"],
+      "dependencies": ["@tanstack/devtools-utils", "@tanstack/time-devtools"],
+      "devDependencies": ["@types/react", "@vitejs/plugin-react", "react", "solid-js"],
+      "peerDependencies": ["react", "react-dom"],
+      "internalDeps": ["@tanstack/devtools-utils", "@tanstack/time-devtools"],
       "files": [
         "packages/react-time-devtools/src/index.ts",
         "packages/react-time-devtools/src/production.ts"
@@ -82,25 +56,11 @@
     {
       "name": "@tanstack/solid-time",
       "path": "packages/solid-time",
-      "exports": [
-        "* from ./createCalendar"
-      ],
-      "dependencies": [
-        "@tanstack/solid-store",
-        "@tanstack/time"
-      ],
-      "devDependencies": [
-        "@types/node",
-        "solid-js",
-        "vite-plugin-solid"
-      ],
-      "peerDependencies": [
-        "solid-js"
-      ],
-      "internalDeps": [
-        "@tanstack/solid-store",
-        "@tanstack/time"
-      ],
+      "exports": ["* from ./createCalendar"],
+      "dependencies": ["@tanstack/solid-store", "@tanstack/time"],
+      "devDependencies": ["@types/node", "solid-js", "vite-plugin-solid"],
+      "peerDependencies": ["solid-js"],
+      "internalDeps": ["@tanstack/solid-store", "@tanstack/time"],
       "files": [
         "packages/solid-time/src/index.ts",
         "packages/solid-time/src/createCalendar/createCalendar.ts",
@@ -111,25 +71,11 @@
     {
       "name": "@tanstack/solid-time-devtools",
       "path": "packages/solid-time-devtools",
-      "exports": [
-        "TimeDevtools",
-        "timeDevtoolsPlugin"
-      ],
-      "dependencies": [
-        "@tanstack/devtools-utils",
-        "@tanstack/time-devtools"
-      ],
-      "devDependencies": [
-        "solid-js",
-        "vite-plugin-solid"
-      ],
-      "peerDependencies": [
-        "solid-js"
-      ],
-      "internalDeps": [
-        "@tanstack/devtools-utils",
-        "@tanstack/time-devtools"
-      ],
+      "exports": ["TimeDevtools", "timeDevtoolsPlugin"],
+      "dependencies": ["@tanstack/devtools-utils", "@tanstack/time-devtools"],
+      "devDependencies": ["solid-js", "vite-plugin-solid"],
+      "peerDependencies": ["solid-js"],
+      "internalDeps": ["@tanstack/devtools-utils", "@tanstack/time-devtools"],
       "files": [
         "packages/solid-time-devtools/src/index.ts",
         "packages/solid-time-devtools/src/production.ts"
@@ -139,24 +85,11 @@
     {
       "name": "@tanstack/time",
       "path": "packages/time",
-      "exports": [
-        "* from ./date",
-        "* from ./calendar",
-        "* from ./projection",
-        "* from ./client"
-      ],
-      "dependencies": [
-        "@tanstack/devtools-event-client",
-        "@tanstack/store"
-      ],
-      "devDependencies": [
-        "vite-tsconfig-paths"
-      ],
+      "exports": ["* from ./date", "* from ./calendar", "* from ./projection", "* from ./client"],
+      "dependencies": ["@tanstack/devtools-event-client", "@tanstack/store"],
+      "devDependencies": ["vite-tsconfig-paths"],
       "peerDependencies": [],
-      "internalDeps": [
-        "@tanstack/devtools-event-client",
-        "@tanstack/store"
-      ],
+      "internalDeps": ["@tanstack/devtools-event-client", "@tanstack/store"],
       "files": [
         "packages/time/src/index.ts",
         "packages/time/src/calendar/calendar.ts",
@@ -377,9 +310,7 @@
     {
       "name": "@tanstack/time-devtools",
       "path": "packages/time-devtools",
-      "exports": [
-        "TimeDevtoolsCore"
-      ],
+      "exports": ["TimeDevtoolsCore"],
       "dependencies": [
         "@tanstack/devtools-ui",
         "@tanstack/devtools-utils",
@@ -387,15 +318,9 @@
         "goober",
         "solid-js"
       ],
-      "devDependencies": [
-        "rolldown-plugin-solid"
-      ],
+      "devDependencies": ["rolldown-plugin-solid"],
       "peerDependencies": [],
-      "internalDeps": [
-        "@tanstack/devtools-ui",
-        "@tanstack/devtools-utils",
-        "@tanstack/time"
-      ],
+      "internalDeps": ["@tanstack/devtools-ui", "@tanstack/devtools-utils", "@tanstack/time"],
       "files": [
         "packages/time-devtools/src/index.ts",
         "packages/time-devtools/src/production.ts",

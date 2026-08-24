@@ -1,1 +1,1 @@
-export * from "./checkDuration";
+export * from './checkDuration'

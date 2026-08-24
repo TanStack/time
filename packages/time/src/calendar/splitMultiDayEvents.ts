@@ -1,6 +1,6 @@
-import { splitMultiDay } from "~/projection";
-import type { Temporal } from "@js-temporal/polyfill";
-import type { Event, Resource } from "./types";
+import { splitMultiDay } from '~/projection'
+import type { Temporal } from '@js-temporal/polyfill'
+import type { Event, Resource } from './types'
 
 export const splitMultiDayEvents = <
   TResource extends Resource = Resource,
@@ -8,4 +8,4 @@ export const splitMultiDayEvents = <
 >(
   event: TEvent,
   timeZone: Temporal.TimeZoneLike,
-): Array<TEvent> => splitMultiDay(event, timeZone);
+): Array<TEvent> => splitMultiDay(event, timeZone)

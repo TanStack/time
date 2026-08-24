@@ -9,7 +9,7 @@ title: eventFilterFeature
 function eventFilterFeature<TResource, TEvent>(): CalendarFeature<TResource, TEvent, object, EventFilterApi<TResource, TEvent>, "filter">;
 ```
 
-Defined in: [calendar/features/filter.ts:29](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/filter.ts#L29)
+Defined in: [calendar/features/filter.ts:22](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/filter.ts#L22)
 
 ## Type Parameters
 

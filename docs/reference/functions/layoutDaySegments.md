@@ -9,7 +9,7 @@ title: layoutDaySegments
 function layoutDaySegments(events, options): EventLayout[];
 ```
 
-Defined in: [projection/layout.ts:258](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L258)
+Defined in: [projection/layout.ts:238](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L238)
 
 ## Parameters
 

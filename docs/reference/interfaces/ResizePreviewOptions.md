@@ -5,7 +5,7 @@ title: ResizePreviewOptions
 
 # Interface: ResizePreviewOptions
 
-Defined in: [calendar/getResizeProps.ts:272](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L272)
+Defined in: [calendar/getResizeProps.ts:249](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L249)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/getResizeProps.ts:272](https://github.com/TanStack/time/bl
 dayDate: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:273](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L273)
+Defined in: [calendar/getResizeProps.ts:250](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L250)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [calendar/getResizeProps.ts:273](https://github.com/TanStack/time/bl
 originalEnd: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:277](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L277)
+Defined in: [calendar/getResizeProps.ts:254](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L254)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [calendar/getResizeProps.ts:277](https://github.com/TanStack/time/bl
 originalStart: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:275](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L275)
+Defined in: [calendar/getResizeProps.ts:252](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L252)
 
 ***
 
@@ -45,7 +45,7 @@ Defined in: [calendar/getResizeProps.ts:275](https://github.com/TanStack/time/bl
 previewEnd: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:281](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L281)
+Defined in: [calendar/getResizeProps.ts:258](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L258)
 
 ***
 
@@ -55,4 +55,4 @@ Defined in: [calendar/getResizeProps.ts:281](https://github.com/TanStack/time/bl
 previewStart: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:279](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L279)
+Defined in: [calendar/getResizeProps.ts:256](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L256)

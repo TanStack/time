@@ -1,328 +1,323 @@
-import type { DateInput } from "~/date";
-import type { EventLayout, LayoutOptions, LayoutStyle } from "~/projection";
-import type { MoveConstraints, MoveGranularity } from "./getMoveProps";
-import type { ResizeConstraints, ResizeEdge } from "./getResizeProps";
+import type { DateInput } from '~/date'
+import type { EventLayout, LayoutOptions, LayoutStyle } from '~/projection'
+import type { MoveConstraints, MoveGranularity } from './getMoveProps'
+import type { ResizeConstraints, ResizeEdge } from './getResizeProps'
 
-export type EventDateTimeInput = string | Date | number;
+export type EventDateTimeInput = string | Date | number
 
-export type RecurrenceFrequency = "daily" | "weekly" | "monthly" | "yearly";
+export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly'
 
-export type DependencyType = "FS" | "SS" | "FF" | "SF";
+export type DependencyType = 'FS' | 'SS' | 'FF' | 'SF'
 
 export interface EventDependency {
-  id: string;
-  type: DependencyType;
+  id: string
+  type: DependencyType
 
-  lag?: number;
+  lag?: number
 }
 
 export type ConstraintType =
-  | "start-no-earlier-than"
-  | "start-no-later-than"
-  | "finish-no-earlier-than"
-  | "finish-no-later-than"
-  | "must-start-on"
-  | "must-finish-on";
+  | 'start-no-earlier-than'
+  | 'start-no-later-than'
+  | 'finish-no-earlier-than'
+  | 'finish-no-later-than'
+  | 'must-start-on'
+  | 'must-finish-on'
 
 export interface SchedulingConstraint {
-  type: ConstraintType;
+  type: ConstraintType
 
-  date: string;
+  date: string
 }
 
-export type RecurrenceEditScope = "this" | "thisAndFollowing" | "all";
+export type RecurrenceEditScope = 'this' | 'thisAndFollowing' | 'all'
 
 export interface RecurrenceOverride<TResource extends Resource = Resource> {
-  originalStart: EventDateTimeInput;
+  originalStart: EventDateTimeInput
 
-  id?: string;
-  start?: EventDateTimeInput;
-  end?: EventDateTimeInput;
-  title?: string;
-  resources?: Array<TResource | string>;
-  consumption?: Array<number>;
-  dependsOn?: Array<EventDependency>;
-  allDay?: boolean;
-  [key: string]: unknown;
+  id?: string
+  start?: EventDateTimeInput
+  end?: EventDateTimeInput
+  title?: string
+  resources?: Array<TResource | string>
+  consumption?: Array<number>
+  dependsOn?: Array<EventDependency>
+  allDay?: boolean
+  [key: string]: unknown
 }
 
 export interface RecurrenceRule<TResource extends Resource = Resource> {
-  frequency: RecurrenceFrequency;
+  frequency: RecurrenceFrequency
 
-  interval?: number;
+  interval?: number
 
-  until?: string;
+  until?: string
 
-  count?: number;
+  count?: number
 
-  byWeekday?: Array<number>;
+  byWeekday?: Array<number>
 
-  exDates?: Array<EventDateTimeInput>;
+  exDates?: Array<EventDateTimeInput>
 
-  overrides?: Array<RecurrenceOverride<TResource>>;
+  overrides?: Array<RecurrenceOverride<TResource>>
 }
 
 export interface Resource {
-  id: string;
-  label: string;
-  calendarId?: string;
-  capacity?: Array<number>;
+  id: string
+  label: string
+  calendarId?: string
+  capacity?: Array<number>
   buffer?: {
-    before?: number;
-    after?: number;
-  };
+    before?: number
+    after?: number
+  }
 }
 
 export interface ViewMode {
-  value: number;
+  value: number
 
-  unit: "month" | "week" | "day" | "workWeek";
+  unit: 'month' | 'week' | 'day' | 'workWeek'
 }
 
 export interface Event<TResource extends Resource = Resource> {
-  id: string;
-  start: EventDateTimeInput;
-  end: EventDateTimeInput;
-  title: string;
-  resources?: Array<TResource | string>;
-  consumption?: Array<number>;
+  id: string
+  start: EventDateTimeInput
+  end: EventDateTimeInput
+  title: string
+  resources?: Array<TResource | string>
+  consumption?: Array<number>
 
-  calendarId?: string;
+  calendarId?: string
 
-  dependsOn?: Array<EventDependency>;
+  dependsOn?: Array<EventDependency>
 
-  manuallyScheduled?: boolean;
+  manuallyScheduled?: boolean
 
-  constraint?: SchedulingConstraint;
+  constraint?: SchedulingConstraint
 
-  duration?: number;
+  duration?: number
 
-  effort?: number;
+  effort?: number
 
-  recurrence?: RecurrenceRule<TResource>;
+  recurrence?: RecurrenceRule<TResource>
 
-  allDay?: boolean;
+  allDay?: boolean
 
-  _originalStart?: string;
+  _originalStart?: string
 
-  _originalEnd?: string;
+  _originalEnd?: string
 
-  _recurringMasterId?: string;
+  _recurringMasterId?: string
 
-  _occurrenceIndex?: number;
+  _occurrenceIndex?: number
 
-  _occurrenceOriginalStart?: string;
+  _occurrenceOriginalStart?: string
 }
 
 export type Day<
   TResource extends Resource = Resource,
   TEvent extends Event<TResource> = Event<TResource>,
 > = {
-  isoDate: string;
+  isoDate: string
 
-  isoMonth: string;
+  isoMonth: string
 
-  dayOfMonth: number;
+  dayOfMonth: number
 
-  events: Array<TEvent>;
+  events: Array<TEvent>
 
-  allDayEvents: Array<TEvent>;
-  isToday: boolean;
-  isInCurrentPeriod: boolean;
-};
+  allDayEvents: Array<TEvent>
+  isToday: boolean
+  isInCurrentPeriod: boolean
+}
 
 export interface EventProps<
   TResource extends Resource = Resource,
   TEvent extends Event<TResource> = Event<TResource>,
 > {
-  isSplitEvent: boolean;
-  overlappingEvents: Array<TEvent>;
-  start: string;
-  end: string;
+  isSplitEvent: boolean
+  overlappingEvents: Array<TEvent>
+  start: string
+  end: string
 
-  layout?: EventLayout;
-  style?: LayoutStyle;
+  layout?: EventLayout
+  style?: LayoutStyle
 }
 
-export type GetEventProps<
-  TResource extends Resource,
-  TEvent extends Event<TResource>,
-> = (
+export type GetEventProps<TResource extends Resource, TEvent extends Event<TResource>> = (
   event: TEvent,
   layoutOptions?: LayoutOptions,
-) => EventProps<TResource, TEvent>;
+) => EventProps<TResource, TEvent>
 
 export interface DateRange {
-  start: DateInput | null;
-  end: DateInput | null;
+  start: DateInput | null
+  end: DateInput | null
 }
 
 export interface TimeSlot {
-  hour: number;
-  minute: number;
-  label: string;
+  hour: number
+  minute: number
+  label: string
 }
 
-export type { UnavailableRange } from "~/projection";
+export type { UnavailableRange } from '~/projection'
 
 export interface CalendarStore {
-  currentPeriod: string;
+  currentPeriod: string
 
-  activeDate: string;
-  viewMode: ViewMode;
-  eventsVersion: number;
+  activeDate: string
+  viewMode: ViewMode
+  eventsVersion: number
 
-  isPending: boolean;
+  isPending: boolean
 }
 
 export interface UnavailabilityReason {
-  resourceId: string;
+  resourceId: string
 
-  resourceLabel: string;
+  resourceLabel: string
 
-  reason: "outside-hours" | "capacity" | "no-calendar";
+  reason: 'outside-hours' | 'capacity' | 'no-calendar'
 
-  description: string;
+  description: string
 
   capacityInfo?: {
-    max: number;
-    used: number;
-    remaining: number;
-  };
+    max: number
+    used: number
+    remaining: number
+  }
 }
 
 export interface AvailabilityConflict {
-  date: string;
+  date: string
 
   conflictRange: {
-    start: string;
-    end: string;
-  };
+    start: string
+    end: string
+  }
 
-  resourceIds: Array<string>;
+  resourceIds: Array<string>
 
-  resourceDetails: Array<UnavailabilityReason>;
+  resourceDetails: Array<UnavailabilityReason>
 
-  description: string;
+  description: string
 }
 
-export type EventMutationKind = "resize" | "move";
+export type EventMutationKind = 'resize' | 'move'
 
 export interface EventMutationError {
-  eventId: string;
-  eventTitle: string;
-  reason: "unavailable-time" | "invalid-time" | "min-duration" | "blocked";
-  message: string;
-  originalStart: string;
-  originalEnd: string;
-  attemptedStart?: string;
-  attemptedEnd?: string;
+  eventId: string
+  eventTitle: string
+  reason: 'unavailable-time' | 'invalid-time' | 'min-duration' | 'blocked'
+  message: string
+  originalStart: string
+  originalEnd: string
+  attemptedStart?: string
+  attemptedEnd?: string
 
-  kind?: EventMutationKind;
+  kind?: EventMutationKind
 
-  conflicts?: Array<AvailabilityConflict>;
+  conflicts?: Array<AvailabilityConflict>
 }
 
-export type ResizeError = EventMutationError;
+export type ResizeError = EventMutationError
 
 export interface ResizeValidationResult {
-  valid: boolean;
-  error?: ResizeError;
+  valid: boolean
+  error?: ResizeError
 }
 
-export type SaveEventResult =
-  | { success: true }
-  | { success: false; error: ResizeError };
+export type SaveEventResult = { success: true } | { success: false; error: ResizeError }
 
 export interface TimelineEventLayout<
   TResource extends Resource = Resource,
   TEvent extends Event<TResource> = Event<TResource>,
 > {
-  event: TEvent;
+  event: TEvent
 
-  left: number;
+  left: number
 
-  width: number;
-  lane: number;
+  width: number
+  lane: number
 
-  startFraction: number;
+  startFraction: number
 
-  endFraction: number;
+  endFraction: number
 
-  isStartClipped: boolean;
+  isStartClipped: boolean
 
-  isEndClipped: boolean;
+  isEndClipped: boolean
 }
 
 export interface TimelineResourceRow<
   TResource extends Resource = Resource,
   TEvent extends Event<TResource> = Event<TResource>,
 > {
-  resource: TResource;
-  events: Array<TimelineEventLayout<TResource, TEvent>>;
-  laneCount: number;
+  resource: TResource
+  events: Array<TimelineEventLayout<TResource, TEvent>>
+  laneCount: number
 }
 
 export interface TimelineLayout<
   TResource extends Resource = Resource,
   TEvent extends Event<TResource> = Event<TResource>,
 > {
-  rows: Array<TimelineResourceRow<TResource, TEvent>>;
-  currentTimePosition: number | null;
+  rows: Array<TimelineResourceRow<TResource, TEvent>>
+  currentTimePosition: number | null
 }
 
 export interface ValidateResizeOptions {
-  eventId: string;
-  originalStart: string;
-  originalEnd: string;
-  edge: ResizeEdge;
-  totalDeltaMinutes: number;
-  targetDayDate: string;
-  originalDayDate: string;
-  occurrenceStart?: EventDateTimeInput;
-  constraints?: ResizeConstraints;
+  eventId: string
+  originalStart: string
+  originalEnd: string
+  edge: ResizeEdge
+  totalDeltaMinutes: number
+  targetDayDate: string
+  originalDayDate: string
+  occurrenceStart?: EventDateTimeInput
+  constraints?: ResizeConstraints
 }
 
 export interface ValidateResizeResult {
-  blocked: boolean;
+  blocked: boolean
   error?: {
-    reason: ResizeError["reason"];
-    message: string;
-    conflicts: Array<AvailabilityConflict>;
-  };
+    reason: ResizeError['reason']
+    message: string
+    conflicts: Array<AvailabilityConflict>
+  }
   result: {
-    start: string;
-    end: string;
-    durationMinutes: number;
-  };
-  targetDayDate: string;
+    start: string
+    end: string
+    durationMinutes: number
+  }
+  targetDayDate: string
 }
 
 export interface ValidateMoveOptions {
-  eventId: string;
-  originalStart: string;
-  originalEnd: string;
-  originalDayDate: string;
-  targetDayDate: string;
-  minuteShift: number;
-  granularity?: MoveGranularity;
-  occurrenceStart?: EventDateTimeInput;
-  constraints?: MoveConstraints;
+  eventId: string
+  originalStart: string
+  originalEnd: string
+  originalDayDate: string
+  targetDayDate: string
+  minuteShift: number
+  granularity?: MoveGranularity
+  occurrenceStart?: EventDateTimeInput
+  constraints?: MoveConstraints
 }
 
 export interface ValidateMoveResult {
-  blocked: boolean;
+  blocked: boolean
   error?: {
-    reason: EventMutationError["reason"];
-    message: string;
-    eventTitle?: string;
-    conflicts: Array<AvailabilityConflict>;
-  };
+    reason: EventMutationError['reason']
+    message: string
+    eventTitle?: string
+    conflicts: Array<AvailabilityConflict>
+  }
   result: {
-    start: string;
-    end: string;
-    durationMinutes: number;
-    moved: boolean;
-  };
-  targetDayDate: string;
+    start: string
+    end: string
+    durationMinutes: number
+    moved: boolean
+  }
+  targetDayDate: string
 }

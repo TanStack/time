@@ -12,7 +12,7 @@ function calculateDeltaMinutesFromPixelsHorizontal(
    totalMinutesInView): number;
 ```
 
-Defined in: [calendar/getResizeProps.ts:175](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L175)
+Defined in: [calendar/getResizeProps.ts:154](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L154)
 
 ## Parameters
 

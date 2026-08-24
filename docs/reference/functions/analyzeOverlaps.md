@@ -9,7 +9,7 @@ title: analyzeOverlaps
 function analyzeOverlaps(events): OverlapInfo[];
 ```
 
-Defined in: [projection/layout.ts:165](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L165)
+Defined in: [projection/layout.ts:158](https://github.com/TanStack/time/blob/main/packages/time/src/projection/layout.ts#L158)
 
 ## Parameters
 

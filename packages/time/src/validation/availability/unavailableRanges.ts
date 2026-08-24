@@ -5,8 +5,8 @@ import {
   resourceDayWorkingTime,
   type MinuteRange,
   type WorkingTimeConfig,
-} from "./time";
-import type { AvailabilityResourceInput } from "./checkAvailability";
+} from './time'
+import type { AvailabilityResourceInput } from './checkAvailability'
 
 export function mergeUnavailableMinuteRanges(
   resources: Array<AvailabilityResourceInput> | null | undefined,
@@ -15,24 +15,21 @@ export function mergeUnavailableMinuteRanges(
   resourceIds?: Array<string>,
   eventCalendarId?: string,
 ): Array<MinuteRange> | null {
-  if (!resources || resources.length === 0) return null;
+  if (!resources || resources.length === 0) return null
 
   const selected = resourceIds
     ? resources.filter((resource) => resourceIds.includes(resource.id))
-    : resources;
-  if (selected.length === 0) return null;
+    : resources
+  if (selected.length === 0) return null
 
-  const available: Array<MinuteRange> = [];
+  const available: Array<MinuteRange> = []
   for (const resource of selected) {
-    available.push(
-      ...resourceDayWorkingTime(resource, date, workingTime, eventCalendarId)
-        .working,
-    );
+    available.push(...resourceDayWorkingTime(resource, date, workingTime, eventCalendarId).working)
   }
 
   if (available.length === 0) {
-    return [{ startMinutes: 0, endMinutes: MINUTES_IN_DAY }];
+    return [{ startMinutes: 0, endMinutes: MINUTES_IN_DAY }]
   }
 
-  return invertMinuteRanges(mergeMinuteRanges(available));
+  return invertMinuteRanges(mergeMinuteRanges(available))
 }

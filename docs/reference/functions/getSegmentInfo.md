@@ -9,7 +9,7 @@ title: getSegmentInfo
 function getSegmentInfo(event): SegmentInfo;
 ```
 
-Defined in: [calendar/getResizeProps.ts:226](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L226)
+Defined in: [calendar/getResizeProps.ts:205](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L205)
 
 ## Parameters
 

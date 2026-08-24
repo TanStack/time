@@ -5,7 +5,7 @@ title: UnavailableRange
 
 # Interface: UnavailableRange
 
-Defined in: [projection/unavailability.ts:7](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L7)
+Defined in: [projection/unavailability.ts:3](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L3)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [projection/unavailability.ts:7](https://github.com/TanStack/time/bl
 endFraction: number;
 ```
 
-Defined in: [projection/unavailability.ts:10](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L10)
+Defined in: [projection/unavailability.ts:6](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L6)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [projection/unavailability.ts:10](https://github.com/TanStack/time/b
 endTime: string;
 ```
 
-Defined in: [projection/unavailability.ts:18](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L18)
+Defined in: [projection/unavailability.ts:14](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L14)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [projection/unavailability.ts:18](https://github.com/TanStack/time/b
 height: string;
 ```
 
-Defined in: [projection/unavailability.ts:14](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L14)
+Defined in: [projection/unavailability.ts:10](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L10)
 
 ***
 
@@ -45,7 +45,7 @@ Defined in: [projection/unavailability.ts:14](https://github.com/TanStack/time/b
 startFraction: number;
 ```
 
-Defined in: [projection/unavailability.ts:8](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L8)
+Defined in: [projection/unavailability.ts:4](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L4)
 
 ***
 
@@ -55,7 +55,7 @@ Defined in: [projection/unavailability.ts:8](https://github.com/TanStack/time/bl
 startTime: string;
 ```
 
-Defined in: [projection/unavailability.ts:16](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L16)
+Defined in: [projection/unavailability.ts:12](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L12)
 
 ***
 
@@ -65,4 +65,4 @@ Defined in: [projection/unavailability.ts:16](https://github.com/TanStack/time/b
 top: string;
 ```
 
-Defined in: [projection/unavailability.ts:12](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L12)
+Defined in: [projection/unavailability.ts:8](https://github.com/TanStack/time/blob/main/packages/time/src/projection/unavailability.ts#L8)

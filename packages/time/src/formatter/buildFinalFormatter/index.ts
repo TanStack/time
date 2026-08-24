@@ -1,1 +1,1 @@
-export * from "./buildFinalFormatter";
+export * from './buildFinalFormatter'

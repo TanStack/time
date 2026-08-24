@@ -9,7 +9,7 @@ title: dayEventLayoutFeature
 function dayEventLayoutFeature<TResource, TEvent>(): CalendarFeature<TResource, TEvent, object, DayLayoutApi<TResource, TEvent>, "dayLayout">;
 ```
 
-Defined in: [calendar/features/dayLayout.ts:15](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dayLayout.ts#L15)
+Defined in: [calendar/features/dayLayout.ts:12](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/dayLayout.ts#L12)
 
 ## Type Parameters
 

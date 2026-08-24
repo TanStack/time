@@ -5,7 +5,7 @@ title: SegmentResizePreview
 
 # Interface: SegmentResizePreview
 
-Defined in: [calendar/getResizeProps.ts:264](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L264)
+Defined in: [calendar/getResizeProps.ts:241](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L241)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/getResizeProps.ts:264](https://github.com/TanStack/time/bl
 hasChanged: boolean;
 ```
 
-Defined in: [calendar/getResizeProps.ts:269](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L269)
+Defined in: [calendar/getResizeProps.ts:246](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L246)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [calendar/getResizeProps.ts:269](https://github.com/TanStack/time/bl
 previewStyle: PositionStyle | null;
 ```
 
-Defined in: [calendar/getResizeProps.ts:267](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L267)
+Defined in: [calendar/getResizeProps.ts:244](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L244)
 
 ***
 
@@ -35,4 +35,4 @@ Defined in: [calendar/getResizeProps.ts:267](https://github.com/TanStack/time/bl
 shouldHide: boolean;
 ```
 
-Defined in: [calendar/getResizeProps.ts:265](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L265)
+Defined in: [calendar/getResizeProps.ts:242](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L242)

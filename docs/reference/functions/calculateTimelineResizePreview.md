@@ -9,7 +9,7 @@ title: calculateTimelineResizePreview
 function calculateTimelineResizePreview(options): TimelineResizePreviewStyle;
 ```
 
-Defined in: [calendar/getResizeProps.ts:426](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L426)
+Defined in: [calendar/getResizeProps.ts:388](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L388)
 
 ## Parameters
 

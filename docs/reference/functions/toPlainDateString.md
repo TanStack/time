@@ -9,7 +9,7 @@ title: toPlainDateString
 function toPlainDateString(value): string;
 ```
 
-Defined in: [date/parse/parse.ts:142](https://github.com/TanStack/time/blob/main/packages/time/src/date/parse/parse.ts#L142)
+Defined in: [date/parse/parse.ts:138](https://github.com/TanStack/time/blob/main/packages/time/src/date/parse/parse.ts#L138)
 
 ## Parameters
 

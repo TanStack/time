@@ -1,2 +1,2 @@
-export { isAfter } from "./isAfter";
-export type { IsAfterOptions } from "./isAfter";
+export { isAfter } from './isAfter'
+export type { IsAfterOptions } from './isAfter'

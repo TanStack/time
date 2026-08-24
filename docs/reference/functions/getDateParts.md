@@ -9,7 +9,7 @@ title: getDateParts
 function getDateParts(date, options?): DateParts;
 ```
 
-Defined in: [date/getDateParts/getDateParts.ts:187](https://github.com/TanStack/time/blob/main/packages/time/src/date/getDateParts/getDateParts.ts#L187)
+Defined in: [date/getDateParts/getDateParts.ts:172](https://github.com/TanStack/time/blob/main/packages/time/src/date/getDateParts/getDateParts.ts#L172)
 
 ## Parameters
 

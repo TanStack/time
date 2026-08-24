@@ -9,7 +9,7 @@ title: eventMoveFeature
 function eventMoveFeature<TResource, TEvent>(): CalendarFeature<TResource, TEvent, object, MoveFeatureApi<TResource, TEvent>, "move", MovePeers<TResource, TEvent>>;
 ```
 
-Defined in: [calendar/features/move.ts:33](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/move.ts#L33)
+Defined in: [calendar/features/move.ts:19](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/move.ts#L19)
 
 ## Type Parameters
 

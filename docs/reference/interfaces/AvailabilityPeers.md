@@ -5,7 +5,7 @@ title: AvailabilityPeers
 
 # Interface: AvailabilityPeers\<TResource\>
 
-Defined in: [calendar/features/availability.ts:70](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L70)
+Defined in: [calendar/features/availability.ts:64](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L64)
 
 ## Type Parameters
 
@@ -21,4 +21,4 @@ Defined in: [calendar/features/availability.ts:70](https://github.com/TanStack/t
 workingTime: WorkingTimeApi<TResource>;
 ```
 
-Defined in: [calendar/features/availability.ts:71](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L71)
+Defined in: [calendar/features/availability.ts:65](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/availability.ts#L65)

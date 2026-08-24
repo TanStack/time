@@ -5,7 +5,7 @@ title: WorkingTimeTarget
 
 # Interface: WorkingTimeTarget\<TResource\>
 
-Defined in: [calendar/features/workingTime.ts:16](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/workingTime.ts#L16)
+Defined in: [calendar/features/workingTime.ts:12](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/workingTime.ts#L12)
 
 ## Type Parameters
 
@@ -21,7 +21,7 @@ Defined in: [calendar/features/workingTime.ts:16](https://github.com/TanStack/ti
 optional calendarId: string;
 ```
 
-Defined in: [calendar/features/workingTime.ts:19](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/workingTime.ts#L19)
+Defined in: [calendar/features/workingTime.ts:15](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/workingTime.ts#L15)
 
 ***
 
@@ -31,7 +31,7 @@ Defined in: [calendar/features/workingTime.ts:19](https://github.com/TanStack/ti
 optional resourceId: TResource["id"];
 ```
 
-Defined in: [calendar/features/workingTime.ts:17](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/workingTime.ts#L17)
+Defined in: [calendar/features/workingTime.ts:13](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/workingTime.ts#L13)
 
 ***
 
@@ -41,4 +41,4 @@ Defined in: [calendar/features/workingTime.ts:17](https://github.com/TanStack/ti
 optional resourceIds: TResource["id"][];
 ```
 
-Defined in: [calendar/features/workingTime.ts:18](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/workingTime.ts#L18)
+Defined in: [calendar/features/workingTime.ts:14](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/workingTime.ts#L14)

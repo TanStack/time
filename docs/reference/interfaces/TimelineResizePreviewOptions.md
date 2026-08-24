@@ -5,7 +5,7 @@ title: TimelineResizePreviewOptions
 
 # Interface: TimelineResizePreviewOptions
 
-Defined in: [calendar/getResizeProps.ts:414](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L414)
+Defined in: [calendar/getResizeProps.ts:376](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L376)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/getResizeProps.ts:414](https://github.com/TanStack/time/bl
 firstDayIso: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:417](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L417)
+Defined in: [calendar/getResizeProps.ts:379](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L379)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [calendar/getResizeProps.ts:417](https://github.com/TanStack/time/bl
 previewEnd: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:416](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L416)
+Defined in: [calendar/getResizeProps.ts:378](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L378)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [calendar/getResizeProps.ts:416](https://github.com/TanStack/time/bl
 previewStart: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:415](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L415)
+Defined in: [calendar/getResizeProps.ts:377](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L377)
 
 ***
 
@@ -45,4 +45,4 @@ Defined in: [calendar/getResizeProps.ts:415](https://github.com/TanStack/time/bl
 totalDays: number;
 ```
 
-Defined in: [calendar/getResizeProps.ts:418](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L418)
+Defined in: [calendar/getResizeProps.ts:380](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L380)

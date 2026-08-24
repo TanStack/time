@@ -9,7 +9,7 @@ title: layoutTimelineRange
 function layoutTimelineRange<E>(input): TimelineRangeLayout;
 ```
 
-Defined in: [projection/timelineLayout.ts:43](https://github.com/TanStack/time/blob/main/packages/time/src/projection/timelineLayout.ts#L43)
+Defined in: [projection/timelineLayout.ts:40](https://github.com/TanStack/time/blob/main/packages/time/src/projection/timelineLayout.ts#L40)
 
 ## Type Parameters
 

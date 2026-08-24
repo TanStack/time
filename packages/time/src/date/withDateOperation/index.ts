@@ -1,1 +1,1 @@
-export * from "./withDateOperation";
+export * from './withDateOperation'

@@ -1,1 +1,1 @@
-export * from "./getDayOfYear";
+export * from './getDayOfYear'

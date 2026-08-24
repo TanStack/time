@@ -1,3 +1,3 @@
-export { TimeDevtoolsCore } from "./core";
+export { TimeDevtoolsCore } from './core'
 
-export type { TimeDevtoolsInit } from "./core";
+export type { TimeDevtoolsInit } from './core'

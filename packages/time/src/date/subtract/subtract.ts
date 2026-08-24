@@ -1,13 +1,13 @@
-import { withDateOperation } from "../withDateOperation";
-import type { DateOperationOptions } from "../withDateOperation";
-import type { DateInput, DurationLike } from "../types";
+import { withDateOperation } from '../withDateOperation'
+import type { DateOperationOptions } from '../withDateOperation'
+import type { DateInput, DurationLike } from '../types'
 
 export interface SubtractOptions extends DateOperationOptions {
-  duration: DurationLike;
+  duration: DurationLike
 }
 
 export function subtract(input: DateInput, options: SubtractOptions): Date {
   return withDateOperation<SubtractOptions>((zdt, { duration }) => {
-    return zdt.subtract(duration);
-  })(input, options);
+    return zdt.subtract(duration)
+  })(input, options)
 }

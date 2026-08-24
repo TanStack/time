@@ -1,8 +1,8 @@
-import { defineConfig } from "tsdown";
+import { defineConfig } from 'tsdown'
 
 export default defineConfig({
-  entry: ["./src/index.ts", "./src/production.ts"],
-  format: ["esm", "cjs"],
+  entry: ['./src/index.ts', './src/production.ts'],
+  format: ['esm', 'cjs'],
   unbundle: true,
   dts: true,
   sourcemap: true,
@@ -13,4 +13,4 @@ export default defineConfig({
   publint: {
     strict: true,
   },
-});
+})

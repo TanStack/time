@@ -9,7 +9,7 @@ title: getResizeHandleStyle
 function getResizeHandleStyle(edge): ResizeHandleStyle;
 ```
 
-Defined in: [calendar/getResizeProps.ts:194](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L194)
+Defined in: [calendar/getResizeProps.ts:173](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L173)
 
 ## Parameters
 

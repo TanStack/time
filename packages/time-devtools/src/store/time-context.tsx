@@ -1,62 +1,62 @@
-import { createContext, useContext } from "solid-js";
-import { createStore } from "solid-js/store";
-import { getTimeClient } from "@tanstack/time";
-import type { TimeEventMap } from "@tanstack/time";
-import type { ParentComponent } from "solid-js";
+import { createContext, useContext } from 'solid-js'
+import { createStore } from 'solid-js/store'
+import { getTimeClient } from '@tanstack/time'
+import type { TimeEventMap } from '@tanstack/time'
+import type { ParentComponent } from 'solid-js'
 
 export interface ActivityLogEntry {
-  id: string;
-  timestamp: number;
-  type: keyof TimeEventMap;
-  details: Record<string, unknown>;
+  id: string
+  timestamp: number
+  type: keyof TimeEventMap
+  details: Record<string, unknown>
 }
 
 interface CalendarEventSnapshot {
-  id: string;
-  title: string;
-  start: string;
-  end: string;
+  id: string
+  title: string
+  start: string
+  end: string
 }
 
 interface TimeStoreState {
-  activityLog: Array<ActivityLogEntry>;
-  events: Record<string, CalendarEventSnapshot>;
+  activityLog: Array<ActivityLogEntry>
+  events: Record<string, CalendarEventSnapshot>
 }
 
 interface TimeContextValue {
-  state: TimeStoreState;
-  clearLog: () => void;
+  state: TimeStoreState
+  clearLog: () => void
 }
 
-const TimeContext = createContext<TimeContextValue>();
+const TimeContext = createContext<TimeContextValue>()
 
 export function useTimeStore(): TimeContextValue {
-  const context = useContext(TimeContext);
+  const context = useContext(TimeContext)
   if (!context) {
-    throw new Error("useTimeStore must be used within an TimeProvider");
+    throw new Error('useTimeStore must be used within an TimeProvider')
   }
-  return context;
+  return context
 }
 
-const MAX_LOG_ENTRIES = 100;
+const MAX_LOG_ENTRIES = 100
 
-let entryCounter = 0;
+let entryCounter = 0
 function generateId(): string {
-  entryCounter += 1;
-  return `entry-${entryCounter}`;
+  entryCounter += 1
+  return `entry-${entryCounter}`
 }
 
 const [state, setState] = createStore<TimeStoreState>({
   activityLog: [],
   events: {},
-});
+})
 
 type TimeEventInfoPayload = {
-  eventId: string;
-  eventTitle: string;
-  start: string;
-  end: string;
-};
+  eventId: string
+  eventTitle: string
+  start: string
+  end: string
+}
 
 function toSnapshot(event: TimeEventInfoPayload): CalendarEventSnapshot {
   return {
@@ -64,84 +64,76 @@ function toSnapshot(event: TimeEventInfoPayload): CalendarEventSnapshot {
     title: event.eventTitle,
     start: event.start,
     end: event.end,
-  };
+  }
 }
 
-function applyEvent(
-  type: keyof TimeEventMap,
-  payload: unknown,
-  timestamp: number,
-) {
+function applyEvent(type: keyof TimeEventMap, payload: unknown, timestamp: number) {
   const entry: ActivityLogEntry = {
     id: generateId(),
     timestamp,
     type,
     details: payload as Record<string, unknown>,
-  };
-
-  setState("activityLog", (prev) => [entry, ...prev].slice(0, MAX_LOG_ENTRIES));
-
-  if (type === "time:event:added" || type === "time:event:updated") {
-    const event = payload as TimeEventInfoPayload;
-    setState("events", event.eventId, toSnapshot(event));
-    return;
   }
 
-  if (type === "time:event:removed") {
-    const { eventId } = payload as { eventId: string };
-    setState("events", eventId, undefined!);
-    return;
+  setState('activityLog', (prev) => [entry, ...prev].slice(0, MAX_LOG_ENTRIES))
+
+  if (type === 'time:event:added' || type === 'time:event:updated') {
+    const event = payload as TimeEventInfoPayload
+    setState('events', event.eventId, toSnapshot(event))
+    return
   }
 
-  if (type === "time:event:undo" || type === "time:event:redo") {
+  if (type === 'time:event:removed') {
+    const { eventId } = payload as { eventId: string }
+    setState('events', eventId, undefined!)
+    return
+  }
+
+  if (type === 'time:event:undo' || type === 'time:event:redo') {
     const { added, removed, updated } = payload as {
-      added: Array<TimeEventInfoPayload>;
-      removed: Array<TimeEventInfoPayload>;
-      updated: Array<TimeEventInfoPayload>;
-    };
-    setState("events", (prev) => {
-      const next = { ...prev };
+      added: Array<TimeEventInfoPayload>
+      removed: Array<TimeEventInfoPayload>
+      updated: Array<TimeEventInfoPayload>
+    }
+    setState('events', (prev) => {
+      const next = { ...prev }
       for (const event of removed) {
-        delete next[event.eventId];
+        delete next[event.eventId]
       }
       for (const event of [...added, ...updated]) {
-        next[event.eventId] = toSnapshot(event);
+        next[event.eventId] = toSnapshot(event)
       }
-      return next;
-    });
-    return;
+      return next
+    })
+    return
   }
 
-  if (type === "time:events:set") {
-    const { events } = payload as { events: Array<TimeEventInfoPayload> };
-    setState("events", (prev) => {
-      const next = { ...prev };
+  if (type === 'time:events:set') {
+    const { events } = payload as { events: Array<TimeEventInfoPayload> }
+    setState('events', (prev) => {
+      const next = { ...prev }
       for (const event of events) {
-        next[event.eventId] = toSnapshot(event);
+        next[event.eventId] = toSnapshot(event)
       }
-      return next;
-    });
+      return next
+    })
   }
 }
 
-const client = getTimeClient();
+const client = getTimeClient()
 
 for (const record of client.getEventHistory()) {
-  applyEvent(record.type, record.payload, record.timestamp);
+  applyEvent(record.type, record.payload, record.timestamp)
 }
 
 client.onAllPluginEvents((event) => {
-  applyEvent(event.type, event.payload, Date.now());
-});
+  applyEvent(event.type, event.payload, Date.now())
+})
 
 export const TimeProvider: ParentComponent = (props) => {
   const clearLog = () => {
-    setState("activityLog", []);
-  };
+    setState('activityLog', [])
+  }
 
-  return (
-    <TimeContext.Provider value={{ state, clearLog }}>
-      {props.children}
-    </TimeContext.Provider>
-  );
-};
+  return <TimeContext.Provider value={{ state, clearLog }}>{props.children}</TimeContext.Provider>
+}

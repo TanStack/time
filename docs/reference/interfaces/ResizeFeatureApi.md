@@ -25,7 +25,7 @@ Defined in: [calendar/features/resize.ts:26](https://github.com/TanStack/time/bl
 createResizeController: (options?) => ResizeController<TResource, TEvent>;
 ```
 
-Defined in: [calendar/features/resize.ts:30](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L30)
+Defined in: [calendar/features/resize.ts:27](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L27)
 
 #### Parameters
 
@@ -45,7 +45,7 @@ Defined in: [calendar/features/resize.ts:30](https://github.com/TanStack/time/bl
 getEventSegmentInfo: (event) => SegmentInfo;
 ```
 
-Defined in: [calendar/features/resize.ts:33](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L33)
+Defined in: [calendar/features/resize.ts:28](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L28)
 
 #### Parameters
 
@@ -65,7 +65,7 @@ Defined in: [calendar/features/resize.ts:33](https://github.com/TanStack/time/bl
 validateResize: (options) => ValidateResizeResult;
 ```
 
-Defined in: [calendar/features/resize.ts:34](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L34)
+Defined in: [calendar/features/resize.ts:29](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/resize.ts#L29)
 
 #### Parameters
 

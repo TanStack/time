@@ -9,7 +9,7 @@ title: currentTimeFraction
 function currentTimeFraction(input): number | null;
 ```
 
-Defined in: [projection/timelineLayout.ts:84](https://github.com/TanStack/time/blob/main/packages/time/src/projection/timelineLayout.ts#L84)
+Defined in: [projection/timelineLayout.ts:78](https://github.com/TanStack/time/blob/main/packages/time/src/projection/timelineLayout.ts#L78)
 
 ## Parameters
 

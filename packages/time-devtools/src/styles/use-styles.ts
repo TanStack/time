@@ -1,13 +1,13 @@
-import * as goober from "goober";
-import { createEffect, createSignal } from "solid-js";
-import { useTheme } from "@tanstack/devtools-ui";
-import { tokens } from "./tokens";
+import * as goober from 'goober'
+import { createEffect, createSignal } from 'solid-js'
+import { useTheme } from '@tanstack/devtools-ui'
+import { tokens } from './tokens'
 
-const stylesFactory = (theme: "light" | "dark") => {
-  const { colors, font, size, alpha, border } = tokens;
-  const { fontFamily, size: fontSize } = font;
-  const css = goober.css;
-  const t = (light: string, dark: string) => (theme === "light" ? light : dark);
+const stylesFactory = (theme: 'light' | 'dark') => {
+  const { colors, font, size, alpha, border } = tokens
+  const { fontFamily, size: fontSize } = font
+  const css = goober.css
+  const t = (light: string, dark: string) => (theme === 'light' ? light : dark)
 
   return {
     mainContainer: css`
@@ -129,8 +129,7 @@ const stylesFactory = (theme: "light" | "dark") => {
     utilRowSelected: css`
       background: ${t(colors.blue[100], colors.blue[900] + alpha[20])};
       border-color: ${t(colors.blue[600], colors.blue[500])};
-      box-shadow: 0 0 0 1px
-        ${t(colors.blue[600] + alpha[30], colors.blue[500] + alpha[30])};
+      box-shadow: 0 0 0 1px ${t(colors.blue[600] + alpha[30], colors.blue[500] + alpha[30])};
     `,
     utilKey: css`
       font-family: ${fontFamily.mono};
@@ -312,9 +311,7 @@ const stylesFactory = (theme: "light" | "dark") => {
     section: css`
       background: ${t(colors.gray[100], colors.darkGray[800])};
       border-radius: ${border.radius.lg};
-      box-shadow: ${tokens.shadow.md(
-        t(colors.gray[400] + alpha[80], colors.black + alpha[80]),
-      )};
+      box-shadow: ${tokens.shadow.md(t(colors.gray[400] + alpha[80], colors.black + alpha[80]))};
       padding: ${size[4]};
       border: 1px solid ${t(colors.gray[200], colors.darkGray[700])};
       min-width: 0;
@@ -374,14 +371,14 @@ const stylesFactory = (theme: "light" | "dark") => {
       padding: 12px;
       border-bottom: 1px solid #1f2937;
     `,
-  };
-};
+  }
+}
 
 export function useStyles() {
-  const { theme } = useTheme();
-  const [styles, setStyles] = createSignal(stylesFactory(theme()));
+  const { theme } = useTheme()
+  const [styles, setStyles] = createSignal(stylesFactory(theme()))
   createEffect(() => {
-    setStyles(stylesFactory(theme()));
-  });
-  return styles;
+    setStyles(stylesFactory(theme()))
+  })
+  return styles
 }

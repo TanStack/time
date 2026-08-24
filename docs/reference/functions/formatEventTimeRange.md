@@ -12,7 +12,7 @@ function formatEventTimeRange(
    options): FormattedEventTime;
 ```
 
-Defined in: [calendar/getResizeProps.ts:523](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L523)
+Defined in: [calendar/getResizeProps.ts:472](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L472)
 
 ## Parameters
 

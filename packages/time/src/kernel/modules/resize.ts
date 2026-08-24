@@ -1,61 +1,56 @@
-import { Temporal } from "@js-temporal/polyfill";
-import { toPlainDateTimeString } from "~/date/parse";
-import { calculateResizedEvent } from "~/calendar/getResizeProps";
-import { mergeUnavailableMinuteRanges } from "~/validation/availability";
+import { Temporal } from '@js-temporal/polyfill'
+import { toPlainDateTimeString } from '~/date/parse'
+import { calculateResizedEvent } from '~/calendar/getResizeProps'
+import { mergeUnavailableMinuteRanges } from '~/validation/availability'
 import type {
   AvailabilityResourceInput,
   MinuteRange,
   WorkingTimeConfig,
-} from "~/validation/availability";
-import type { ResizeEdge } from "~/calendar/getResizeProps";
-import type { IntentOp, KernelEvent, Module, WriteOp } from "../types";
+} from '~/validation/availability'
+import type { ResizeEdge } from '~/calendar/getResizeProps'
+import type { IntentOp, KernelEvent, Module, WriteOp } from '../types'
 
-const RESIZE_INTENT = "resize/apply";
+const RESIZE_INTENT = 'resize/apply'
 
 interface ResizePayload {
-  eventId: string;
-  edge: ResizeEdge;
-  deltaMinutes: number;
-  snapToMinutes?: number;
-  minDurationMinutes?: number;
-  unavailableRanges?: Array<MinuteRange>;
+  eventId: string
+  edge: ResizeEdge
+  deltaMinutes: number
+  snapToMinutes?: number
+  minDurationMinutes?: number
+  unavailableRanges?: Array<MinuteRange>
 }
 
 export interface ResizeModuleOptions {
-  timeZone: Temporal.TimeZoneLike;
-  resources?: Array<AvailabilityResourceInput>;
-  workingTime?: WorkingTimeConfig;
-  snapToMinutes?: number;
-  minDurationMinutes?: number;
-  priority?: number;
+  timeZone: Temporal.TimeZoneLike
+  resources?: Array<AvailabilityResourceInput>
+  workingTime?: WorkingTimeConfig
+  snapToMinutes?: number
+  minDurationMinutes?: number
+  priority?: number
 }
 
 interface ResizableEvent extends KernelEvent {
-  resources?: Array<AvailabilityResourceInput | string>;
+  resources?: Array<AvailabilityResourceInput | string>
 }
 
 export function resizeIntent(payload: ResizePayload): IntentOp {
-  return { kind: "intent", intent: RESIZE_INTENT, payload };
+  return { kind: 'intent', intent: RESIZE_INTENT, payload }
 }
 
 function resourceIdsOf(event: ResizableEvent): Array<string> {
   return (event.resources ?? []).map((resource) =>
-    typeof resource === "string" ? resource : resource.id,
-  );
+    typeof resource === 'string' ? resource : resource.id,
+  )
 }
 
-export function resizeModule<E extends KernelEvent>(
-  options: ResizeModuleOptions,
-): Module<E> {
-  const resolveRanges = (
-    event: ResizableEvent,
-    payload: ResizePayload,
-  ): Array<MinuteRange> => {
-    if (payload.unavailableRanges) return payload.unavailableRanges;
-    if (!options.resources) return [];
+export function resizeModule<E extends KernelEvent>(options: ResizeModuleOptions): Module<E> {
+  const resolveRanges = (event: ResizableEvent, payload: ResizePayload): Array<MinuteRange> => {
+    if (payload.unavailableRanges) return payload.unavailableRanges
+    if (!options.resources) return []
 
-    const ids = resourceIdsOf(event);
-    if (ids.length === 0) return [];
+    const ids = resourceIdsOf(event)
+    if (ids.length === 0) return []
 
     return (
       mergeUnavailableMinuteRanges(
@@ -64,37 +59,33 @@ export function resizeModule<E extends KernelEvent>(
         options.workingTime ?? {},
         ids,
       ) ?? []
-    );
-  };
+    )
+  }
 
   return {
-    name: "resize",
+    name: 'resize',
     contributions: [
       {
-        pipeline: "write",
-        kind: "transform",
-        stage: "resize-materialize",
+        pipeline: 'write',
+        kind: 'transform',
+        stage: 'resize-materialize',
         priority: options.priority,
         run: (batch, ctx) => {
-          if (
-            !batch.ops.some(
-              (op) => op.kind === "intent" && op.intent === RESIZE_INTENT,
-            )
-          ) {
-            return batch;
+          if (!batch.ops.some((op) => op.kind === 'intent' && op.intent === RESIZE_INTENT)) {
+            return batch
           }
 
-          const ops: Array<WriteOp<E>> = [];
+          const ops: Array<WriteOp<E>> = []
 
           for (const op of batch.ops) {
-            if (op.kind !== "intent" || op.intent !== RESIZE_INTENT) {
-              ops.push(op);
-              continue;
+            if (op.kind !== 'intent' || op.intent !== RESIZE_INTENT) {
+              ops.push(op)
+              continue
             }
 
-            const payload = op.payload as ResizePayload;
-            const before = ctx.getEvent(payload.eventId);
-            if (!before) continue;
+            const payload = op.payload as ResizePayload
+            const before = ctx.getEvent(payload.eventId)
+            if (!before) continue
 
             const resized = calculateResizedEvent({
               originalStart: toPlainDateTimeString(before.start),
@@ -104,26 +95,22 @@ export function resizeModule<E extends KernelEvent>(
               timeZone: options.timeZone,
               constraints: {
                 snapToMinutes: payload.snapToMinutes ?? options.snapToMinutes,
-                minDurationMinutes:
-                  payload.minDurationMinutes ?? options.minDurationMinutes,
-                unavailableRanges: resolveRanges(
-                  before as ResizableEvent,
-                  payload,
-                ),
+                minDurationMinutes: payload.minDurationMinutes ?? options.minDurationMinutes,
+                unavailableRanges: resolveRanges(before as ResizableEvent, payload),
               },
-            });
+            })
 
             ops.push({
-              kind: "update",
+              kind: 'update',
               id: payload.eventId,
               before,
               after: { ...before, start: resized.start, end: resized.end },
-            });
+            })
           }
 
-          return { ...batch, ops };
+          return { ...batch, ops }
         },
       },
     ],
-  };
+  }
 }

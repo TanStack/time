@@ -1,1 +1,1 @@
-export * from "./isValidDate";
+export * from './isValidDate'

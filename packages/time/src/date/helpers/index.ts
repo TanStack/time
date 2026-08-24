@@ -1,2 +1,2 @@
-export * from "./toZonedDateTime";
-export * from "./normalizeLocale";
+export * from './toZonedDateTime'
+export * from './normalizeLocale'

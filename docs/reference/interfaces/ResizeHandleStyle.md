@@ -5,7 +5,7 @@ title: ResizeHandleStyle
 
 # Interface: ResizeHandleStyle
 
-Defined in: [calendar/getResizeProps.ts:183](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L183)
+Defined in: [calendar/getResizeProps.ts:162](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L162)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/getResizeProps.ts:183](https://github.com/TanStack/time/bl
 optional bottom: number;
 ```
 
-Defined in: [calendar/getResizeProps.ts:191](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L191)
+Defined in: [calendar/getResizeProps.ts:170](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L170)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [calendar/getResizeProps.ts:191](https://github.com/TanStack/time/bl
 cursor: "ns-resize";
 ```
 
-Defined in: [calendar/getResizeProps.ts:188](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L188)
+Defined in: [calendar/getResizeProps.ts:167](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L167)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [calendar/getResizeProps.ts:188](https://github.com/TanStack/time/bl
 height: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:187](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L187)
+Defined in: [calendar/getResizeProps.ts:166](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L166)
 
 ***
 
@@ -45,7 +45,7 @@ Defined in: [calendar/getResizeProps.ts:187](https://github.com/TanStack/time/bl
 left: number;
 ```
 
-Defined in: [calendar/getResizeProps.ts:185](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L185)
+Defined in: [calendar/getResizeProps.ts:164](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L164)
 
 ***
 
@@ -55,7 +55,7 @@ Defined in: [calendar/getResizeProps.ts:185](https://github.com/TanStack/time/bl
 position: "absolute";
 ```
 
-Defined in: [calendar/getResizeProps.ts:184](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L184)
+Defined in: [calendar/getResizeProps.ts:163](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L163)
 
 ***
 
@@ -65,7 +65,7 @@ Defined in: [calendar/getResizeProps.ts:184](https://github.com/TanStack/time/bl
 right: number;
 ```
 
-Defined in: [calendar/getResizeProps.ts:186](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L186)
+Defined in: [calendar/getResizeProps.ts:165](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L165)
 
 ***
 
@@ -75,7 +75,7 @@ Defined in: [calendar/getResizeProps.ts:186](https://github.com/TanStack/time/bl
 optional top: number;
 ```
 
-Defined in: [calendar/getResizeProps.ts:190](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L190)
+Defined in: [calendar/getResizeProps.ts:169](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L169)
 
 ***
 
@@ -85,4 +85,4 @@ Defined in: [calendar/getResizeProps.ts:190](https://github.com/TanStack/time/bl
 zIndex: number;
 ```
 
-Defined in: [calendar/getResizeProps.ts:189](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L189)
+Defined in: [calendar/getResizeProps.ts:168](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L168)

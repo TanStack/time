@@ -5,7 +5,7 @@ title: DateCoreOptions
 
 # Interface: DateCoreOptions
 
-Defined in: [calendar/date-core.ts:63](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L63)
+Defined in: [calendar/date-core.ts:60](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L60)
 
 ## Extended by
 
@@ -19,7 +19,7 @@ Defined in: [calendar/date-core.ts:63](https://github.com/TanStack/time/blob/mai
 optional calendar: CalendarLike;
 ```
 
-Defined in: [calendar/date-core.ts:70](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L70)
+Defined in: [calendar/date-core.ts:67](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L67)
 
 ***
 
@@ -29,7 +29,7 @@ Defined in: [calendar/date-core.ts:70](https://github.com/TanStack/time/blob/mai
 optional dateFormatter: DateTimeFormat;
 ```
 
-Defined in: [calendar/date-core.ts:74](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L74)
+Defined in: [calendar/date-core.ts:71](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L71)
 
 ***
 
@@ -39,7 +39,7 @@ Defined in: [calendar/date-core.ts:74](https://github.com/TanStack/time/blob/mai
 optional dateTimeFormatter: DateTimeFormat;
 ```
 
-Defined in: [calendar/date-core.ts:78](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L78)
+Defined in: [calendar/date-core.ts:75](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L75)
 
 ***
 
@@ -49,7 +49,7 @@ Defined in: [calendar/date-core.ts:78](https://github.com/TanStack/time/blob/mai
 optional locale: string;
 ```
 
-Defined in: [calendar/date-core.ts:66](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L66)
+Defined in: [calendar/date-core.ts:63](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L63)
 
 ***
 
@@ -59,7 +59,7 @@ Defined in: [calendar/date-core.ts:66](https://github.com/TanStack/time/blob/mai
 optional range: DateRange;
 ```
 
-Defined in: [calendar/date-core.ts:72](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L72)
+Defined in: [calendar/date-core.ts:69](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L69)
 
 ***
 
@@ -69,7 +69,7 @@ Defined in: [calendar/date-core.ts:72](https://github.com/TanStack/time/blob/mai
 optional timeFormatter: DateTimeFormat;
 ```
 
-Defined in: [calendar/date-core.ts:76](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L76)
+Defined in: [calendar/date-core.ts:73](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L73)
 
 ***
 
@@ -79,7 +79,7 @@ Defined in: [calendar/date-core.ts:76](https://github.com/TanStack/time/blob/mai
 optional timeZone: TimeZoneLike;
 ```
 
-Defined in: [calendar/date-core.ts:68](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L68)
+Defined in: [calendar/date-core.ts:65](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L65)
 
 ***
 
@@ -89,4 +89,4 @@ Defined in: [calendar/date-core.ts:68](https://github.com/TanStack/time/blob/mai
 viewMode: ViewMode;
 ```
 
-Defined in: [calendar/date-core.ts:64](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L64)
+Defined in: [calendar/date-core.ts:61](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/date-core.ts#L61)

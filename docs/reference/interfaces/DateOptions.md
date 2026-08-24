@@ -5,7 +5,7 @@ title: DateOptions
 
 # Interface: DateOptions
 
-Defined in: [date/types.ts:10](https://github.com/TanStack/time/blob/main/packages/time/src/date/types.ts#L10)
+Defined in: [date/types.ts:5](https://github.com/TanStack/time/blob/main/packages/time/src/date/types.ts#L5)
 
 ## Extended by
 
@@ -41,7 +41,7 @@ Defined in: [date/types.ts:10](https://github.com/TanStack/time/blob/main/packag
 optional calendar: string;
 ```
 
-Defined in: [date/types.ts:11](https://github.com/TanStack/time/blob/main/packages/time/src/date/types.ts#L11)
+Defined in: [date/types.ts:6](https://github.com/TanStack/time/blob/main/packages/time/src/date/types.ts#L6)
 
 ***
 
@@ -51,4 +51,4 @@ Defined in: [date/types.ts:11](https://github.com/TanStack/time/blob/main/packag
 optional timeZone: string;
 ```
 
-Defined in: [date/types.ts:12](https://github.com/TanStack/time/blob/main/packages/time/src/date/types.ts#L12)
+Defined in: [date/types.ts:7](https://github.com/TanStack/time/blob/main/packages/time/src/date/types.ts#L7)

@@ -2,32 +2,29 @@
   "name": "@tanstack/solid-time",
   "version": "0.0.0",
   "description": "Solid adapter for TanStack Time",
-  "author": "Tanner Linsley",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/TanStack/time.git",
-    "directory": "packages/solid-time"
-  },
-  "homepage": "https://tanstack.com/time",
-  "funding": {
-    "type": "github",
-    "url": "https://github.com/sponsors/tannerlinsley"
-  },
   "keywords": [
     "solid",
     "tanstack",
     "time"
   ],
-  "scripts": {
-    "clean": "premove ./build ./dist",
-    "test:lint": "oxlint ./src",
-    "test:lib": "vitest --passWithNoTests",
-    "test:lib:dev": "pnpm test:lib --watch",
-    "test:types": "tsc",
-    "build": "tsdown"
+  "homepage": "https://tanstack.com/time",
+  "license": "MIT",
+  "author": "Tanner Linsley",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TanStack/time.git",
+    "directory": "packages/solid-time"
   },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/tannerlinsley"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
   "type": "module",
+  "sideEffects": false,
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.cts",
@@ -38,14 +35,14 @@
     },
     "./package.json": "./package.json"
   },
-  "sideEffects": false,
-  "engines": {
-    "node": ">=18"
+  "scripts": {
+    "clean": "premove ./build ./dist",
+    "test:lint": "oxlint ./src",
+    "test:lib": "vitest --passWithNoTests",
+    "test:lib:dev": "pnpm test:lib --watch",
+    "test:types": "tsc",
+    "build": "tsdown"
   },
-  "files": [
-    "dist",
-    "src"
-  ],
   "dependencies": {
     "@tanstack/solid-store": "^0.8.0",
     "@tanstack/time": "workspace:*"
@@ -57,5 +54,8 @@
   },
   "peerDependencies": {
     "solid-js": ">=1.9.5"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

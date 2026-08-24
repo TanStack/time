@@ -5,7 +5,7 @@ title: WorkingTimeApi
 
 # Interface: WorkingTimeApi\<TResource\>
 
-Defined in: [calendar/features/workingTime.ts:22](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/workingTime.ts#L22)
+Defined in: [calendar/features/workingTime.ts:18](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/workingTime.ts#L18)
 
 ## Type Parameters
 
@@ -21,7 +21,7 @@ Defined in: [calendar/features/workingTime.ts:22](https://github.com/TanStack/ti
 getEffectiveCalendar: (target?) => string | undefined;
 ```
 
-Defined in: [calendar/features/workingTime.ts:23](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/workingTime.ts#L23)
+Defined in: [calendar/features/workingTime.ts:19](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/workingTime.ts#L19)
 
 #### Parameters
 
@@ -41,7 +41,7 @@ Defined in: [calendar/features/workingTime.ts:23](https://github.com/TanStack/ti
 getNonWorkingMinutes: (date, target?) => MinuteRange[];
 ```
 
-Defined in: [calendar/features/workingTime.ts:34](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/workingTime.ts#L34)
+Defined in: [calendar/features/workingTime.ts:25](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/workingTime.ts#L25)
 
 #### Parameters
 
@@ -65,7 +65,7 @@ Defined in: [calendar/features/workingTime.ts:34](https://github.com/TanStack/ti
 getWorkingIntervals: (range, target?) => WorkingTimeRange[];
 ```
 
-Defined in: [calendar/features/workingTime.ts:26](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/workingTime.ts#L26)
+Defined in: [calendar/features/workingTime.ts:20](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/workingTime.ts#L20)
 
 #### Parameters
 
@@ -89,7 +89,7 @@ Defined in: [calendar/features/workingTime.ts:26](https://github.com/TanStack/ti
 getWorkingMinutes: (date, target?) => MinuteRange[];
 ```
 
-Defined in: [calendar/features/workingTime.ts:30](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/workingTime.ts#L30)
+Defined in: [calendar/features/workingTime.ts:24](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/workingTime.ts#L24)
 
 #### Parameters
 
@@ -113,7 +113,7 @@ Defined in: [calendar/features/workingTime.ts:30](https://github.com/TanStack/ti
 isWorkingTime: (range, target?) => boolean;
 ```
 
-Defined in: [calendar/features/workingTime.ts:38](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/workingTime.ts#L38)
+Defined in: [calendar/features/workingTime.ts:26](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/workingTime.ts#L26)
 
 #### Parameters
 

@@ -5,7 +5,7 @@ title: PositionStyle
 
 # Interface: PositionStyle
 
-Defined in: [calendar/getResizeProps.ts:259](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L259)
+Defined in: [calendar/getResizeProps.ts:236](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L236)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [calendar/getResizeProps.ts:259](https://github.com/TanStack/time/bl
 height: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:261](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L261)
+Defined in: [calendar/getResizeProps.ts:238](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L238)
 
 ***
 
@@ -25,4 +25,4 @@ Defined in: [calendar/getResizeProps.ts:261](https://github.com/TanStack/time/bl
 top: string;
 ```
 
-Defined in: [calendar/getResizeProps.ts:260](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L260)
+Defined in: [calendar/getResizeProps.ts:237](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/getResizeProps.ts#L237)

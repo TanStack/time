@@ -9,7 +9,7 @@ title: eventDurationFeature
 function eventDurationFeature<TResource, TEvent>(): CalendarFeature<TResource, TEvent, DurationModuleApi, DurationApi<TResource, TEvent>, "duration">;
 ```
 
-Defined in: [calendar/features/duration.ts:26](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/duration.ts#L26)
+Defined in: [calendar/features/duration.ts:19](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/duration.ts#L19)
 
 ## Type Parameters
 
