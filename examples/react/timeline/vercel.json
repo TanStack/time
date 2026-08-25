@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "installCommand": "npm i -g pnpm@11.1.0 && pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm --filter \"@tanstack/time-example-react-timeline^...\" run build && pnpm run build",
+  "outputDirectory": "dist"
+}

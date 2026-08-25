@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@tanstack/time": ["../time/src"],
+      "~/*": ["../time/src/*"]
+    }
+  },
+  "include": ["src"]
+}

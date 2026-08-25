@@ -1,0 +1,8 @@
+{
+  "rules": {
+    "no-case-declarations": "off",
+    "no-shadow": "off",
+    "react-hooks/exhaustive-deps": "error",
+    "react-hooks/rules-of-hooks": "error"
+  }
+}

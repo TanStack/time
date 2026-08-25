@@ -1,0 +1,71 @@
+{
+  "name": "root",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TanStack/time.git"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "nx affected --skip-nx-cache --targets=build --exclude=examples/**",
+    "build:all": "nx run-many --targets=build --exclude=examples/**",
+    "build:core": "nx run-many --targets=build --projects=packages/time",
+    "changeset": "changeset",
+    "changeset:publish": "changeset publish",
+    "changeset:version": "changeset version && pnpm install --no-frozen-lockfile && pnpm format",
+    "clean": "find . -name 'dist' -type d -prune -exec rm -rf {} +",
+    "clean:node_modules": "find . -name 'node_modules' -type d -prune -exec rm -rf {} +",
+    "clean:all": "pnpm run clean && pnpm run clean:node_modules",
+    "copy:readme": "cp README.md packages/time/README.md && cp README.md packages/time-devtools/README.md && cp README.md packages/react-time/README.md && cp README.md packages/react-time-devtools/README.md && cp README.md packages/solid-time/README.md && cp README.md packages/solid-time-devtools/README.md",
+    "dev": "pnpm run watch",
+    "format": "oxfmt .",
+    "generate-docs": "node scripts/generate-docs.ts && pnpm run copy:readme",
+    "graphify": "node scripts/graphify.ts",
+    "lint:fix": "nx affected --target=lint:fix --exclude=examples/**",
+    "lint:fix:all": "nx run-many --targets=lint --fix",
+    "test": "pnpm run test:ci",
+    "test:ci": "nx run-many --targets=test:lint,test:sherif,test:knip,test:docs,test:lib,test:types,build",
+    "test:docs": "node scripts/verify-links.ts",
+    "test:lint": "nx affected --target=test:lint --exclude=examples/**",
+    "test:knip": "knip",
+    "test:lib": "nx affected --targets=test:lib --exclude=examples/**",
+    "test:lib:dev": "pnpm test:lib && nx watch --all -- pnpm test:lib",
+    "test:pr": "nx affected --targets=test:lint,test:sherif,test:knip,test:docs,test:lib,test:types,build",
+    "test:sherif": "sherif",
+    "test:types": "nx affected --targets=test:types --exclude=examples/**",
+    "watch": "pnpm run build:all && nx watch --all -- pnpm run build:all"
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "^0.7.0",
+    "@changesets/cli": "^2.29.8",
+    "@faker-js/faker": "^10.2.0",
+    "@tanstack/typedoc-config": "0.3.3",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@types/node": "^25.0.7",
+    "happy-dom": "^20.11.6",
+    "knip": "^5.86.0",
+    "markdown-link-extractor": "^4.0.3",
+    "nx": "^22.7.8",
+    "oxfmt": "^0.64.0",
+    "oxlint": "^0.16.0",
+    "premove": "^4.0.0",
+    "publint": "^0.3.16",
+    "sherif": "^1.9.0",
+    "tinyglobby": "^0.2.15",
+    "tsdown": "^0.22.14",
+    "typescript": "5.9.3",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^4.1.11"
+  },
+  "engines": {
+    "pnpm": ">=11.0.0"
+  },
+  "packageManager": "pnpm@11.1.0",
+  "nx": {
+    "includedScripts": [
+      "test:docs",
+      "test:knip",
+      "test:sherif"
+    ]
+  }
+}

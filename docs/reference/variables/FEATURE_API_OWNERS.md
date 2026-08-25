@@ -1,0 +1,278 @@
+---
+id: FEATURE_API_OWNERS
+title: FEATURE_API_OWNERS
+---
+
+# Variable: FEATURE\_API\_OWNERS
+
+```ts
+const FEATURE_API_OWNERS: object;
+```
+
+Defined in: [calendar/features/registry.ts:71](https://github.com/TanStack/time/blob/main/packages/time/src/calendar/features/registry.ts#L71)
+
+## Type Declaration
+
+### canRedo
+
+```ts
+readonly canRedo: "historyFeature" = 'historyFeature';
+```
+
+### canUndo
+
+```ts
+readonly canUndo: "historyFeature" = 'historyFeature';
+```
+
+### checkEventAvailability
+
+```ts
+readonly checkEventAvailability: "resourceAvailabilityFeature" = 'resourceAvailabilityFeature';
+```
+
+### checkEventConstraint
+
+```ts
+readonly checkEventConstraint: "schedulingConstraintFeature" = 'schedulingConstraintFeature';
+```
+
+### checkEventDuration
+
+```ts
+readonly checkEventDuration: "eventDurationFeature" = 'eventDurationFeature';
+```
+
+### clearEventFilters
+
+```ts
+readonly clearEventFilters: "eventFilterFeature" = 'eventFilterFeature';
+```
+
+### createDependency
+
+```ts
+readonly createDependency: "eventDependencyFeature" = 'eventDependencyFeature';
+```
+
+### createMoveController
+
+```ts
+readonly createMoveController: "eventMoveFeature" = 'eventMoveFeature';
+```
+
+### createResizeController
+
+```ts
+readonly createResizeController: "eventResizeFeature" = 'eventResizeFeature';
+```
+
+### editRecurringEvent
+
+```ts
+readonly editRecurringEvent: "eventRecurrenceFeature" = 'eventRecurrenceFeature';
+```
+
+### findViolatedDependency
+
+```ts
+readonly findViolatedDependency: "eventDependencyFeature" = 'eventDependencyFeature';
+```
+
+### getAffectedByDelta
+
+```ts
+readonly getAffectedByDelta: "eventDependencyFeature" = 'eventDependencyFeature';
+```
+
+### getAnchorConflicts
+
+```ts
+readonly getAnchorConflicts: "eventDependencyFeature" = 'eventDependencyFeature';
+```
+
+### getDaySpanConflicts
+
+```ts
+readonly getDaySpanConflicts: "resourceAvailabilityFeature" = 'resourceAvailabilityFeature';
+```
+
+### getDependentShifts
+
+```ts
+readonly getDependentShifts: "eventDependencyFeature" = 'eventDependencyFeature';
+```
+
+### getEffectiveCalendar
+
+```ts
+readonly getEffectiveCalendar: "workingTimeFeature" = 'workingTimeFeature';
+```
+
+### getEventFilterIds
+
+```ts
+readonly getEventFilterIds: "eventFilterFeature" = 'eventFilterFeature';
+```
+
+### getEventProps
+
+```ts
+readonly getEventProps: "dayEventLayoutFeature" = 'dayEventLayoutFeature';
+```
+
+### getEventsByResource
+
+```ts
+readonly getEventsByResource: "timelineFeature" = 'timelineFeature';
+```
+
+### getEventSegmentInfo
+
+```ts
+readonly getEventSegmentInfo: "eventResizeFeature" = 'eventResizeFeature';
+```
+
+### getHiddenEvents
+
+```ts
+readonly getHiddenEvents: "eventFilterFeature" = 'eventFilterFeature';
+```
+
+### getMasterEvent
+
+```ts
+readonly getMasterEvent: "eventRecurrenceFeature" = 'eventRecurrenceFeature';
+```
+
+### getNonWorkingMinutes
+
+```ts
+readonly getNonWorkingMinutes: "workingTimeFeature" = 'workingTimeFeature';
+```
+
+### getPredecessorShifts
+
+```ts
+readonly getPredecessorShifts: "eventDependencyFeature" = 'eventDependencyFeature';
+```
+
+### getTimelineLayout
+
+```ts
+readonly getTimelineLayout: "timelineFeature" = 'timelineFeature';
+```
+
+### getUnavailabilityDetails
+
+```ts
+readonly getUnavailabilityDetails: "resourceAvailabilityFeature" = 'resourceAvailabilityFeature';
+```
+
+### getUnavailableMinuteRanges
+
+```ts
+readonly getUnavailableMinuteRanges: "resourceAvailabilityFeature" = 'resourceAvailabilityFeature';
+```
+
+### getUnavailableRanges
+
+```ts
+readonly getUnavailableRanges: "resourceAvailabilityFeature" = 'resourceAvailabilityFeature';
+```
+
+### getWorkingDuration
+
+```ts
+readonly getWorkingDuration: "eventDurationFeature" = 'eventDurationFeature';
+```
+
+### getWorkingIntervals
+
+```ts
+readonly getWorkingIntervals: "workingTimeFeature" = 'workingTimeFeature';
+```
+
+### getWorkingMinutes
+
+```ts
+readonly getWorkingMinutes: "workingTimeFeature" = 'workingTimeFeature';
+```
+
+### goToNextOccurrence
+
+```ts
+readonly goToNextOccurrence: "eventRecurrenceFeature" = 'eventRecurrenceFeature';
+```
+
+### goToPreviousOccurrence
+
+```ts
+readonly goToPreviousOccurrence: "eventRecurrenceFeature" = 'eventRecurrenceFeature';
+```
+
+### isEventVisible
+
+```ts
+readonly isEventVisible: "eventFilterFeature" = 'eventFilterFeature';
+```
+
+### isWorkingTime
+
+```ts
+readonly isWorkingTime: "workingTimeFeature" = 'workingTimeFeature';
+```
+
+### redo
+
+```ts
+readonly redo: "historyFeature" = 'historyFeature';
+```
+
+### removeRecurringEvent
+
+```ts
+readonly removeRecurringEvent: "eventRecurrenceFeature" = 'eventRecurrenceFeature';
+```
+
+### resolveOccurrence
+
+```ts
+readonly resolveOccurrence: "eventRecurrenceFeature" = 'eventRecurrenceFeature';
+```
+
+### setEventFilter
+
+```ts
+readonly setEventFilter: "eventFilterFeature" = 'eventFilterFeature';
+```
+
+### undo
+
+```ts
+readonly undo: "historyFeature" = 'historyFeature';
+```
+
+### validateEventDependencies
+
+```ts
+readonly validateEventDependencies: "eventDependencyFeature" = 'eventDependencyFeature';
+```
+
+### validateEventMove
+
+```ts
+readonly validateEventMove: "eventMoveFeature" = 'eventMoveFeature';
+```
+
+### validateEventPlacement
+
+```ts
+readonly validateEventPlacement: "resourceAvailabilityFeature" = 'resourceAvailabilityFeature';
+```
+
+### validateResize
+
+```ts
+readonly validateResize: "eventResizeFeature" = 'eventResizeFeature';
+```
