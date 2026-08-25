@@ -1,5 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill'
-import { lagMs, requiredForwardShiftMs } from './shift'
+import { lagMs, requiredShiftMs } from './shift'
 import type { DependencyGraphEvent } from './validateDependencies'
 
 export interface CascadeInput {
@@ -71,7 +71,7 @@ export function computeCascade(input: CascadeInput): Array<CascadeShift> {
       ).epochMilliseconds
       const sEndMs = Temporal.PlainDateTime.from(s.end).toZonedDateTime(timeZone).epochMilliseconds
 
-      const shiftMs = requiredForwardShiftMs(
+      const shiftMs = requiredShiftMs(
         link.type,
         cur.startMs,
         cur.endMs,

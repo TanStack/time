@@ -1,5 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill'
-import { lagMs, requiredBackwardShiftMs, requiredForwardShiftMs } from './shift'
+import { lagMs, requiredShiftMs } from './shift'
 import type { DependencyType } from './shift'
 import type { CascadeShift } from './computeCascade'
 import type { DependencyGraphEvent } from './validateDependencies'
@@ -50,7 +50,7 @@ export function shiftToSatisfyLink(input: LinkShiftInput): Span | null {
   const predecessorMs = toMs(input.predecessor, input.timeZone)
   const successorMs = toMs(input.successor, input.timeZone)
 
-  const shiftMs = requiredForwardShiftMs(
+  const shiftMs = requiredShiftMs(
     input.type,
     predecessorMs.startMs,
     predecessorMs.endMs,
@@ -88,7 +88,7 @@ export function propagateToPredecessors(input: PropagateInput): Array<CascadeShi
       }
 
       const predMs = toMs(predSpan, timeZone)
-      const pullBackMs = requiredBackwardShiftMs(
+      const pullBackMs = requiredShiftMs(
         dep.type,
         predMs.startMs,
         predMs.endMs,
@@ -151,7 +151,7 @@ export function propagateToDependents(input: PropagateInput): Array<CascadeShift
       visited.add(successorId)
 
       const successorMs = toMs(successorSpan, timeZone)
-      const shiftMs = requiredForwardShiftMs(
+      const shiftMs = requiredShiftMs(
         link.type,
         currentMs.startMs,
         currentMs.endMs,

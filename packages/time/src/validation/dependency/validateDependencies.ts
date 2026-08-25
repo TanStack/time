@@ -1,5 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill'
-import { formatLagMinutes, lagMs, requiredForwardShiftMs, type DependencyLink } from './shift'
+import { formatLagMinutes, lagMs, requiredShiftMs, type DependencyLink } from './shift'
 
 export interface DependencyGraphEvent {
   id: string
@@ -84,7 +84,7 @@ export function validateDependencies(input: ValidateDependenciesInput): Array<De
       timeZone,
     ).epochMilliseconds
 
-    const shortfall = requiredForwardShiftMs(
+    const shortfall = requiredShiftMs(
       dep.type,
       predStartMs,
       predEndMs,

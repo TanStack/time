@@ -1,8 +1,13 @@
 import { Temporal } from '@js-temporal/polyfill'
 import { clampToConstraint } from '~/validation/constraints'
-import { lagMs, requiredForwardShiftMs } from '~/validation/dependency'
+import { lagMs, requiredShiftMs } from '~/validation/dependency'
 import { resolveWorkingLayers, workingMinutesBetween } from '~/validation/duration'
-import { addWorkingMinutes, nextWorkingInstant } from '~/workingTime'
+import {
+  addWorkingMinutes,
+  nextWorkingInstant,
+  previousWorkingInstant,
+  subtractWorkingMinutes,
+} from '~/workingTime'
 import type { WorkingCalendar } from '~/workingTime'
 import type { SolveConflict, SolveDependency, SolveEvent, SolveRequest, SolveResult } from './types'
 
@@ -75,6 +80,7 @@ export function solve(request: SolveRequest): SolveResult {
   const { events, dependencies, timeZone } = request
   const workingTime = request.workingTime ?? {}
   const calendars: Array<WorkingCalendar> | null | undefined = workingTime.calendars
+  const direction = request.direction ?? 'ASAP'
   const anchors = new Set(request.anchors ?? [])
   for (const event of events) {
     if (event.manuallyScheduled) anchors.add(event.id)
@@ -119,7 +125,7 @@ export function solve(request: SolveRequest): SolveResult {
 
     const predMs = toMs(pred, timeZone)
     const succMs = toMs(succ, timeZone)
-    return requiredForwardShiftMs(
+    return requiredShiftMs(
       dep.type,
       predMs.startMs,
       predMs.endMs,
@@ -158,13 +164,42 @@ export function solve(request: SolveRequest): SolveResult {
   for (let iteration = 0; iteration < cap; iteration++) {
     let changed = false
 
+    const reportUnschedulable = (eventId: string) => {
+      if (unschedulable.has(eventId)) return
+      unschedulable.add(eventId)
+      conflicts.push({
+        code: 'unsatisfiable',
+        eventIds: [eventId],
+        message: `"${eventId}" has no working time to schedule into`,
+      })
+    }
+
     for (const dep of relaxable) {
       const shortfall = shortfallOf(dep)
       if (shortfall <= 0) continue
 
-      if (anchors.has(dep.successorId)) {
+      const succAnchored = anchors.has(dep.successorId)
+      const predAnchored = anchors.has(dep.predecessorId)
+      const pullPredecessorBackward = succAnchored || (!predAnchored && direction === 'ALAP')
+
+      if (pullPredecessorBackward) {
         const pred = positions.get(dep.predecessorId)!
-        positions.set(dep.predecessorId, shiftSpan(pred, -shortfall))
+        const pulled = shiftSpan(pred, -shortfall)
+        const layers = layersById.get(dep.predecessorId)!
+        const snappedEnd = previousWorkingInstant(pulled.end, layers, calendars)
+
+        if (snappedEnd === null) {
+          reportUnschedulable(dep.predecessorId)
+          continue
+        }
+
+        const snappedStart = subtractWorkingMinutes(
+          snappedEnd,
+          durationById.get(dep.predecessorId)!,
+          layers,
+          calendars,
+        )
+        positions.set(dep.predecessorId, { start: snappedStart ?? pulled.start, end: snappedEnd })
         changed = true
         continue
       }
@@ -175,14 +210,7 @@ export function solve(request: SolveRequest): SolveResult {
       const snappedStart = nextWorkingInstant(pushed.start, layers, calendars)
 
       if (snappedStart === null) {
-        if (!unschedulable.has(dep.successorId)) {
-          unschedulable.add(dep.successorId)
-          conflicts.push({
-            code: 'unsatisfiable',
-            eventIds: [dep.successorId],
-            message: `"${dep.successorId}" has no working time to schedule into`,
-          })
-        }
+        reportUnschedulable(dep.successorId)
         continue
       }
 

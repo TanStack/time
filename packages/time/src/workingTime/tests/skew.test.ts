@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { addWorkingMinutes, MAX_WORKING_SKEW_DAYS, nextWorkingInstant } from '../skew'
+import {
+  addWorkingMinutes,
+  MAX_WORKING_SKEW_DAYS,
+  nextWorkingInstant,
+  previousWorkingInstant,
+  subtractWorkingMinutes,
+} from '../skew'
 import { workingMinutesBetween } from '~/validation/duration'
 import type { WorkingCalendar } from '../types'
 
@@ -59,6 +65,7 @@ const SPLIT_LAYERS = [['split']]
 const FRI = '2026-03-06'
 const SAT = '2026-03-07'
 const MON = '2026-03-09'
+const FAR_MON = '2026-04-06'
 
 describe('nextWorkingInstant', () => {
   it('returns the instant unchanged when it already falls in working time', () => {
@@ -142,6 +149,100 @@ describe('addWorkingMinutes', () => {
   })
 })
 
+describe('previousWorkingInstant', () => {
+  it('returns the instant unchanged when it already falls in working time', () => {
+    expect(previousWorkingInstant(`${FRI}T10:00:00`, OFFICE_LAYERS, [OFFICE])).toBe(
+      `${FRI}T10:00:00`,
+    )
+  })
+
+  it("moves backward to the end of the day's work", () => {
+    expect(previousWorkingInstant(`${FRI}T20:00:00`, OFFICE_LAYERS, [OFFICE])).toBe(
+      `${FRI}T17:00:00`,
+    )
+  })
+
+  it('skips the weekend when the instant is before hours on a Monday', () => {
+    expect(previousWorkingInstant(`${MON}T06:00:00`, OFFICE_LAYERS, [OFFICE])).toBe(
+      `${FRI}T17:00:00`,
+    )
+  })
+
+  it('skips a non-working day entirely', () => {
+    expect(previousWorkingInstant(`${SAT}T10:00:00`, OFFICE_LAYERS, [OFFICE])).toBe(
+      `${FRI}T17:00:00`,
+    )
+  })
+
+  it("lands in the morning span when the afternoon one hasn't started yet", () => {
+    expect(previousWorkingInstant(`${FRI}T12:30:00`, SPLIT_LAYERS, [SPLIT_SHIFT])).toBe(
+      `${FRI}T12:00:00`,
+    )
+  })
+
+  it('passes the instant through untouched when no calendar is configured', () => {
+    expect(previousWorkingInstant(`${SAT}T03:00:00`, [[undefined]], [])).toBe(`${SAT}T03:00:00`)
+  })
+
+  it('gives up rather than searching forever when nothing is ever working', () => {
+    expect(previousWorkingInstant(`${FRI}T10:00:00`, [['closed']], [CLOSED])).toBe(null)
+  })
+})
+
+describe('subtractWorkingMinutes', () => {
+  it('stays inside one working span', () => {
+    expect(subtractWorkingMinutes(`${FRI}T11:00:00`, 120, OFFICE_LAYERS, [OFFICE])).toBe(
+      `${FRI}T09:00:00`,
+    )
+  })
+
+  it('lands exactly on the start of a span without spilling into the previous day', () => {
+    expect(subtractWorkingMinutes(`${FRI}T17:00:00`, 480, OFFICE_LAYERS, [OFFICE])).toBe(
+      `${FRI}T09:00:00`,
+    )
+  })
+
+  it('carries the remainder across the weekend', () => {
+    expect(subtractWorkingMinutes(`${MON}T11:00:00`, 240, OFFICE_LAYERS, [OFFICE])).toBe(
+      `${FRI}T15:00:00`,
+    )
+  })
+
+  it('counts from the end of work when the end is after hours', () => {
+    expect(subtractWorkingMinutes(`${FRI}T20:00:00`, 60, OFFICE_LAYERS, [OFFICE])).toBe(
+      `${FRI}T16:00:00`,
+    )
+  })
+
+  it('jumps the midday break instead of counting it', () => {
+    expect(subtractWorkingMinutes(`${FRI}T14:00:00`, 120, SPLIT_LAYERS, [SPLIT_SHIFT])).toBe(
+      `${FRI}T11:00:00`,
+    )
+  })
+
+  it('snaps a zero-minute span to the previous working instant', () => {
+    expect(subtractWorkingMinutes(`${SAT}T10:00:00`, 0, OFFICE_LAYERS, [OFFICE])).toBe(
+      `${FRI}T17:00:00`,
+    )
+  })
+
+  it('falls back to wall clock when no calendar is configured', () => {
+    expect(subtractWorkingMinutes(`${SAT}T01:00:00`, 180, [[undefined]], [])).toBe(
+      `${FRI}T22:00:00`,
+    )
+  })
+
+  it('gives up rather than searching forever when nothing is ever working', () => {
+    expect(subtractWorkingMinutes(`${FRI}T10:00:00`, 60, [['closed']], [CLOSED])).toBe(null)
+  })
+
+  it('reports exhaustion when the duration outruns the search horizon', () => {
+    const minutes = MAX_WORKING_SKEW_DAYS * 8 * 60
+
+    expect(subtractWorkingMinutes(`${MON}T09:00:00`, minutes, OFFICE_LAYERS, [OFFICE])).toBe(null)
+  })
+})
+
 describe('skew is the inverse of workingMinutesBetween', () => {
   const cases: Array<{ start: string; minutes: number }> = [
     { start: `${FRI}T09:00:00`, minutes: 120 },
@@ -158,6 +259,28 @@ describe('skew is the inverse of workingMinutesBetween', () => {
 
       expect(
         workingMinutesBetween({ start, end: end! }, [], {
+          calendars: [OFFICE],
+          defaultCalendarId: 'office',
+        }),
+      ).toBe(minutes)
+    },
+  )
+
+  const backwardCases: Array<{ end: string; minutes: number }> = [
+    { end: `${FRI}T17:00:00`, minutes: 120 },
+    { end: `${MON}T11:00:00`, minutes: 240 },
+    { end: `${MON}T09:30:00`, minutes: 30 },
+    { end: `${FAR_MON}T09:00:00`, minutes: 2400 },
+  ]
+
+  it.each(backwardCases)(
+    'measuring forward from $end - $minutes working minutes returns $minutes',
+    ({ end, minutes }) => {
+      const start = subtractWorkingMinutes(end, minutes, OFFICE_LAYERS, [OFFICE])
+      expect(start).not.toBe(null)
+
+      expect(
+        workingMinutesBetween({ start: start!, end }, [], {
           calendars: [OFFICE],
           defaultCalendarId: 'office',
         }),

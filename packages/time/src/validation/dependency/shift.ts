@@ -16,27 +16,7 @@ export function formatLagMinutes(lag: number): string {
   return `${lag < 0 ? '-' : '+'}${Math.abs(lag)}m`
 }
 
-export function requiredForwardShiftMs(
-  type: DependencyType,
-  predStartMs: number,
-  predEndMs: number,
-  succStartMs: number,
-  succEndMs: number,
-  lagMilliseconds = 0,
-): number {
-  switch (type) {
-    case 'FS':
-      return predEndMs + lagMilliseconds - succStartMs
-    case 'SS':
-      return predStartMs + lagMilliseconds - succStartMs
-    case 'FF':
-      return predEndMs + lagMilliseconds - succEndMs
-    case 'SF':
-      return predStartMs + lagMilliseconds - succEndMs
-  }
-}
-
-export function requiredBackwardShiftMs(
+export function requiredShiftMs(
   type: DependencyType,
   predStartMs: number,
   predEndMs: number,

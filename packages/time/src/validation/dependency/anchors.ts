@@ -1,5 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill'
-import { lagMs, requiredForwardShiftMs } from './shift'
+import { lagMs, requiredShiftMs } from './shift'
 import { describeDependencyViolation } from './validateDependencies'
 import type { DependencyConflict, DependencyGraphEvent } from './validateDependencies'
 
@@ -33,7 +33,7 @@ export function findAnchoredViolations(input: AnchoredViolationInput): Array<Dep
       if (!anchor) continue
       if (!changed.has(successor.id) && !changed.has(predecessor.id)) continue
 
-      const shortfall = requiredForwardShiftMs(
+      const shortfall = requiredShiftMs(
         link.type,
         epochMs(predecessor.start),
         epochMs(predecessor.end),

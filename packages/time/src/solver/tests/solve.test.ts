@@ -367,4 +367,82 @@ describe('solve', () => {
       end: '2026-01-02T11:00:00',
     })
   })
+
+  it('pulls a free predecessor backward instead of pushing the successor forward under ALAP', () => {
+    const events = [
+      event('a', '2026-01-05T09:00:00', '2026-01-05T10:00:00'),
+      event('b', '2026-01-05T09:30:00', '2026-01-05T10:30:00'),
+    ]
+    const dependencies: Array<SolveDependency> = [
+      { predecessorId: 'a', successorId: 'b', type: 'FS' },
+    ]
+
+    const result = solve({ events, dependencies, timeZone: UTC, direction: 'ALAP' })
+
+    expect(result.conflicts).toHaveLength(0)
+    expect(positionOf(result.events, 'b')).toEqual({
+      start: '2026-01-05T09:30:00',
+      end: '2026-01-05T10:30:00',
+    })
+    expect(positionOf(result.events, 'a')).toEqual({
+      start: '2026-01-05T08:30:00',
+      end: '2026-01-05T09:30:00',
+    })
+  })
+
+  it('skews a pulled predecessor back across a weekend to the previous working day', () => {
+    const events = [
+      event('a', '2026-01-05T09:00:00', '2026-01-05T09:30:00', { calendarId: 'office' }),
+      event('b', '2026-01-05T06:00:00', '2026-01-05T07:00:00', { manuallyScheduled: true }),
+    ]
+    const dependencies: Array<SolveDependency> = [
+      { predecessorId: 'a', successorId: 'b', type: 'FS' },
+    ]
+
+    const result = solve({
+      events,
+      dependencies,
+      timeZone: UTC,
+      workingTime: { calendars: [OFFICE] },
+    })
+
+    expect(result.conflicts).toHaveLength(0)
+    expect(positionOf(result.events, 'a')).toEqual({
+      start: '2026-01-02T16:30:00',
+      end: '2026-01-02T17:00:00',
+    })
+    expect(positionOf(result.events, 'b')).toEqual({
+      start: '2026-01-05T06:00:00',
+      end: '2026-01-05T07:00:00',
+    })
+  })
+
+  it('reports a conflict instead of hanging when a pulled predecessor has no working time to land in', () => {
+    const events = [
+      event('a', '2026-01-02T09:00:00', '2026-01-02T09:30:00', { calendarId: 'closed' }),
+      event('b', '2026-01-02T06:00:00', '2026-01-02T07:00:00', { manuallyScheduled: true }),
+    ]
+    const dependencies: Array<SolveDependency> = [
+      { predecessorId: 'a', successorId: 'b', type: 'FS' },
+    ]
+
+    const result = solve({
+      events,
+      dependencies,
+      timeZone: UTC,
+      workingTime: { calendars: [CLOSED] },
+    })
+
+    expect(result.conflicts).toEqual([
+      {
+        code: 'unsatisfiable',
+        eventIds: ['a'],
+        message: '"a" has no working time to schedule into',
+      },
+    ])
+    expect(positionOf(result.events, 'a')).toEqual({
+      start: '2026-01-02T09:00:00',
+      end: '2026-01-02T09:30:00',
+    })
+  })
 })

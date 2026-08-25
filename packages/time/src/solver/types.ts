@@ -28,6 +28,7 @@ export interface SolveRequest {
   anchors?: Array<string>
   timeZone: Temporal.TimeZoneLike
   workingTime?: WorkingTimeConfig
+  direction?: 'ASAP' | 'ALAP'
 }
 
 export interface SolveConflict {

@@ -8,7 +8,7 @@ import {
   lagMs,
   propagateToDependents,
   propagateToPredecessors,
-  requiredForwardShiftMs,
+  requiredShiftMs,
   shiftToSatisfyLink,
 } from '~/validation/dependency'
 import type { KernelEvent } from '~/kernel'
@@ -188,7 +188,7 @@ export function eventDependencyFeature<
           const predecessor = host.getEvent(dependency.id)
           if (!predecessor) continue
 
-          const shortfall = requiredForwardShiftMs(
+          const shortfall = requiredShiftMs(
             dependency.type,
             epochMs(host, toPlainDateTimeString(predecessor.start)),
             epochMs(host, toPlainDateTimeString(predecessor.end)),

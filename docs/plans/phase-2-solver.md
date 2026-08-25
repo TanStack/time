@@ -51,7 +51,7 @@ authoritative *inside the loop* while `end` stays authoritative at the boundary 
 These are pure functions over the same serializable inputs the rest of `workingTime/` takes, so they
 land there and inherit its tests. **Landed in slice 1.**
 
-## A naming hazard to fix before ALAP
+## A naming hazard to fix before ALAP ✅
 
 `requiredForwardShiftMs` and `requiredBackwardShiftMs` in `validation/dependency/shift.ts` have
 **byte-identical bodies** — the same switch over FS/SS/FF/SF. That is not a bug: both return the same
@@ -64,6 +64,12 @@ It is a trap for slice 5. Anyone implementing ALAP will reasonably read
 convention is invisible at the call site. Either collapse them into one `requiredShiftMs` and make the
 caller's direction explicit, or give each a body that genuinely differs. Doing this *before* ALAP is
 cheaper than debugging it after.
+
+Collapsed into one `requiredShiftMs`, updated at every call site (`propagate.ts`,
+`computeCascade.ts`, `anchors.ts`, `validateDependencies.ts`, `calendar/features/dependency.ts`,
+`solver/solve.ts`) — none of them changed behaviour, since the two functions computed the same value
+by construction. The "mirrors forward shift" test is gone; there's nothing left to assert equal
+against itself.
 
 ## Slices
 
@@ -211,10 +217,32 @@ forward-push path the ADR scenario describes is calendar-aware.
 Constraint clamping (slice 3) is unaffected — a constraint's date is an explicit civil deadline, not a
 value the calendar computes, so it has nothing to skew.
 
-### Slice 5 — ALAP
+### Slice 5 — ALAP ✅
 
 `direction` on the request, honoured. Preceded by the `shift.ts` cleanup above. ASAP stays the
 default; ALAP is the mirror, and the naming fix is what makes the mirror readable.
+
+`SolveRequest` gained `direction?: 'ASAP' | 'ALAP'`. The relax loop's two forced cases are unchanged
+by direction — successor anchored always pulls the predecessor backward, predecessor anchored always
+pushes the successor forward, because the anchor decides, not the direction. Direction only decides
+the free-free case: ASAP pushes the successor forward (unchanged from slice 4); ALAP pulls the
+predecessor backward instead, as late as possible while still touching the successor's current
+position.
+
+`workingTime/skew.ts` gained the backward mirror slice 1 deferred: `previousWorkingInstant` (the
+last working instant at or before a point) and `subtractWorkingMinutes` (the instant some working
+duration before an end). Both follow the same `[start, end)`-inclusive-boundary convention as their
+forward counterparts — `previousWorkingInstant` at an exact span start returns that start (matching
+`nextWorkingInstant` at an exact start), and at an exact span end returns that end, mirroring how
+`addWorkingMinutes` can already land exactly on a span's end when it exhausts the available time
+there. `stampFrom` had to become negative-minute-safe (`totalMinutes - days * MINUTES_IN_DAY` instead
+of `%`, which is signed in JS) since subtracting can walk before minute zero of a day.
+
+Both relax-loop branches are now calendar-aware and share one `reportUnschedulable` conflict path —
+the predecessor-pull branch (forced by an anchor, or chosen by ALAP) now snaps through
+`previousWorkingInstant`/`subtractWorkingMinutes` exactly as the successor-push branch already did
+through the forward primitives in slice 4. That closes the deferral slice 4 recorded: a predecessor
+pulled backward under dependency pressure now skews across non-working time instead of landing in it.
 
 ### Slice 6 — the pipeline swap
 

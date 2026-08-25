@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   computeCascade,
-  requiredBackwardShiftMs,
-  requiredForwardShiftMs,
+  requiredShiftMs,
   validateDependencies,
   type CascadeInput,
   type CascadeShift,
@@ -23,30 +22,21 @@ const pred: DependencyGraphEvent = {
 
 describe('shift math', () => {
   it('FS shortfall = predEnd - succStart', () => {
-    expect(requiredForwardShiftMs('FS', 0, 100, 50, 150)).toBe(50)
-    expect(requiredForwardShiftMs('SS', 20, 100, 50, 150)).toBe(-30)
-    expect(requiredForwardShiftMs('FF', 0, 200, 50, 150)).toBe(50)
-    expect(requiredForwardShiftMs('SF', 20, 100, 50, 150)).toBe(-130)
-  })
-
-  it('backward shift mirrors forward shift', () => {
-    expect(requiredBackwardShiftMs('FS', 0, 100, 50, 150)).toBe(
-      requiredForwardShiftMs('FS', 0, 100, 50, 150),
-    )
+    expect(requiredShiftMs('FS', 0, 100, 50, 150)).toBe(50)
+    expect(requiredShiftMs('SS', 20, 100, 50, 150)).toBe(-30)
+    expect(requiredShiftMs('FF', 0, 200, 50, 150)).toBe(50)
+    expect(requiredShiftMs('SF', 20, 100, 50, 150)).toBe(-130)
   })
 
   it('moves the anchor by the lag', () => {
-    expect(requiredForwardShiftMs('FS', 0, 100, 150, 250, 60_000)).toBe(
-      requiredForwardShiftMs('FS', 0, 100, 150, 250) + 60_000,
-    )
-    expect(requiredBackwardShiftMs('SS', 20, 100, 50, 150, -60_000)).toBe(
-      requiredBackwardShiftMs('SS', 20, 100, 50, 150) - 60_000,
+    expect(requiredShiftMs('FS', 0, 100, 150, 250, 60_000)).toBe(
+      requiredShiftMs('FS', 0, 100, 150, 250) + 60_000,
     )
   })
 
   it('turns slack into a shortfall once the lag exceeds it', () => {
-    expect(requiredForwardShiftMs('FS', 0, 100, 150, 250)).toBeLessThan(0)
-    expect(requiredForwardShiftMs('FS', 0, 100, 150, 250, 60_000)).toBe(59_950)
+    expect(requiredShiftMs('FS', 0, 100, 150, 250)).toBeLessThan(0)
+    expect(requiredShiftMs('FS', 0, 100, 150, 250, 60_000)).toBe(59_950)
   })
 })
 
