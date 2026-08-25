@@ -1,6 +1,9 @@
 import { Temporal } from '@js-temporal/polyfill'
 import { clampToConstraint } from '~/validation/constraints'
 import { lagMs, requiredForwardShiftMs } from '~/validation/dependency'
+import { resolveWorkingLayers, workingMinutesBetween } from '~/validation/duration'
+import { addWorkingMinutes, nextWorkingInstant } from '~/workingTime'
+import type { WorkingCalendar } from '~/workingTime'
 import type { SolveConflict, SolveDependency, SolveEvent, SolveRequest, SolveResult } from './types'
 
 interface Span {
@@ -70,9 +73,28 @@ function findCycle(
 
 export function solve(request: SolveRequest): SolveResult {
   const { events, dependencies, timeZone } = request
+  const workingTime = request.workingTime ?? {}
+  const calendars: Array<WorkingCalendar> | null | undefined = workingTime.calendars
   const anchors = new Set(request.anchors ?? [])
   for (const event of events) {
     if (event.manuallyScheduled) anchors.add(event.id)
+  }
+
+  const layersById = new Map<string, Array<Array<string | undefined>>>()
+  const durationById = new Map<string, number>()
+  for (const event of events) {
+    const layers = resolveWorkingLayers(event.resources ?? [], workingTime, event.calendarId)
+    layersById.set(event.id, layers)
+    durationById.set(
+      event.id,
+      event.duration ??
+        workingMinutesBetween(
+          { start: event.start, end: event.end },
+          event.resources ?? [],
+          workingTime,
+          event.calendarId,
+        ),
+    )
   }
 
   const conflicts: Array<SolveConflict> = []
@@ -131,6 +153,7 @@ export function solve(request: SolveRequest): SolveResult {
 
   const cap = events.length + 1
   let stalled = false
+  const unschedulable = new Set<string>()
 
   for (let iteration = 0; iteration < cap; iteration++) {
     let changed = false
@@ -142,10 +165,34 @@ export function solve(request: SolveRequest): SolveResult {
       if (anchors.has(dep.successorId)) {
         const pred = positions.get(dep.predecessorId)!
         positions.set(dep.predecessorId, shiftSpan(pred, -shortfall))
-      } else {
-        const succ = positions.get(dep.successorId)!
-        positions.set(dep.successorId, shiftSpan(succ, shortfall))
+        changed = true
+        continue
       }
+
+      const succ = positions.get(dep.successorId)!
+      const pushed = shiftSpan(succ, shortfall)
+      const layers = layersById.get(dep.successorId)!
+      const snappedStart = nextWorkingInstant(pushed.start, layers, calendars)
+
+      if (snappedStart === null) {
+        if (!unschedulable.has(dep.successorId)) {
+          unschedulable.add(dep.successorId)
+          conflicts.push({
+            code: 'unsatisfiable',
+            eventIds: [dep.successorId],
+            message: `"${dep.successorId}" has no working time to schedule into`,
+          })
+        }
+        continue
+      }
+
+      const snappedEnd = addWorkingMinutes(
+        snappedStart,
+        durationById.get(dep.successorId)!,
+        layers,
+        calendars,
+      )
+      positions.set(dep.successorId, { start: snappedStart, end: snappedEnd ?? pushed.end })
       changed = true
     }
 

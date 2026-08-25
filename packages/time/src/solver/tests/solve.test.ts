@@ -1,9 +1,38 @@
 import { Temporal } from '@js-temporal/polyfill'
 import { describe, expect, it } from 'vitest'
 import { solve } from '../solve'
+import type { WorkingCalendar } from '~/workingTime'
 import type { SolveDependency, SolveEvent } from '../types'
 
 const UTC = 'UTC'
+
+const OFFICE: WorkingCalendar = {
+  id: 'office',
+  intervals: [
+    {
+      isWorking: true,
+      recurrent: {
+        weekdays: [1, 2, 3, 4, 5],
+        startTime: '09:00',
+        endTime: '17:00',
+      },
+    },
+  ],
+}
+
+const CLOSED: WorkingCalendar = {
+  id: 'closed',
+  intervals: [
+    {
+      isWorking: false,
+      recurrent: {
+        weekdays: [1, 2, 3, 4, 5, 6, 7],
+        startTime: '00:00',
+        endTime: '23:59',
+      },
+    },
+  ],
+}
 
 function event(
   id: string,
@@ -285,5 +314,57 @@ describe('solve', () => {
 
     expect(result.conflicts).toHaveLength(0)
     expect(positionOf(result.events, 'a').start).toBe('2026-01-05T09:00:00')
+  })
+
+  it('skews a pushed successor across a weekend to the next working day and keeps its working duration', () => {
+    const events = [
+      event('a', '2026-01-02T09:00:00', '2026-01-02T17:00:00'),
+      event('b', '2026-01-02T10:00:00', '2026-01-02T11:00:00', { calendarId: 'office' }),
+    ]
+    const dependencies: Array<SolveDependency> = [
+      { predecessorId: 'a', successorId: 'b', type: 'FS' },
+    ]
+
+    const result = solve({
+      events,
+      dependencies,
+      timeZone: UTC,
+      workingTime: { calendars: [OFFICE] },
+    })
+
+    expect(result.conflicts).toHaveLength(0)
+    expect(positionOf(result.events, 'b')).toEqual({
+      start: '2026-01-05T09:00:00',
+      end: '2026-01-05T10:00:00',
+    })
+  })
+
+  it('reports a conflict instead of hanging when a pushed successor has no working time to land in', () => {
+    const events = [
+      event('a', '2026-01-02T09:00:00', '2026-01-02T17:00:00'),
+      event('b', '2026-01-02T10:00:00', '2026-01-02T11:00:00', { calendarId: 'closed' }),
+    ]
+    const dependencies: Array<SolveDependency> = [
+      { predecessorId: 'a', successorId: 'b', type: 'FS' },
+    ]
+
+    const result = solve({
+      events,
+      dependencies,
+      timeZone: UTC,
+      workingTime: { calendars: [CLOSED] },
+    })
+
+    expect(result.conflicts).toEqual([
+      {
+        code: 'unsatisfiable',
+        eventIds: ['b'],
+        message: '"b" has no working time to schedule into',
+      },
+    ])
+    expect(positionOf(result.events, 'b')).toEqual({
+      start: '2026-01-02T10:00:00',
+      end: '2026-01-02T11:00:00',
+    })
   })
 })

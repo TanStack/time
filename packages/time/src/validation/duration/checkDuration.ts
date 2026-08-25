@@ -39,7 +39,7 @@ function wallClockMinutes(start: string, end: string): number {
     .total({ unit: 'minute' })
 }
 
-function layersOf(
+export function resolveWorkingLayers(
   resources: Array<DurationResourceInput>,
   workingTime: WorkingTimeConfig,
   eventCalendarId?: string,
@@ -60,7 +60,7 @@ export function workingMinutesBetween(
 ): number {
   if (range.end <= range.start) return 0
 
-  const layers = layersOf(resources, workingTime, eventCalendarId)
+  const layers = resolveWorkingLayers(resources, workingTime, eventCalendarId)
   const calendars: Array<WorkingCalendar> | null | undefined = workingTime.calendars
   if (!hasAnyWorkingCalendar(layers.flat(), calendars)) {
     return wallClockMinutes(range.start, range.end)

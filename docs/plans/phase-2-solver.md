@@ -183,12 +183,33 @@ already surfaces through the existing iteration-cap `unsatisfiable` conflict, si
 unexported `ANCHOR`/`isDateOnly`) so `clamp.ts` can share the anchor-side/date-only logic instead of
 duplicating it.
 
-### Slice 4 — calendar skew wired in
+### Slice 4 — calendar skew wired in ✅
 
 Slice 1's primitives enter the loop: propagation moves a successor by working time rather than wall
 clock, and duration is resolved in working minutes. After this slice the ADR's motivating scenario
 works end to end — a dependency pushes a successor, the successor's calendar skews it across a
 weekend, a constraint clamps it, and the graph re-propagates.
+
+`SolveRequest` gained `workingTime?: WorkingTimeConfig`; `SolveEvent` gained `calendarId`, `resources`
+and an optional `duration` (working minutes, authoritative when given). Per event, `solve()`
+precomputes its working-time layers and its working duration once from the *original* span via
+`resolveWorkingLayers`/`workingMinutesBetween` (both exported from `validation/duration` — the
+duration module's own `layersOf` became the shared `resolveWorkingLayers` rather than a second
+implementation). The successor-push branch of the relax loop replaced its wall-clock `shiftSpan` end
+with `nextWorkingInstant` on the desired start and `addWorkingMinutes` from there — the event keeps
+the working-minutes duration it started with, relocated to the next working instant. `null` from
+`nextWorkingInstant` (a calendar with no working time ever) becomes an `unsatisfiable` conflict,
+reported once via a per-event guard rather than once per remaining iteration, and the position is
+left unmoved rather than spun against the iteration cap.
+
+**Predecessor-pull stays wall-clock.** The other relax branch — successor anchored, predecessor
+pulled backward — is untouched by this slice: it needs the backward mirror of `addWorkingMinutes`,
+which slice 1 deliberately deferred ("Forward only. ALAP needs the mirror.") to slice 5. Until then, a
+predecessor pulled backward under dependency pressure can land in non-working time; only the
+forward-push path the ADR scenario describes is calendar-aware.
+
+Constraint clamping (slice 3) is unaffected — a constraint's date is an explicit civil deadline, not a
+value the calendar computes, so it has nothing to skew.
 
 ### Slice 5 — ALAP
 
