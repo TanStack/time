@@ -1,4 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill'
+import { clampToConstraint } from '~/validation/constraints'
 import { lagMs, requiredForwardShiftMs } from '~/validation/dependency'
 import type { SolveConflict, SolveDependency, SolveEvent, SolveRequest, SolveResult } from './types'
 
@@ -146,6 +147,17 @@ export function solve(request: SolveRequest): SolveResult {
         positions.set(dep.successorId, shiftSpan(succ, shortfall))
       }
       changed = true
+    }
+
+    for (const event of events) {
+      if (!event.constraint || anchors.has(event.id)) continue
+
+      const span = positions.get(event.id)!
+      const clamped = clampToConstraint(span, event.constraint)
+      if (clamped !== span) {
+        positions.set(event.id, clamped)
+        changed = true
+      }
     }
 
     if (!changed) break

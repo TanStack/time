@@ -238,4 +238,52 @@ describe('solve', () => {
     expect(result.conflicts).toHaveLength(0)
     expect(result.events).toHaveLength(1)
   })
+
+  it('clamps an event with no dependencies to its constraint', () => {
+    const events = [
+      event('a', '2026-01-05T09:00:00', '2026-01-05T10:00:00', {
+        constraint: { type: 'start-no-earlier-than', date: '2026-01-06T09:00:00' },
+      }),
+    ]
+
+    const result = solve({ events, dependencies: [], timeZone: UTC })
+
+    expect(result.conflicts).toHaveLength(0)
+    expect(positionOf(result.events, 'a')).toEqual({
+      start: '2026-01-06T09:00:00',
+      end: '2026-01-06T10:00:00',
+    })
+  })
+
+  it('re-propagates through a dependent after a constraint clamps its predecessor', () => {
+    const events = [
+      event('a', '2026-01-05T09:00:00', '2026-01-05T10:00:00', {
+        constraint: { type: 'start-no-earlier-than', date: '2026-01-07T09:00:00' },
+      }),
+      event('b', '2026-01-05T10:00:00', '2026-01-05T11:00:00'),
+    ]
+    const dependencies: Array<SolveDependency> = [
+      { predecessorId: 'a', successorId: 'b', type: 'FS' },
+    ]
+
+    const result = solve({ events, dependencies, timeZone: UTC })
+
+    expect(result.conflicts).toHaveLength(0)
+    expect(positionOf(result.events, 'a').start).toBe('2026-01-07T09:00:00')
+    expect(positionOf(result.events, 'b').start).toBe('2026-01-07T10:00:00')
+  })
+
+  it('leaves an anchored event unclamped, deferring to constraint-validate', () => {
+    const events = [
+      event('a', '2026-01-05T09:00:00', '2026-01-05T10:00:00', {
+        manuallyScheduled: true,
+        constraint: { type: 'start-no-earlier-than', date: '2026-01-06T09:00:00' },
+      }),
+    ]
+
+    const result = solve({ events, dependencies: [], timeZone: UTC })
+
+    expect(result.conflicts).toHaveLength(0)
+    expect(positionOf(result.events, 'a').start).toBe('2026-01-05T09:00:00')
+  })
 })

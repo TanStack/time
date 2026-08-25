@@ -1,4 +1,5 @@
 import type { Temporal } from '@js-temporal/polyfill'
+import type { SchedulingConstraint } from '~/validation/constraints'
 import type { DependencyType } from '~/validation/dependency'
 
 export interface SolveEvent {
@@ -6,6 +7,7 @@ export interface SolveEvent {
   start: string
   end: string
   manuallyScheduled?: boolean
+  constraint?: SchedulingConstraint
 }
 
 export interface SolveDependency {

@@ -32,7 +32,7 @@ export interface ConstraintConflict {
   end: string
 }
 
-const ANCHOR: Record<ConstraintType, 'start' | 'finish'> = {
+export const CONSTRAINT_ANCHOR: Record<ConstraintType, 'start' | 'finish'> = {
   'start-no-earlier-than': 'start',
   'start-no-later-than': 'start',
   'must-start-on': 'start',
@@ -50,12 +50,12 @@ const REASON: Record<ConstraintType, string> = {
   'must-finish-on': 'must finish on',
 }
 
-function isDateOnly(value: string): boolean {
+export function isDateOnlyConstraint(value: string): boolean {
   return !value.includes('T')
 }
 
 function compareCivil(anchor: string, date: string): number {
-  return isDateOnly(date)
+  return isDateOnlyConstraint(date)
     ? Temporal.PlainDate.compare(
         Temporal.PlainDateTime.from(anchor).toPlainDate(),
         Temporal.PlainDate.from(date),
@@ -84,7 +84,7 @@ export function checkConstraint(event: ConstrainedEvent): ConstraintConflict | n
   const { constraint } = event
   if (!constraint) return null
 
-  const anchor = ANCHOR[constraint.type]
+  const anchor = CONSTRAINT_ANCHOR[constraint.type]
   const anchorValue = anchor === 'start' ? event.start : event.end
   if (satisfies(constraint.type, compareCivil(anchorValue, constraint.date))) {
     return null

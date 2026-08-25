@@ -158,7 +158,7 @@ in the *dependency* graph, and the only way to see it is to run out of iteration
 `events.length + 1`, sized to the graph the way the phase's open question asks for rather than a
 constant; a 40-node legal chain is the regression test that it does not false-flag.
 
-### Slice 3 — constraints clamp inside the loop
+### Slice 3 — constraints clamp inside the loop ✅
 
 The six `ConstraintType`s move from veto-only to clamping. This is the semantic shift in the phase:
 today `constraint-validate` rejects a batch that violates a constraint; inside the solver a
@@ -168,6 +168,20 @@ dependency — is the exact case ADR 0007 says a single pass cannot converge.
 
 `constraint-validate` stays where it is. A clamp that cannot be satisfied is a conflict, and the
 validate stage remains the backstop that proves the solver did not emit an illegal schedule.
+
+`clampToConstraint` (`validation/constraints/clamp.ts`) runs as a second pass inside the same
+relaxation loop, after the dependency pass, over every event carrying a `constraint`. If it moves a
+position, that sets `changed`, so the next iteration re-checks dependencies against the clamped
+position — the same fixpoint slice 2 built, not a second loop. Anchored events are skipped: an anchor
+is a fixed point for dependencies and stays fixed for its own constraint too, so a constraint an
+anchor violates is left for `constraint-validate` to report rather than the solver moving a fixed
+point to satisfy it. No new conflict code was needed — a constraint fighting a dependency forever
+already surfaces through the existing iteration-cap `unsatisfiable` conflict, since clamp-driven
+`changed` participates in the same stall check as dependency-driven `changed`.
+
+`CONSTRAINT_ANCHOR` and `isDateOnlyConstraint` were exported from `checkConstraint.ts` (previously
+unexported `ANCHOR`/`isDateOnly`) so `clamp.ts` can share the anchor-side/date-only logic instead of
+duplicating it.
 
 ### Slice 4 — calendar skew wired in
 
