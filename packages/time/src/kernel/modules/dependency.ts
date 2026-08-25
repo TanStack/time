@@ -1,14 +1,12 @@
 import { Temporal } from '@js-temporal/polyfill'
 import { toPlainDateTimeString } from '~/date/parse'
-import {
-  findAnchoredViolations,
-  propagateToDependents,
-  propagateToPredecessors,
-  validateDependencies,
-  type CascadeShift,
-  type DependencyConflict,
-  type DependencyGraphEvent,
-  type DependencyLink,
+import { solve } from '~/solver'
+import { findAnchoredViolations, validateDependencies } from '~/validation/dependency'
+import type { SolveDependency } from '~/solver'
+import type {
+  DependencyConflict,
+  DependencyGraphEvent,
+  DependencyLink,
 } from '~/validation/dependency'
 import type { Conflict, KernelEvent, Module, WriteOp } from '../types'
 
@@ -65,32 +63,15 @@ function toConflict(conflict: DependencyConflict): Conflict {
   }
 }
 
-function withSource(
-  graph: Array<DependencyGraphEvent>,
-  sourceId: string,
-  after: DependencyEvent,
-): Array<DependencyGraphEvent> {
-  return graph.map((event) =>
-    event.id === sourceId
-      ? {
-          ...event,
-          start: toPlainDateTimeString(after.start),
-          end: toPlainDateTimeString(after.end),
-        }
-      : event,
+function dependenciesOf(events: Array<DependencyGraphEvent>): Array<SolveDependency> {
+  return events.flatMap((event) =>
+    (event.dependsOn ?? []).map((dep) => ({
+      predecessorId: dep.id,
+      successorId: event.id,
+      type: dep.type,
+      lag: dep.lag,
+    })),
   )
-}
-
-function applyShifts(
-  graph: Array<DependencyGraphEvent>,
-  shifts: Array<CascadeShift>,
-): Array<DependencyGraphEvent> {
-  if (shifts.length === 0) return graph
-  const byId = new Map(shifts.map((shift) => [shift.id, shift]))
-  return graph.map((event) => {
-    const shift = byId.get(event.id)
-    return shift ? { ...event, start: shift.newStart, end: shift.newEnd } : event
-  })
 }
 
 export function dependencyModule<E extends KernelEvent>(
@@ -130,58 +111,61 @@ export function dependencyModule<E extends KernelEvent>(
         stage: 'schedule',
         priority: options.priority,
         run: (batch, ctx) => {
-          const extraOps: Array<WriteOp<E>> = []
-
+          const movedIds = new Set<string>()
           for (const op of batch.ops) {
             if (op.kind !== 'update') continue
-
             const startChanged =
               epochMs(op.after.start, timeZone) !== epochMs(op.before.start, timeZone)
             const endChanged = epochMs(op.after.end, timeZone) !== epochMs(op.before.end, timeZone)
-            if (!startChanged && !endChanged) continue
+            if (startChanged || endChanged) movedIds.add(op.id)
+          }
+          if (movedIds.size === 0) return batch
 
-            const graph = withSource(
-              toGraph(ctx.getEvents() as Array<DependencyEvent>),
-              op.id,
-              op.after as DependencyEvent,
-            )
-            const visited = new Set([op.id])
-            const shifts: Array<CascadeShift> = []
+          const byId = new Map(
+            toGraph(ctx.getEvents() as Array<DependencyEvent>).map((event) => [event.id, event]),
+          )
+          for (const op of batch.ops) {
+            if (op.kind !== 'update' || !movedIds.has(op.id)) continue
+            const after = op.after as DependencyEvent
+            byId.set(op.id, {
+              ...byId.get(op.id)!,
+              start: toPlainDateTimeString(after.start),
+              end: toPlainDateTimeString(after.end),
+            })
+          }
+          const graph = [...byId.values()]
 
-            if (startChanged) {
-              shifts.push(
-                ...propagateToPredecessors({
-                  sourceId: op.id,
-                  events: graph,
-                  timeZone,
-                  visited,
-                }),
-              )
-            }
+          const anchors = graph
+            .filter((event) => movedIds.has(event.id) || event.manuallyScheduled)
+            .map((event) => event.id)
 
-            shifts.push(
-              ...propagateToDependents({
-                sourceId: op.id,
-                events: applyShifts(graph, shifts),
-                timeZone,
-                visited,
-              }),
-            )
+          const result = solve({
+            events: graph.map((event) => ({
+              id: event.id,
+              start: event.start,
+              end: event.end,
+              manuallyScheduled: event.manuallyScheduled,
+            })),
+            dependencies: dependenciesOf(graph),
+            anchors,
+            timeZone,
+          })
 
-            for (const shift of shifts) {
-              const before = ctx.getEvent(shift.id)
-              if (!before) continue
-              extraOps.push({
-                kind: 'update',
-                id: shift.id,
-                before,
-                after: {
-                  ...before,
-                  start: shift.newStart,
-                  end: shift.newEnd,
-                },
-              })
-            }
+          const extraOps: Array<WriteOp<E>> = []
+          for (const solved of result.events) {
+            if (movedIds.has(solved.id)) continue
+
+            const baseline = byId.get(solved.id)!
+            if (solved.start === baseline.start && solved.end === baseline.end) continue
+
+            const before = ctx.getEvent(solved.id)
+            if (!before) continue
+            extraOps.push({
+              kind: 'update',
+              id: solved.id,
+              before,
+              after: { ...before, start: solved.start, end: solved.end },
+            })
           }
 
           if (extraOps.length === 0) return batch

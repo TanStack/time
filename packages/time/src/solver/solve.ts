@@ -117,6 +117,14 @@ export function solve(request: SolveRequest): SolveResult {
   const positions = new Map<string, Span>(
     events.map((event) => [event.id, { start: event.start, end: event.end }]),
   )
+  const baseline = new Map(positions)
+
+  const movedFromBaseline = (id: string): boolean => {
+    const at = baseline.get(id)
+    const now = positions.get(id)
+    if (!at || !now) return false
+    return at.start !== now.start || at.end !== now.end
+  }
 
   const shortfallOf = (dep: SolveDependency): number => {
     const pred = positions.get(dep.predecessorId)
@@ -180,7 +188,22 @@ export function solve(request: SolveRequest): SolveResult {
 
       const succAnchored = anchors.has(dep.successorId)
       const predAnchored = anchors.has(dep.predecessorId)
-      const pullPredecessorBackward = succAnchored || (!predAnchored && direction === 'ALAP')
+
+      let pullPredecessorBackward: boolean
+      if (succAnchored) {
+        pullPredecessorBackward = true
+      } else if (predAnchored) {
+        pullPredecessorBackward = false
+      } else {
+        const predMoved = movedFromBaseline(dep.predecessorId)
+        const succMoved = movedFromBaseline(dep.successorId)
+        pullPredecessorBackward =
+          predMoved && !succMoved
+            ? false
+            : succMoved && !predMoved
+              ? true
+              : direction === 'ALAP'
+      }
 
       if (pullPredecessorBackward) {
         const pred = positions.get(dep.predecessorId)!

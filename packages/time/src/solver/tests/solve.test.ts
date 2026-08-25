@@ -160,6 +160,24 @@ describe('solve', () => {
     expect(positionOf(result.events, 'b').start).toBe('2026-01-05T09:30:00')
   })
 
+  it('pulls a whole free predecessor chain backward when only the tail is anchored', () => {
+    const events = [
+      event('q', '2026-01-05T09:00:00', '2026-01-05T10:00:00'),
+      event('p', '2026-01-05T10:00:00', '2026-01-05T11:00:00'),
+      event('s', '2026-01-05T10:00:00', '2026-01-05T11:00:00', { manuallyScheduled: true }),
+    ]
+    const dependencies: Array<SolveDependency> = [
+      { predecessorId: 'q', successorId: 'p', type: 'FS' },
+      { predecessorId: 'p', successorId: 's', type: 'FS' },
+    ]
+
+    const result = solve({ events, dependencies, timeZone: UTC })
+
+    expect(result.conflicts).toHaveLength(0)
+    expect(positionOf(result.events, 'p').start).toBe('2026-01-05T09:00:00')
+    expect(positionOf(result.events, 'q').start).toBe('2026-01-05T08:00:00')
+  })
+
   it('treats an explicit anchor id as fixed for this call without the persistent flag', () => {
     const events = [
       event('a', '2026-01-05T09:00:00', '2026-01-05T10:00:00'),

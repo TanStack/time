@@ -244,13 +244,51 @@ the predecessor-pull branch (forced by an anchor, or chosen by ALAP) now snaps t
 through the forward primitives in slice 4. That closes the deferral slice 4 recorded: a predecessor
 pulled backward under dependency pressure now skews across non-working time instead of landing in it.
 
-### Slice 6 — the pipeline swap
+### Slice 6 — the pipeline swap ✅
 
 `dependencyModule`'s `schedule` contribution is replaced by a call to `solve()`. The existing
 delta-cascade behaviour has to survive as the degenerate case — no calendars, no constraints, all
 events auto-scheduled — because the whole Phase 1 suite plus `examples/react/timeline` depends on it.
 That equivalence is the acceptance test for this slice, and it is the reason `solve()` is built and
 proven in isolation first.
+
+The stage still gates on "did start or end change" per `update` op (unchanged), but now builds ONE
+combined request per batch rather than looping per op against a stale pre-batch baseline: every
+changed op's `after` position is spliced into the graph read from `ctx.getEvents()`, anchors are the
+union of every changed op's id and every `manuallyScheduled` event, and `solve()` runs once.
+`add`/`remove`/`intent` ops are still ignored, matching the old stage exactly — the schedule stage has
+never reacted to creation, only movement. This is a strict generalisation of the old per-op loop (a
+batch of one reduces to the same computation), and it's what makes a batch with several simultaneous
+moves see each other, which the old baseline-per-op loop couldn't.
+
+`solve()`'s conflicts are not surfaced here — deliberately, per the open question below still being
+open. The `schedule` stage proposes a position for every event same as before; `dependency-validate`
+(untouched) remains the backstop that inspects the final settled state and rejects what's still
+illegal (e.g. an anchored dependent a move can't satisfy). This is the existing "solver proposes,
+validate stages are the contract" split, not a new one.
+
+**Reproducing the old delta-cascade surfaced a real gap in `solve()`'s three-case rule, not just a
+kernel-wiring detail.** `propagateToPredecessors`/`propagateToDependents` are two unconditional
+transitive walks from one source — pull *every* reachable predecessor backward, push *every* reachable
+dependent forward, each newly-touched node continuing the walk in that same direction regardless of
+anchoring. Slice 2's three-case rule has no equivalent: a free node between two other free nodes always
+defaults to "push the successor forward," which is right for a chain being pushed later from the head
+but silently fights a chain being pulled earlier from the tail — the pulled node gets pushed back to
+where it started on the very next pass, `changed` stays true, and the cap eventually reports a bogus
+`unsatisfiable` instead of the chain settling. A 3-node predecessor chain pulled back from an anchored
+tail (`q → p → s`, only `s` fixed) reproduced it directly: `solve()` correctly pulled `p`, but then
+pushed it right back to satisfy `q → p` instead of pulling `q`.
+
+Fixed in `solve()` itself, not the kernel integration, since any caller with a free-free chain hits it.
+The free-free case now checks which side has already moved from *its own* position at the start of
+this `solve()` call: if the predecessor has moved and the successor hasn't, push the successor forward
+(propagate the predecessor's own movement onward — this is what the forward chain and diamond tests
+were already exercising, so it's unchanged for them); if the successor has moved and the predecessor
+hasn't, pull the predecessor backward (propagate the successor's movement backward — this is the new
+case). If neither has moved yet — the shortfall was already present in the input, not caused by
+relaxation — it falls back to the request's `direction`, same as before. Locked in with a dedicated
+`solve()` test (`q → p → s`) independent of the kernel, plus the pre-existing kernel/calendar
+`dependsOn` chain tests, which is what actually caught this.
 
 ## Open questions
 
@@ -271,11 +309,11 @@ proven in isolation first.
 
 ## Definition of done
 
-- [ ] `solve()` is pure, serializable in and out, and `src/solver` is inside `PURE_DIRS`.
-- [ ] Dependencies, constraints, calendars and effort/duration interact through one fixpoint that
+- [x] `solve()` is pure, serializable in and out, and `src/solver` is inside `PURE_DIRS`.
+- [x] Dependencies, constraints, calendars and effort/duration interact through one fixpoint that
       converges, with cycles and the iteration cap reported as conflict data.
-- [ ] ASAP and ALAP both honoured from the request, not from the event.
-- [ ] The `schedule` stage calls the solver, and the pre-existing delta-cascade behaviour is
+- [x] ASAP and ALAP both honoured from the request, not from the event.
+- [x] The `schedule` stage calls the solver, and the pre-existing delta-cascade behaviour is
       unchanged for the degenerate case the current suite covers.
-- [ ] No stage outside `schedule` changes, and all four validate stages still pass on solver output —
+- [x] No stage outside `schedule` changes, and all four validate stages still pass on solver output —
       the solver proposes, the validate stages remain the contract.
