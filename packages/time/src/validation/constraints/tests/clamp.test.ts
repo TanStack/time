@@ -69,11 +69,14 @@ describe('clampToConstraint', () => {
     ['finish-no-later-than', '2026-02-27'],
     ['must-start-on', '2026-03-09T08:15:00'],
     ['must-finish-on', '2026-02-25'],
-  ] as Array<[ConstraintType, string]>)('%s satisfies checkConstraint once clamped', (type, date) => {
-    const clamped = clamp(type, date)
+  ] as Array<[ConstraintType, string]>)(
+    '%s satisfies checkConstraint once clamped',
+    (type, date) => {
+      const clamped = clamp(type, date)
 
-    expect(checkConstraint({ title: 'A', ...clamped, constraint: { type, date } })).toBeNull()
-  })
+      expect(checkConstraint({ title: 'A', ...clamped, constraint: { type, date } })).toBeNull()
+    },
+  )
 })
 
 describe('isInflexibleConstraint', () => {

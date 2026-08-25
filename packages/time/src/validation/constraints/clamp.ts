@@ -33,9 +33,7 @@ function shifts(type: ConstraintType, delta: number): boolean {
 
 function shiftSpan(span: ConstrainedSpan, amount: Temporal.DurationLike): ConstrainedSpan {
   return {
-    start: Temporal.PlainDateTime.from(span.start)
-      .add(amount)
-      .toString({ smallestUnit: 'second' }),
+    start: Temporal.PlainDateTime.from(span.start).add(amount).toString({ smallestUnit: 'second' }),
     end: Temporal.PlainDateTime.from(span.end).add(amount).toString({ smallestUnit: 'second' }),
   }
 }
