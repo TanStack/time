@@ -1,13 +1,21 @@
 import * as goober from 'goober'
 import { createEffect, createSignal } from 'solid-js'
-import { useTheme } from '@tanstack/devtools-ui'
-import { tokens } from './tokens'
+import { createTheme } from '@tanstack/devtools-ui'
+import { timeAccent } from './accent'
+import { buildThemeVars } from './theme-vars'
+import type { TanStackDevtoolsTheme } from '@tanstack/devtools-ui'
 
-const stylesFactory = (theme: 'light' | 'dark') => {
-  const { colors, font, size, alpha, border } = tokens
-  const { fontFamily, size: fontSize } = font
+const stylesFactory = (activeTheme: TanStackDevtoolsTheme) => {
+  const { declarations, theme, accent } = buildThemeVars(activeTheme, timeAccent)
+  const { color, font, space, gap, radius, shadow, type } = theme
   const css = goober.css
-  const t = (light: string, dark: string) => (theme === 'light' ? light : dark)
+
+  const statusDot = (fill: string) => css`
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: ${fill};
+  `
 
   return {
     mainContainer: css`
@@ -15,27 +23,23 @@ const stylesFactory = (theme: 'light' | 'dark') => {
       flex: 1;
       min-height: 0;
       overflow: hidden;
-      padding: ${size[2]};
+      padding: ${space[2]};
+      font-family: ${font.body};
     `,
     dragHandle: css`
       width: 8px;
-      background: ${t(colors.gray[300], colors.darkGray[600])};
+      background: ${color.border.decorative};
       cursor: col-resize;
       position: relative;
-      transition: all 0.2s ease;
+      transition: background ${theme.motion.strip} ease;
       user-select: none;
       pointer-events: all;
-      margin: 0 ${size[1]};
+      margin: 0 ${space[1]};
       border-radius: 2px;
 
-      &:hover {
-        background: ${t(colors.blue[600], colors.blue[500])};
-        margin: 0 ${size[1]};
-      }
-
+      &:hover,
       &.dragging {
-        background: ${t(colors.blue[700], colors.blue[600])};
-        margin: 0 ${size[1]};
+        background: ${accent.solid};
       }
 
       &::after {
@@ -46,20 +50,20 @@ const stylesFactory = (theme: 'light' | 'dark') => {
         transform: translate(-50%, -50%);
         width: 2px;
         height: 20px;
-        background: ${t(colors.gray[400], colors.darkGray[400])};
+        background: ${color.text.muted};
         border-radius: 1px;
         pointer-events: none;
       }
 
       &:hover::after,
       &.dragging::after {
-        background: ${t(colors.blue[500], colors.blue[300])};
+        background: ${accent.onSolid};
       }
     `,
     leftPanel: css`
-      background: ${t(colors.gray[100], colors.darkGray[800])};
-      border-radius: ${border.radius.lg};
-      border: 1px solid ${t(colors.gray[200], colors.darkGray[700])};
+      background: ${color.surface.subtle};
+      border-radius: ${radius.overlay};
+      border: 1px solid ${color.border.decorative};
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -67,9 +71,9 @@ const stylesFactory = (theme: 'light' | 'dark') => {
       flex-shrink: 0;
     `,
     rightPanel: css`
-      background: ${t(colors.gray[100], colors.darkGray[800])};
-      border-radius: ${border.radius.lg};
-      border: 1px solid ${t(colors.gray[200], colors.darkGray[700])};
+      background: ${color.surface.subtle};
+      border-radius: ${radius.overlay};
+      border: 1px solid ${color.border.decorative};
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -77,220 +81,215 @@ const stylesFactory = (theme: 'light' | 'dark') => {
       flex: 1;
     `,
     panelHeader: css`
-      font-size: ${fontSize.md};
-      font-weight: ${font.weight.bold};
-      color: ${t(colors.blue[700], colors.blue[400])};
-      padding: ${size[2]};
-      border-bottom: 1px solid ${t(colors.gray[200], colors.darkGray[700])};
-      background: ${t(colors.gray[100], colors.darkGray[800])};
+      font-family: ${font.display};
+      font-size: ${type.headingCompact.size};
+      line-height: ${type.headingCompact.lineHeight};
+      font-weight: ${type.headingCompact.weight};
+      color: ${accent.text};
+      padding: ${space[2]};
+      border-bottom: 1px solid ${color.border.decorative};
+      background: ${color.surface.subtle};
       flex-shrink: 0;
     `,
     utilList: css`
       flex: 1;
       overflow-y: auto;
-      padding: ${size[1]};
+      padding: ${space[1]};
       min-height: 0;
       display: flex;
       flex-direction: column;
-      gap: ${size[1]};
+      gap: ${gap.tight};
     `,
     utilGroup: css`
       display: flex;
       flex-direction: column;
-      gap: ${size[1]};
+      gap: ${gap.tight};
     `,
     utilGroupHeader: css`
-      font-size: ${fontSize.xs};
-      font-weight: ${font.weight.semibold};
-      color: ${t(colors.gray[600], colors.gray[400])};
+      font-size: ${type.labelSm.size};
+      line-height: ${type.labelSm.lineHeight};
+      font-weight: ${type.labelSm.weight};
+      letter-spacing: ${type.labelSm.tracking};
+      color: ${color.text.muted};
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      padding: ${size[1]} ${size[2]};
-      background: ${t(colors.gray[200], colors.darkGray[700])};
-      border-radius: ${border.radius.md};
+      padding: ${space[1]} ${space[2]};
+      background: ${color.surface.elevated};
+      border-radius: ${radius.group};
     `,
     utilRow: css`
       display: flex;
-      gap: ${size[1]};
+      gap: ${gap.control};
       justify-content: space-between;
       align-items: center;
-      padding: ${size[2]};
-      background: ${t(colors.gray[200], colors.darkGray[700])};
-      border-radius: ${border.radius.md};
+      padding: ${space[2]};
+      background: ${color.surface.elevated};
+      border-radius: ${radius.group};
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition:
+        background ${theme.motion.strip} ease,
+        border-color ${theme.motion.strip} ease;
       border: 1px solid transparent;
 
       &:hover {
-        background: ${t(colors.gray[300], colors.darkGray[600])};
-        border-color: ${t(colors.gray[400], colors.darkGray[500])};
+        background: ${color.state.hover};
+        border-color: ${color.border.decorative};
+      }
+
+      &:active {
+        background: ${color.state.pressed};
       }
     `,
     utilRowSelected: css`
-      background: ${t(colors.blue[100], colors.blue[900] + alpha[20])};
-      border-color: ${t(colors.blue[600], colors.blue[500])};
-      box-shadow: 0 0 0 1px ${t(colors.blue[600] + alpha[30], colors.blue[500] + alpha[30])};
+      background: ${accent.subtleFill};
+      border-color: ${accent.solid};
+      box-shadow: 0 0 0 1px ${accent.focusRing};
     `,
     utilKey: css`
-      font-family: ${fontFamily.mono};
-      font-size: ${fontSize.xs};
-      color: ${t(colors.gray[900], colors.gray[100])};
+      font-family: ${font.mono};
+      font-size: ${type.bodyXs.size};
+      line-height: ${type.bodyXs.lineHeight};
+      color: ${color.text.primary};
       flex: 1;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     `,
     utilStatus: css`
-      font-size: ${fontSize.xs};
-      color: ${t(colors.gray[600], colors.gray[400])};
+      font-size: ${type.labelSm.size};
+      line-height: ${type.labelSm.lineHeight};
+      letter-spacing: ${type.labelSm.tracking};
+      color: ${color.text.muted};
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      padding: ${size[1]} ${size[1]};
-      background: ${t(colors.gray[300], colors.darkGray[600])};
-      border-radius: ${border.radius.sm};
-      margin-left: ${size[1]};
+      padding: ${space[1]};
+      background: ${color.surface.subtle};
+      border-radius: ${radius.control};
+      margin-left: ${space[1]};
     `,
     stateDetails: css`
       flex: 1;
       overflow-y: auto;
-      padding: ${size[2]};
+      padding: ${space[2]};
       min-height: 0;
       display: flex;
       flex-direction: column;
-      gap: ${size[2]};
+      gap: ${gap.section};
     `,
     stateHeader: css`
       display: flex;
       flex-direction: column;
-      gap: ${size[1]};
-      padding-bottom: ${size[2]};
-      border-bottom: 1px solid ${t(colors.gray[200], colors.darkGray[700])};
+      gap: ${gap.tight};
+      padding-bottom: ${space[2]};
+      border-bottom: 1px solid ${color.border.decorative};
     `,
     stateTitle: css`
-      font-size: ${fontSize.md};
-      font-weight: ${font.weight.bold};
-      color: ${t(colors.blue[700], colors.blue[400])};
+      font-family: ${font.display};
+      font-size: ${type.headingCompact.size};
+      line-height: ${type.headingCompact.lineHeight};
+      font-weight: ${type.headingCompact.weight};
+      color: ${accent.text};
     `,
     stateKey: css`
-      font-family: ${fontFamily.mono};
-      font-size: ${fontSize.xs};
-      color: ${t(colors.gray[600], colors.gray[400])};
+      font-family: ${font.mono};
+      font-size: ${type.bodyXs.size};
+      line-height: ${type.bodyXs.lineHeight};
+      color: ${color.text.muted};
       word-break: break-all;
     `,
     stateContent: css`
-      background: ${t(colors.gray[100], colors.darkGray[700])};
-      border-radius: ${border.radius.md};
-      padding: ${size[2]};
-      border: 1px solid ${t(colors.gray[300], colors.darkGray[600])};
+      background: ${color.surface.subtle};
+      border-radius: ${radius.group};
+      padding: ${space[2]};
+      border: 1px solid ${color.border.decorative};
     `,
     detailsGrid: css`
       display: grid;
       grid-template-columns: 1fr;
-      gap: ${size[2]};
+      gap: ${gap.section};
       align-items: start;
     `,
     detailSection: css`
-      background: ${t(colors.white, colors.darkGray[700])};
-      border: 1px solid ${t(colors.gray[300], colors.darkGray[600])};
-      border-radius: ${border.radius.md};
-      padding: ${size[2]};
+      background: ${color.surface.elevated};
+      border: 1px solid ${color.border.decorative};
+      border-radius: ${radius.group};
+      padding: ${space[2]};
       display: flex;
       flex-direction: column;
-      gap: ${size[1]};
+      gap: ${gap.tight};
     `,
     detailSectionHeader: css`
-      font-size: ${fontSize.sm};
-      font-weight: ${font.weight.bold};
-      color: ${t(colors.gray[800], colors.gray[200])};
+      font-size: ${type.labelSm.size};
+      line-height: ${type.labelSm.lineHeight};
+      font-weight: ${type.labelSm.weight};
+      letter-spacing: ${type.labelSm.tracking};
+      color: ${color.text.secondary};
       text-transform: uppercase;
-      letter-spacing: 0.04em;
     `,
     actionsRow: css`
       display: flex;
       flex-wrap: wrap;
-      gap: ${size[2]};
+      gap: ${gap.control};
     `,
     actionButton: css`
       display: inline-flex;
       align-items: center;
-      gap: ${size[1]};
-      padding: ${size[1]} ${size[2]};
-      border-radius: ${border.radius.md};
-      border: 1px solid ${t(colors.gray[300], colors.darkGray[500])};
-      background: ${t(colors.gray[200], colors.darkGray[600])};
-      color: ${t(colors.gray[900], colors.gray[100])};
-      font-size: ${fontSize.xs};
+      gap: ${gap.tight};
+      padding: ${theme.padding.controlBlock} ${theme.padding.controlInline};
+      border-radius: ${radius.control};
+      border: 1px solid ${color.border.control};
+      background: ${color.surface.elevated};
+      color: ${color.text.primary};
+      font-family: ${font.body};
+      font-size: ${type.bodyXs.size};
+      line-height: ${type.bodyXs.lineHeight};
       cursor: pointer;
       user-select: none;
       transition:
-        background 0.15s,
-        border-color 0.15s;
+        background ${theme.motion.strip},
+        border-color ${theme.motion.strip};
+
       &:hover {
-        background: ${t(colors.gray[300], colors.darkGray[500])};
-        border-color: ${t(colors.gray[400], colors.darkGray[400])};
+        background: ${color.state.hover};
+        border-color: ${accent.solid};
       }
+
+      &:focus-visible {
+        outline: 2px solid ${color.border.focus};
+        outline-offset: 2px;
+      }
+
       &:disabled {
         opacity: 0.5;
         cursor: not-allowed;
         &:hover {
-          background: ${t(colors.gray[200], colors.darkGray[600])};
-          border-color: ${t(colors.gray[300], colors.darkGray[500])};
+          background: ${color.surface.elevated};
+          border-color: ${color.border.control};
         }
       }
     `,
-    actionDotBlue: css`
-      width: 6px;
-      height: 6px;
-      border-radius: 9999px;
-      background: ${colors.blue[400]};
-    `,
-    actionDotGreen: css`
-      width: 6px;
-      height: 6px;
-      border-radius: 9999px;
-      background: ${colors.green[400]};
-    `,
-    actionDotRed: css`
-      width: 6px;
-      height: 6px;
-      border-radius: 9999px;
-      background: ${colors.red[400]};
-    `,
-    actionDotYellow: css`
-      width: 6px;
-      height: 6px;
-      border-radius: 9999px;
-      background: ${colors.yellow[400]};
-    `,
-    actionDotOrange: css`
-      width: 6px;
-      height: 6px;
-      border-radius: 9999px;
-      background: ${colors.pink[400]};
-    `,
-    actionDotPurple: css`
-      width: 6px;
-      height: 6px;
-      border-radius: 9999px;
-      background: ${colors.purple[400]};
-    `,
+    actionDotBlue: statusDot(color.status.info.solidFill),
+    actionDotGreen: statusDot(color.status.success.solidFill),
+    actionDotRed: statusDot(color.status.error.solidFill),
+    actionDotYellow: statusDot(color.status.warning.solidFill),
+    actionDotOrange: statusDot(color.status.warning.border),
+    actionDotPurple: statusDot(color.syntax.number),
     infoGrid: css`
       display: grid;
       grid-template-columns: auto 1fr;
-      gap: ${size[1]};
-      row-gap: ${size[1]};
+      gap: ${gap.tight};
       align-items: center;
     `,
     infoLabel: css`
-      color: ${t(colors.gray[600], colors.gray[400])};
-      font-size: ${fontSize.xs};
+      color: ${color.text.muted};
+      font-size: ${type.labelSm.size};
+      line-height: ${type.labelSm.lineHeight};
+      letter-spacing: ${type.labelSm.tracking};
       text-transform: uppercase;
-      letter-spacing: 0.05em;
     `,
     infoValueMono: css`
-      font-family: ${fontFamily.mono};
-      font-size: ${fontSize.xs};
-      color: ${t(colors.gray[900], colors.gray[100])};
+      font-family: ${font.mono};
+      font-size: ${type.bodyXs.size};
+      line-height: ${type.bodyXs.lineHeight};
+      color: ${color.text.primary};
       word-break: break-all;
     `,
     noSelection: css`
@@ -298,84 +297,85 @@ const stylesFactory = (theme: 'light' | 'dark') => {
       display: flex;
       align-items: center;
       justify-content: center;
-      color: ${t(colors.gray[500], colors.gray[500])};
+      color: ${color.text.muted};
+      font-size: ${type.bodySm.size};
       font-style: italic;
       text-align: center;
-      padding: ${size[4]};
+      padding: ${space[4]};
     `,
     sectionContainer: css`
       display: flex;
       flex-wrap: wrap;
-      gap: ${size[4]};
+      gap: ${gap.sectionLarge};
     `,
     section: css`
-      background: ${t(colors.gray[100], colors.darkGray[800])};
-      border-radius: ${border.radius.lg};
-      box-shadow: ${tokens.shadow.md(t(colors.gray[400] + alpha[80], colors.black + alpha[80]))};
-      padding: ${size[4]};
-      border: 1px solid ${t(colors.gray[200], colors.darkGray[700])};
+      background: ${color.surface.subtle};
+      border-radius: ${radius.overlay};
+      box-shadow: ${shadow.sm};
+      padding: ${space[4]};
+      border: 1px solid ${color.border.decorative};
       min-width: 0;
       max-width: 33%;
       max-height: fit-content;
       display: flex;
       flex-direction: column;
-      gap: ${size[2]};
+      gap: ${gap.section};
     `,
     sectionHeader: css`
-      font-size: ${fontSize.lg};
-      font-weight: ${font.weight.bold};
-      color: ${t(colors.blue[600], colors.blue[400])};
-      letter-spacing: 0.01em;
+      font-family: ${font.display};
+      font-size: ${type.headingPane.size};
+      line-height: ${type.headingPane.lineHeight};
+      font-weight: ${type.headingPane.weight};
+      color: ${accent.text};
       display: flex;
       align-items: center;
-      gap: ${size[2]};
+      gap: ${gap.control};
     `,
     sectionEmpty: css`
-      color: ${t(colors.gray[500], colors.gray[500])};
-      font-size: ${fontSize.sm};
+      color: ${color.text.muted};
+      font-size: ${type.bodySm.size};
       font-style: italic;
-      margin: ${size[2]} 0;
+      margin: ${space[2]} 0;
     `,
     instanceList: css`
       display: flex;
       flex-direction: column;
-      gap: ${size[2]};
-      background: ${t(colors.gray[200], colors.darkGray[700])};
-      border: 1px solid ${t(colors.gray[300], colors.darkGray[600])};
+      gap: ${gap.control};
+      background: ${color.surface.elevated};
+      border: 1px solid ${color.border.decorative};
     `,
     instanceCard: css`
-      background: ${t(colors.gray[200], colors.darkGray[700])};
-      border-radius: ${border.radius.md};
-      padding: ${size[3]};
-      border: 1px solid ${t(colors.gray[300], colors.darkGray[600])};
-      font-size: ${fontSize.sm};
-      color: ${t(colors.gray[900], colors.gray[100])};
-      font-family: ${fontFamily.mono};
+      background: ${color.surface.elevated};
+      border-radius: ${radius.group};
+      padding: ${space[3]};
+      border: 1px solid ${color.border.decorative};
+      font-family: ${font.mono};
+      font-size: ${type.bodyXs.size};
+      line-height: ${type.bodyXs.lineHeight};
+      color: ${color.text.primary};
       overflow-x: auto;
-      transition:
-        box-shadow 0.3s,
-        background 0.3s;
     `,
     shellRoot: css`
+      ${declarations}
       height: var(--tsd-main-panel-height) !important;
       overflow-y: hidden !important;
     `,
     searchArea: css`
-      padding: 8px;
-      border-bottom: 1px solid #1f2937;
+      padding: ${space[2]};
+      border-bottom: 1px solid ${color.border.decorative};
     `,
     detailsHeader: css`
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px;
-      border-bottom: 1px solid #1f2937;
+      padding: ${space[3]};
+      border-bottom: 1px solid ${color.border.decorative};
     `,
   }
 }
 
 export function useStyles() {
-  const { theme } = useTheme()
+  const { theme } = createTheme()
   const [styles, setStyles] = createSignal(stylesFactory(theme()))
   createEffect(() => {
     setStyles(stylesFactory(theme()))

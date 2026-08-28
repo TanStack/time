@@ -10,6 +10,7 @@ import {
   X,
 } from '@tanstack/devtools-ui'
 import { useStyles } from '../styles/use-styles'
+import { timeAccent } from '../styles/accent'
 import { TimeProvider, useTimeStore } from '../store/time-context'
 import type { TimeEventInfo } from '@tanstack/time'
 import type { ActivityLogEntry } from '../store/time-context'
@@ -205,7 +206,7 @@ function DevtoolsContent() {
         }}
       >
         <Header>
-          <HeaderLogo flavor={{ light: '#9dec48', dark: '#9dec48' }}>TanStack Time</HeaderLogo>
+          <HeaderLogo flavor={timeAccent.solid}>TanStack Time</HeaderLogo>
           <div
             style={{
               display: 'flex',

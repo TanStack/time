@@ -103,7 +103,15 @@ The Bryntum moat. Requires Phase 0 purity + Phase 1 calendar hierarchy.
 - [ ] **Write-sync protocol** (bidirectional; optimistic + server reconcile) beyond read-only
       `fetchEvents`.
 - [ ] **Virtualization contract** for large datasets (windowed projection; no px in core).
-- [ ] **`generateSlots`** — free/available-slot generation (booking / Calendly use case).
+- [ ] **`generateSlots` + booking** (ADR 0011) — `SlotRule` as its own type (window from a
+      `WorkingCalendar`, rule adds `duration`/`step`/buffers/limits), a pure `src/slots/` core that
+      subtracts events, holds and capacity, and `bookingFeature` with `book()`. Adds `timeZone` to
+      `WorkingCalendar`; renames `getTimeSlots` → `getTimeAxisLabels`. Slice plan in
+      `docs/plans/phase-3-booking.md`. Depends on Phase 1's hierarchy and ADR 0010's block compiler.
+- [ ] **Schedule rule blocks + lead time** (ADR 0010): `weekday`/`date`/`between` blocks compiling
+      to `WorkingInterval` data, `resolveScheduleDay` with `skip`/`shift` exception policies, and
+      `addWorkingDays` / `resolveCutoffStart` for cutoff-based estimates. Slice plan in
+      `docs/plans/phase-3-schedule-rules.md`. Depends only on Phase 1's calendar hierarchy.
 
 ## Phase 4 — Scheduler product & richer scheduling
 
@@ -148,3 +156,5 @@ The Bryntum moat. Requires Phase 0 purity + Phase 1 calendar hierarchy.
 | 0006 | Client/server Data Strategy (computation push-down) |
 | 0007 | Scheduling solver: fixpoint stage in write pipeline, client-authoritative |
 | 0008 | Working-time calendars as id-referenced shared entities with resolution hierarchy |
+| 0009 | Feature composition as the public API |
+| 0010 | Schedule rule blocks compile to `WorkingCalendar` data; no new predicate engine |

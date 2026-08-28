@@ -135,10 +135,51 @@ rules are checked against.
 _Avoid_: asset, entity, calendar (overloaded)
 
 **Availability**:
-The windows during which a Resource can hold events (weekday + start/end time), plus capacity
-and buffer rules. Drives both advisory conflict checks and the Scheduler's free-slot
-projection.
-_Avoid_: schedule, hours, working hours
+Whether a given span can hold a given event — the *veto* side of scheduling. Resolves a Resource's
+Working Calendar chain (ADR 0008) to working minutes, then layers capacity, buffers and existing
+events on top. Answers one proposal at a time; the enumerating inverse is Slot generation.
+_Avoid_: schedule, hours, working hours; Resource-owned availability windows (ADR 0008 replaced
+those with Working Calendar references)
+
+**Slot**:
+A discrete bookable unit generated from a Slot Rule — a start/end pair whose length is the rule's
+duration. Slots are ephemeral (derived, like an Occurrence), never stored; what is stored is the
+Slot Rule that generates them and the events that consume them. One Slot exists per (rule, start)
+regardless of resource count, and carries the resources currently free for it plus the remaining
+capacity. A Slot is *free* by construction: generation subtracts existing events, holds and
+buffers, so an offered Slot is a bookable one — advisorily, on the client.
+_Avoid_: time slot (that names the display grid `getTimeAxisLabels` produces), appointment, booking
+
+**Slot Rule**:
+The stored definition that generates Slots: a Working Calendar reference supplying the window, its
+weekly repeat and its exceptions, plus `duration`, `step`, buffers, and the now-relative limits
+(`minNotice`, `maxHorizon`). `step` defaults to `duration` (back-to-back slots); a smaller `step`
+yields rolling, overlapping candidates. The grid anchors to the window start and a Slot that would
+overflow the window is not generated. A Slot Rule adds no recurrence of its own — repetition is the
+Working Calendar's, so holidays and closures resolve through the ADR 0008 hierarchy exactly as they
+do for Availability and the solver.
+_Avoid_: slot group (informal; a "group" is just one rule), availability rule, template
+
+**Slot Rule Set**:
+The several Slot Rules that together describe one bookable thing — e.g. hour-long mornings and
+half-hour afternoons. Each rule needs its own Working Calendar, because
+`resolveLayeredDayMinutes` merges adjacent intervals and would fuse two windows of different
+granularity into one.
+_Avoid_: schedule (overloaded — the solver's pipeline stage and ADR 0010's `compileSchedule`
+both own that word)
+
+**Hold**:
+A Slot claimed but not yet confirmed — an event carrying an expiry, so Slot generation subtracts it
+like any other event and stops subtracting once it lapses. Not a separate entity: confirming a Hold
+is an edit, not a new write path. Expiry is evaluated against the `now` passed into generation,
+never against the clock.
+_Avoid_: reservation, lock, pending booking
+
+**Booking**:
+The confirmed event a Slot became. Written through the kernel's write pipeline, so it passes the
+same Availability, constraint and duration validate stages as any other event and participates in
+undo/redo. The client's decision is Advisory; only the server's is Authoritative.
+_Avoid_: appointment, reservation, order
 
 **Calendar** / **Scheduler** / **Timeline**:
 Products. Calendar = kernel + recurrence/drag-resize/undo over a day/week/month view.

@@ -198,11 +198,7 @@ export function solve(request: SolveRequest): SolveResult {
         const predMoved = movedFromBaseline(dep.predecessorId)
         const succMoved = movedFromBaseline(dep.successorId)
         pullPredecessorBackward =
-          predMoved && !succMoved
-            ? false
-            : succMoved && !predMoved
-              ? true
-              : direction === 'ALAP'
+          predMoved && !succMoved ? false : succMoved && !predMoved ? true : direction === 'ALAP'
       }
 
       if (pullPredecessorBackward) {

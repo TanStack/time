@@ -49,7 +49,7 @@
     "build": "tsdown"
   },
   "dependencies": {
-    "@tanstack/devtools-ui": "^0.5.1",
+    "@tanstack/devtools-ui": "^0.7.1",
     "@tanstack/devtools-utils": "^0.4.0",
     "@tanstack/time": "workspace:*",
     "goober": "^2.1.18",

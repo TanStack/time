@@ -379,8 +379,8 @@ importers:
   packages/time-devtools:
     dependencies:
       '@tanstack/devtools-ui':
-        specifier: ^0.5.1
-        version: 0.5.1(csstype@3.2.3)(solid-js@1.9.11)
+        specifier: ^0.7.1
+        version: 0.7.1(csstype@3.2.3)(solid-js@1.9.11)
       '@tanstack/devtools-utils':
         specifier: ^0.4.0
         version: 0.4.0(@types/react@19.2.13)(react@19.2.4)(solid-js@1.9.11)
@@ -6485,15 +6485,6 @@ snapshots:
   '@tanstack/devtools-event-client@0.4.4': {}
 
   '@tanstack/devtools-event-client@0.5.0': {}
-
-  '@tanstack/devtools-ui@0.5.1(csstype@3.2.3)(solid-js@1.9.11)':
-    dependencies:
-      clsx: 2.1.1
-      dayjs: 1.11.20
-      goober: 2.1.18(csstype@3.2.3)
-      solid-js: 1.9.11
-    transitivePeerDependencies:
-      - csstype
 
   '@tanstack/devtools-ui@0.5.1(csstype@3.2.3)(solid-js@1.9.12)':
     dependencies:
