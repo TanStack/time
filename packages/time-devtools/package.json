@@ -1,0 +1,60 @@
+{
+  "name": "@tanstack/time-devtools",
+  "version": "0.0.0",
+  "description": "Devtools for TanStack Time",
+  "author": "Tanner Linsley",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TanStack/time.git",
+    "directory": "packages/time-devtools"
+  },
+  "homepage": "https://tanstack.com/time",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/tannerlinsley"
+  },
+  "keywords": [
+    "tanstack",
+    "time",
+    "devtools"
+  ],
+  "scripts": {
+    "clean": "premove ./build ./dist",
+    "lint:fix": "eslint ./src --fix",
+    "test:eslint": "eslint ./src",
+    "test:lib": "vitest --passWithNoTests",
+    "test:lib:dev": "pnpm test:lib --watch",
+    "test:types": "tsc",
+    "build": "tsdown"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.cts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "dist/",
+    "src"
+  ],
+  "dependencies": {
+    "@tanstack/devtools-ui": "^0.5.1",
+    "@tanstack/devtools-utils": "^0.4.0",
+    "@tanstack/time": "workspace:*",
+    "goober": "^2.1.18",
+    "solid-js": "^1.9.10"
+  },
+  "devDependencies": {
+    "rolldown-plugin-solid": "^0.2.1"
+  }
+}

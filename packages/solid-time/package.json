@@ -1,0 +1,61 @@
+{
+  "name": "@tanstack/solid-time",
+  "version": "0.0.0",
+  "description": "Solid adapter for TanStack Time",
+  "author": "Tanner Linsley",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TanStack/time.git",
+    "directory": "packages/solid-time"
+  },
+  "homepage": "https://tanstack.com/time",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/tannerlinsley"
+  },
+  "keywords": [
+    "solid",
+    "tanstack",
+    "time"
+  ],
+  "scripts": {
+    "clean": "premove ./build ./dist",
+    "test:eslint": "eslint ./src",
+    "test:lib": "vitest --passWithNoTests",
+    "test:lib:dev": "pnpm test:lib --watch",
+    "test:types": "tsc",
+    "build": "tsdown"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.cts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "dependencies": {
+    "@tanstack/solid-store": "^0.8.0",
+    "@tanstack/time": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.7",
+    "solid-js": "^1.9.10",
+    "vite-plugin-solid": "^2.11.10"
+  },
+  "peerDependencies": {
+    "solid-js": ">=1.9.5"
+  }
+}

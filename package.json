@@ -1,0 +1,77 @@
+{
+  "name": "root",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TanStack/time.git"
+  },
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "pnpm": ">=11.9.0"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "nx affected --skip-nx-cache --targets=build --exclude=examples/**",
+    "build:all": "nx run-many --targets=build --exclude=examples/**",
+    "build:core": "nx run-many --targets=build --projects=packages/time",
+    "changeset": "changeset",
+    "changeset:publish": "changeset publish",
+    "changeset:version": "changeset version && pnpm install --no-frozen-lockfile && pnpm format",
+    "clean": "find . -name 'dist' -type d -prune -exec rm -rf {} +",
+    "clean:node_modules": "find . -name 'node_modules' -type d -prune -exec rm -rf {} +",
+    "clean:all": "pnpm run clean && pnpm run clean:node_modules",
+    "copy:readme": "cp README.md packages/time/README.md && cp README.md packages/time-devtools/README.md && cp README.md packages/react-time/README.md && cp README.md packages/react-time-devtools/README.md && cp README.md packages/solid-time/README.md && cp README.md packages/solid-time-devtools/README.md",
+    "dev": "pnpm run watch",
+    "format": "prettier --experimental-cli --ignore-unknown '**/*' --write",
+    "generate-docs": "node scripts/generate-docs.ts && pnpm run copy:readme",
+    "graphify": "node scripts/graphify.ts",
+    "lint:fix": "nx affected --target=lint:fix --exclude=examples/**",
+    "lint:fix:all": "nx run-many --targets=lint --fix",
+    "test": "pnpm run test:ci",
+    "test:ci": "nx run-many --targets=test:eslint,test:sherif,test:knip,test:docs,test:lib,test:types,build",
+    "test:docs": "node scripts/verify-links.ts",
+    "test:eslint": "nx affected --target=test:eslint --exclude=examples/**",
+    "test:knip": "knip",
+    "test:lib": "nx affected --targets=test:lib --exclude=examples/**",
+    "test:lib:dev": "pnpm test:lib && nx watch --all -- pnpm test:lib",
+    "test:pr": "nx affected --targets=test:eslint,test:sherif,test:knip,test:docs,test:lib,test:types,build",
+    "test:sherif": "sherif",
+    "test:types": "nx affected --targets=test:types --exclude=examples/**",
+    "watch": "pnpm run build:all && nx watch --all -- pnpm run build:all"
+  },
+  "nx": {
+    "includedScripts": [
+      "test:docs",
+      "test:knip",
+      "test:sherif"
+    ]
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "^0.7.0",
+    "@changesets/cli": "^2.29.8",
+    "@faker-js/faker": "^10.2.0",
+    "@tanstack/eslint-config": "0.3.4",
+    "@tanstack/typedoc-config": "0.3.3",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@types/node": "^25.0.7",
+    "eslint": "^9.39.2",
+    "eslint-plugin-unused-imports": "^4.3.0",
+    "happy-dom": "^20.1.0",
+    "knip": "^5.80.2",
+    "markdown-link-extractor": "^4.0.3",
+    "nx": "^22.3.3",
+    "premove": "^4.0.0",
+    "prettier": "^3.7.4",
+    "prettier-plugin-svelte": "^3.4.1",
+    "publint": "^0.3.16",
+    "sherif": "^1.9.0",
+    "tinyglobby": "^0.2.15",
+    "tsdown": "^0.19.0",
+    "typescript": "5.9.3",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^4.0.17"
+  },
+  "dependencies": {
+    "@js-temporal/polyfill": "^0.5.1"
+  }
+}

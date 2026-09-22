@@ -1,0 +1,16 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "ignoreDependencies": [
+    "@faker-js/faker",
+    "@tanstack/store",
+    "@tanstack/time",
+    "@tanstack/time-devtools",
+    "@tanstack/react-store",
+    "@tanstack/solid-store",
+    "@testing-library/jest-dom",
+    "@testing-library/react",
+    "@types/react",
+    "react"
+  ],
+  "ignoreWorkspaces": ["examples/**"]
+}
