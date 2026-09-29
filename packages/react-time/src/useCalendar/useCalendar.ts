@@ -266,8 +266,8 @@ export const useCalendar = <
     [calendarCore],
   )
 
-  const getTimeSlots = useCallback<typeof calendarCore.getTimeSlots>(
-    (slotOptions) => calendarCore.getTimeSlots(slotOptions),
+  const getTimeAxisLabels = useCallback<typeof calendarCore.getTimeAxisLabels>(
+    (labelOptions) => calendarCore.getTimeAxisLabels(labelOptions),
     [calendarCore],
   )
 
@@ -372,7 +372,8 @@ export const useCalendar = <
     days,
     getDaysInRange,
     getDaysNames,
-    getTimeSlots,
+    getTimeAxisLabels,
+    getTimeSlots: getTimeAxisLabels,
     getEventsByDate,
     getAllDayEventsByDate,
     goToPreviousPeriod,

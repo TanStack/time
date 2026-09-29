@@ -97,7 +97,9 @@ concepts with that code but cannot reuse its entry point.
   someone double-books. The range argument is required, clamped by `maxHorizon`, and a hard slot
   cap truncates *and says so* rather than returning a silent prefix.
 - **`getTimeSlots` is renamed `getTimeAxisLabels`.** Two unrelated public exports both called
-  "slots" is worse than one pre-1.0 rename.
+  "slots" is worse than one pre-1.0 rename. `getTimeSlots` and the `TimeSlot` type ship on as
+  aliases for one minor so the rename does not have to land in the same release as everything
+  else.
 
 ## Considered Options
 
@@ -133,9 +135,13 @@ concepts with that code but cannot reuse its entry point.
   motivating example is two calendars and two rules, not one of each.
 - `Resource.buffer` stops being dead code and starts changing which slots are offered. That is not
   an additive change for anyone already setting the field speculatively.
-- `getTimeSlots` → `getTimeAxisLabels` is breaking.
+- `getTimeSlots` → `getTimeAxisLabels` is aliased, not breaking, until the aliases are dropped.
 - `bookingFeature` returns `Date` per ADR 0002 while `workingTimeFeature` returns strings. That
   inconsistency predates this work and is left as a follow-up rather than widened.
 - No interval or set-position recurrence for slot rules. That is inherited from ADR 0010, not a gap
   introduced here.
+- The purity test grew a `clock read` pattern (`Date.now()` / argless `new Date()`) alongside the
+  existing store/kernel/DOM ones, so "`now` is an argument" is enforced rather than merely agreed.
+  It caught a real bug on the way in: a local variable named `window` in the generator tripped the
+  DOM check.
 - Slice plan in `docs/plans/phase-3-booking.md`.

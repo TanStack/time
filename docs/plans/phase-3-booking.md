@@ -172,6 +172,26 @@ including the two-calendar split, because that is the part a reader gets wrong o
 the server-side re-validation snippet, because client `book()` is Advisory and the docs must say so
 where someone will read it.
 
+## Status
+
+All seven slices landed. `src/workingTime/blocks.ts` (ADR 0010 Slice 1) landed with them, since the
+window half depends on it. 29 new tests across `src/workingTime/tests/blocks.test.ts`,
+`src/slots/tests/generateSlots.test.ts` and `src/calendar/tests/booking.test.ts`; the example is the
+booking panel in `examples/react/calendar`, composed onto the same calendar instance so a booking
+lands as an event in the grid it was generated from.
+
+Two things shifted during implementation:
+
+- **The grid must be laid before `now` is applied, not after.** Clipping the opening by the notice
+  bound re-anchored the grid to `now`, so a 08:30 `now` turned an 08:00/09:00 rule into
+  08:30/09:30 — `now` silently moved everybody's appointment times. Generation now scans openings
+  from the day before the lower bound and filters slots afterwards.
+- **DST classification needs a plain-time round-trip.** `Temporal.TimeZone` is absent from
+  `@js-temporal/polyfill@0.5.1`, and comparing `earlier`/`later` disambiguation does not separate a
+  gap from an ambiguity (both report `earlier < later`). `resolveSlotInstants` instead checks
+  whether the disambiguated result still round-trips to the requested plain time: it does for an
+  ambiguity, it does not for a gap.
+
 ## Open questions
 
 - **Mixed-zone layer reconciliation** (Slice 2). Named but not decided in ADR 0011.

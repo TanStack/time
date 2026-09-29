@@ -154,7 +154,7 @@ export interface DateRange {
   end: DateInput | null
 }
 
-export interface TimeSlot {
+export interface TimeAxisLabel {
   hour: number
   minute: number
   label: string
@@ -321,3 +321,5 @@ export interface ValidateMoveResult {
   }
   targetDayDate: string
 }
+
+export type TimeSlot = TimeAxisLabel

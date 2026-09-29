@@ -1,6 +1,7 @@
 import type { DependencyApi } from '~/kernel/modules'
 import type { Event, Resource } from '../types'
 import type { AvailabilityApi } from './availability'
+import type { BookingApi } from './booking'
 import type { ConstraintApi } from './constraint'
 import type { DayLayoutApi } from './dayLayout'
 import type { DurationApi } from './duration'
@@ -20,6 +21,7 @@ export interface BuiltInFeatureApiRegistry<
 > {
   workingTime: WorkingTimeApi<TResource>
   availability: AvailabilityApi<TResource, TEvent>
+  booking: BookingApi<TResource, TEvent>
   history: HistoryApi
   recurrence: RecurrenceNavigationApi &
     RecurrenceEditApi<TResource, TEvent> &
@@ -110,6 +112,10 @@ export const FEATURE_API_OWNERS = {
   getDaySpanConflicts: 'resourceAvailabilityFeature',
   checkEventAvailability: 'resourceAvailabilityFeature',
   validateEventPlacement: 'resourceAvailabilityFeature',
+  getSlotRules: 'bookingFeature',
+  getSlots: 'bookingFeature',
+  book: 'bookingFeature',
+  hold: 'bookingFeature',
   getEventProps: 'dayEventLayoutFeature',
   getEventsByResource: 'timelineFeature',
   getTimelineLayout: 'timelineFeature',

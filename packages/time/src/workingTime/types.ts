@@ -17,6 +17,7 @@ export interface WorkingCalendar {
   id: string
   label?: string
   parentId?: string
+  timeZone?: string
   intervals: Array<WorkingInterval>
 }
 

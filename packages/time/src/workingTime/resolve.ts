@@ -35,6 +35,18 @@ export function resolveCalendarChain(
   return chain
 }
 
+export function resolveCalendarTimeZone(
+  calendarId: string | undefined,
+  calendars: Array<WorkingCalendar> | null | undefined,
+): string | undefined {
+  const chain = resolveCalendarChain(calendarId, calendars)
+  for (let index = chain.length - 1; index >= 0; index--) {
+    const timeZone = chain[index]!.timeZone
+    if (timeZone !== undefined) return timeZone
+  }
+  return undefined
+}
+
 export function hasWorkingCalendar(
   calendarId: string | undefined,
   calendars: Array<WorkingCalendar> | null | undefined,

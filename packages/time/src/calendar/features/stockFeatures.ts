@@ -1,4 +1,5 @@
 import { resourceAvailabilityFeature } from './availability'
+import { bookingFeature } from './booking'
 import { schedulingConstraintFeature } from './constraint'
 import { dayEventLayoutFeature } from './dayLayout'
 import { eventDependencyFeature } from './dependency'
@@ -20,6 +21,7 @@ export const stockFeatures = [
   eventFilterFeature,
   workingTimeFeature,
   resourceAvailabilityFeature,
+  bookingFeature,
   eventResizeFeature,
   eventMoveFeature,
   dayEventLayoutFeature,

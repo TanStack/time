@@ -163,11 +163,25 @@ describe('feature linking', () => {
       paths.filter(
         (path) =>
           path.startsWith('workingTime/') ||
+          path.startsWith('slots/') ||
+          path === 'calendar/features/booking.ts' ||
           path.startsWith('validation/availability/') ||
           path === 'calendar/features/workingTime.ts' ||
           path === 'calendar/features/availability.ts',
       ),
     ).toEqual([])
+  })
+
+  it('links the slot core only when the booking feature is composed', () => {
+    const withBooking = linkedFrom(ENTRY, [
+      'createCalendar',
+      'calendarFeatures',
+      'bookingFeature',
+    ]).values()
+
+    const bookingPaths = [...withBooking].map((file) => relative(SRC, file))
+    expect(bookingPaths).toContain('slots/generateSlots.ts')
+    expect(bookingPaths).toContain('calendar/features/booking.ts')
   })
 
   it('links the working-time feature when it is composed', () => {
