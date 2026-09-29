@@ -6,6 +6,7 @@ import type { WorkingTimeConfig } from '~/validation/availability'
 import type { ConstraintConflict } from '~/validation/constraints'
 import type { DurationConflict } from '~/validation/duration'
 import type { WorkingCalendar } from '~/workingTime'
+import type { SlotRule } from '~/slots'
 import { normalizeRecurrenceRule } from '~/recurrence'
 import { createKernel } from '~/kernel'
 import { FEATURE_API_OWNERS } from './features'
@@ -31,7 +32,7 @@ import type {
   WriteOp,
 } from '~/kernel'
 import { groupDaysBy } from './groupDaysBy'
-import { getTimeSlots } from './getTimeSlots'
+import { getTimeAxisLabels } from './getTimeAxisLabels'
 import { DateCore } from './date-core'
 import { generateDateRange } from './generateDateRange'
 import type { DateCoreOptions, ParsedDateCoreOptions } from './date-core'
@@ -45,7 +46,7 @@ import type {
   ResizeError,
   Resource,
   SaveEventResult,
-  TimeSlot,
+  TimeAxisLabel,
 } from './types'
 import type { CalendarStore } from './types'
 import { toPlainDateTimeString } from '~/date/parse'
@@ -72,6 +73,8 @@ export interface CalendarCoreOptions<
   defaultCalendarId?: string
 
   multiResource?: 'intersection' | 'union'
+
+  slotRules?: Array<SlotRule> | null
 
   fetchEvents?: (range: { start: string; end: string }) => Promise<Array<NoInfer<TEvent>>>
 
@@ -101,7 +104,9 @@ interface CalendarActions<TResource extends Resource, TEvent extends Event<TReso
     fillMissingDays?: boolean
   }) => Array<Array<Day<TResource, TEvent> | null>>
 
-  getTimeSlots: (options?: Parameters<typeof getTimeSlots>[1]) => Array<TimeSlot>
+  getTimeAxisLabels: (options?: Parameters<typeof getTimeAxisLabels>[1]) => Array<TimeAxisLabel>
+
+  getTimeSlots: (options?: Parameters<typeof getTimeAxisLabels>[1]) => Array<TimeAxisLabel>
 
   getEventsByDate: (date: string) => Array<TEvent>
 
@@ -181,6 +186,7 @@ type ParsedCalendarCoreOptions<
   calendars: Array<WorkingCalendar> | null
   defaultCalendarId?: string
   multiResource?: 'intersection' | 'union'
+  slotRules?: Array<SlotRule> | null
   fetchEvents?: (range: { start: string; end: string }) => Promise<Array<TEvent>>
   layout?: LayoutOptions
 }
@@ -443,6 +449,7 @@ export class CalendarCore<
         timeZone: this.options.timeZone,
         resources: this.options.resources,
         workingTime: this._workingTime(),
+        slotRules: this.options.slotRules ?? null,
         layout: this.options.layout,
       }),
       getEventMap: (window) => this.getEventMap(window),
@@ -451,6 +458,8 @@ export class CalendarCore<
       invalidateEvents: () => this._invalidateEvents(),
       goToSpecificPeriod: (isoDate) => this.goToSpecificPeriod(isoDate),
       write: (ops, reason) => this._write(ops, reason),
+      writeChecked: (ops, reason) => this._writeChecked(ops, reason),
+      getLoadedRanges: () => (this.options.fetchEvents ? this.getLoadedRanges() : null),
       fetchEventsForRange: (start, end) => this.fetchEventsForRange(start, end),
       editEvent: (eventId, updates, options) => this.editEvent(eventId, updates, options),
       removeEvent: (id) => this.removeEvent(id),
@@ -811,8 +820,12 @@ export class CalendarCore<
     })
   }
 
-  getTimeSlots(options?: Parameters<typeof getTimeSlots>[1]): Array<TimeSlot> {
-    return getTimeSlots(this.options.locale, options)
+  getTimeAxisLabels(options?: Parameters<typeof getTimeAxisLabels>[1]): Array<TimeAxisLabel> {
+    return getTimeAxisLabels(this.options.locale, options)
+  }
+
+  getTimeSlots(options?: Parameters<typeof getTimeAxisLabels>[1]): Array<TimeAxisLabel> {
+    return this.getTimeAxisLabels(options)
   }
 
   getEventsByDate(date: string): Array<TEvent> {

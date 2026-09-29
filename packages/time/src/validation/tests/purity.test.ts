@@ -8,6 +8,7 @@ const PURE_DIRS = [
   'src/recurrence',
   'src/workingTime',
   'src/solver',
+  'src/slots',
 ]
 
 const FORBIDDEN = [
@@ -16,6 +17,7 @@ const FORBIDDEN = [
   { pattern: /~\/kernel/, why: 'kernel' },
   { pattern: /~\/calendar\/calendar/, why: 'CalendarCore' },
   { pattern: /\b(?:document|window)\./, why: 'DOM' },
+  { pattern: /Date\.now\(|new Date\(\s*\)/, why: 'clock read' },
 ]
 
 function sourceFiles(dir: string): Array<string> {

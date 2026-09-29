@@ -5,6 +5,7 @@ import {
   useCalendar,
 } from '@tanstack/react-time'
 import {
+  bookingFeature,
   calendarFeatures,
   dayEventLayoutFeature,
   eventFilterFeature,
@@ -33,6 +34,12 @@ import {
   createRouter,
 } from '@tanstack/react-router'
 import { useInfiniteScroll } from './lib/useInfiniteScroll'
+import {
+  BOOKING_CATEGORY_ID,
+  BookingPanel,
+  bookingCalendars,
+  bookingSlotRules,
+} from './booking'
 import type {
   DateParts,
   Day,
@@ -74,6 +81,7 @@ const features = calendarFeatures([
   eventMoveFeature,
   eventFilterFeature,
   dayEventLayoutFeature,
+  bookingFeature,
 ])
 
 function formatDateToISO(date: Date): string {
@@ -413,6 +421,12 @@ const eventCategories: Array<EventCategory> = [
     label: 'Holidays',
     swatch: '#b45309',
     eventClass: 'bg-amber-800/80 border-amber-600/60 hover:bg-amber-700/90',
+  },
+  {
+    id: BOOKING_CATEGORY_ID,
+    label: 'Bookings',
+    swatch: '#be123c',
+    eventClass: 'bg-rose-900/80 border-rose-700/60 hover:bg-rose-800/90',
   },
 ]
 
@@ -1586,8 +1600,9 @@ function CalendarView() {
     viewMode: { value: 1, unit: 'month' },
     events: [],
     resources,
-    calendars: workingCalendars,
+    calendars: [...workingCalendars, ...bookingCalendars],
     defaultCalendarId: 'office',
+    slotRules: bookingSlotRules,
     timeZone: 'UTC',
     locale: 'en-US',
     fetchEvents: async ({ start, end }) => {
@@ -2409,6 +2424,8 @@ function CalendarView() {
               })}
             </div>
           </div>
+
+          <BookingPanel calendar={calendar} days={calendar.days} resources={resources} />
 
           <div className="text-right">
             <div className="text-lg font-medium text-neutral-400">

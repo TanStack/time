@@ -1,7 +1,8 @@
 import type { Temporal } from '@js-temporal/polyfill'
 import type { LayoutOptions } from '~/projection'
+import type { SlotRule } from '~/slots'
 import type { WorkingTimeConfig } from '~/validation/availability'
-import type { IntentOp, InvertibleOp, KernelEvent, Module, ModuleApi } from '~/kernel'
+import type { Conflict, IntentOp, InvertibleOp, KernelEvent, Module, ModuleApi } from '~/kernel'
 import type {
   CalendarStore,
   Day,
@@ -20,6 +21,7 @@ export interface CalendarHost<TResource extends Resource, TEvent extends Event<T
     timeZone: Temporal.TimeZoneLike
     resources: Array<TResource> | null
     workingTime: WorkingTimeConfig
+    slotRules: Array<SlotRule> | null
     layout?: LayoutOptions
   }
   getEventMap: (window?: { start: string; end: string }) => Map<string, Array<TEvent>>
@@ -31,6 +33,11 @@ export interface CalendarHost<TResource extends Resource, TEvent extends Event<T
     ops: Array<InvertibleOp<TEvent> | IntentOp>,
     reason: string,
   ) => Array<InvertibleOp<TEvent>>
+  writeChecked: (
+    ops: Array<InvertibleOp<TEvent> | IntentOp>,
+    reason: string,
+  ) => { committed: Array<InvertibleOp<TEvent>>; conflicts: Array<Conflict> }
+  getLoadedRanges: () => ReadonlyArray<{ start: string; end: string }> | null
   fetchEventsForRange: (start: string, end: string) => Promise<void>
   editEvent: (
     eventId: string,
