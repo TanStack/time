@@ -68,6 +68,7 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 import './index.css'
 
@@ -1323,6 +1324,152 @@ const DraggableTimelineEvent = React.memo(function DraggableTimelineEvent({
   )
 })
 
+function getResourceRefId(resourceRef: Resource | string): string {
+  return typeof resourceRef === 'string' ? resourceRef : resourceRef.id
+}
+
+function sumUnits(units: Array<number> | undefined, fallback: Array<number>): number {
+  return (units ?? fallback).reduce((a, b) => a + b, 0)
+}
+
+interface DayAllocationCell {
+  isoDate: string
+  used: number
+  capacity: number
+  overCapacity: boolean
+}
+
+function computeResourceAllocationGrid(
+  events: Array<Event<Resource>>,
+  resources: Array<Resource>,
+  days: Array<Day<Resource, Event<Resource>>>,
+): Array<{ resource: Resource; capacity: number; cells: Array<DayAllocationCell> }> {
+  return resources.map((resource) => {
+    const capacity = sumUnits(resource.capacity, [1])
+
+    const cells = days.map((day) => {
+      const used = events.reduce((sum, event) => {
+        const involvesResource = (event.resources ?? []).some(
+          (resourceRef) => getResourceRefId(resourceRef) === resource.id,
+        )
+        if (!involvesResource) return sum
+
+        const eventStartDate = toPlainDateString(event.start)
+        const eventEndDate = toPlainDateString(event.end)
+        if (day.isoDate < eventStartDate || day.isoDate > eventEndDate) return sum
+
+        return sum + sumUnits(event.consumption, [1])
+      }, 0)
+
+      return { isoDate: day.isoDate, used, capacity, overCapacity: used > capacity }
+    })
+
+    return { resource, capacity, cells }
+  })
+}
+
+function AllocationCell({
+  cell,
+  widthPx,
+  showTooltip,
+  resourceLabel,
+}: {
+  cell: DayAllocationCell
+  widthPx: number
+  showTooltip: boolean
+  resourceLabel: string
+}) {
+  const bg = cell.used === 0 ? 'transparent' : cell.overCapacity ? '#7f1d1d' : '#14532d'
+
+  const box = (
+    <div
+      className="h-full border-r border-neutral-800/40 shrink-0"
+      style={{ width: widthPx, backgroundColor: bg }}
+    />
+  )
+
+  if (!showTooltip) return box
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{box}</TooltipTrigger>
+      <TooltipContent>
+        {resourceLabel} — {cell.isoDate}: {cell.used}/{cell.capacity}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+function ResourceAllocationGrid({
+  data,
+  days,
+  dayWidthPx,
+  showTooltip,
+  scrollRef,
+}: {
+  data: Array<{ resource: Resource; capacity: number; cells: Array<DayAllocationCell> }>
+  days: Array<Day<Resource, Event<Resource>>>
+  dayWidthPx: number
+  showTooltip: boolean
+  scrollRef: React.RefObject<HTMLDivElement | null>
+}) {
+  return (
+    <div className="border border-neutral-800 rounded-lg overflow-hidden bg-black">
+      <div className="flex">
+        <div className="w-36 shrink-0 border-r border-neutral-800 bg-neutral-950">
+          <div className="h-8 border-b border-neutral-800 px-3 flex items-end pb-1">
+            <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+              Allocation
+            </span>
+          </div>
+          {data.map(({ resource, capacity }) => (
+            <div
+              key={resource.id}
+              className="h-10 border-b border-neutral-800/50 px-3 flex items-center gap-2"
+            >
+              <span className="text-sm font-medium text-neutral-300 truncate">
+                {resource.label}
+              </span>
+              <span className="ml-auto text-[10px] uppercase tracking-wide text-neutral-500 border border-neutral-700 rounded px-1.5 py-0.5">
+                cap {capacity}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <ScrollArea viewportRef={scrollRef} viewportClassName="max-w-full" className="flex-1 min-w-0">
+          <div style={{ width: days.length * dayWidthPx }}>
+            <div className="h-8 border-b border-neutral-800 flex">
+              {days.map((day) => (
+                <div
+                  key={day.isoDate}
+                  className="h-full border-r border-neutral-800/40 shrink-0 flex items-end justify-center pb-1"
+                  style={{ width: dayWidthPx }}
+                >
+                  <span className="text-[9px] text-neutral-600">{day.isoDate.slice(5)}</span>
+                </div>
+              ))}
+            </div>
+            {data.map(({ resource, cells }) => (
+              <div key={resource.id} className="h-10 border-b border-neutral-800/50 flex">
+                {cells.map((cell) => (
+                  <AllocationCell
+                    key={cell.isoDate}
+                    cell={cell}
+                    widthPx={dayWidthPx}
+                    showTooltip={showTooltip}
+                    resourceLabel={resource.label}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+      </div>
+    </div>
+  )
+}
+
 const HorizontalTimelineRow = React.memo(function HorizontalTimelineRow({
   row,
   days,
@@ -1855,6 +2002,38 @@ function TimelineDemo() {
   const rowsTotalHeight = rowVirtualizer.getTotalSize()
 
   const allEvents = calendar.getEvents()
+  const [allocationTooltipEnabled, setAllocationTooltipEnabled] = useState(true)
+  const dailyAllocation = useMemo(
+    () => computeResourceAllocationGrid(allEvents, sampleResources, calendar.days),
+    [allEvents, calendar.days],
+  )
+
+  const allocationScrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const main = scrollContainerRef.current
+    const alloc = allocationScrollRef.current
+    if (!main || !alloc) return
+
+    let syncing = false
+
+    const sync = (source: HTMLDivElement, target: HTMLDivElement) => () => {
+      if (syncing) return
+      syncing = true
+      target.scrollLeft = source.scrollLeft
+      syncing = false
+    }
+
+    const onMainScroll = sync(main, alloc)
+    const onAllocScroll = sync(alloc, main)
+
+    main.addEventListener('scroll', onMainScroll, { passive: true })
+    alloc.addEventListener('scroll', onAllocScroll, { passive: true })
+    return () => {
+      main.removeEventListener('scroll', onMainScroll)
+      alloc.removeEventListener('scroll', onAllocScroll)
+    }
+  }, [])
 
   return (
     <DragDropProvider onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -2116,6 +2295,26 @@ function TimelineDemo() {
           </div>
         </div>
 
+        <div className="mt-4">
+          <div className="flex items-center gap-2 mb-2">
+            <input
+              id="allocationTooltip"
+              type="checkbox"
+              className="size-4"
+              checked={allocationTooltipEnabled}
+              onChange={(e) => setAllocationTooltipEnabled(e.target.checked)}
+            />
+            <Label htmlFor="allocationTooltip">Enable allocation tooltip</Label>
+          </div>
+          <ResourceAllocationGrid
+            data={dailyAllocation}
+            days={calendar.days}
+            dayWidthPx={dayWidthPx}
+            showTooltip={allocationTooltipEnabled}
+            scrollRef={allocationScrollRef}
+          />
+        </div>
+
         <div className="mt-4 flex flex-wrap gap-x-6 gap-y-3">
           <div className="flex flex-wrap items-center gap-3 border-l border-border pl-6">
             <span className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">
@@ -2247,7 +2446,9 @@ function App() {
           },
         ]}
       />
-      <TimelineDemo />
+      <TooltipProvider>
+        <TimelineDemo />
+      </TooltipProvider>
     </QueryClientProvider>
   )
 }
