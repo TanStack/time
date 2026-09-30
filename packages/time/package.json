@@ -4,6 +4,7 @@
   "description": "Headless utilities for building time and calendar components in TS/JS, React, Solid, Vue, Svelte and Angular",
   "keywords": [
     "tanstack",
+    "tanstack-intent",
     "time"
   ],
   "homepage": "https://tanstack.com/time",
@@ -20,7 +21,8 @@
   },
   "files": [
     "dist/",
-    "src"
+    "src",
+    "skills"
   ],
   "type": "module",
   "sideEffects": false,

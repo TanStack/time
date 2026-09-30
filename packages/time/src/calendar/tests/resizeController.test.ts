@@ -87,7 +87,11 @@ async function drag(controller: ResizeController<TestResource, TestEvent>, clien
 
 function startResize(
   controller: ResizeController<TestResource, TestEvent>,
-  args: { occurrenceStart?: string; recurrenceScope?: 'this' | 'all' } = {},
+  args: {
+    occurrenceStart?: string
+    recurrenceScope?: 'this' | 'all'
+    edge?: 'top' | 'bottom'
+  } = {},
 ) {
   controller.registerDayColumn(DAY, dayColumn(0, 100))
   return controller.start({
@@ -167,6 +171,26 @@ describe('ResizeController against the calendar host', () => {
     expect(oneDay.validated.at(-1)!.totalDeltaMinutes).toBe(1440)
     expect(sevenDays.validated.at(-1)!.totalDeltaMinutes).toBe(10080)
   })
+
+  test.each([
+    { edge: 'bottom' as const, driftX: -50, expectedDelta: 60 },
+    { edge: 'top' as const, driftX: 150, expectedDelta: 60 },
+    { edge: 'bottom' as const, driftX: 150, expectedDelta: 1500 },
+  ])(
+    'a $edge edge drifting to x=$driftX resizes by $expectedDelta minutes',
+    async ({ edge, driftX, expectedDelta }) => {
+      const { host, validated } = createHost({}, 3)
+      const controller = new ResizeController(host, { containerHeight: 1440 })
+      controller.registerDayColumn('2025-06-01', dayColumn(-100, 0))
+      controller.registerDayColumn('2025-06-03', dayColumn(100, 200))
+      startResize(controller, { edge })
+
+      controller.handleMouseMove({ clientX: driftX, clientY: 60 } as MouseEvent)
+      await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
+
+      expect(validated.at(-1)!.totalDeltaMinutes).toBe(expectedDelta)
+    },
+  )
 
   test('commits a plain resize through the host', async () => {
     const { host } = createHost()

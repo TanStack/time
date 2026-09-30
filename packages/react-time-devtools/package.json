@@ -53,7 +53,7 @@
     "@tanstack/time-devtools": "workspace:*"
   },
   "devDependencies": {
-    "@tanstack/devtools": "^0.14.1",
+    "@tanstack/devtools": "^0.15.0",
     "@types/react": "^19.2.8",
     "@vitejs/plugin-react": "^5.1.2",
     "react": "^19.2.3",
@@ -67,7 +67,7 @@
     "node": ">=18"
   },
   "inlinedDependencies": {
-    "@tanstack/devtools": "0.14.1",
+    "@tanstack/devtools": "0.15.1",
     "@tanstack/devtools-ui": "0.7.1",
     "solid-js": "1.9.11"
   }

@@ -48,43 +48,75 @@ function MyCalendar() {
 
 ## Move & Resize Controllers
 
-When the `move` and `resize` options are provided, the hook exposes controller helpers for dragging events.
+Compose `eventMoveFeature` and `eventResizeFeature` (both require `eventRecurrenceFeature`) and the hook exposes controller helpers. Snapping is set with `constraints.snapToMinutes`; `containerHeight` is the pixel height of one day column.
 
 ```tsx
+import { useEffect, useRef } from 'react'
 import { useCalendar } from '@tanstack/react-time'
-import { calendarFeatures, eventMoveFeature, eventResizeFeature } from '@tanstack/time'
+import {
+  calendarFeatures,
+  eventMoveFeature,
+  eventRecurrenceFeature,
+  eventResizeFeature,
+} from '@tanstack/time'
+import type { Event } from '@tanstack/time'
 
-function DraggableCalendar() {
+const DAY_HEIGHT_PX = 1152
+
+function DraggableCalendar({ events }: { events: Array<Event> }) {
   const calendar = useCalendar({
     viewMode: { value: 1, unit: 'week' },
     timeZone: 'UTC',
-    features: calendarFeatures([eventMoveFeature, eventResizeFeature]),
-    move: { granularity: { value: 15, unit: 'minute' } },
-    resize: { step: { value: 15, unit: 'minute' } },
-    events: [
-      {
-        id: '1',
-        title: 'Team Standup',
-        start: '2024-03-18T09:00:00',
-        end: '2024-03-18T10:00:00',
-      },
-    ],
+    features: calendarFeatures([eventRecurrenceFeature, eventMoveFeature, eventResizeFeature]),
+    move: { containerHeight: DAY_HEIGHT_PX, constraints: { snapToMinutes: 15 } },
+    resize: { containerHeight: DAY_HEIGHT_PX, constraints: { snapToMinutes: 15 } },
+    events,
   })
+  const { moveState, updateEventMove, endEventMove, cancelEventMove } = calendar
+  const startY = useRef(0)
 
-  return (
-    <div>
-      {calendar.getEvents().map((event) => (
+  useEffect(() => {
+    if (!moveState.isMoving) return
+    const onPointerMove = (e: PointerEvent) => {
+      const column = document
+        .elementFromPoint(e.clientX, e.clientY)
+        ?.closest<HTMLElement>('[data-day]')
+      updateEventMove({ dayDate: column?.dataset.day, deltaPixels: e.clientY - startY.current })
+    }
+    window.addEventListener('pointermove', onPointerMove)
+    window.addEventListener('pointerup', endEventMove)
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove)
+      window.removeEventListener('pointerup', endEventMove)
+    }
+  }, [moveState.isMoving, updateEventMove, endEventMove, cancelEventMove])
+
+  return calendar.days.map((day) => (
+    <div key={day.isoDate} data-day={day.isoDate} {...calendar.getDayColumnProps(day.isoDate)}>
+      {day.events.map((event) => (
         <div
           key={event.id}
-          onMouseDown={() => calendar.startEventMove({ eventId: event.id })}
+          onPointerDown={(e) => {
+            const { originalStart, originalEnd } = calendar.getEventSegmentInfo(event)
+            startY.current = e.clientY
+            calendar.startEventMove({
+              eventId: event.id,
+              originalStart,
+              originalEnd,
+              dayDate: day.isoDate,
+            })
+          }}
         >
           {event.title}
+          <span {...calendar.getResizeHandleProps(event.id, 'end', event.start, event.end)} />
         </div>
       ))}
     </div>
-  )
+  ))
 }
 ```
+
+`startEventMove` only begins a move: drive it with `updateEventMove` and finish with `endEventMove` or `cancelEventMove`. See [Move, Resize & Layout](../../interaction) for the controller model and a full example in `examples/react/calendar-drag-resize`.
 
 ## Devtools
 

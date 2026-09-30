@@ -91,6 +91,19 @@ const INITIAL_RESIZE_STATE: ResizeState = {
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24
 
+function clampTargetDay(
+  targetDayDate: string,
+  edge: ResizeEdge,
+  originalStart: string,
+  originalEnd: string,
+): string {
+  const startDay = originalStart.slice(0, 10)
+  const endDay = originalEnd.slice(0, 10)
+  if (edge === 'bottom' && targetDayDate < startDay) return startDay
+  if (edge === 'top' && targetDayDate > endDay) return endDay
+  return targetDayDate
+}
+
 export class ResizeController<TResource extends Resource, TEvent extends Event<TResource>> {
   private _host: ResizeHost<TResource, TEvent>
   private _options: ResizeControllerOptions
@@ -387,7 +400,12 @@ export class ResizeController<TResource extends Resource, TEvent extends Event<T
     } else {
       const deltaMinutes = calculateDeltaMinutesFromPixels(e.clientY - startY, containerHeight)
 
-      targetDayDate = this.getDayFromPoint(e.clientX) ?? originalDayDate
+      targetDayDate = clampTargetDay(
+        this.getDayFromPoint(e.clientX) ?? originalDayDate,
+        edge,
+        start,
+        end,
+      )
 
       let dayOffsetMinutes = 0
       if (targetDayDate !== originalDayDate) {
