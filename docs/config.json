@@ -24,6 +24,10 @@
         {
           "label": "Booking",
           "to": "booking"
+        },
+        {
+          "label": "Agent Skills",
+          "to": "agent-skills"
         }
       ],
       "frameworks": [

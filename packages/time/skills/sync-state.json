@@ -1,0 +1,18 @@
+{
+  "library_version": "0.0.0",
+  "skills": {
+    "booking": {
+      "sources_sha": {
+        "TanStack/time:docs/booking.md": "d711e6ce7e5d37684d0ed31b959d71d4abf67bf2ae40da86437bace3cb38b97d",
+        "TanStack/time:docs/adr/0011-slot-rules-and-booking.md": "5a294f935ab269f864c62df3af5c6bb5cdf38968488f8e4ae7893ecaf3334167"
+      }
+    },
+    "core": {
+      "sources_sha": {
+        "TanStack/time:docs/overview.md": "f9fa1e939a4fe1b85065f24d015c242c5c4f0d0895a48cb285d0b9fb01811270",
+        "TanStack/time:docs/installation.md": "e1ead476f8445b426c1edaec72300fde44acc11c7a3ee812a75bb03dc3763f1d",
+        "TanStack/time:docs/quick-start.md": "fb820a9e3697a27d3335dffca331bedb697900279cd35950df7bf4c04e16813f"
+      }
+    }
+  }
+}

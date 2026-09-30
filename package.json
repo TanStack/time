@@ -24,21 +24,24 @@
     "lint:fix": "nx affected --target=lint:fix --exclude=examples/**",
     "lint:fix:all": "nx run-many --targets=lint --fix",
     "test": "pnpm run test:ci",
-    "test:ci": "nx run-many --targets=test:lint,test:sherif,test:knip,test:docs,test:lib,test:types,build",
+    "test:ci": "nx run-many --targets=test:lint,test:sherif,test:knip,test:docs,test:skills,test:lib,test:types,build",
     "test:docs": "node scripts/verify-links.ts",
     "test:lint": "nx affected --target=test:lint --exclude=examples/**",
     "test:knip": "knip",
     "test:lib": "nx affected --targets=test:lib --exclude=examples/**",
     "test:lib:dev": "pnpm test:lib && nx watch --all -- pnpm test:lib",
-    "test:pr": "nx affected --targets=test:lint,test:sherif,test:knip,test:docs,test:lib,test:types,build",
+    "test:pr": "nx affected --targets=test:lint,test:sherif,test:knip,test:docs,test:skills,test:lib,test:types,build",
+    "test:skills": "intent validate && node scripts/check-skill-sources.ts",
     "test:sherif": "sherif",
     "test:types": "nx affected --targets=test:types --exclude=examples/**",
+    "skills:sync": "node scripts/check-skill-sources.ts --write",
     "watch": "pnpm run build:all && nx watch --all -- pnpm run build:all"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.7.0",
     "@changesets/cli": "^2.29.8",
     "@faker-js/faker": "^10.2.0",
+    "@tanstack/intent": "0.4.0",
     "@tanstack/typedoc-config": "0.3.3",
     "@testing-library/jest-dom": "^6.9.1",
     "@types/node": "^25.0.7",
@@ -64,6 +67,7 @@
   "nx": {
     "includedScripts": [
       "test:docs",
+      "test:skills",
       "test:knip",
       "test:sherif"
     ]

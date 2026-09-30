@@ -56,13 +56,13 @@
     "solid-js": "^1.9.10"
   },
   "devDependencies": {
-    "@tanstack/devtools": "^0.14.1",
+    "@tanstack/devtools": "^0.15.0",
     "rolldown-plugin-solid": "^0.2.1"
   },
   "engines": {
     "node": ">=18"
   },
   "inlinedDependencies": {
-    "@tanstack/devtools": "0.14.1"
+    "@tanstack/devtools": "0.15.0"
   }
 }

@@ -90,7 +90,7 @@ const calendar = createCalendar({
 
 const { slots, unbackedRanges, truncated } = calendar.getSlots({
   start: new Date(),
-  end: addDays(new Date(), 30),
+  end: add(new Date(), { duration: { days: 30 } }),
 })
 ```
 

@@ -1,0 +1,11 @@
+{
+  "library_version": "0.0.0",
+  "skills": {
+    "solid": {
+      "sources_sha": {
+        "TanStack/time:docs/framework/solid/adapter.md": "bac92141ebc4aa81dedcecb7a6960023b5851af4f45070f5485f214398a147ff",
+        "TanStack/time:docs/quick-start.md": "fb820a9e3697a27d3335dffca331bedb697900279cd35950df7bf4c04e16813f"
+      }
+    }
+  }
+}

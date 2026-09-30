@@ -1,0 +1,11 @@
+{
+  "library_version": "0.0.0",
+  "skills": {
+    "react": {
+      "sources_sha": {
+        "TanStack/time:docs/framework/react/adapter.md": "11b766b5e2c16f0996f81629ed6056c21873611b5bf1f60e9fdd3c166e61fdb2",
+        "TanStack/time:docs/quick-start.md": "fb820a9e3697a27d3335dffca331bedb697900279cd35950df7bf4c04e16813f"
+      }
+    }
+  }
+}
