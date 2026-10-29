@@ -34,7 +34,16 @@ and slot generation all read the same resolution.
 ## Build calendars with blocks
 
 ```ts
-import { after, between, compileSchedule, date, dateRange, dates, merge, weekday } from '@tanstack/time'
+import {
+  after,
+  between,
+  compileSchedule,
+  date,
+  dateRange,
+  dates,
+  merge,
+  weekday,
+} from '@tanstack/time'
 import type { WorkingCalendar } from '@tanstack/time'
 
 const calendars: Array<WorkingCalendar> = [
@@ -42,7 +51,10 @@ const calendars: Array<WorkingCalendar> = [
     id: 'office',
     timeZone: 'Europe/Warsaw',
     on: [
-      merge(weekday('monday', 'tuesday', 'wednesday', 'thursday', 'friday'), between('08:00', '12:00')),
+      merge(
+        weekday('monday', 'tuesday', 'wednesday', 'thursday', 'friday'),
+        between('08:00', '12:00'),
+      ),
       merge(weekday(1, 2, 3, 4, 5), after('13:00')),
     ],
     except: [dates(['2026-12-24', '2026-12-25']), dateRange('2026-12-28', '2026-12-31')],
@@ -133,7 +145,11 @@ function with no instance, no override layer. Returns `[]` for an unknown id.
 ```ts
 import { getWorkingTime } from '@tanstack/time'
 
-const spans = getWorkingTime('early', { start: '2026-01-05T00:00', end: '2026-01-06T00:00' }, calendars)
+const spans = getWorkingTime(
+  'early',
+  { start: '2026-01-05T00:00', end: '2026-01-06T00:00' },
+  calendars,
+)
 ```
 
 ## Common mistakes

@@ -74,7 +74,12 @@ pass a custom event type as the third generic of `createCalendar`.
 ## historyFeature and eventFilterFeature
 
 ```ts
-import { calendarFeatures, createCalendar, eventFilterFeature, historyFeature } from '@tanstack/time'
+import {
+  calendarFeatures,
+  createCalendar,
+  eventFilterFeature,
+  historyFeature,
+} from '@tanstack/time'
 
 const calendar = createCalendar({
   viewMode: { value: 1, unit: 'day' },
@@ -82,7 +87,12 @@ const calendar = createCalendar({
   features: calendarFeatures([historyFeature, eventFilterFeature]),
 })
 
-await calendar.addEvent({ id: 'e1', title: 'Plan', start: '2025-06-02T09:00:00', end: '2025-06-02T10:00:00' })
+await calendar.addEvent({
+  id: 'e1',
+  title: 'Plan',
+  start: '2025-06-02T09:00:00',
+  end: '2025-06-02T10:00:00',
+})
 if (calendar.canUndo()) calendar.undo()
 
 calendar.setEventFilter('search', (event) => event.title.startsWith('P'))
@@ -112,15 +122,15 @@ Temporal-backed. Also `subtract`, `endOf`, `round`, `clamp`, `range`, `isBefore`
 
 ## Sub-skills
 
-| Load                                 | When                                                                      |
-| ------------------------------------ | ------------------------------------------------------------------------- |
-| `@tanstack/time#core/working-time`   | `workingTimeFeature`, working calendars, `compileSchedule`, `isWorkingTime` |
-| `@tanstack/time#core/availability`   | `resourceAvailabilityFeature`, constraints, `eventDurationFeature`, placement validation |
-| `@tanstack/time#core/booking`        | `bookingFeature`, `slotRules`, `getSlots` / `book` / `hold`, `generateSlots` |
-| `@tanstack/time#core/scheduling`     | `eventDependencyFeature`, `createDependency`, dependency shifts            |
-| `@tanstack/time#core/recurrence`     | `eventRecurrenceFeature`, recurring edits, occurrences                     |
-| `@tanstack/time#core/interaction`    | `eventMoveFeature`, `eventResizeFeature`, `dayEventLayoutFeature`, `getEventProps` |
-| `@tanstack/time#core/timeline`       | `timelineFeature`, `getEventsByResource`, `getTimelineLayout`              |
+| Load                               | When                                                                                     |
+| ---------------------------------- | ---------------------------------------------------------------------------------------- |
+| `@tanstack/time#core/working-time` | `workingTimeFeature`, working calendars, `compileSchedule`, `isWorkingTime`              |
+| `@tanstack/time#core/availability` | `resourceAvailabilityFeature`, constraints, `eventDurationFeature`, placement validation |
+| `@tanstack/time#core/booking`      | `bookingFeature`, `slotRules`, `getSlots` / `book` / `hold`, `generateSlots`             |
+| `@tanstack/time#core/scheduling`   | `eventDependencyFeature`, `createDependency`, dependency shifts                          |
+| `@tanstack/time#core/recurrence`   | `eventRecurrenceFeature`, recurring edits, occurrences                                   |
+| `@tanstack/time#core/interaction`  | `eventMoveFeature`, `eventResizeFeature`, `dayEventLayoutFeature`, `getEventProps`       |
+| `@tanstack/time#core/timeline`     | `timelineFeature`, `getEventsByResource`, `getTimelineLayout`                            |
 
 Framework code: React → `@tanstack/react-time#react`, Solid → `@tanstack/solid-time#solid`.
 

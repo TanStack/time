@@ -21,7 +21,12 @@ sources:
 ## Setup
 
 ```ts
-import { calendarFeatures, createCalendar, eventDependencyFeature, historyFeature } from '@tanstack/time'
+import {
+  calendarFeatures,
+  createCalendar,
+  eventDependencyFeature,
+  historyFeature,
+} from '@tanstack/time'
 import type { Event } from '@tanstack/time'
 
 const events: Array<Event> = [
@@ -110,7 +115,11 @@ that would have to move, or a target move that fails `validateMove`.
 Inputs are plain date-time strings in the calendar `timeZone`.
 
 ```ts
-const conflicts = calendar.getAnchorConflicts('design', '2026-10-05T12:00:00', '2026-10-05T15:00:00')
+const conflicts = calendar.getAnchorConflicts(
+  'design',
+  '2026-10-05T12:00:00',
+  '2026-10-05T15:00:00',
+)
 const pushed = calendar.getDependentShifts('design', '2026-10-05T12:00:00', '2026-10-05T15:00:00')
 ```
 
